@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>aguaFress - Proyecto Full Stack</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #1a1a2e;
+            background: white;
+        }
+        
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
+            margin: 0 auto;
+            background: white;
+        }
+        
+        /* Header */
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #0077b6;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .header h1 {
+            font-size: 28pt;
+            color: #0077b6;
+            margin-bottom: 5px;
+        }
+        
+        .header .subtitle {
+            font-size: 12pt;
+            color: #555;
+            font-weight: normal;
+        }
+        
+        /* Sections */
+        section {
+            margin-bottom: 20px;
+        }
+        
+        h2 {
+            font-size: 14pt;
+            color: #0077b6;
+            border-left: 4px solid #0077b6;
+            padding-left: 10px;
+            margin-bottom: 12px;
+        }
+        
+        h3 {
+            font-size: 11pt;
+            color: #023e8a;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        p {
+            margin-bottom: 8px;
+            text-align: justify;
+        }
+        
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 9pt;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        th {
+            background: #0077b6;
+            color: white;
+            font-weight: 600;
+        }
+        
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        /* Competitive Advantage Box */
+        .advantage-box {
+            background: linear-gradient(135deg, #e8f4fd 0%, #d4ecf9 100%);
+            border: 2px solid #0077b6;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .advantage-box h3 {
+            color: #0077b6;
+            margin-bottom: 10px;
+        }
+        
+        .advantage-box ul {
+            margin-left: 20px;
+        }
+        
+        .advantage-box li {
+            margin-bottom: 5px;
+        }
+        
+        /* Tech Stack */
+        .tech-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .tech-card {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 12px;
+        }
+        
+        .tech-card h4 {
+            color: #0077b6;
+            margin-bottom: 8px;
+            font-size: 11pt;
+        }
+        
+        .tech-card .recommendation {
+            background: #d4edda;
+            color: #155724;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 8px;
+            font-size: 9pt;
+        }
+        
+        .tech-card .not-recommended {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 8px;
+            font-size: 9pt;
+        }
+        
+        /* Lists */
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 10px;
+        }
+        
+        li {
+            margin-bottom: 4px;
+        }
+        
+        /* Footer */
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            font-size: 9pt;
+            color: #666;
+        }
+        
+        /* Highlight */
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        
+        .strong {
+            font-weight: 600;
+            color: #0077b6;
+        }
+        
+        /* Versions */
+        .version {
+            display: inline-block;
+            background: #0077b6;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 9pt;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="header">
+            <h1>💧 aguaFress</h1>
+            <p class="subtitle">Plataforma de Pedidos y Gestión para Distribuidores de Agua y Soda</p>
+            <p class="subtitle">Proyecto Full Stack - Grupo de Desarrollo</p>
+        </div>
+
+        <section>
+            <h2>1. Descripción del Proyecto</h2>
+            <p><strong>aguaFress</strong> es una plataforma web (MVP) diseñada para conectar vendedores independientes de agua y soda con sus consumidores. El problema que resuelve: los consumidores deben esperar la visita semanal del vendedor para reponer producto, y los vendedores realizan visitas improductivas a clientes que no necesitan mercadería.</p>
+            <p>La solución permite al consumidor solicitar pedidos en cualquier momento (fuera del día de ruta habitual) y confirmar/.cancelar la visita programada, optimizando la logística del vendedor y aumentando las ventas por pedidos adicionales.</p>
+        </section>
+
+        <section>
+            <h2>2. Propuesta de Valor - Diferencia Competitiva</h2>
+            <div class="advantage-box">
+                <h3>¿Qué nos diferencia de las apps existentes en Argentina?</h3>
+                <ul>
+                    <li><strong>Pedido directo del consumidor:</strong> Ninguna app en Argentina permite al cliente final pedir directamente al distribuidor desde su propia app/web.</li>
+                    <li><strong>Confirmación de visita:</strong> Sistema único que evita visitas improductivas - el consumidor confirma o cancela antes de que el vendedor salga de ruta.</li>
+                    <li><strong>Pedidos fuera de día de ruta:</strong> El cliente puede pedir en cualquier momento, no solo en la visita programada.</li>
+                    <li><strong>Ruta inteligente:</strong> Generación automática de rutas diarias basadas en pedidos confirmados con navegación GPS integrada.</li>
+                    <li><strong>Marketplace vs Software interno:</strong> Todas las apps actuales son sistemas de gestión internos (Gestión Aguas, JR-Agua, App Delivery Agua). aguaFress es un marketplace bidireccional.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section>
+            <h2>3. Funcionalidades por Versión</h2>
+            
+            <h3>V1.0 (Web - MVP)</h3>
+            <table>
+                <tr>
+                    <th>Módulo</th>
+                    <th>Funcionalidades</th>
+                </tr>
+                <tr>
+                    <td><strong>Autenticación</strong></td>
+                    <td>Registro/Login (email + contraseña), Recuperación de contraseña, Registro con Google OAuth</td>
+                </tr>
+                <tr>
+                    <td><strong>Vista Vendedor</strong></td>
+                    <td>Carga de productos con fotos, Informes de ventas (por cliente/producto), Historial de compras por cliente, Mapa interactivo con navegación (API Maps), Envío de facturas digitales, Listado de pedidos confirmados con estado (pagado/pendiente), teléfono cliente, dirección y botón de navegación</td>
+                </tr>
+                <tr>
+                    <td><strong>Vista Consumidor</strong></td>
+                    <td>Registro como consumidor final (Nombre, Apellido, DNI, Mail, Dirección entrega/facturación, Detalles de dirección), Catálogo de productos (foto, marca, volumen, precio sin IVA, impuestos, precio final, stock, valoraciones 5 estrellas, favoritos), Carrito de compras, Pago opcional anticipado o contra entrega, Facturación tipo B/C</td>
+                </tr>
+            </table>
+
+            <h3>V2.0 (App Móvil + Expansión)</h3>
+            <table>
+                <tr>
+                    <th>Módulo</th>
+                    <th>Funcionalidades</th>
+                </tr>
+                <tr>
+                    <td><strong>Consumidor Empresas</strong></td>
+                    <td>Registro con CUIT, Razón Social, Domicilio comercial, Condición IVA (Responsable Inscripto), Múltiples mails, Teléfonos, Contacto de pagos, Facturación tipo A, Pago obligatorio anticipado con verificación</td>
+                </tr>
+                <tr>
+                    <td><strong>Proveedores</strong></td>
+                    <td>Clientes online sin necesidad de preventivo, Panel de pedidos web/app, Configuración de límites mínimos por cliente</td>
+                </tr>
+                <tr>
+                    <td><strong>Chat/Mensajería</strong></td>
+                    <td>Mensajes entre vendedor y cliente, Envío de facturas PDF, Notificaciones push</td>
+                </tr>
+                <tr>
+                    <td><strong>Inteligencia Artificial</strong></td>
+                    <td>Análisis de ventas y tendencias, Búsqueda inteligente de clientes, Comando por voz para navegación, Generador de rutas optimizadas, Generador de informes automáticos</td>
+                </tr>
+            </table>
+        </section>
+
+        <section>
+            <h2>4. Análisis de Tecnologías y Estrategia de Desarrollo</h2>
+            
+            <p style="background:#fff3cd; padding:10px; border-radius:5px; margin-bottom:15px;">
+                <strong>📦 Estrategia de Desarrollo:</strong> Desarrollo local con Docker → Migración a cloud en producción
+            </p>
+            
+            <div class="tech-grid">
+                <div class="tech-card">
+                    <h4>Backend</h4>
+                    <p><strong>NestJS</strong> - Framework TypeScript progresivo, arquitectura modular, integración nativa con TypeORM y GraphQL, ideal para aplicaciones escalables.</p>
+                    <span class="recommendation">✓ Recomendado</span>
+                </div>
+                
+                <div class="tech-card">
+                    <h4>Base de Datos - REQUISITO DEL PROFESOR</h4>
+                    <table>
+                        <tr>
+                            <th>Motor</th>
+                            <th>Uso en el Proyecto</th>
+                        </tr>
+                        <tr>
+                            <td><strong>PostgreSQL</strong></td>
+                            <td>Datos principales: Usuarios, Pedidos, Productos, Facturación, Rutas</td>
+                        </tr>
+                        <tr>
+                            <td><strong>MySQL</strong></td>
+                            <td>Logs de auditoría, analytics histórico, reporting (consultas OLAP)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>MongoDB</strong></td>
+                            <td>Notificaciones push, mensajes chat, caché de sesiones, logs de actividad</td>
+                        </tr>
+                    </table>
+                    <p style="margin-top:8px; font-size:9pt;"><strong>Justificación técnica:</strong> Cada DB tiene propósito específico. PostgreSQL para datos transaccionales ACID, MySQL para analytics/reporting (compatible con herramientas como Metabase), MongoDB para datos NoSQL como mensajes y notificaciones.</p>
+                </div>
+                
+                <div class="tech-card">
+                    <h4>Frontend Web (V1.0)</h4>
+                    <p><strong>React + TypeScript</strong> - Componentes reutilizables, ecosistema maduro, integración con NestJS vía REST/GraphQL.</p>
+                    <span class="recommendation">✓ Recomendado</span>
+                </div>
+                
+                <div class="tech-card">
+                    <h4>App Móvil (V2.0)</h4>
+                    <table>
+                        <tr>
+                            <th>Opción</th>
+                            <th>Veredicto</th>
+                        </tr>
+                        <tr>
+                            <td>React Native</td>
+                            <td><span class="recommendation">✓ Recomendado</span></td>
+                        </tr>
+                        <tr>
+                            <td>Ionic</td>
+                            <td><span class="not-recommended">✗ Para apps simples</span></td>
+                        </tr>
+                    </table>
+                    <p style="margin-top:8px; font-size:9pt;"><strong>Justificación:</strong> Para V2.0 con AI, mapas, UI compleja y rendimiento nativo, <strong>React Native</strong> es superior. Ionic usa WebView, menor rendimiento. Compartimos conocimiento React entre web y mobile.</p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>5. Estrategia de Desarrollo Local con Docker</h2>
+            
+            <h3>Fase 1: Desarrollo Local (Docker Compose)</h3>
+            <table>
+                <tr>
+                    <th>Componente</th>
+                    <th>Imagen Docker</th>
+                    <th>Puerto</th>
+                </tr>
+                <tr>
+                    <td>Backend NestJS</td>
+                    <td>node:20-alpine</td>
+                    <td>3000</td>
+                </tr>
+                <tr>
+                    <td>Frontend React</td>
+                    <td>nginx:alpine</td>
+                    <td>80</td>
+                </tr>
+                <tr>
+                    <td>PostgreSQL (principal)</td>
+                    <td>postgres:15-alpine</td>
+                    <td>5432</td>
+                </tr>
+                <tr>
+                    <td>MySQL (analytics)</td>
+                    <td>mysql:8</td>
+                    <td>3306</td>
+                </tr>
+                <tr>
+                    <td>MongoDB (logs/chat)</td>
+                    <td>mongo:7</td>
+                    <td>27017</td>
+                </tr>
+                <tr>
+                    <td>Admin BD (opcional)</td>
+                    <td>adminer</td>
+                    <td>8080</td>
+                </tr>
+            </table>
+            
+            <h3>Servicios Adicionales en Docker</h3>
+            <ul>
+                <li><strong>Redis:</strong> Cache y sesiones (puerto 6379)</li>
+                <li><strong>Mailhog:</strong> Testing de emails local (puertos 1025/8025)</li>
+                <li><strong>Swagger UI:</strong> Documentación API (ruta /api/docs)</li>
+            </ul>
+            
+            <h3>Fase 2: Migración a Producción</h3>
+            <div class="advantage-box" style="margin-top:10px;">
+                <p><strong>Primera etapa (producción):</strong>Railway/Render/Vercel con PostgreSQL gestionado (no Docker)</p>
+                <p><strong>Segunda etapa:</strong>Separación de servicios según escala</p>
+                <p><strong>Objetivo:</strong> Migración transparente sin cambios en código, solo configuración</p>
+            </div>
+        </section>
+
+        <section>
+            <h2>6. Stack Tecnológico Recomendado</h2>
+            <table>
+                <tr>
+                    <th>Capa</th>
+                    <th>Tecnología</th>
+                    <th>Versión</th>
+                </tr>
+                <tr>
+                    <td>Backend</td>
+                    <td>NestJS</td>
+                    <td>v10+</td>
+                </tr>
+                <tr>
+                    <td>Base de Datos</td>
+                    <td>PostgreSQL</td>
+                    <td>v15+</td>
+                </tr>
+                <tr>
+                    <td>ORM</td>
+                    <td>TypeORM / Prisma</td>
+                    <td>Última estable</td>
+                </tr>
+                <tr>
+                    <td>Frontend Web</td>
+                    <td>React + TypeScript</td>
+                    <td>v18+</td>
+                </tr>
+                <tr>
+                    <td>App Móvil</td>
+                    <td>React Native</td>
+                    <td>0.74+</td>
+                </tr>
+                <tr>
+                    <td>Autenticación</td>
+                    <td>Passport.js + JWT</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>Maps API</td>
+                    <td>Google Maps / Mapbox</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td>Despliegue</td>
+                    <td>Docker + Railway/Vercel</td>
+                    <td>-</td>
+                </tr>
+            </table>
+        </section>
+
+        <section>
+            <h2>7. Distribución de Módulos por Persona (5 devs)</h2>
+            <table>
+                <tr>
+                    <th>Developer</th>
+                    <th>Módulo/Sprint</th>
+                    <th>Tecnologías Clave</th>
+                </tr>
+                <tr>
+                    <td>Dev 1</td>
+                    <td>Backend - Auth & Users</td>
+                    <td>NestJS, JWT, Google OAuth</td>
+                </tr>
+                <tr>
+                    <td>Dev 2</td>
+                    <td>Backend - Productos & Catálogo</td>
+                    <td>NestJS, PostgreSQL, TypeORM</td>
+                </tr>
+                <tr>
+                    <td>Dev 3</td>
+                    <td>Backend - Pedidos & Carrito</td>
+                    <td>NestJS, WebSockets, Notificaciones</td>
+                </tr>
+                <tr>
+                    <td>Dev 4</td>
+                    <td>Frontend - Vendedor</td>
+                    <td>React, Maps API, Chart.js</td>
+                </tr>
+                <tr>
+                    <td>Dev 5</td>
+                    <td>Frontend - Consumidor</td>
+                    <td>React, Carrito, Pagos</td>
+                </tr>
+            </table>
+            <p style="font-size:9pt; color:#666; margin-top:10px;">* Todos participan en testing, documentación y integración final. Los sprints de V2.0 se asignan según avance.</p>
+        </section>
+
+        <section>
+            <h2>8. Estructura del Proyecto Docker</h2>
+            <pre style="background:#f4f4f4; padding:10px; border-radius:5px; font-size:8pt; overflow-x:auto;">
+aguaFress/
+├── docker-compose.yml          # Orquestación de servicios (3 DBs)
+├── backend/                    # NestJS (conexión multi-DB)
+│   ├── src/
+│   ├── Dockerfile
+│   └── package.json
+├── frontend/                   # React + Vite
+│   ├── src/
+│   ├── Dockerfile
+│   └── nginx.conf
+├── postgres_data/              # Datos PostgreSQL (transaccional)
+├── mysql_data/                 # Datos MySQL (analytics)
+├── mongo_data/                 # Datos MongoDB (logs/chat)
+├── redis/                     # Cache
+└── docs/                      # Documentación
+            </pre>
+        </section>
+
+        <section>
+            <h2>9. Por qué esta arquitectura es ideal para el proyecto</h2>
+            <ul>
+                <li><strong>Docker Compose:</strong> Todos los servicios levantan con un solo comando <code>docker compose up</code></li>
+                <li><strong>Triple DB obligatoria:</strong> PostgreSQL (core), MySQL (analytics), MongoDB (logs/chat)</li>
+                <li><strong>Arquitectura multi-database:</strong> NestJS puede conectar a múltiples DBs con TypeORM/Prisma</li>
+                <li><strong>Separación clara:</strong> Cada DB tiene propósito específico y aislamiento</li>
+                <li><strong>Escalable:</strong> De Docker local a cloud gestionado sin refactorizar</li>
+                <li><strong>Testing:</strong> Mailhog para testear emails sin enviar realmente</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>10. Arquitectura Multi-Database en NestJS</h2>
+            <p>El proyecto usará <strong>múltiples conexiones de base de datos</strong> en un mismo Backend NestJS:</p>
+            
+            <table>
+                <tr>
+                    <th>Módulo NestJS</th>
+                    <th>Base de Datos</th>
+                    <th>ORM</th>
+                    <th>Entidades</th>
+                </tr>
+                <tr>
+                    <td>Auth Module</td>
+                    <td>PostgreSQL</td>
+                    <td>TypeORM</td>
+                    <td>Users, Roles, Tokens</td>
+                </tr>
+                <tr>
+                    <td>Products Module</td>
+                    <td>PostgreSQL</td>
+                    <td>TypeORM</td>
+                    <td>Products, Categories, Images</td>
+                </tr>
+                <tr>
+                    <td>Orders Module</td>
+                    <td>PostgreSQL</td>
+                    <td>TypeORM</td>
+                    <td>Orders, OrderItems, Payments</td>
+                </tr>
+                <tr>
+                    <td>Analytics Module</td>
+                    <td>MySQL</td>
+                    <td>TypeORM</td>
+                    <td>SalesHistory, Reports, Metrics</td>
+                </tr>
+                <tr>
+                    <td>Notifications Module</td>
+                    <td>MongoDB</td>
+                    <td>Mongoose</td>
+                    <td>Messages, PushNotifications, ActivityLogs</td>
+                </tr>
+            </table>
+            
+            <p style="margin-top:10px;"><strong>Implementación:</strong> Cada módulo de NestJS tendrá su propia conexión a la base de datos correspondiente, permitiendo separación clara de responsabilidades.</p>
+        </section>
+
+        <div class="footer">
+            <p><strong>aguaFress</strong> - Proyecto Full Stack | 3 Materias Integradas</p>
+            <p>Documento generado para presentación al equipo de desarrollo</p>
+        </div>
+    </div>
+</body>
+</html>

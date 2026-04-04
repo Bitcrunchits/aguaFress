@@ -1,0 +1,41 @@
+quiero comenzar un proyecto que se llamara aguaFress:
+-idea general: 
+    Se trata de una app web en mvp que luego sera llevada a app movil.
+    es una app web que tendra por objetivo principal ser utilizada por vendedores de agua, sodas, gaseosas (en un V1.0 , luego en una V2.0 podria ser usada por proveedores y que sus clientes hagan sus pedidos online web o desde movil sin necesidad de tener que ser previsitados por los preventistas) El punto crucial de esta app es que los consumidores pueden solicitar que su vendedor o proveedor les lleve el agua o soda en cuanto esta se acabe sin tener que esperar la visita programada semanal y aumentar sus ventas con un envio de agua o soda fuera del día de visita. Segundo punto de esta app es que el cliente a traves de una aviso de visita de recordatorio al cliente consumidor, el consumidor confirme la visita a su casa de caso contrario no ira de esa manera se evitara que sean visitados cuando aun tienen producto en sus casas o negocios, ahorrando el vendedor gastos de de visitas improductivos. Una vez ejercitados el uso de la app tanto por proveedores y consumidores ya no se programaran visitas semanas fijas sino que solo se planeará en función de los pedidos que se hagan via web o app. Generando un ruta diaria con productos a entregar y ubicaciones via mapa interactivo. 
+    V1.0: Es una plataforma que brinda este servicio a vendedores y consumidores de agua y soda.
+    
+
+FUNCIONALIDADES V1.0
+    -REGISTRO Y LOGIN: usuario y contraseña recuperación de contraseña, opcion de registro con gmail google.
+    
+    - debe contener una vista para vendedores y otra para clientes.
+v2.0 se podria agregar una AI con funcionalidades de analisis de ventas, busquedas clientes, acción por voz para navegación, generador de rutas de pedidos confirmados. Generador de informes. 
+
+VISTA VENDEDORES - PROVEDORES.
+    v1.0-Carga de Productos y precios: cargar sus productos con foto.
+    v1.0-Hacer o pedir informes: de venta por cliente, producto, 
+    v1.0-Historiales: de CLiente compras,
+    v1.0-mapa interactivo : navegación por mapa hasta ubicación de cliente.
+    v1.0-Envio de facturas digitales de ventas.
+    v1.0-clientes:
+    v1.0- vista de listado pedidos confirmados al momento: clientes, producto, cantidad, estado(pagado,pdte), telefono cliente, dirección, boton de navegación en mapa abre navegación (api go)
+    V2.0 : chat en app movil
+    
+VISTA DE CONSUMIDORES
+    V1.0-REGISTRO Y LOGIN: usuario y contraseña recuperación de contraseña, opcion de registro con gmail google.
+
+    v1.0Si se registra como:
+        V1.0 Consumidor final:-debe contener información de: Nombre Apellido, dni, mail,  dirección de entrega, dirección de facturación si aplica, dirección de pago opcional. campo para detalles de su dirección para la entrega. Facturación consumidor final solamente tipo B o C 
+
+    v2.0 Si se registra como:
+        Empresa: Debe contener estos datos para facturación: CUIT, Razón Social/Nombre, Domicilio comercial, Condición frente al IVA (obligatoriamente Responsable Inscripto). dirección de entrega, dirección de facturación si aplica, dirección de pago si aplica, mail 1, mail2, mail3, Telefono, Celular, Persona de contancto emisión de pagos. Campo para detalles de su dirección para la entrega. El pago en caso de empresas es anticipado no es opcional y se envia mercadería en cuanto se acredite el pago en sistema cuando el pedido supera un importe que establece el proveedor segun elija de cada cliente.      
+
+ 
+    v1.0-vista de productos del proveedor: foto, marca, volumen producto, precio sin impuestos, impuestos que aplica, precio final, unidades disponibles, valoraciones del producto en strellitas (5 estrellas), opcion de guardar como favorito
+    v1.0--carrito de pedido: cantidad de compra, muestra precio sin impuestos, impuestos que aplica, precio por unidad, precio total de pedido.
+    v1.0--pantalla de pagar el carrito como opcional (aca el consumidor puede pagar con anticipación su pedido o no, que no sea obligación sino un servicio de ahorro de tiempo).
+    V2.0-MENSAJERÍA: recepción de factuas en pdf etc. mensajes.
+    v2.0-
+
+          
+
