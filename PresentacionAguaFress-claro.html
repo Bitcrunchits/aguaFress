@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>aguaFress - Proyecto Full Stack</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --agua: #00a885;
+            --agua-dark: #008c6d;
+            --magenta: #d9008f;
+            --magenta-light: #ff33b3;
+            --amarillo: #e6c200;
+            --amarillo-dark: #b39900;
+            --negro: #1a1a1a;
+            --blanco: #ffffff;
+            --gris-oscuro: #444444;
+            --gris: #666666;
+            --gris-claro: #e0e0e0;
+            --fondo: #f8f9fa;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--fondo);
+            color: var(--negro);
+            line-height: 1.7;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+            padding: 40px 0;
+            position: relative;
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--agua), var(--magenta), var(--amarillo));
+            border-radius: 2px;
+        }
+
+        .logo {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 56px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--agua) 0%, var(--magenta) 50%, var(--amarillo) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            letter-spacing: -2px;
+        }
+
+        .tagline {
+            font-size: 18px;
+            color: var(--gris);
+            font-weight: 400;
+        }
+
+        /* Sections */
+        section {
+            margin-bottom: 35px;
+        }
+
+        h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--negro);
+        }
+
+        h2 .icon {
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            font-size: 18px;
+        }
+
+        h2 .icon.agua {
+            background: linear-gradient(135deg, rgba(0, 168, 133, 0.15), rgba(0, 168, 133, 0.05));
+            border: 1px solid var(--agua);
+        }
+
+        h2 .icon.magenta {
+            background: linear-gradient(135deg, rgba(217, 0, 143, 0.15), rgba(217, 0, 143, 0.05));
+            border: 1px solid var(--magenta);
+        }
+
+        h2 .icon.amarillo {
+            background: linear-gradient(135deg, rgba(230, 194, 0, 0.15), rgba(230, 194, 0, 0.05));
+            border: 1px solid var(--amarillo);
+        }
+
+        h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--agua-dark);
+        }
+
+        p {
+            margin-bottom: 12px;
+            color: var(--gris-oscuro);
+            text-align: justify;
+        }
+
+        /* Cards / Containers */
+        .card {
+            background: var(--blanco);
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .card.agua {
+            border-left: 4px solid var(--agua);
+            background: linear-gradient(135deg,
+                    rgba(0, 168, 133, 0.04) 0%,
+                    var(--blanco) 30%);
+        }
+
+        .card.magenta {
+            border-left: 4px solid var(--magenta);
+            background: linear-gradient(135deg,
+                    rgba(217, 0, 143, 0.04) 0%,
+                    var(--blanco) 30%);
+        }
+
+        .card.amarillo {
+            border-left: 4px solid var(--amarillo);
+            background: linear-gradient(135deg,
+                    rgba(230, 194, 0, 0.04) 0%,
+                    var(--blanco) 30%);
+        }
+
+        .card-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--negro);
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            font-size: 12px;
+        }
+
+        th,
+        td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        th {
+            background: rgba(0, 168, 133, 0.1);
+            color: var(--agua-dark);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        tr:hover {
+            background: rgba(0, 0, 0, 0.01);
+        }
+
+        /* Listas */
+        ul,
+        ol {
+            margin: 12px 0;
+            padding-left: 22px;
+        }
+
+        li {
+            margin-bottom: 8px;
+            color: var(--gris-oscuro);
+            font-size: 13px;
+        }
+
+        li::marker {
+            color: var(--agua);
+        }
+
+        /* Highlight boxes */
+        .highlight {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .highlight.agua {
+            background: rgba(0, 168, 133, 0.12);
+            color: var(--agua-dark);
+            border: 1px solid var(--agua);
+        }
+
+        .highlight.magenta {
+            background: rgba(217, 0, 143, 0.12);
+            color: var(--magenta);
+            border: 1px solid var(--magenta);
+        }
+
+        .highlight.amarillo {
+            background: rgba(230, 194, 0, 0.12);
+            color: var(--amarillo-dark);
+            border: 1px solid var(--amarillo);
+        }
+
+        /* Grid para features */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .feature-item {
+            background: var(--blanco);
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .feature-item .icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .feature-item h4 {
+            color: var(--negro);
+            font-size: 14px;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .feature-item p {
+            font-size: 12px;
+            margin: 0;
+            color: var(--gris);
+        }
+
+        /* Tech stack */
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 12px 0;
+        }
+
+        .tech-tag {
+            padding: 6px 12px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 18px;
+            font-size: 11px;
+            color: var(--gris-oscuro);
+        }
+
+        /* Divider */
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 168, 133, 0.3), transparent);
+            margin: 30px 0;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            margin-top: 40px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        footer p {
+            color: var(--gris);
+            font-size: 12px;
+            text-align: center;
+        }
+
+        footer .team {
+            color: var(--agua-dark);
+            font-weight: 600;
+        }
+
+        /* Badges de versión */
+        .version-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 18px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .version-badge.v1 {
+            background: linear-gradient(135deg, var(--agua), var(--agua-dark));
+            color: white;
+        }
+
+        .version-badge.v2 {
+            background: linear-gradient(135deg, var(--magenta), var(--magenta-light));
+            color: white;
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+
+            .card {
+                background: #fafafa;
+                border: 1px solid #ddd;
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="logo">💧 AguaFress</div>
+            <p class="tagline">Plataforma de Pedidos y Gestión para Distribuidores de Agua y Soda</p>
+            <p style="margin-top: 16px;">
+                <span class="version-badge v1">V1.0 Web</span>
+                <span class="version-badge v2" style="margin-left: 8px;">V2.0 Mobile</span>
+            </p>
+        </header>
+
+        <!-- Equipo de Desarrollo -->
+        <section>
+            <h2>
+                <span class="icon magenta">👥</span>
+                Equipo de Desarrollo
+            </h2>
+            <div class="card magenta">
+                <div class="features-grid">
+                    <div class="feature-item">
+                        <div class="icon">👩‍💻</div>
+                        <h4>Alvarado Milagros</h4>
+                        <p>Estudiante Full Stack Developer</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon">👨‍💻</div>
+                        <h4>Burdiles Adrián</h4>
+                        <p>Estudiante Full Stack Developer</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon">👨‍💻</div>
+                        <h4>Lagos Lucas</h4>
+                        <p>Estudiante Full Stack Developer</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon">👨‍💻</div>
+                        <h4>Spagnolo Emiliano</h4>
+                        <p>Estudiante Full Stack Developer</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon">👨‍💻</div>
+                        <h4>Soto Agustín</h4>
+                        <p>Estudiante Full Stack Developer</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- El Problema -->
+        <section>
+            <h2>
+                <span class="icon agua">⚠️</span>
+                El Problema que Resolvemos
+            </h2>
+            <div class="card agua">
+                <h3 class="card-title">Situación actual del mercado</h3>
+                <p>En Argentina, los distribuidores de agua y soda trabajan con un modelo tradicional de <strong>visitas
+                        semanales fijas</strong>: el vendedor tiene un día asignado por zona y visita a todos los
+                    clientes, independientemente de si necesitan mercadería o no.</p>
+                <p><strong>Para el vendedor:</strong> Gasta combustible y tiempo en visitas que no generan venta. No
+                    sabe si el cliente necesita producto hasta llegar. No puede ofrecer productos adicionales fuera del
+                    día de ruta.</p>
+                <p><strong>Para el consumidor:</strong> Debe esperar la visita programada aunque necesite agua hoy. No
+                    puede comprar cuando se le termina el producto. Pierde ventas potenciales por no tener stock.</p>
+            </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- Nuestra Solución -->
+        <section>
+            <h2>
+                <span class="icon agua">💡</span>
+                Nuestra Solución
+            </h2>
+            <div class="card agua">
+                <p><strong>aguaFress</strong> es una plataforma marketplace que conecta directamente vendedor y
+                    consumidor:</p>
+                <ol>
+                    <li>El consumidor puede pedir agua/soda en cualquier momento desde su app/web</li>
+                    <li>El vendedor recibe los pedidos y planifica su ruta diaria</li>
+                    <li>Antes de salir, el consumidor confirma o cancela la visita (evita viajes improductivos)</li>
+                    <li>El vendedor tiene una ruta optimizada con navegación GPS</li>
+                </ol>
+            </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- Diferencial Competitivo -->
+        <section>
+            <h2>
+                <span class="icon magenta">🏆</span>
+                Nuestro Diferencial vs Apps Existentes en Argentina
+            </h2>
+
+            <div class="card magenta">
+                <h3 class="card-title">¿Qué nos hace únicos?</h3>
+                <div class="features-grid">
+                    <div class="feature-item">
+                        <div class="icon">🛒</div>
+                        <h4>Pedido directo del consumidor</h4>
+                        <p>Ninguna app en Argentina permite que el cliente final realice pedidos directamente al
+                            distribuidor.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon">✅</div>
+                        <h4>Confirmación de visita</h4>
+                        <p>Sistema único que evita viajes improductivos - el cliente confirma o cancela antes de salir.
+                        </p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon">📅</div>
+                        <h4>Pedidos fuera del día de ruta</h4>
+                        <p>El consumidor puede pedir en cualquier momento, no solo cuando el vendedor pasa.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon">🗺️</div>
+                        <h4>Ruta inteligente con GPS</h4>
+                        <p>Generación automática de rutas diarias con integración directa a Google Maps/Waze.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon">⭐</div>
+                        <h4>Valoraciones y favoritos</h4>
+                        <p>Sistema de estrellas y productos favoritos como cualquier e-commerce moderno.</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon">📱</div>
+                        <h4>Marketplace bidireccional</h4>
+                        <p>No somos software interno - somos un marketplace que conecta dos partes.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 class="card-title">Tabla comparativa</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Funcionalidad</th>
+                            <th>JR-Agua</th>
+                            <th>Gestión Aguas</th>
+                            <th>App Delivery</th>
+                            <th>aguaFress</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Cliente pide directamente</td>
+                            <td>❌</td>
+                            <td>❌</td>
+                            <td>❌</td>
+                            <td style="color: var(--agua-dark); font-weight: bold;">✅</td>
+                        </tr>
+                        <tr>
+                            <td>Confirmación de visita</td>
+                            <td>❌</td>
+                            <td>❌</td>
+                            <td>❌</td>
+                            <td style="color: var(--agua-dark); font-weight: bold;">✅</td>
+                        </tr>
+                        <tr>
+                            <td>Pedidos fuera del día de ruta</td>
+                            <td>❌</td>
+                            <td>❌</td>
+                            <td>❌</td>
+                            <td style="color: var(--agua-dark); font-weight: bold;">✅</td>
+                        </tr>
+                        <tr>
+                            <td>Valoraciones de productos</td>
+                            <td>❌</td>
+                            <td>❌</td>
+                            <td>❌</td>
+                            <td style="color: var(--agua-dark); font-weight: bold;">✅</td>
+                        </tr>
+                        <tr>
+                            <td>Favoritos</td>
+                            <td>❌</td>
+                            <td>❌</td>
+                            <td>❌</td>
+                            <td style="color: var(--agua-dark); font-weight: bold;">✅</td>
+                        </tr>
+                        <tr>
+                            <td>Ruta automática con GPS</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td>✅</td>
+                            <td style="color: var(--agua-dark); font-weight: bold;">✅+</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- Requisitos Académicos -->
+        <section>
+            <h2>
+                <span class="icon amarillo">📚</span>
+                Requisitos Académicos
+            </h2>
+
+            <div class="card amarillo">
+                <h3 class="card-title">🎯 Cómo implementamos cada requisito</h3>
+
+                <h3>Base de Datos - Los 3 motores</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Motor</th>
+                            <th>Propósito</th>
+                            <th>Datos</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="highlight agua">PostgreSQL</span></td>
+                            <td>Transaccional principal</td>
+                            <td>Usuarios, Productos, Pedidos, Facturación, Rutas</td>
+                        </tr>
+                        <tr>
+                            <td><span class="highlight magenta">MySQL</span></td>
+                            <td>Analytics y Reporting</td>
+                            <td>Historial de ventas, Métricas, Reportes OLAP</td>
+                        </tr>
+                        <tr>
+                            <td><span class="highlight amarillo">MongoDB</span></td>
+                            <td>NoSQL y Logs</td>
+                            <td>Mensajes, Notificaciones, Activity Logs</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 style="margin-top: 20px;">Backend - NestJS + JWT + Passport + Prisma</h3>
+                <div class="tech-stack">
+                    <span class="tech-tag">NestJS v10+</span>
+                    <span class="tech-tag">Prisma v5+</span>
+                    <span class="tech-tag">Passport.js</span>
+                    <span class="tech-tag">JWT</span>
+                    <span class="tech-tag">Google OAuth</span>
+                    <span class="tech-tag">TypeORM</span>
+                    <span class="tech-tag">Mongoose</span>
+                </div>
+
+                <h3 style="margin-top: 20px;">Frontend</h3>
+                <div class="tech-stack">
+                    <span class="tech-tag">React v18+</span>
+                    <span class="tech-tag">TypeScript</span>
+                    <span class="tech-tag">React Native 0.74+ (V2.0)</span>
+                </div>
+
+                <h3 style="margin-top: 20px;">Infraestructura</h3>
+                <div class="tech-stack">
+                    <span class="tech-tag">Docker</span>
+                    <span class="tech-tag">Docker Compose</span>
+                    <span class="tech-tag">Redis (cache)</span>
+                    <span class="tech-tag">Mailhog (testing)</span>
+                    <span class="tech-tag">Railway/Vercel (futuro)</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 class="card-title">🏗️ Arquitectura Multi-Database en NestJS</h3>
+                <p>En un mismo proyecto NestJS, cada módulo se conecta a una DB específica:</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Módulo</th>
+                            <th>Base de Datos</th>
+                            <th>Entidades</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Auth Module</td>
+                            <td><span class="highlight agua">PostgreSQL</span></td>
+                            <td>Users, Roles, Tokens</td>
+                        </tr>
+                        <tr>
+                            <td>Products Module</td>
+                            <td><span class="highlight agua">PostgreSQL</span></td>
+                            <td>Products, Categories, Images</td>
+                        </tr>
+                        <tr>
+                            <td>Orders Module</td>
+                            <td><span class="highlight agua">PostgreSQL</span></td>
+                            <td>Orders, OrderItems, Payments</td>
+                        </tr>
+                        <tr>
+                            <td>Analytics Module</td>
+                            <td><span class="highlight magenta">MySQL</span></td>
+                            <td>SalesHistory, Reports, Metrics</td>
+                        </tr>
+                        <tr>
+                            <td>Notifications Module</td>
+                            <td><span class="highlight amarillo">MongoDB</span></td>
+                            <td>Messages, PushNotifications, Logs</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- Funcionalidades V1.0 y V2.0 -->
+        <section>
+            <h2>
+                <span class="icon agua">⚡</span>
+                Funcionalidades por Versión
+            </h2>
+
+            <div class="card agua">
+                <h3 class="card-title"><span class="version-badge v1">V1.0</span> MVP - Web</h3>
+
+                <h3>Vista del Consumidor</h3>
+                <ul>
+                    <li>Registro/Login (email/password + Google OAuth)</li>
+                    <li>Perfil: Nombre, Apellido, DNI, dirección de entrega, dirección de facturación</li>
+                    <li>Catálogo de productos: foto, marca, volumen, precio sin IVA, precio final, stock, valoraciones
+                        (5 estrellas), favoritos</li>
+                    <li>Carrito de compras: cantidad, precio unitario, total</li>
+                    <li>Pago opcional: anticipado o contra entrega</li>
+                    <li>Confirmación de visitas programadas</li>
+                </ul>
+
+                <h3>Vista del Vendedor</h3>
+                <ul>
+                    <li>Carga de productos con fotos</li>
+                    <li>Informes de ventas por cliente y por producto</li>
+                    <li>Historial de compras por cliente</li>
+                    <li>Mapa interactivo con navegación GPS</li>
+                    <li>Listado de pedidos confirmados: cliente, producto, cantidad, estado, teléfono, dirección, botón
+                        navegación</li>
+                    <li>Envío de facturas digitales</li>
+                </ul>
+            </div>
+
+            <div class="card magenta">
+                <h3 class="card-title"><span class="version-badge v2">V2.0</span> Futuro - App Móvil</h3>
+                <ul>
+                    <li>Registro de empresas (CUIT, Razón Social, IVA Responsable Inscripto)</li>
+                    <li>Pago obligatorio anticipado con verificación</li>
+                    <li>Chat en tiempo real entre vendedor y cliente</li>
+                    <li><strong>Inteligencia Artificial:</strong></li>
+                    <ul>
+                        <li>Análisis de ventas</li>
+                        <li>Comando por voz para navegación</li>
+                        <li>Generador de rutas optimizadas</li>
+                        <li>Generador de informes automáticos</li>
+                    </ul>
+                </ul>
+            </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- Equipo -->
+        <section>
+            <h2>
+                <span class="icon magenta">👥</span>
+                Distribución del Equipo (5 personas)
+            </h2>
+
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="icon">🔐</div>
+                    <h4>Dev 1 - Auth + Users</h4>
+                    <p>Login, JWT, Passport, Google OAuth, gestión de usuarios</p>
+                </div>
+                <div class="feature-item">
+                    <div class="icon">📦</div>
+                    <h4>Dev 2 - Products + Catalog</h4>
+                    <p>Carga de productos, fotos, catálogos, búsquedas, favoritos</p>
+                </div>
+                <div class="feature-item">
+                    <div class="icon">🛒</div>
+                    <h4>Dev 3 - Orders + Payments</h4>
+                    <p>Carrito, pedidos, pagos, estados, notificaciones</p>
+                </div>
+                <div class="feature-item">
+                    <div class="icon">📊</div>
+                    <h4>Dev 4 - Frontend Vendedor</h4>
+                    <p>Dashboard, mapa, informes, listado de pedidos</p>
+                </div>
+                <div class="feature-item">
+                    <div class="icon">👤</div>
+                    <h4>Dev 5 - Frontend Consumidor</h4>
+                    <p>Catálogo, carrito, perfil, confirmación de visitas</p>
+                </div>
+            </div>
+
+            <p style="text-align: center; color: var(--gris); margin-top: 16px; font-size: 12px;">* Todos participan en:
+                Testing, Documentación, Integración, Docker</p>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- Por qué este proyecto -->
+        <section>
+            <h2>
+                <span class="icon amarillo">🎓</span>
+                ¿Por qué este proyecto es ideal para las 3 materias?
+            </h2>
+
+            <div class="card amarillo">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Materia</th>
+                            <th>Aplicación en aguaFress</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Desarrollo Full Stack</strong></td>
+                            <td>NestJS (backend) + React (frontend) + 3 DBs (PostgreSQL + MySQL + MongoDB)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Arquitectura de Software</strong></td>
+                            <td>Diseño modular, separación de responsabilidades, multi-database, Docker</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Proyecto Integrador</strong></td>
+                            <td>Integración de tecnologías, trabajo en equipo, metodología ágil, presentación</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- Próximos pasos -->
+        <section>
+            <h2>
+                <span class="icon agua">🚀</span>
+                Próximos Pasos
+            </h2>
+
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="icon">✅</div>
+                    <h4>1. Aprobar idea</h4>
+                    <p>Validar con el equipo</p>
+                </div>
+                <div class="feature-item">
+                    <div class="icon">📄</div>
+                    <h4>2. Documentos</h4>
+                    <p>Generar specs y docs</p>
+                </div>
+                <div class="feature-item">
+                    <div class="icon">🐳</div>
+                    <h4>3. Docker</h4>
+                    <p>Crear docker-compose</p>
+                </div>
+                <div class="feature-item">
+                    <div class="icon">📦</div>
+                    <h4>4. NestJS + Prisma</h4>
+                    <p>Inicializar backend</p>
+                </div>
+                <div class="feature-item">
+                    <div class="icon">🔐</div>
+                    <h4>5. Auth</h4>
+                    <p>JWT + Passport</p>
+                </div>
+                <div class="feature-item">
+                    <div class="icon">⚛️</div>
+                    <h4>6. React</h4>
+                    <p>Iniciar frontend</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <p><strong>aguaFress</strong> - Proyecto Full Stack</p>
+            <p class="team">Equipo de Desarrollo (5 personas)</p>
+            <p>3 Materias Integradas</p>
+        </footer>
+    </div>
+</body>
+
+</html>
