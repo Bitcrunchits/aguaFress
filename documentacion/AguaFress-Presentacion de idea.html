@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>AguaFress - Documentación del Proyecto</title>
+    <style>
+        /* Reset y configuración para impresión A4 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #e2e8f0;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            line-height: 1.5;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Contenedor principal con tamaño A4 */
+        .document {
+            max-width: 210mm;
+            width: 100%;
+            background: white;
+            box-shadow: 0 20px 35px -10px rgba(0,0,0,0.2);
+            margin: 0 auto;
+            padding: 12mm 15mm;
+            border-radius: 4px;
+        }
+
+        /* Estilos tipográficos */
+        h1 {
+            font-size: 28px;
+            color: #0a3b5c;
+            margin-top: 0;
+            margin-bottom: 8px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        h2 {
+            font-size: 22px;
+            color: #1e4a6b;
+            border-left: 5px solid #2c7da0;
+            padding-left: 14px;
+            margin: 24px 0 14px 0;
+            font-weight: 600;
+        }
+
+        h3 {
+            font-size: 18px;
+            color: #2c3e50;
+            margin: 18px 0 10px 0;
+            font-weight: 600;
+            display: inline-block;
+            border-bottom: 2px solid #a0c4d7;
+            padding-bottom: 3px;
+        }
+
+        h4 {
+            font-size: 16px;
+            color: #2c3e50;
+            margin: 12px 0 6px 0;
+            font-weight: 600;
+        }
+
+        p {
+            margin-bottom: 12px;
+            text-align: justify;
+            color: #1f2d3d;
+        }
+
+        .subtitulo {
+            font-size: 16px;
+            color: #2c7da0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #cbd5e1;
+            padding-bottom: 8px;
+        }
+
+        /* listas */
+        ul, ol {
+            margin: 8px 0 16px 25px;
+        }
+
+        li {
+            margin-bottom: 6px;
+            text-align: justify;
+        }
+
+        /* Tablas responsivas */
+        .tabla-contenedor {
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            background-color: #fff;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        th {
+            background-color: #eef2f6;
+            border: 1px solid #cbd5e1;
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: 600;
+            color: #1e4a6b;
+        }
+
+        td {
+            border: 1px solid #cbd5e1;
+            padding: 8px;
+            vertical-align: top;
+        }
+
+        /* badges / cards para equipo */
+        .equipo-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 16px 0 8px;
+        }
+
+        .integrante {
+            background: #f8fafc;
+            border-left: 4px solid #2c7da0;
+            padding: 8px 12px;
+            flex: 1 1 180px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .integrante strong {
+            color: #0f3b5c;
+            display: block;
+            font-size: 15px;
+        }
+
+        .rol {
+            font-size: 13px;
+            color: #2c7da0;
+            font-weight: 500;
+        }
+
+        /* diferenciales */
+        .diferencial {
+            background: #f0f9ff;
+            border-radius: 20px;
+            padding: 12px 18px;
+            margin: 12px 0;
+            border-left: 6px solid #2c7da0;
+        }
+
+        /* pie de página para impresión */
+        .footer-nota {
+            margin-top: 35px;
+            font-size: 11px;
+            text-align: center;
+            color: #5b6e8c;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 15px;
+        }
+
+        /* saltos de página manuales para impresión */
+        .page-break {
+            page-break-before: always;
+            margin-top: 10px;
+        }
+
+        /* evitar que se rompan elementos internos mal */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+                margin: 0;
+            }
+            .document {
+                max-width: 100%;
+                box-shadow: none;
+                padding: 1.2cm 1.5cm;
+                margin: 0;
+            }
+            h2, h3, .equipo-grid, .tabla-contenedor {
+                break-inside: avoid;
+            }
+            .page-break {
+                break-before: page;
+            }
+            .integrante {
+                break-inside: avoid;
+            }
+            a {
+                text-decoration: none;
+                color: black;
+            }
+        }
+
+        /* iconos sutiles */
+        .icono-titulo::before {
+            content: "💧 ";
+            font-size: 1.1em;
+        }
+
+        .badge-version {
+            background: #1e4a6b;
+            color: white;
+            font-size: 12px;
+            border-radius: 30px;
+            padding: 4px 12px;
+            display: inline-block;
+            margin-left: 12px;
+            vertical-align: middle;
+        }
+
+        hr {
+            margin: 20px 0;
+            border: 0;
+            height: 1px;
+            background: linear-gradient(90deg, #cbd5e1, transparent);
+        }
+    </style>
+</head>
+<body>
+<div class="document">
+    <!-- Encabezado principal -->
+    <h1>💧 AguaFress <span style="font-size: 18px; font-weight: normal;">Plataforma de Pedidos y Gestión para Distribuidores de Agua y Soda</span></h1>
+    <div class="subtitulo">
+        Versión V1.0 – Plataforma Web (MVP) | V2.0 – Aplicación Mobile (futuro)<br>
+        Fecha: Abril 2026 | Carrera: Desarrollo Full Stack
+    </div>
+
+    <!-- Equipo de desarrollo -->
+    <div style="background: #f1f5f9; padding: 10px 16px; border-radius: 24px; margin-bottom: 24px;">
+        <strong>👥 Equipo de desarrollo:</strong> Alvarado Milagros, Burdiles Adrián, Lagos Lucas, Spagnolo Emiliano, Soto Agustín — <em>Estudiantes Full Stack Developer</em>
+    </div>
+
+    <!-- ========== 1. INTRODUCCIÓN ========== -->
+    <h2>1. Introducción</h2>
+    <p>El presente documento describe el proyecto <strong>AguaFress</strong>, una plataforma full stack orientada a la digitalización del proceso de venta y distribución de agua y soda en Argentina. El objetivo principal es reemplazar el modelo tradicional de visitas fijas por una solución tecnológica que conecte, de manera eficiente, a consumidores finales con distribuidores, optimizando rutas, tiempos y recursos.</p>
+    <p>El proyecto integra contenidos de tres materias: <strong>Desarrollo Full Stack, Arquitectura de Software y Proyecto Integrador</strong>, demostrando el uso de múltiples tecnologías de backend, frontend, bases de datos y herramientas de infraestructura.</p>
+
+    <!-- ========== 2. CONTEXTO Y PROBLEMA ========== -->
+    <h2>2. Contexto y Problema</h2>
+    <p>En la actualidad, la mayoría de los distribuidores de agua y soda en Argentina trabajan con un esquema de visitas semanales fijas: el vendedor tiene un día asignado por zona y recorre todos los domicilios independientemente de si el cliente necesita o no producto. No existe un canal digital mediante el cual el cliente final pueda realizar pedidos directos al distribuidor.</p>
+    <ul>
+        <li><strong>Para el vendedor:</strong> uso ineficiente de combustible y tiempo en visitas que no generan ventas; falta de información previa sobre la necesidad real del cliente; dificultad para ofrecer productos adicionales fuera del día de ruta.</li>
+        <li><strong>Para el consumidor:</strong> debe esperar la visita programada aunque necesite agua con urgencia; no puede realizar pedidos cuando se queda sin producto; se pierden potenciales ventas por falta de stock al momento de la visita.</li>
+    </ul>
+
+    <!-- ========== 3. PROPUESTA DE SOLUCIÓN ========== -->
+    <h2>3. Propuesta de Solución: AguaFress</h2>
+    <p>AguaFress se plantea como una plataforma marketplace que conecta directamente a vendedores y consumidores, permitiendo:</p>
+    <ul>
+        <li>Que el consumidor realice pedidos de agua y soda en cualquier momento desde una aplicación web o móvil.</li>
+        <li>Que el vendedor reciba los pedidos en un panel de gestión y planifique su ruta diaria de manera eficiente.</li>
+        <li>Que, antes de salir a repartir, el consumidor pueda confirmar o cancelar la visita, evitando viajes improductivos.</li>
+        <li>Que el vendedor disponga de una ruta optimizada con navegación GPS, integrándose con Google Maps o Waze.</li>
+    </ul>
+    <p>De este modo, AguaFress introduce un modelo más flexible y eficiente tanto para el distribuidor como para el cliente final.</p>
+
+    <!-- ========== 4. DIFERENCIAL COMPETITIVO ========== -->
+    <h2>4. Diferencial Competitivo</h2>
+    <div class="diferencial">
+        <p>✅ <strong>Pedido directo del consumidor al distribuidor:</strong> El cliente final puede realizar pedidos directamente, algo que actualmente no se encuentra disponible en apps similares.<br>
+        ✅ <strong>Confirmación de visita:</strong> Antes de que el vendedor inicie su recorrido, el cliente confirma o cancela la visita, evitando desplazamientos innecesarios.<br>
+        ✅ <strong>Pedidos fuera del día de ruta:</strong> El consumidor puede solicitar productos en cualquier momento, no solo cuando el vendedor pasa según agenda fija.<br>
+        ✅ <strong>Ruta inteligente con GPS:</strong> Generación automática de rutas diarias con integración a herramientas de navegación (Google Maps/Waze).<br>
+        ✅ <strong>Valoraciones y favoritos:</strong> Posibilidad de calificar productos (sistema de estrellas) y marcar productos favoritos.<br>
+        ✅ <strong>Marketplace bidireccional:</strong> No es solo un software interno; conecta activamente a ambas partes (vendedor–cliente).</p>
+    </div>
+
+    <!-- ========== 5. REQUISITOS ACADÉMICOS Y TECNOLÓGICOS ========== -->
+    <h2>5. Requisitos Académicos y Tecnológicos</h2>
+    <p>El proyecto fue diseñado para cumplir con requisitos académicos específicos, integrando tres motores de bases de datos, un backend robusto y un frontend moderno.</p>
+
+    <h3>5.1. Bases de Datos: Tres Motores</h3>
+    <ul>
+        <li><strong>PostgreSQL (Transaccional principal):</strong> Usuarios, Productos, Pedidos, Facturación, Rutas.</li>
+        <li><strong>MySQL (Analytics y Reporting):</strong> Historial de ventas, Métricas, Reportes OLAP.</li>
+        <li><strong>MongoDB (NoSQL y Logs):</strong> Mensajes, Notificaciones, Activity Logs.</li>
+    </ul>
+
+    <h3>5.2. Backend</h3>
+    <p>Implementado con <strong>NestJS</strong> y un enfoque modular. Tecnologías principales: NestJS v10+, Prisma v5+, Passport.js, JWT, Google OAuth, TypeORM, Mongoose.</p>
+    <p><strong>Arquitectura multi-base de datos en NestJS:</strong> cada módulo se conecta a una BD específica:<br>
+    Auth Module → PostgreSQL, Products Module → PostgreSQL, Orders Module → PostgreSQL, Analytics Module → MySQL, Notifications Module → MongoDB.</p>
+
+    <h3>5.3. Frontend</h3>
+    <p>Web (V1.0): React v18+, TypeScript. Mobile (V2.0 – Futuro): React Native 0.74+.</p>
+
+    <h3>5.4. Infraestructura</h3>
+    <p>Docker, Docker Compose, Redis (cache), Mailhog (testing de correos), Railway / Vercel (futuro).</p>
+
+    <!-- Tabla resumen tecnologías -->
+    <div class="tabla-contenedor">
+        <table>
+            <thead>
+                <tr><th>Capa</th><th>Tecnologías principales</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Backend</td><td>NestJS, Prisma, Passport, JWT, OAuth, TypeORM, Mongoose</td></tr>
+                <tr><td>Frontend Web</td><td>React 18, TypeScript, Context API / React Router</td></tr>
+                <tr><td>Bases de Datos</td><td>PostgreSQL, MySQL, MongoDB</td></tr>
+                <tr><td>Infraestructura</td><td>Docker, Docker Compose, Redis, Mailhog</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ========== 6. FUNCIONALIDADES POR VERSIÓN ========== -->
+    <h2>6. Funcionalidades por Versión</h2>
+    <h3>6.1. Versión 1.0 – MVP Web</h3>
+    <ul>
+        <li><strong>Vista del Consumidor:</strong> Registro/login (email + Google OAuth); perfil con datos personales, dirección de entrega y facturación; catálogo con foto, marca, volumen, precio sin IVA y final, stock disponible; valoraciones (5 estrellas); productos favoritos; carrito de compras; modalidades de pago (anticipado opcional / contra entrega); confirmación de visitas programadas.</li>
+        <li><strong>Vista del Vendedor:</strong> Carga y administración de productos con imágenes; informes de ventas por cliente/producto; historial de compras por cliente; mapa interactivo con navegación GPS; listado de pedidos confirmados con cliente, productos, cantidad, estado, teléfono y dirección; envío de facturas digitales.</li>
+    </ul>
+    <h3>6.2. Versión 2.0 – Futuro App Móvil</h3>
+    <ul>
+        <li>Registro de empresas (CUIT, Razón Social, condición frente al IVA).</li>
+        <li>Pago anticipado obligatorio con verificación.</li>
+        <li>Chat en tiempo real entre vendedor y cliente.</li>
+        <li>Módulos basados en Inteligencia Artificial: análisis de ventas, comandos por voz para navegación, generación de rutas optimizadas, informes automáticos.</li>
+    </ul>
+
+    <!-- ========== 7. ORGANIZACIÓN DEL EQUIPO ========== -->
+    <h2>7. Organización del Equipo</h2>
+    <div class="equipo-grid">
+        <div class="integrante"><strong>Dev 1 – Auth + Users</strong><span class="rol">Login, JWT, Passport, Google OAuth, gestión de usuarios y roles.</span></div>
+        <div class="integrante"><strong>Dev 2 – Products + Catalog</strong><span class="rol">Carga de productos e imágenes, gestión del catálogo, búsquedas y favoritos.</span></div>
+        <div class="integrante"><strong>Dev 3 – Orders + Payments</strong><span class="rol">Carrito de compras, pedidos, pagos, estados de pedido y notificaciones.</span></div>
+        <div class="integrante"><strong>Dev 4 – Frontend Vendedor</strong><span class="rol">Dashboard, mapa y rutas, informes y listado de pedidos.</span></div>
+        <div class="integrante"><strong>Dev 5 – Frontend Consumidor</strong><span class="rol">Catálogo, carrito, perfil, confirmación de visitas y experiencia de compra.</span></div>
+    </div>
+    <p><em>Además, todos los integrantes participan en testing, documentación, integración entre módulos y configuración de Docker.</em></p>
+
+    <!-- ========== 8. RELACIÓN CON LAS MATERIAS ========== -->
+    <h2>8. Relación con las Materias</h2>
+    <ul>
+        <li><strong>Desarrollo Full Stack:</strong> Implementación de backend en NestJS, frontend en React e integración de tres motores de bases de datos.</li>
+        <li><strong>Arquitectura de Software:</strong> Diseño modular, separación de responsabilidades, arquitectura multi-base de datos, uso de contenedores Docker.</li>
+        <li><strong>Proyecto Integrador:</strong> Integración de tecnologías diversas, trabajo colaborativo, metodología ágil y presentación formal del proyecto.</li>
+    </ul>
+
+    <!-- ========== 9. PRÓXIMOS PASOS ========== -->
+    <h2>9. Próximos Pasos</h2>
+    <ol>
+        <li><strong>Aprobación de la idea:</strong> Validación del alcance con el equipo docente.</li>
+        <li><strong>Documentación:</strong> Elaboración de especificaciones funcionales y técnicas.</li>
+        <li><strong>Infraestructura en Docker:</strong> Creación del archivo docker-compose y configuración de servicios.</li>
+        <li><strong>Backend (NestJS + Prisma):</strong> Inicialización del proyecto, definición de módulos y modelos.</li>
+        <li><strong>Módulo de Autenticación:</strong> Implementación de JWT, Passport y Google OAuth.</li>
+        <li><strong>Frontend (React):</strong> Desarrollo de la interfaz web para consumidores y vendedores.</li>
+    </ol>
+
+    <!-- ========== 10. CONCLUSIONES ========== -->
+    <h2>10. Conclusiones</h2>
+    <p>AguaFress busca modernizar y optimizar el modelo tradicional de distribución de agua y soda en Argentina, aportando mayor eficiencia operativa para los distribuidores y mayor comodidad/flexibilidad para los consumidores. Es una solución tecnológica completa que integra backend, frontend, múltiples bases de datos y herramientas de infraestructura. Además, se alinea con los objetivos académicos de las materias involucradas, permitiendo al equipo aplicar en un caso real los conceptos de desarrollo full stack, arquitectura de software y gestión de proyectos.</p>
+
+    <hr>
+
+    <!-- Pie de página con datos de versión y cita técnica -->
+    <div class="footer-nota">
+        📄 Documento técnico - AguaFress MVP · Desarrollo Full Stack · Impresión compatible A4<br>
+        ⚙️ Repositorio y planificación: arquitectura multi-BD, NestJS, React, Docker. Versión 1.0 – Abril 2026.
+    </div>
+</div>
+</body>
+</html>
