@@ -65,11 +65,36 @@ AguaFress es una plataforma marketplace web que conecta directamente vendedores 
 
 ## 3. Requerimientos Funcionaes
 
+### 3.0 Super Admin (V1.0 - NUEVO)
+
+| ID | Requerimiento | Descripción | Prioridad |
+|----|--------------|-------------|-----------|
+| SADMIN-01 | Dashboard métricas | Vista principal con resumen de plataforma | Alta |
+| SADMIN-02 | Listado vendedores | Ver todos los vendedores registrados | Alta |
+| SADMIN-03 | Activar vendedor | Aprobar registro de nuevo vendedor | Alta |
+| SADMIN-04 | Métricas vendedor | Ver ventas globales (diarias/mensuales/anuales) | Alta |
+| SADMIN-05 | Promedio por pedido | Ver promedio de ticket | Alta |
+| SADMIN-06 | Clientes por vendedor | Ver cantidad de clientes (#) | Alta |
+| SADMIN-07 | Suspensión cuenta | Inactivar vendedor por mora | Alta |
+| SADMIN-08 | Reactivación automática | Activar al detectar pago electrónico | Alta |
+| SADMIN-09 | Ver detalle vendedor | Acceder a métricas de un vendedor específico | Media |
+
+### 3.0.1 Vendedor - Estados y QR (V1.0 - NUEVO)
+
+| ID | Requerimiento | Descripción | Prioridad |
+|----|--------------|-------------|-----------|
+| VEND-12 | Estado activo/inactivo | Cuenta habilitada o deshabilitada | Alta |
+| VEND-13 | Generar QR código | Generar QR para compartir perfil | Alta |
+| VEND-14 | QR con enlace público | URL al catálogo público del vendedor | Alta |
+| VEND-15 | Editar fotos productos | Herramienta de edición (recortar, rotar) | Alta |
+| VEND-16 | Compresión server-side | Optimizar imágenes para renderizado | Alta |
+
 ### 3.1 Autenticación y Usuarios
 
 | ID | Requerimiento | Descripción | Prioridad |
 |----|--------------|-------------|-----------|
-| AUTH-01 | Registro de usuarios | Solo admins crean usuarios | Alta |
+| AUTH-01 | Registro de usuarios | Admins crean usuarios (clientes) | Alta |
+| AUTH-01B | Autoregistro vendedor | Vendedor se registra solo, espera activación | Alta |
 | AUTH-02 | Login email/password | Autenticación tradicional | Alta |
 | AUTH-03 | Login Google OAuth | Autenticación con Google | Alta |
 | AUTH-04 | Recuperación contraseña | Reset por email | Media |
@@ -293,11 +318,31 @@ src/
 │   ├── analytics.service.ts
 │   └── analytics.module.ts
 │
-└── notifications/              # Notificaciones (MongoDB)
+├── notifications/              # Notificaciones (MongoDB)
     ├── notifications.controller.ts
     ├── notifications.service.ts
     ├── notifications.module.ts
     └── schemas/
+│
+├── super-admin/                 # Administración SUPER_ADMIN (NUEVO)
+│   ├── super-admin.controller.ts
+│   ├── super-admin.service.ts
+│   ├── super-admin.module.ts
+│   ├── entities/
+│   │   └── metrics.entity.ts
+│   └── dto/
+│
+├── qr/                          # Generación QR (NUEVO)
+│   ├── qr.controller.ts
+│   ├── qr.service.ts
+│   ├── qr.module.ts
+│   └── dto/
+│
+└── images/                     # Editor de imágenes (NUEVO)
+    ├── images.controller.ts
+    ├── images.service.ts
+    ├── images.module.ts
+    └── dto/
 ```
 
 ### 5.3 Modelo de Datos Entity-Relationship
@@ -344,9 +389,17 @@ src/
 ```typescript
 // Roles de usuario
 export enum UserRole {
-  ADMIN = 'admin',      // Superusuario (plataforma)
-  VENDEDOR = 'vendedor', // Owner de cartera
-  CLIENTE = 'cliente'   // Consumidor final
+  SUPER_ADMIN = 'super_admin', // Administrador de plataforma
+  VENDEDOR = 'vendedor',   // Owner de cartera
+  CLIENTE = 'cliente'     // Consumidor final
+}
+
+// Estado de cuenta de vendedor
+export enum VendedorStatus {
+  PENDIENTE = 'pendiente',  // Esperando activación
+  ACTIVO = '_activo',      // Habilitado
+  INACTIVO = 'inactivo',  // Suspendido por mora
+  BLOQUEADO = 'bloqueado'   // Inhabilitado permanente
 }
 
 // Tipo de factura
@@ -374,6 +427,26 @@ export enum PaymentMethod {
 ---
 
 ## 6. API Endpoints
+
+### 6.0 SUPER ADMIN - Administración (NUEVO)
+
+| Método | Endpoint | Acceso | Descripción |
+|--------|----------|--------|-------------|
+| GET | /super-admin/dashboard | SUPER_ADMIN | Métricas globales de plataforma |
+| GET | /super-admin/vendedores | SUPER_ADMIN | Listar todos los vendedores |
+| GET | /super-admin/vendedores/pendientes | SUPER_ADMIN | Vendedores esperando activación |
+| POST | /super-admin/vendedores/:id/activar | SUPER_ADMIN | Activar cuenta de vendedor |
+| POST | /super-admin/vendedores/:id/suspender | SUPER_ADMIN | Suspender cuenta por mora |
+| GET | /super-admin/vendedores/:id/metricas | SUPER_ADMIN | Métricas de vendedor específico |
+| GET | /super-admin/vendedores/:id/clientes | SUPER_ADMIN | Cantidad de clientes (#) |
+
+### 6.0.1 AUTOREGISTRO VENDEDORES (NUEVO)
+
+| Método | Endpoint | Acceso | Descripción |
+|--------|----------|--------|-------------|
+| POST | /auth/register-vendedor | Público | Auto-registro de vendedor |
+| GET | /vendedor/pediente | PENDIENTE | Verificar estado de solicitud |
+| POST | /vendedor/verificar-pago | PENDIENTE | Verificar pago para reactivacion |
 
 ### 6.1 AUTH - Autenticación
 
@@ -445,6 +518,22 @@ export enum PaymentMethod {
 | GET | /analytics/ventas/cliente | VENDEDOR | Por cliente |
 | GET | /analytics/ventas/producto | VENDEDOR | Por producto |
 | GET | /analytics/historial/:cliente | VENDEDOR | Historial |
+
+### 6.9 QR - Código QR (NUEVO)
+
+| Método | Endpoint | Acceso | Descripción |
+|--------|----------|--------|-------------|
+| POST | /qr/generar | VENDEDOR | Generar QR con token único |
+| GET | /qr/:token | Público | Ver perfil público por QR |
+| GET | /qr/:token/productos | Público | Catálogo público |
+
+### 6.10 IMAGES - Editor de Imágenes (NUEVO)
+
+| Método | Endpoint | Acceso | Descripción |
+|--------|----------|--------|-------------|
+| POST | /images/upload | VENDEDOR | Subir imagen con compresión |
+| POST | /images/procesar | VENDEDOR | Aplicar edición (recortar, rotar) |
+| GET | /images/:id/thumbnail | Público | Obtener thumbnail |
 
 ### 6.8 NOTIFICATIONS - Notificaciones
 

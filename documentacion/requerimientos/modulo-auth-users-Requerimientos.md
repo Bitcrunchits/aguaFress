@@ -27,12 +27,36 @@
 
 | ID | Requerimiento | Prioridad | Descripción |
 |----|--------------|----------|-------------|
-| AUTH-01 | Registro de usuarios | Alta | Solo admins pueden crear usuarios |
+| AUTH-01 | Registro de usuarios | Alta | Solo admins pueden crear usuarios (clientes) |
+| AUTH-01B | Autoregistro vendedor | Alta | Vendedor se registra y quedaPendiente de activación |
 | AUTH-02 | Login con email/password | Alta | Inicio de sesión tradicional |
 | AUTH-03 | Login con Google OAuth | Alta | Inicio de sesión con cuenta Google |
 | AUTH-04 | Recuperación de contraseña | Media | Reset de password por email |
 | AUTH-05 | Renovación de token | Alta | Refresh JWT para mantener sesión |
 | AUTH-06 | Cierre de sesión | Media | Invalidar token |
+
+### 2.1.1 Super Admin (NUEVO V1.0)
+
+| ID | Requerimiento | Prioridad | Descripción |
+|----|--------------|----------|-------------|
+| SADMIN-01 | Dashboard métricas | Alta | Métricas globales de plataforma |
+| SADMIN-02 | Listado vendedores | Alta | Ver todos los vendedores |
+| SADMIN-03 | Activar vendedor | Alta | Aprobar registro pendiente |
+| SADMIN-04 | Suspender vendedor | Alta | Inactivar por mora |
+| SADMIN-05 | Ver métricas vendedor | Alta | Ventas globales de vendedor |
+| SADMIN-06 | Reactivación automática | Alta | Se activa al detectar pago |
+
+### 2.1.2 Vendedor - Estados y QR (NUEVO V1.0)
+
+| ID | Requerimiento | Prioridad | Descripción |
+|----|--------------|----------|-------------|
+| VEND-EST-01 | Estado pendiente | Alta | Esperando activación del super admin |
+| VEND-EST-02 | Estado activo | Alta | Cuenta habilitada |
+| VEND-EST-03 | Estado inactivo | Alta | Suspendido por mora |
+| VEND-QR-01 | Generar QR | Alta | Generar código QR para compartir |
+| VEND-QR-02 | Perfil público QR | Alta | Ver perfil vía QR |
+| VEND-IMG-01 | Subir fotos productos | Alta | Editor de imágenes |
+| VEND-IMG-02 | Compresión | Alta | Optimizar para renderizado |
 
 ### 2.2 Gestión de Perfiles (USERS)
 
@@ -136,6 +160,14 @@ export class User {
   @Column({ default: false })
   isVerified: boolean;
 
+  // Estado del vendedor (NUEVO V1.0)
+  @Column({ type: 'enum', enum: VendedorStatus, nullable: true })
+  status: VendedorStatus;
+
+  // Token único para QR público
+  @Column({ nullable: true })
+  qrToken: string;
+
   @CreateDateColumn()
   createdAt: Date;
 
@@ -145,7 +177,7 @@ export class User {
 
 // Enums
 export enum UserRole {
-  ADMIN = 'admin',
+  SUPER_ADMIN = 'super_admin',
   VENDEDOR = 'vendedor',
   CLIENTE = 'cliente'
 }
@@ -153,6 +185,13 @@ export enum UserRole {
 export enum TipoFactura {
   B = 'B',
   C = 'C'
+}
+
+export enum VendedorStatus {
+  PENDIENTE = 'pendiente',
+  ACTIVO = 'activo',
+  INACTIVO = 'inactivo',
+  BLOQUEADO = 'bloqueado'
 }
 ```
 
@@ -195,9 +234,21 @@ export enum TipoFactura {
 |--------|----------|--------|-------------|
 | POST | /auth/login | Público | Login email + password |
 | POST | /auth/register | ADMIN | Crear nuevo usuario |
+| POST | /auth/register-vendedor | Público | Autoregistro vendedor |
 | POST | /auth/google | Público | Login con Google |
 | POST | /auth/refresh | Usuario | Renovar JWT |
 | POST | /auth/logout | Usuario | Cerrar sesión |
+
+### 4.0 SUPER ADMIN - Administración (NUEVO)
+
+| Método | Endpoint | Acceso | Descripción |
+|--------|----------|--------|-------------|
+| GET | /super-admin/dashboard | SUPER_ADMIN | Métricas globales |
+| GET | /super-admin/vendedores | SUPER_ADMIN | Listar vendedores |
+| GET | /super-admin/vendedores/pendientes | SUPER_ADMIN | Pendientes activación |
+| POST | /super-admin/vendedores/:id/activar | SUPER_ADMIN | Activar vendedor |
+| POST | /super-admin/vendedores/:id/suspender | SUPER_ADMIN | Suspender vendedor |
+| GET | /super-admin/vendedores/:id/metricas | SUPER_ADMIN | Métricas de vendedor |
 
 ### 4.2 USERS - Gestión de Usuarios
 

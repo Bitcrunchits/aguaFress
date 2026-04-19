@@ -688,6 +688,20 @@
           <p>Timeline + Acciones</p>
         </div>
       </div>
+      <div class="columns-3" style="margin-top: 16px;">
+        <div class="mini-card mini-card-orange">
+          <div class="mini-card-title">7. Super Admin</div>
+          <p>Dashboard + métricas</p>
+        </div>
+        <div class="mini-card">
+          <div class="mini-card-title">8. Autoregistro</div>
+          <p>Vendedor pendiente</p>
+        </div>
+        <div class="mini-card mini-card-green">
+          <div class="mini-card-title">9. QR Código</div>
+          <p>Compartir perfil</p>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1240,7 +1254,7 @@
         </div>
       </div>
 
-      <div class="columns-2" style="margin-top: 30px;">
+      <div class="columns-3" style="margin-top: 30px;">
         <div class="mini-card mini-card-green">
           <div class="mini-card-title">VISTA CONSUMIDOR</div>
           <ul>
@@ -1260,7 +1274,347 @@
             <li>Mapa con GPS</li>
             <li>Navegar a cliente</li>
             <li>Gestionar productos</li>
-            <li>Reportes / Analytics</li>
+            <li>Generar QR código</li>
+          </ul>
+        </div>
+        <div class="mini-card" style="border-color: var(--neon-orange);">
+          <div class="mini-card-title" style="color: var(--neon-orange);">VISTA SUPER ADMIN</div>
+          <ul>
+            <li>Dashboard métricas</li>
+            <li>Listado vendedores</li>
+            <li>Activar vendedores</li>
+            <li>Ver métricas por vendedor</li>
+            <li>Suspender cuentas</li>
+            <li>Reactivación automática</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. DASHBOARD SUPER ADMIN -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-chip" style="background: var(--neon-orange);">7</div>
+      <h2 class="section-title">Dashboard Super Admin</h2>
+    </div>
+    <div class="section-body">
+      <p class="tagline">Vista del administrador de plataforma con métricas globales y gestión de vendedores.</p>
+      
+      <div class="wireframe">
+        <div class="wireframe-label">DASHBOARD SUPER ADMIN</div>
+        <div class="mock-content">
+          <div class="mock-nav">
+            <div class="mock-nav-left">
+              <div class="mock-logo">AF</div>
+              <div style="color: var(--text-main); font-weight: 600;">Panel Admin</div>
+            </div>
+            <div class="mock-user" style="background: var(--neon-orange);"></div>
+          </div>
+
+          <div class="mock-main" style="padding: 20px;">
+            <div class="mock-stats">
+              <div class="mock-stat">
+                <div class="mock-stat-value">24</div>
+                <div class="mock-stat-label">Vendedores activos</div>
+              </div>
+              <div class="mock-stat">
+                <div class="mock-stat-value">156</div>
+                <div class="mock-stat-label">Clientes totales</div>
+              </div>
+              <div class="mock-stat">
+                <div class="mock-stat-value">$2.4M</div>
+                <div class="mock-stat-label">Ventas mes</div>
+              </div>
+              <div class="mock-stat">
+                <div class="mock-stat-value">5</div>
+                <div class="mock-stat-label">Pendientes</div>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+              <div>
+                <h4 style="color: var(--neon-orange); margin-bottom: 10px;">Vendedores Registrados</h4>
+                <table class="mock-table">
+                  <thead>
+                    <tr>
+                      <th>Vendedor</th>
+                      <th>Clientes</th>
+                      <th>Ventas mes</th>
+                      <th>Estado</th>
+                      <th>Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Juan Pérez</td>
+                      <td>45</td>
+                      <td>$450K</td>
+                      <td><span class="badge badge-entregado">Activo</span></td>
+                      <td><span class="pill pill-magenta">Ver</span></td>
+                    </tr>
+                    <tr>
+                      <td>María López</td>
+                      <td>32</td>
+                      <td>$280K</td>
+                      <td><span class="badge badge-entregado">Activo</span></td>
+                      <td><span class="pill pill-magenta">Ver</span></td>
+                    </tr>
+                    <tr>
+                      <td>Carlos Gómez</td>
+                      <td>12</td>
+                      <td>---</td>
+                      <td><span class="badge badge-pendiente">Pendiente</span></td>
+                      <td><span class="pill pill-green">Activar</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div>
+                <h4 style="color: var(--neon-orange); margin-bottom: 10px;">Vendedores Pendientes</h4>
+                <div style="background: rgba(0,0,0,0.2); border-radius: 10px; padding: 16px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <div>
+                      <div style="color: var(--text-main);">Carlos Gómez</div>
+                      <div style="color: var(--text-muted); font-size: 0.8rem;">carlos@gomez.com</div>
+                    </div>
+                    <span class="pill pill-green">Activar</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
+                    <div>
+                      <div style="color: var(--text-main);">Ana Ruiz</div>
+                      <div style="color: var(--text-muted); font-size: 0.8rem;">ana@ruiz.com</div>
+                    </div>
+                    <span class="pill pill-green">Activar</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. AUTOREGISTRO VENDEDOR -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-chip" style="background: var(--neon-blue);">8</div>
+      <h2 class="section-title">Autoregistro Vendedor</h2>
+    </div>
+    <div class="section-body">
+      <p class="tagline">Formulario de autoregistro para vendedores. Queda pendiente hasta que super admin lo activa.</p>
+      
+      <div class="columns-2">
+        <div class="wireframe">
+          <div class="wireframe-label">REGISTRO VENDEDOR</div>
+          <div class="mock-content">
+            <div class="mock-hero">
+              <h3>Registrate como Vendedor</h3>
+              <p>Completá tus datos para solicitar acceso</p>
+            </div>
+            <div class="mock-form">
+              <div class="mock-input">
+                <div class="mock-input-label">Nombre completo</div>
+                <div class="mock-input-field"></div>
+              </div>
+              <div class="mock-input">
+                <div class="mock-input-label">Email</div>
+                <div class="mock-input-field"></div>
+              </div>
+              <div class="mock-input">
+                <div class="mock-input-label">Teléfono</div>
+                <div class="mock-input-field"></div>
+              </div>
+              <div class="mock-input">
+                <div class="mock-input-label">Ciudad / Localidad</div>
+                <div class="mock-input-field"></div>
+              </div>
+              <div class="mock-input">
+                <div class="mock-input-label">Zona de entrega</div>
+                <div class="mock-input-field"></div>
+              </div>
+              <div class="mock-input">
+                <div class="mock-input-label">Métodos de pago</div>
+                <div style="display: flex; gap: 8px; margin-top: 8px;">
+                  <span class="pill pill-blue">Efectivo</span>
+                  <span class="pill pill-blue">Transferencia</span>
+                  <span class="pill pill-blue">MercadoPago</span>
+                </div>
+              </div>
+              <div class="mock-btn">Solicitar Acceso</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wireframe">
+          <div class="wireframe-label">ESTADO PENDIENTE</div>
+          <div class="mock-content">
+            <div class="mock-hero">
+              <div style="font-size: 3rem; margin-bottom: 16px;">⏳</div>
+              <h3>Cuenta Pendiente</h3>
+              <p>Tu solicitud está siendo evaluada</p>
+            </div>
+            <div style="background: rgba(255,107,53,0.1); border: 1px solid var(--neon-orange); border-radius: 10px; padding: 20px; text-align: center;">
+              <div style="color: var(--neon-orange); font-weight: bold; margin-bottom: 8px;">Estado: PENDIENTE</div>
+              <div style="color: var(--text-muted); font-size: 0.9rem;">
+                Un administrador revisará tu solicitud y activará tu cuenta. Te notificaremos cuando esté lista.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. QR CÓDIGO -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-chip" style="background: var(--neon-green);">9</div>
+      <h2 class="section-title">QR Código - Compartir Perfil</h2>
+    </div>
+    <div class="section-body">
+      <p class="tagline">El vendedor genera un QR que los clientes escanean para acceder a su catálogo y sumarse a su cartera.</p>
+      
+      <div class="columns-2">
+        <div class="wireframe">
+          <div class="wireframe-label">_generar QR</div>
+          <div class="mock-content">
+            <div style="padding: 20px; text-align: center;">
+              <div style="color: var(--neon-blue); margin-bottom: 16px;">Generar Código QR</div>
+              <div style="background: white; border-radius: 10px; padding: 30px; display: inline-block; margin-bottom: 20px;">
+                <div style="width: 150px; height: 150px; background: black; display: flex; align-items: center; justify-content: center; font-size: 3rem;">
+                  ████
+                  <br/>████
+                </div>
+              </div>
+              <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px;">
+                Compartí este código con tus clientes para que puedan ver tus productos y hacerse clientes de tu cartera.
+              </p>
+              <div class="mock-btn">Descargar QR</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wireframe">
+          <div class="wireframe-label">VISTA POR QR (CLIENTE)</div>
+          <div class="mock-content">
+            <div class="mock-nav">
+              <div class="mock-nav-left">
+                <div class="mock-logo">AF</div>
+                <div style="color: var(--text-main); font-weight: 600;">Catálogo</div>
+              </div>
+            </div>
+            <div style="padding: 20px;">
+              <div style="text-align: center; margin-bottom: 20px;">
+                <div style="color: var(--neon-green); font-weight: bold;">Juan Pérez - Agua y Soda</div>
+                <div style="color: var(--text-muted); font-size: 0.85rem;">Entregas en Villa Crespo</div>
+              </div>
+              <div class="mock-grid">
+                <div class="mock-product">
+                  <div class="mock-product-img">🧴</div>
+                  <div class="mock-product-name">Botellón 20L</div>
+                  <div class="mock-product-price">$2.800</div>
+                  <div class="mock-product-btn">Agregar</div>
+                </div>
+                <div class="mock-product">
+                  <div class="mock-product-img">🥤</div>
+                  <div class="mock-product-name">Soda 2L</div>
+                  <div class="mock-product-price">$450</div>
+                  <div class="mock-product-btn">Agregar</div>
+                </div>
+              </div>
+              <div style="margin-top: 20px; text-align: center;">
+                <div class="mock-btn" style="width: 100%;">Ser Cliente de Juan</div>
+                <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 10px;">
+                  Al registrarte, Juan podrá gestionar tus pedidos
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLUJO COMPLETO -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-chip">🔄</div>
+      <h2 class="section-title">Flujo Completo de Usuario</h2>
+    </div>
+    <div class="section-body">
+      <p class="tagline">Recorrido completo desde que el consumidor hace un pedido hasta la entrega.</p>
+      
+      <div class="flow-diagram">
+        <div class="flow-step">
+          <div style="color: var(--neon-blue);">1. Login</div>
+          <small>Auth</small>
+        </div>
+        <span class="flow-arrow">⟶</span>
+        <div class="flow-step">
+          <div style="color: var(--neon-green);">2. Catálogo</div>
+          <small>Ver productos</small>
+        </div>
+        <span class="flow-arrow">⟶</span>
+        <div class="flow-step">
+          <div style="color: var(--neon-orange);">3. Carrito</div>
+          <small>Agregar items</small>
+        </div>
+        <span class="flow-arrow">⟶</span>
+        <div class="flow-step">
+          <div style="color: var(--neon-magenta);">4. Checkout</div>
+          <small>Pago + Confirmar</small>
+        </div>
+        <span class="flow-arrow">⟶</span>
+        <div class="flow-step">
+          <div style="color: var(--neon-blue);">5. Mis Pedidos</div>
+          <small>Estado PENDIENTE</small>
+        </div>
+        <span class="flow-arrow">⟶</span>
+        <div class="flow-step" style="border-color: var(--neon-green);">
+          <div style="color: var(--neon-green);">6. Confirmar</div>
+          <small>Cliente confirma</small>
+        </div>
+        <span class="flow-arrow">⟶</span>
+        <div class="flow-step">
+          <div style="color: var(--neon-blue);">7. Entrega</div>
+          <small>EN_CAMINO → ENTREGADO</small>
+        </div>
+      </div>
+
+      <div class="columns-3" style="margin-top: 30px;">
+        <div class="mini-card mini-card-green">
+          <div class="mini-card-title">VISTA CONSUMIDOR</div>
+          <ul>
+            <li>Login / Register</li>
+            <li>Catálogo productos</li>
+            <li>Carrito + Checkout</li>
+            <li>Mis pedidos</li>
+            <li>Confirmar/cancelar visita</li>
+            <li>Descargar facturas</li>
+          </ul>
+        </div>
+        <div class="mini-card mini-card-orange">
+          <div class="mini-card-title">VISTA VENDEDOR</div>
+          <ul>
+            <li>Dashboard + Stats</li>
+            <li>Pedidos confirmados</li>
+            <li>Mapa con GPS</li>
+            <li>Navegar a cliente</li>
+            <li>Gestionar productos</li>
+            <li>Generar QR código</li>
+          </ul>
+        </div>
+        <div class="mini-card" style="border-color: var(--neon-orange);">
+          <div class="mini-card-title" style="color: var(--neon-orange);">VISTA SUPER ADMIN</div>
+          <ul>
+            <li>Dashboard métricas</li>
+            <li>Listado vendedores</li>
+            <li>Activar vendedores</li>
+            <li>Ver métricas por vendedor</li>
+            <li>Suspender cuentas</li>
+            <li>Reactivación automática</li>
           </ul>
         </div>
       </div>
@@ -1270,10 +1624,8 @@
   <!-- Footer -->
   <div class="mock-footer">
     <p>AguaFress V1.0 - Wireframes Web | Marketplace de Agua y Soda</p>
-    <p style="margin-top: 8px; color: var(--neon-blue);">Made with 💧 + 🚀</p>
+    <p style="margin-top: 8px; color: var(--neon-blue);">Nuevas funcionalidades: Super Admin + Autoregistro + QR</p>
   </div>
-
-</div>
 
 </body>
 </html>
