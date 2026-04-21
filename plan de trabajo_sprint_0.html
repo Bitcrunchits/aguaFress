@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AguaFress - Plan de Trabajo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    @page {
+      size: A4;
+      margin: 15mm;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-size: 11pt;
+      line-height: 1.4;
+      color: #333;
+      background: white;
+      padding: 20px;
+    }
+    
+    h1 {
+      font-size: 24pt;
+      color: #1a5f7a;
+      margin-bottom: 5px;
+      text-align: center;
+    }
+    
+    h2 {
+      font-size: 16pt;
+      color: #2c7a8b;
+      margin-top: 20px;
+      margin-bottom: 10px;
+      border-bottom: 2px solid #2c7a8b;
+      padding-bottom: 5px;
+    }
+    
+    h3 {
+      font-size: 13pt;
+      color: #3d8c9b;
+      margin-top: 15px;
+      margin-bottom: 8px;
+    }
+    
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 20px;
+      font-size: 12pt;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 15px;
+    }
+    
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+      font-size: 10pt;
+    }
+    
+    th {
+      background: #1a5f7a;
+      color: white;
+    }
+    
+    tr:nth-child(even) {
+      background: #f5f5f5;
+    }
+    
+    .highlight {
+      background: #e8f4f8;
+      font-weight: bold;
+    }
+    
+    .box {
+      border: 2px solid #1a5f7a;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 5px;
+    }
+    
+    .box-title {
+      font-weight: bold;
+      color: #1a5f7a;
+      margin-bottom: 10px;
+    }
+    
+    ul, ol {
+      margin-left: 20px;
+      margin-bottom: 10px;
+    }
+    
+    li {
+      margin-bottom: 5px;
+    }
+    
+    .checklist {
+      list-style: none;
+      margin-left: 0;
+    }
+    
+    .checklist li {
+      padding-left: 25px;
+      position: relative;
+    }
+    
+    .checklist li:before {
+      content: "☐";
+      position: absolute;
+      left: 0;
+    }
+    
+    .two-col {
+      display: flex;
+      gap: 20px;
+    }
+    
+    .two-col > div {
+      flex: 1;
+    }
+    
+    .page-break {
+      page-break-after: always;
+    }
+    
+    .footer {
+      text-align: center;
+      color: #999;
+      font-size: 9pt;
+      margin-top: 30px;
+      border-top: 1px solid #ccc;
+      padding-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🌊 AguaFress v1.0</h1>
+<p class="subtitle">Plan de Trabajo - Documentación</p>
+
+<div class="box">
+  <p class="box-title">🎯 Objetivo General</p>
+  <p>Generar TODA la documentación necesaria ANTES de escribir código. Cada story es un deliverable que permite al equipo desarrollar sin blockers.</p>
+</div>
+
+<h2>👥 Equipo y Distribución</h2>
+<table>
+  <tr>
+    <th>#</th>
+    <th>Área</th>
+    <th>Sprint</th>
+    <th>Documentos</th>
+    <th>SP</th>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td><strong>Infraestructura</strong></td>
+    <td>1</td>
+    <td>DOC-01 a DOC-04</td>
+    <td>13</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td><strong>Base de Datos</strong></td>
+    <td>1</td>
+    <td>DOC-05 a DOC-07</td>
+    <td>16</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td><strong>API + Auth</strong></td>
+    <td>2</td>
+    <td>DOC-08 a DOC-11</td>
+    <td>18</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td><strong>Módulos Backend</strong></td>
+    <td>3</td>
+    <td>DOC-12 a DOC-14</td>
+    <td>13</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td><strong>Frontend</strong></td>
+    <td>4</td>
+    <td>DOC-15 a DOC-17</td>
+    <td>13</td>
+  </tr>
+  <tr class="highlight">
+    <td colspan="4"><strong>TOTAL</strong></td>
+    <td><strong>~73 SP</strong></td>
+  </tr>
+</table>
+
+<h2>📅 Timeline Sugerido</h2>
+<table>
+  <tr>
+    <th>Sprint</th>
+    <th>Duración</th>
+    <th>Área</th>
+    <th>Entregable</th>
+  </tr>
+  <tr>
+    <td><strong>Sprint 0</strong></td>
+    <td>1 semana</td>
+    <td>TODOS</td>
+    <td>Inventario + Gaps</td>
+  </tr>
+  <tr>
+    <td><strong>Sprint 1</strong></td>
+    <td>2 semanas</td>
+    <td>Infra + DB</td>
+    <td>Setup + ERD</td>
+  </tr>
+  <tr>
+    <td><strong>Sprint 2</strong></td>
+    <td>2 semanas</td>
+    <td>API</td>
+    <td>API Docs + Auth</td>
+  </tr>
+  <tr>
+    <td><strong>Sprint 3</strong></td>
+    <td>1 semana</td>
+    <td>Módulos</td>
+    <td>Productos, Órdenes</td>
+  </tr>
+  <tr>
+    <td><strong>Sprint 4</strong></td>
+    <td>1 semana</td>
+    <td>Frontend</td>
+    <td>UI + Arquitectura</td>
+  </tr>
+  <tr>
+    <td><strong>Sprint 5</strong></td>
+    <td>1 semana</td>
+    <td>TODOS</td>
+    <td>Testing, Deploy, ADRs</td>
+  </tr>
+</table>
+
+<p><strong>Total estimado:</strong> ~9 semanas para documentación</p>
+
+<div class="page-break"></div>
+
+<h2>🔍 SPRINT 0: DISCOVERY - Detalle</h2>
+
+<div class="box">
+  <p class="box-title">🎯 Sprint Goal</p>
+  <p><em>"Saber exactamente QUÉ documentación tenemos, DÓNDE está, y QUÉ gaps tenemos ANTES de planificar qué documentar."</em></p>
+</div>
+
+<h3>Distribución de Tareas (Discovery)</h3>
+<table>
+  <tr>
+    <th>#</th>
+    <th>Tarea</th>
+    <th>SP</th>
+    <th>Área Encargada</th>
+  </tr>
+  <tr>
+    <td>T-01</td>
+    <td>Inventario archivos en raíz del proyecto</td>
+    <td>1</td>
+    <td>Infraestructura</td>
+  </tr>
+  <tr>
+    <td>T-02</td>
+    <td>Inventario en documentacion/</td>
+    <td>1</td>
+    <td>Base de Datos</td>
+  </tr>
+  <tr>
+    <td>T-03</td>
+    <td>Inventario subcarpetas documentacion/</td>
+    <td>1</td>
+    <td>API + Auth</td>
+  </tr>
+  <tr>
+    <td>T-04</td>
+    <td>Revisión y clasificación de SPEC.md</td>
+    <td>2</td>
+    <td>Módulos Backend</td>
+  </tr>
+  <tr>
+    <td>T-05</td>
+    <td>Revisión modulo-auth-users-Requerimientos.md</td>
+    <td>2</td>
+    <td>Frontend</td>
+  </tr>
+  <tr>
+    <td>T-06</td>
+    <td>Revisión diagramas de flujo</td>
+    <td>1</td>
+    <td>Infraestructura</td>
+  </tr>
+  <tr>
+    <td>T-07</td>
+    <td>Revisión carpeta Presentacion idea</td>
+    <td>1</td>
+    <td>Base de Datos</td>
+  </tr>
+  <tr>
+    <td>T-08</td>
+    <td>Revisión wireframes</td>
+    <td>1</td>
+    <td>API + Auth</td>
+  </tr>
+  <tr>
+    <td>T-09</td>
+    <td>Evaluación de completitud</td>
+    <td>2</td>
+    <td>Módulos Backend</td>
+  </tr>
+  <tr>
+    <td>T-10</td>
+    <td>Identificar documentos desactualizados</td>
+    <td>1</td>
+    <td>Frontend</td>
+  </tr>
+  <tr>
+    <td>T-11</td>
+    <td>Identificar documentos obsoletos</td>
+    <td>1</td>
+    <td>Infraestructura</td>
+  </tr>
+  <tr>
+    <td>T-12</td>
+    <td>Análisis de gaps para desarrollo</td>
+    <td>2</td>
+    <td>Base de Datos</td>
+  </tr>
+  <tr>
+    <td>T-13</td>
+    <td>Priorización de gaps por blocker</td>
+    <td>2</td>
+    <td>API + Auth</td>
+  </tr>
+  <tr>
+    <td>T-14</td>
+    <td>Crear inventario completo</td>
+    <td>2</td>
+    <td>Módulos Backend</td>
+  </tr>
+  <tr>
+    <td>T-15</td>
+    <td>Crear índice unificado documentacion/index.md</td>
+    <td>2</td>
+    <td>Frontend</td>
+  </tr>
+  <tr class="highlight">
+    <td colspan="3"><strong>TOTAL Sprint 0</strong></td>
+    <td><strong>~23 SP</strong></td>
+  </tr>
+</table>
+
+<h3>Definition of Done - Sprint 0</h3>
+<ul class="checklist">
+  <li>Inventario completo de docs existentes</li>
+  <li>Clasificación por tipo (técnica, requisitos, UI, procesos)</li>
+  <li>Estado (completo/parcial/desactualizado/obsoleto)</li>
+  <li>Mapa de gaps para desarrollo</li>
+  <li>Índice unificado documentacion/index.md</li>
+</ul>
+
+<div class="page-break"></div>
+
+<h2>⚠️ PREGUNTAS CLAVE A RESPONDER (Sprint 0)</h2>
+
+<div class="box">
+  <p class="box-title">Estas preguntas son EL BLOQUEADOR principal del proyecto</p>
+  
+  <ol>
+    <li><strong>¿Qué documentación YA existe?</strong> (SPEC.md, requerimientos, diagramas)</li>
+    <li><strong>¿Está actualizada o desactualizada?</strong></li>
+    <li><strong>¿Confirmamos 3 DBs?</strong> (PostgreSQL, MySQL, MongoDB)</li>
+    <li><strong>¿Confirmamos JWT para autenticación?</strong></li>
+    <li><strong>¿Confirmamos NestJS + React?</strong></li>
+    <li><strong>¿Hay docs en otras ubicaciones?</strong> (Google Drive, Notion, papel)</li>
+    <li><strong>¿El cliente tiene specs adicionales?</strong></li>
+  </ol>
+</div>
+
+<h2>📁 Estructura de Documentación Propuesta</h2>
+<pre>
+aguaFress/
+├── documentacion/
+│   ├── index.md                    ← Índice general
+│   ├── backlog/
+│   │   └── Resumen-sprints.md
+│   ├── setup/                     ← DOC-01 a DOC-04
+│   ├── base-de-datos/              ← DOC-05 a DOC-07
+│   ├── api/                        ← DOC-08 a DOC-11
+│   ├── modulos/                    ← DOC-12 a DOC-14
+│   ├── frontend/                   ← DOC-15 a DOC-17
+│   └── calidad/                    ← DOC-18 a DOC-22
+</pre>
+
+<h2>🔄 Dependencias</h2>
+<pre>
+Sprint 0 (Discovery)
+    │
+     ├─> INFRAESTRUCTURA ──> DB ──> API + Auth ──> MÓDULOS ──> FRONTEND
+     │                                                      │
+     └──────────────────────────────────────────────────────┘
+</pre>
+
+<h2>✅ Reglas del Equipo</h2>
+<ol>
+  <li><strong>Sprint 0 PRIMERO:</strong> Nadie(documentea sin hacer Discovery</li>
+  <li><strong>Dependencias:</strong> No empezar Sprint 2 sin terminar Sprint 1</li>
+  <li><strong>Definition of Done:</strong> Cada doc tiene DoD clara - se entrega cuando está completa</li>
+  <li><strong>Revisión:</strong> Cada doc la revisa otra persona antes de marcar como done</li>
+  <li><strong>Daily:</strong> 15 min standup - qué docs terminé, qué gaps encontré</li>
+</ol>
+
+<div class="page-break"></div>
+
+<h2>📋 Product Backlog - Docs por Sprint</h2>
+
+<h3>Sprint 1: Setup + Base de Datos (~29 SP)</h3>
+<table>
+  <tr><th>ID</th><th>Documento</th><th>SP</th><th>Encargado</th></tr>
+  <tr><td>DOC-01</td><td>README.md con setup</td><td>2</td><td>Infra</td></tr>
+  <tr><td>DOC-02</td><td>.env.example</td><td>3</td><td>Infra</td></tr>
+  <tr><td>DOC-03</td><td>Estructura directorios</td><td>3</td><td>Infra</td></tr>
+  <tr><td>DOC-04</td><td>Guía Docker</td><td>5</td><td>Infra</td></tr>
+  <tr><td>DOC-05</td><td>ERD completo</td><td>8</td><td>DB</td></tr>
+  <tr><td>DOC-06</td><td>3 motores DB</td><td>3</td><td>DB</td></tr>
+  <tr><td>DOC-07</td><td>TypeORM entities</td><td>5</td><td>DB</td></tr>
+</table>
+
+<h3>Sprint 2: API + Auth (~18 SP)</h3>
+<table>
+  <tr><th>ID</th><th>Documento</th><th>SP</th><th>Encargado</th></tr>
+  <tr><td>DOC-08</td><td>OpenAPI/Swagger</td><td>8</td><td>API</td></tr>
+  <tr><td>DOC-09</td><td>Guía auth</td><td>3</td><td>API</td></tr>
+  <tr><td>DOC-10</td><td>Códigos error</td><td>2</td><td>API</td></tr>
+  <tr><td>DOC-11</td><td>Módulo Auth+Users</td><td>5</td><td>API</td></tr>
+</table>
+
+<h3>Sprint 3: Módulos Backend (~13 SP)</h3>
+<table>
+  <tr><th>ID</th><th>Documento</th><th>SP</th><th>Encargado</th></tr>
+  <tr><td>DOC-12</td><td>Módulo Productos</td><td>5</td><td>Mód</td></tr>
+  <tr><td>DOC-13</td><td>Módulo Órdenes</td><td>5</td><td>Mód</td></tr>
+  <tr><td>DOC-14</td><td>Módulo Analytics</td><td>3</td><td>Mód</td></tr>
+</table>
+
+<h3>Sprint 4: Frontend (~13 SP)</h3>
+<table>
+  <tr><th>ID</th><th>Documento</th><th>SP</th><th>Encargado</th></tr>
+  <tr><td>DOC-15</td><td>Arquitectura Frontend</td><td>5</td><td>Front</td></tr>
+  <tr><td>DOC-16</td><td>Wireframes</td><td>3</td><td>Front</td></tr>
+  <tr><td>DOC-17</td><td>Guía integración API</td><td>5</td><td>Front</td></tr>
+</table>
+
+<h3>Sprint 5: Calidad (~19 SP)</h3>
+<table>
+  <tr><th>ID</th><th>Documento</th><th>SP</th><th>Encargado</th></tr>
+  <tr><td>DOC-18</td><td>Guía contribución</td><td>3</td><td>Todos</td></tr>
+  <tr><td>DOC-19</td><td>Estrategia testing</td><td>3</td><td>Todos</td></tr>
+  <tr><td>DOC-20</td><td>Guía deployment</td><td>5</td><td>Todos</td></tr>
+  <tr><td>DOC-21</td><td>ADRs</td><td>5</td><td>Todos</td></tr>
+  <tr><td>DOC-22</td><td>Plan QA</td><td>3</td><td>Todos</td></tr>
+</table>
+
+<div class="footer">
+  <p>AguaFress v1.0 - Documentación | Abril 2026</p>
+</div>
+
+</body>
+</html>
