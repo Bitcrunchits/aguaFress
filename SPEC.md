@@ -212,21 +212,82 @@ AguaFress es una plataforma marketplace web que conecta directamente vendedores 
 | INF-03 | Cache | Redis |
 | INF-04 | Email test | Mailhog |
 
-### 4.4 Base de Datos (3 Motores)
+### 4.4 Base de Datos (3 Motores - MICROSERVICIOS)
 
-| Motor | Propósito | Datos |
-|-------|-----------|-------|
-| PostgreSQL | Transaccional | Usuarios, Productos, Pedidos, Facturación |
-| MySQL | Analytics | Historial ventas, Métricas, Reportes OLAP |
-| MongoDB | NoSQL/Logs | Mensajes, Notificaciones, Activity Logs |
+| Motor | Servicio | ORM | Datos |
+|-------|----------|-----|-------|
+| PostgreSQL | Auth, Products, Orders | TypeORM | Usuarios, Productos, Pedidos, Facturación (datos transaccionales) |
+| MySQL | Analytics | TypeORM | Historial ventas, Métricas, Reportes OLAP (solo lectura pesada) |
+| MongoDB | Notifications | Mongoose | Mensajes, Notificaciones, Activity Logs (documentos flexibles) |
+
+> **Nota**: No usar TypeORM para MongoDB - usar Mongoose directamente.
 
 ---
 
 ## 5. Arquitectura del Sistema
 
-### 5.1 Arquitectura General
+### 5.1 Arquitectura Microservicios
 
 ```
+┌────────────────────────────────────────────────────────────────────────────┐
+│                         AGUAFRESS - MICROSERVICIOS                    │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │                        FRONTEND (React 18 + TS)               │  │
+│  │                     Puerto 5173 (Vite Dev Server)              │  │
+│  └────────────────────────────┬───────────────────────────────┘  │
+│                               │                                     │
+│                               ▼                                     │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │                    API GATEWAY (NestJS)                       │  │
+│  │                         Puerto 3000                            │  │
+│  │              Nginx (Load Balancer) + gRPC Proxy                  │  │
+│  └────────────────────────────┬───────────────────────────────┘  │
+│                               │                                     │
+│         ┌─────────────────────┼─────────────────────┐            │
+│         ▼                     ▼                     ▼            │
+│  ┌─────────────┐      ┌─────────────┐      ┌─────────────┐       │
+│  │ Auth Svc    │      │ Products Svc│      │ Orders Svc  │       │
+│  │ :3001      │      │ :3003       │      │ :3002       │       │
+│  │ Postgres   │      │ Postgres    │      │ Postgres   │       │
+│  └─────┬───────┘      └──────┬──────┘      └──────┬──────┘       │
+│        │                    │                    │                │
+│        └────────────────────┼────────────────────┘                │
+│                             ▼                                     │
+│                    ┌─────────────────────┐                       │
+│                    │  RabbitMQ / NATS    │                       │
+│                    │  (Message Broker)  │                       │
+│                    └──────────┬──────────┘                       │
+│                               │                                   │
+│        ┌───���──────────────────┼──────────────────────┐         │
+│        ▼                      ▼                      ▼         │
+│  ┌─────────────┐      ┌─────────────┐      ┌─────────────┐        │
+│  │ Analytics  │      │ Notfication  │      │   Cache    │        │
+│  │  Svc       │      │   Svc       │      │   Redis    │        │
+│  │ :3004      │      │ :3005       │      │  :6379    │        │
+│  │ MySQL      │      │ MongoDB     │      │            │        │
+│  └─────────────┘      └─────────────┘      └─────────────┘        │
+│                                                                     │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 5.2 Distribución de Servicios
+
+| Servicio | Puerto | DB | ORM | Funcionalidad |
+|----------|--------|-----|-----|-----|--------------|
+| **api-gateway** | 3000 | - | - | Routing, Auth, Rate limit |
+| **auth-service** | 3001 | PostgreSQL | TypeORM | Login, JWT, Roles, Users |
+| **orders-service** | 3002 | PostgreSQL | TypeORM | Pedidos, Carrito, Pagos |
+| **products-service** | 3003 | PostgreSQL | TypeORM | Catálogo, Productos |
+| **analytics-service** | 3004 | MySQL | TypeORM | Reportes, Métricas OLAP |
+| **notifications-service** | 3005 | MongoDB | Mongoose | Logs, Push, Events |
+
+### 5.3 Comunicación Entre Servicios
+
+- **gRPC**: Para consultas síncronas directo servicio-a-servicio
+- **RabbitMQ/NATS**: Para eventos asíncronos (order.created, user.registered, etc.)
+- **Redis**: Cache de sesiones y catálogo
 ┌─────────────────────────────────────────────────────────────┐
 │                    AGUAFRESS                                │
 ├─────────────────────────────────────────────────────────────┤
@@ -264,86 +325,59 @@ AguaFress es una plataforma marketplace web que conecta directamente vendedores 
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 5.2 Arquitectura de Módulos NestJS
+### 5.4 Estructura de Proyectos (Microservicios)
 
 ```
-src/
-├── app.module.ts                    # Root
+aguaFress/
+├── api-gateway/              # NestJS - Puerto 3000
+│   ├── src/
+│   │   ├── gateway/
+│   │   │   ├── gateway.module.ts
+│   │   │   ├── grpc.proxy.ts
+│   │   │   └── routing.service.ts
+│   │   └── main.ts
+│   └── test/
 │
-├── auth/                          # Autenticación
-│   ├── auth.controller.ts
-│   ├── auth.service.ts
-│   ├── auth.module.ts
-│   ├── strategies/
-│   │   ├── jwt.strategy.ts
-│   │   ├── local.strategy.ts
-│   │   └── google.strategy.ts
-│   └── dto/
-│       ├── login.dto.ts
-│       └── register.dto.ts
+├── auth-service/            # NestJS - Puerto 3001
+│   ├── src/
+│   │   ├── auth/
+│   │   ├── users/
+│   │   └── common/
+│   └── test/
 │
-├── users/                         # Gestión usuarios
-│   ├── users.controller.ts
-│   ├── users.service.ts
-│   ├── users.module.ts
-│   ├── entities/
-│   │   └── user.entity.ts
-│   └── dto/
+├── products-service/       # NestJS - Puerto 3003
+│   ├── src/
+│   │   ├── products/
+│   │   ├── categories/
+│   │   └── common/
+│   └── test/
 │
-├── products/                      # Catálogo productos
-│   ├── products.controller.ts
-│   ├── products.service.ts
-│   ├── products.module.ts
-│   ├── entities/
-│   │   └── product.entity.ts
-│   └── dto/
+├── orders-service/         # NestJS - Puerto 3002
+│   ├── src/
+│   │   ├── orders/
+│   │   ├── cart/
+│   │   └── common/
+│   └── test/
 │
-├── orders/                       # Pedidos
-│   ├── orders.controller.ts
-│   ├── orders.service.ts
-│   ├── orders.module.ts
-│   ├── entities/
-│   │   ├── order.entity.ts
-│   │   └── order-item.entity.ts
-│   └── dto/
+├── analytics-service/      # NestJS - Puerto 3004 (MySQL)
+│   ├── src/
+│   │   ├── reports/
+│   │   └── metrics/
+│   └── test/
 │
-├── cart/                        # Carrito
-│   ├── cart.controller.ts
-│   ├── cart.service.ts
-│   ├── cart.module.ts
-│   └── dto/
+├── notifications-service/ # NestJS - Puerto 3005 (MongoDB)
+│   ├── src/
+│   │   ├── notifications/
+│   │   ├── logs/
+│   │   └── common/
+│   └── test/
 │
-├── analytics/                   # Reportes (MySQL)
-│   ├── analytics.controller.ts
-│   ├── analytics.service.ts
-│   └── analytics.module.ts
-│
-├── notifications/              # Notificaciones (MongoDB)
-    ├── notifications.controller.ts
-    ├── notifications.service.ts
-    ├── notifications.module.ts
-    └── schemas/
-│
-├── super-admin/                 # Administración SUPER_ADMIN (NUEVO)
-│   ├── super-admin.controller.ts
-│   ├── super-admin.service.ts
-│   ├── super-admin.module.ts
-│   ├── entities/
-│   │   └── metrics.entity.ts
-│   └── dto/
-│
-├── qr/                          # Generación QR (NUEVO)
-│   ├── qr.controller.ts
-│   ├── qr.service.ts
-│   ├── qr.module.ts
-│   └── dto/
-│
-└── images/                     # Editor de imágenes (NUEVO)
-    ├── images.controller.ts
-    ├── images.service.ts
-    ├── images.module.ts
-    └── dto/
+└── frontend/             # React 18 + TS
+    ├── src/
+    └── test/
 ```
+
+> **Principio SRP**: Cada servicio es independiente, tiene su propia DB, y se comunica por eventos.
 
 ### 5.3 Modelo de Datos Entity-Relationship
 
@@ -702,9 +736,10 @@ export enum PaymentMethod {
 
 ## 9. Dependencias del Proyecto
 
-### 9.1 Dependencies
+### 9.1 Dependencies (por Servicio)
 
 ```json
+// auth-service, products-service, orders-service (PostgreSQL)
 {
   "@nestjs/common": "^10.0.0",
   "@nestjs/core": "^10.0.0",
@@ -714,20 +749,40 @@ export enum PaymentMethod {
   "@nestjs/jwt": "^10.0.0",
   "typeorm": "^0.3.0",
   "postgresql": "^15.0",
-  "mysql2": "^3.0.0",
-  "mongodb": "^6.0.0",
   "passport": "^0.7.0",
   "passport-jwt": "^4.0.0",
   "passport-local": "^1.0.0",
   "passport-google-oauth20": "^2.0.0",
   "bcrypt": "^5.0.0",
   "class-validator": "^0.14.0",
-  "class-transformer": "^0.5.0",
-  "redis": "^4.0.0"
+  "class-transformer": "^0.5.0"
+}
+
+// analytics-service (MySQL)
+{
+  "@nestjs/common": "^10.0.0",
+  "@nestjs/typeorm": "^10.0.0",
+  "typeorm": "^0.3.0",
+  "mysql2": "^3.0.0"
+}
+
+// notifications-service (MongoDB)
+{
+  "@nestjs/common": "^10.0.0",
+  "@nestjs/mongoose": "^10.0.0",
+  "mongoose": "^8.0.0"
+}
+
+// api-gateway
+{
+  "@nestjs/common": "^10.0.0",
+  "@nestjs/core": "^10.0.0",
+  "@nestjs/grpc-engine": "^10.0.0",
+  "@nestjs/microservices": "^10.0.0"
 }
 ```
 
-### 9.2 Dev Dependencies
+### 9.2 Dev Dependencies (común)
 
 ```json
 {
