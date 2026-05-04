@@ -211,6 +211,10 @@ AguaFress es una plataforma marketplace web que conecta directamente vendedores 
 | INF-02 | Orquestación | Docker Compose |
 | INF-03 | Cache | Redis |
 | INF-04 | Email test | Mailhog |
+| INF-05 | Service Discovery | Consul |
+| INF-06 | Logging | Elasticsearch + Kibana |
+| INF-07 | Monitoreo | Prometheus + Grafana |
+| INF-08 | Tiempo real (Chat, Notificaciones) | Socket.IO |
 
 ### 4.4 Base de Datos (3 Motores - MICROSERVICIOS)
 
@@ -239,51 +243,66 @@ AguaFress es una plataforma marketplace web que conecta directamente vendedores 
 │  └────────────────────────────┬───────────────────────────────┘  │
 │                               │                                     │
 │                               ▼                                     │
-│  ┌──────────────────────────────────────────────────────────────┐  │
-│  │                    API GATEWAY (NestJS)                       │  │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │                    API GATEWAY (NestJS)                        │  │
 │  │                         Puerto 3000                            │  │
 │  │              Nginx (Load Balancer) + gRPC Proxy                  │  │
 │  └────────────────────────────┬───────────────────────────────┘  │
 │                               │                                     │
-│         ┌─────────────────────┼─────────────────────┐            │
-│         ▼                     ▼                     ▼            │
-│  ┌─────────────┐      ┌─────────────┐      ┌─────────────┐       │
-│  │ Auth Svc    │      │ Products Svc│      │ Orders Svc  │       │
-│  │ :3001      │      │ :3003       │      │ :3002       │       │
-│  │ Postgres   │      │ Postgres    │      │ Postgres   │       │
-│  └─────┬───────┘      └──────┬──────┘      └──────┬──────┘       │
-│        │                    │                    │                │
-│        └────────────────────┼────────────────────┘                │
+│         ┌──────────┬───────────┼───────────┬──────────┐              │
+│         ▼          ▼           ▼           ▼          ▼                  │
+│  ┌──────────┐ ┌────────┐ ┌──────────┐ ┌────────┐ ┌─────────┐   │
+│  │  Auth    │ │  User   │ │ Product  │ │  Order  │ │ Payment │         │
+│  │ Service  │ │ Service │ │ Service  │ │ Service │ │ Service │   │
+│  │  :3001  │ │  :3002 │ │  :3003  │ │  :3004 │ │  :3007 │   │
+│  │PostgreSQL│ │PostgreSQL│ │PostgreSQL│ │PostgreSQL│ │PostgreSQL│   │
+│  └────┬────┘ └────┬────┘ └────┬─────┘ └────┬────┘ └────┬────┘        │
+│       │            │           │           │          │               │
+│       └────────────┴───────────┴───────────┴──────────┘               │
 │                             ▼                                     │
 │                    ┌─────────────────────┐                       │
-│                    │  RabbitMQ / NATS    │                       │
-│                    │  (Message Broker)  │                       │
+│                    │  RabbitMQ / NATS     │                       │
+│                    │  (Message Broker)   │                       │
 │                    └──────────┬──────────┘                       │
 │                               │                                   │
-│        ┌───���──────────────────┼──────────────────────┐         │
+│        ┌──────────────────────┼──────────────────────┐         │
 │        ▼                      ▼                      ▼         │
-│  ┌─────────────┐      ┌─────────────┐      ┌─────────────┐        │
-│  │ Analytics  │      │ Notfication  │      │   Cache    │        │
-│  │  Svc       │      │   Svc       │      │   Redis    │        │
-│  │ :3004      │      │ :3005       │      │  :6379    │        │
-│  │ MySQL      │      │ MongoDB     │      │            │        │
-│  └─────────────┘      └─────────────┘      └─────────────┘        │
+│  ┌──────────┐          ┌──────────┐            ┌─────────┐        │
+│  │Analytics│          │Notificat.│            │  Cache  │        │
+│  │ Service │          │ Service │            │ Redis  │        │
+│  │  :3005 │          │  :3006  │            │  :6379 │        │
+│  │  MySQL  │          │MongoDB  │            │        │        │
+│  └──────────┘          └──────────┘            └─────────┘        │
 │                                                                     │
+│  ┌────────────────────────────────────────────────────────────┐    │
+│  │  Consul (Service Discovery) | Elasticsearch + Kibana       │    │
+│  │           Prometheus + Grafana                            │    │
+│  └────────────────────────────────────────────────────────────┘    │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 5.2 Distribución de Servicios
 
 | Servicio | Puerto | DB | ORM | Funcionalidad |
-|----------|--------|-----|-----|-----|--------------|
+|----------|--------|-----|-----|--------------|
 | **api-gateway** | 3000 | - | - | Routing, Auth, Rate limit |
 | **auth-service** | 3001 | PostgreSQL | TypeORM | Login, JWT, Roles, Users |
-| **orders-service** | 3002 | PostgreSQL | TypeORM | Pedidos, Carrito, Pagos |
+| **user-service** | 3002 | PostgreSQL | TypeORM | Gestión de usuarios, Clientes |
 | **products-service** | 3003 | PostgreSQL | TypeORM | Catálogo, Productos |
-| **analytics-service** | 3004 | MySQL | TypeORM | Reportes, Métricas OLAP |
-| **notifications-service** | 3005 | MongoDB | Mongoose | Logs, Push, Events |
+| **orders-service** | 3004 | PostgreSQL | TypeORM | Pedidos, Carrito |
+| **analytics-service** | 3005 | MySQL | TypeORM | Reportes, Métricas OLAP |
+| **notifications-service** | 3006 | MongoDB | Mongoose | Logs, Push, Events |
+| **payment-service** | 3007 | PostgreSQL | TypeORM | Pagos |
 
-### 5.3 Comunicación Entre Servicios
+### 5.3 Puertos de Infraestructura
+
+| Componente | Puerto |
+|------------|--------|
+| PostgreSQL | 5432 |
+| Redis | 6379 |
+| RabbitMQ | 5672 |
+
+### 5.4 Comunicación Entre Servicios
 
 - **gRPC**: Para consultas síncronas directo servicio-a-servicio
 - **RabbitMQ/NATS**: Para eventos asíncronos (order.created, user.registered, etc.)
@@ -739,7 +758,7 @@ export enum PaymentMethod {
 ### 9.1 Dependencies (por Servicio)
 
 ```json
-// auth-service, products-service, orders-service (PostgreSQL)
+// auth-service, products-service, orders-service, payment-service (PostgreSQL)
 {
   "@nestjs/common": "^10.0.0",
   "@nestjs/core": "^10.0.0",
@@ -747,6 +766,8 @@ export enum PaymentMethod {
   "@nestjs/typeorm": "^10.0.0",
   "@nestjs/passport": "^10.0.0",
   "@nestjs/jwt": "^10.0.0",
+  "@nestjs/websockets": "^10.0.0",
+  "@nestjs/platform-socket.io": "^10.0.0",
   "typeorm": "^0.3.0",
   "postgresql": "^15.0",
   "passport": "^0.7.0",
@@ -755,7 +776,8 @@ export enum PaymentMethod {
   "passport-google-oauth20": "^2.0.0",
   "bcrypt": "^5.0.0",
   "class-validator": "^0.14.0",
-  "class-transformer": "^0.5.0"
+  "class-transformer": "^0.5.0",
+  "socket.io": "^4.7.0"
 }
 
 // analytics-service (MySQL)
@@ -778,7 +800,10 @@ export enum PaymentMethod {
   "@nestjs/common": "^10.0.0",
   "@nestjs/core": "^10.0.0",
   "@nestjs/grpc-engine": "^10.0.0",
-  "@nestjs/microservices": "^10.0.0"
+  "@nestjs/microservices": "^10.0.0",
+  "@nestjs/websockets": "^10.0.0",
+  "@nestjs/platform-socket.io": "^10.0.0",
+  "socket.io": "^4.7.0"
 }
 ```
 
@@ -828,11 +853,62 @@ export enum PaymentMethod {
 
 ---
 
-## 11. Historial de Versiones
+## 12. Versión 2.0 - Desarrollo Móvil y Funcionalidades Avanzadas
+
+### 12.1 App Móvil React Native
+
+| ID | Requerimiento | Descripción | Prioridad |
+|----|--------------|-------------|-----------|
+| MOB-01 | App React Native 0.74+ | App móvil para vendedores y consumidores | Alta |
+| MOB-02 | Login móvil | Autenticación en app móvil | Alta |
+| MOB-03 | Dashboard vendedor móvil | Vista de pedidos en camino | Alta |
+| MOB-04 | GPS en tiempo real | Tracking de ubicación | Alta |
+| MOB-05 | Notificaciones push | Firebase Cloud Messaging | Alta |
+
+### 12.2 Chat en Tiempo Real (Socket.IO)
+
+| ID | Requerimiento | Descripción | Prioridad |
+|----|--------------|-------------|-----------|
+| CHAT-01 | Chat de delivery | Comunicación repartidor-cliente durante reparto | Alta |
+| CHAT-02 | Chat General | Chat entre vendedor y cliente | Media |
+| CHAT-03 | Estados de conexión | Online/Offline/Ocupado | Alta |
+| CHAT-04 | Historial de mensajes | Guardar conversaciones | Media |
+
+### 12.3 Inteligencia Artificial
+
+| ID | Requerimiento | Descripción | Prioridad |
+|----|--------------|-------------|-----------|
+| AI-01 | Análisis de ventas | Dashboard predictivo | Baja |
+| AI-02 | Comandos por voz | Búsqueda por voz | Baja |
+| AI-03 | Generador de rutas | Ruta optimizada | Baja |
+| AI-04 | Generador de informes | Informes automáticos | Baja |
+
+### 12.4 Empresas y Pagos
+
+| ID | Requerimiento | Descripción | Prioridad |
+|----|--------------|-------------|-----------|
+| EMP-01 | Registro de empresas | Alta con CUIT | Media |
+| EMP-02 | Pago anticipado obligatorio | Para empresas | Media |
+| EMP-03 | Verificación de pagos | Confirmación automática | Media |
+
+### 12.5 Stack Tecnológico V2.0
+
+| Capa | Tecnología |
+|------|------------|
+| Frontend Mobile | React Native 0.74+ |
+| Chat / Tiempo Real | Socket.IO |
+| Notificaciones Push | Firebase Cloud Messaging |
+| AI | Python / TensorFlow o API externa |
+| Mapas | Google Maps SDK |
+
+---
+
+## 13. Historial de Versiones
 
 | Versión | Fecha | Descripción | Autor |
 |---------|-------|-------------|--------|
 | 1.0 | Abril 2026 | Versión inicial del SPEC | Equipo AguaFress |
+| 2.0 | Por definir | Desarrollo Móvil y Funcionalidades Avanzadas | Por definir |
 
 ---
 

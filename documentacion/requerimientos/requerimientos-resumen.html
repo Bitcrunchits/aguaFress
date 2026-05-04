@@ -183,18 +183,49 @@
         </table>
 
         <!-- V2.0 -->
-        <h2>7. Funcionalidades V2.0 (Futuro)</h2>
+        <h2>7. Funcionalidades V2.0 (Móvil y Avanzadas)</h2>
+
+        <h3>7.1 App Móvil React Native</h3>
         <table>
             <thead><tr><th class="w-small">ID</th><th>Requerimiento</th><th class="w-medium">Prioridad</th></tr></thead>
             <tbody>
-                <tr><td>V2-01</td><td>Registro de empresas con CUIT</td><td><span class="badge badge-media">Media</span></td></tr>
-                <tr><td>V2-02</td><td>Pago anticipado obligatorio (empresas)</td><td><span class="badge badge-media">Media</span></td></tr>
-                <tr><td>V2-03</td><td>Verificación de pago</td><td><span class="badge badge-media">Media</span></td></tr>
-                <tr><td>V2-04</td><td>Chat en tiempo real</td><td><span class="badge badge-baja">Baja</span></td></tr>
-                <tr><td>V2-05</td><td>AI: Análisis de ventas</td><td><span class="badge badge-baja">Baja</span></td></tr>
-                <tr><td>V2-06</td><td>AI: Comando por voz</td><td><span class="badge badge-baja">Baja</span></td></tr>
-                <tr><td>V2-07</td><td>AI: Generador de rutas</td><td><span class="badge badge-baja">Baja</span></td></tr>
-                <tr><td>V2-08</td><td>AI: Generador de informes</td><td><span class="badge badge-baja">Baja</span></td></tr>
+                <tr><td>MOB-01</td><td>App React Native 0.74+</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>MOB-02</td><td>Login móvil</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>MOB-03</td><td>Dashboard vendedor móvil</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>MOB-04</td><td>GPS en tiempo real</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>MOB-05</td><td>Notificaciones push (FCM)</td><td><span class="badge badge-alta">Alta</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>7.2 Chat en Tiempo Real (Socket.IO)</h3>
+        <table>
+            <thead><tr><th class="w-small">ID</th><th>Requerimiento</th><th class="w-medium">Prioridad</th></tr></thead>
+            <tbody>
+                <tr><td>CHAT-01</td><td>Chat de delivery (repartidor ↔ cliente)</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CHAT-02</td><td>Chat General</td><td><span class="badge badge-media">Media</span></td></tr>
+                <tr><td>CHAT-03</td><td>Estados de conexión (Online/Offline)</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CHAT-04</td><td>Historial de mensajes</td><td><span class="badge badge-media">Media</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>7.3 Inteligencia Artificial</h3>
+        <table>
+            <thead><tr><th class="w-small">ID</th><th>Requerimiento</th><th class="w-medium">Prioridad</th></tr></thead>
+            <tbody>
+                <tr><td>AI-01</td><td>Análisis de ventas predictivo</td><td><span class="badge badge-baja">Baja</span></td></tr>
+                <tr><td>AI-02</td><td>Comandos por voz</td><td><span class="badge badge-baja">Baja</span></td></tr>
+                <tr><td>AI-03</td><td>Generador de rutas</td><td><span class="badge badge-baja">Baja</span></td></tr>
+                <tr><td>AI-04</td><td>Generador de informes</td><td><span class="badge badge-baja">Baja</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>7.4 Empresas y Pagos</h3>
+        <table>
+            <thead><tr><th class="w-small">ID</th><th>Requerimiento</th><th class="w-medium">Prioridad</th></tr></thead>
+            <tbody>
+                <tr><td>EMP-01</td><td>Registro de empresas con CUIT</td><td><span class="badge badge-media">Media</span></td></tr>
+                <tr><td>EMP-02</td><td>Pago anticipado obligatorio</td><td><span class="badge badge-media">Media</span></td></tr>
+                <tr><td>EMP-03</td><td>Verificación de pagos</td><td><span class="badge badge-media">Media</span></td></tr>
             </tbody>
         </table>
 
@@ -233,6 +264,10 @@
                 <tr><td>INF-03</td><td>MySQL (analytics)</td><td><span class="badge badge-media">Media</span></td></tr>
                 <tr><td>INF-04</td><td>MongoDB (logs)</td><td><span class="badge badge-media">Media</span></td></tr>
                 <tr><td>INF-05</td><td>Redis (cache)</td><td><span class="badge badge-media">Media</span></td></tr>
+                <tr><td>INF-06</td><td>Consul (Service Discovery)</td><td><span class="badge badge-media">Media</span></td></tr>
+                <tr><td>INF-07</td><td>Elasticsearch + Kibana (Logging)</td><td><span class="badge badge-media">Media</span></td></tr>
+                <tr><td>INF-08</td><td>Prometheus + Grafana (Monitoreo)</td><td><span class="badge badge-media">Media</span></td></tr>
+                <tr><td>INF-09</td><td>Socket.IO (Tiempo real)</td><td><span class="badge badge-alta">Alta</span></td></tr>
             </tbody>
         </table>
 
@@ -252,18 +287,24 @@
         <table>
             <thead><tr><th>Capa</th><th>Tecnología</th></tr></thead>
             <tbody>
-                <tr><td>Backend</td><td>NestJS v10+, Prisma, Passport, JWT, Google OAuth</td></tr>
+                <tr><td>Backend</td><td>NestJS v10+, TypeORM, Passport, JWT, Google OAuth, Socket.IO</td></tr>
                 <tr><td>Frontend Web</td><td>React 18+, TypeScript</td></tr>
                 <tr><td>Frontend Mobile</td><td>React Native 0.74+ (V2.0)</td></tr>
                 <tr><td>DB Principal</td><td>PostgreSQL</td></tr>
                 <tr><td>DB Analytics</td><td>MySQL</td></tr>
                 <tr><td>DB Logs</td><td>MongoDB</td></tr>
-                <tr><td>Infraestructura</td><td>Docker, Docker Compose, Redis</td></tr>
+                <tr><td>Cache</td><td>Redis</td></tr>
+                <tr><td>Message Broker</td><td>RabbitMQ / NATS</td></tr>
+                <tr><td>Service Discovery</td><td>Consul</td></tr>
+                <tr><td>Logging</td><td>Elasticsearch + Kibana</td></tr>
+                <tr><td>Monitoreo</td><td>Prometheus + Grafana</td></tr>
+                <tr><td>Chat / Tiempo Real</td><td>Socket.IO</td></tr>
             </tbody>
         </table>
 
         <div class="footer">
-            <p><strong>AguaFress - Requerimientos Resumen</strong> | Versión 1.0 | Abril 2026</p>
+            <p><strong>AguaFress - Requerimientos</strong> | Versión 1.0 | Abril 2026</p>
+            <p>Versión 2.0: App Móvil + Chat + AI</p>
         </div>
     </div>
 </body>
