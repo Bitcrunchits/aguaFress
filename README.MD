@@ -18,7 +18,7 @@ Transforma rutas fijas en rutas diarias optimizadas basadas en pedidos reales, d
 
 ---
 
-## Para quién es AguaFress
+## Para quién es aguaFress
 
 - Vendedores independientes y pequeñas distribuidoras de agua, sodas y gaseosas que realizan entregas puerta a puerta.
 - Preventistas y choferes que buscan reducir visitas en vacío y optimizar su jornada.
