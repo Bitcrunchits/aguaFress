@@ -1,11 +1,11 @@
 
-# AguaFress
+# aguaFress
 
-AguaFress resuelve la pérdida de ventas y los viajes improductivos de los vendedores de agua y soda, permitiendo pedidos on-demand y confirmación de visitas para optimizar rutas, ahorrar combustible y reducir emisiones — diseñado para vendedores locales en Cipolletti y zonas urbanas similares.
+aguaFress resuelve la pérdida de ventas y los viajes improductivos de los vendedores de agua y soda, permitiendo pedidos on-demand y confirmación de visitas para optimizar rutas, ahorrar combustible y reducir emisiones — diseñado para vendedores locales en Cipolletti y zonas urbanas similares.
 
 ---
 
-## Qué problema resuelve AguaFress
+## Qué problema resuelve aguaFress
 
 ### Visitas improductivas
 Evita que los vendedores realicen recorridos cuando el cliente aún tiene producto, reduciendo gastos de combustible y tiempo perdido.
@@ -45,7 +45,7 @@ Interfaz clara para confirmar y gestionar pedidos y rutas sin conocimientos téc
 
 # Pitch de 30 segundos
 
-AguaFress es la plataforma para vendedores de agua y soda que convierte visitas semanales en entregas inteligentes. Los clientes confirman si necesitan reposición y pueden pedir on-demand cuando se quedan sin producto; el sistema genera rutas diarias optimizadas para entregar más, gastar menos y reducir emisiones.
+aguaFress es la plataforma para vendedores de agua y soda que convierte visitas semanales en entregas inteligentes. Los clientes confirman si necesitan reposición y pueden pedir on-demand cuando se quedan sin producto; el sistema genera rutas diarias optimizadas para entregar más, gastar menos y reducir emisiones.
 
 **Resultado:** más ventas, menos viajes en vacío y ahorro real en combustible, todo con una app simple que cualquier vendedor puede usar.
 
