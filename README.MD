@@ -1,10 +1,10 @@
 
 # aguaFress
 
-<img src="./assets/Gemini_Generated_Image_8yjn4r8yjn4r8yjn.png" alt="Descripción" width="40%">
+<img src="./assets/Gemini_Generated_Image_8yjn4r8yjn4r8yjn.png" alt="Descripción" width="40%" style= "border-radius: 40px;">
 
-
-aguaFress resuelve la pérdida de ventas y los viajes improductivos de los vendedores de agua y soda, permitiendo pedidos on-demand y confirmación de visitas para optimizar rutas, ahorrar combustible y reducir emisiones — diseñado para vendedores locales en Cipolletti y zonas urbanas similares.
+<br>
+<span style="font-size: 120%;">aguaFress resuelve la pérdida de ventas y los viajes improductivos de los vendedores de agua y soda, permitiendo pedidos on-demand y  confirmación de visitas para optimizar rutas, ahorrar combustible y reducir emisiones — diseñado para vendedores locales en Cipolletti y zonas urbanas similares.</span>
 
 ---
 
