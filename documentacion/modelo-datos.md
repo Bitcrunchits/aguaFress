@@ -308,7 +308,7 @@
 | promedio_ticket | DECIMAL(10,2) | |
 | nuevos_clientes | INTEGER | |
 | fecha | DATE | |
-| created_at | METRICAS_FECHA | |
+| created_at | TIMESTAMP | |
 
 #### VENTAS_POR_CLIENTE
 | Campo | Tipo | Descripción |
@@ -382,6 +382,56 @@
 
 ---
 
+### 1.8 chat-service (Puerto 3008 - Redis + PostgreSQL)
+
+> **Nota**: El chat usa Redis Streams para mensajería en tiempo real y PostgreSQL para persistencia.
+
+#### CONVERSACION
+| Campo | Tipo | Descripción |
+|-------|------|------------|
+| id | UUID | PK |
+| tipo | ENUM | delivery, general |
+| pedido_id | UUID | FK → ORDER (nullable) |
+| vendedor_id | UUID | FK → USER |
+| cliente_id | UUID | FK → USER |
+| ultimo_mensaje_id | UUID | FK → MENSAJE (nullable) |
+| created_at | TIMESTAMP | |
+| updated_at | TIMESTAMP | |
+
+#### MENSAJE
+| Campo | Tipo | Descripción |
+|-------|------|------------|
+| id | UUID | PK |
+| conversacion_id | UUID | FK → CONVERSACION |
+| sender_id | UUID | FK → USER |
+| contenido | TEXT | |
+| leido | BOOLEAN | |
+| created_at | TIMESTAMP | |
+
+---
+
+### 1.9 Infra - Redis (Puerto 6379)
+
+Redis cumple **tres funciones** (multi-propósito):
+
+#### 1.9.1 Cache de Sesiones
+- Almacena tokens JWT activos con TTL
+- Evita consultar PostgreSQL en cada request
+- Key pattern: `session:{user_id}`
+
+#### 1.9.2 Cache de Catálogo
+- Productos del vendedor para acceso rápido
+- Key pattern: `products:{vendedor_id}`
+- TTL: 5 minutos (configurable)
+
+#### 1.9.3 Bus de Eventos (Redis Streams)
+- Mensajería asíncrona entre servicios
+-替代 RabbitMQ para eventos simples
+- Streams: `orders-stream`, `notifications-stream`
+- Consumer Groups para procesamiento confiable
+
+---
+
 ## 2. Enums Definidos
 
 ```typescript
@@ -433,6 +483,12 @@ export enum MetodoPago {
 export enum TipoDescuento {
   PRODUCTO = 'producto',
   CATEGORIA = 'categoria'
+}
+
+// Tipo de conversación
+export enum TipoConversacion {
+  DELIVERY = 'delivery',
+  GENERAL = 'general'
 }
 ```
 

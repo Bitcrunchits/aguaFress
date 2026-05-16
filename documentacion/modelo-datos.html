@@ -136,38 +136,38 @@
         <h2>2. Modelo Conceptual</h2>
         <div class="diagrama">
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         USUARIO (USER)                            │
-│         ┌──────────────────────────────┬──────────────────────┐    │
-│         │ rol: super_admin            │ rol: VENDEDOR        │    │
-│         ├──────────────────────────────┼──────────────────────┤    │
-│         │                            │ •-empresa            │    │
-│         │         SESSION             │ •-qr_code           │    │
-│         │         (auth)              │ •-link_publico      │    │
-│         │                            │                    │    │
-│         │         •token             │     PRODUCTO         │    │
-│         │         •expires          │     (catalogo)       │    │
-│         │                            │ •-sku              │    │
-│         │         VENDEDOR            │ •-precio            │    │
-│         │         (perfil)           │ •-stock            │    │
-│         │         •empresa          │ •-imagenes         │    │
-│         │         •estado            │ •-descuento        │    │
-│         │         •zonas            │                    │    │
-│         │                            │     CARRITO         │    │
-│         │         CLIENTE           │     (24hs)          │    │
-│         │         •tipo_factura     │     •items         │    │
-│         │         •dni              │ •-expires_at        │    │
-│         │         •telefono         │                    │    │
-│         │                            │     PEDIDO          │    │
-│         │     DIRECCION           │     (6 estados)       │    │
-│         │     (3 tipos)          │ •-estado            │    │
-│         │     •facturacion         │ •-pago              │    │
-│         │     •entrega            │ •-items            │    │
-│         │     •personal           │ •-factura          │    │
-│         │         •barrio           │                    │    │
-│         │         •coords          │     FAMILIA         │    │
-│         │                            │                    │    │
-│         │     RELACION_CARTERA     │     REVIEW         │    │
-│         │     (vendedor ←→ cliente)│     (5★)          │    │
+│                         USUARIO (USER)                                      │
+│         ┌──────────────────────────────┬──────────────────────┐             │
+│         │ rol: super_admin             │ rol: VENDEDOR        │             │
+│         ├──────────────────────────────┼──────────────────────┤             │
+│         │                              │ •-empresa            │             │
+│         │         SESSION              │ •-qr_code            │             │
+│         │         (auth)               │ •-link_publico       │             │
+│         │                              │                      │             │
+│         │         •token               │     PRODUCTO         │             │
+│         │         •expires             │     (catalogo)       │             │
+│         │                              │ •-sku                │             │
+│         │         VENDEDOR             │ •-precio             │             │
+│         │         (perfil)             │ •-stock              │             │
+│         │         •empresa             │ •-imagenes           │             │
+│         │         •estado              │ •-descuento          │             │
+│         │         •zonas               │                      │             │
+│         │                              │     CARRITO          │             │
+│         │         CLIENTE              │     (24hs)           │             │
+│         │         •tipo_factura        │     •items           │             │
+│         │         •dni                 │ •-expires_at         │             │
+│         │         •telefono            │                      │             │
+│         │                              │     PEDIDO           │             │
+│         │     DIRECCION                │     (6 estados)      │             │
+│         │     (3 tipos)                │ •-estado             │             │
+│         │     •facturacion             │ •-pago               │             │
+│         │     •entrega                 │ •-items              │             │
+│         │     •personal                │ •-factura            │             │
+│         │         •barrio              │                      │             │
+│         │         •coords              │     FAMILIA          │             │
+│         │                              │                      │             │
+│         │     RELACION_CARTERA         │     REVIEW           │             │
+│         │     (vendedor ←→ cliente)    │     (5★)             │             │
 └─────────────────────────────────────────────────────────────────────────────┘
         </div>
 

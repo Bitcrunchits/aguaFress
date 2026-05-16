@@ -293,20 +293,27 @@ AguaFress es una plataforma marketplace web que conecta directamente vendedores 
 | **analytics-service** | 3005 | MySQL | TypeORM | Reportes, Métricas OLAP |
 | **notifications-service** | 3006 | MongoDB | Mongoose | Logs, Push, Events |
 | **payment-service** | 3007 | PostgreSQL | TypeORM | Pagos |
+| **chat-service** | 3008 | Redis Streams | ioredis | Mensajería tiempo real |
 
 ### 5.3 Puertos de Infraestructura
 
-| Componente | Puerto |
-|------------|--------|
-| PostgreSQL | 5432 |
-| Redis | 6379 |
-| RabbitMQ | 5672 |
+| Componente | Puerto | Propósito |
+|------------|--------|-----------|
+| PostgreSQL | 5432 | Datos transaccionales |
+| Redis | 6379 | Cache + Streams (eventos) |
+| RabbitMQ | 5672 | Message Broker (opcional) |
+| Consul | 8500 | Service Discovery |
+| Elasticsearch | 9200 | Logs centralizados |
+| Kibana | 5601 | Visualización de logs |
+| Prometheus | 9090 | Métricas |
+| Grafana | 3000 | Dashboard métricas |
 
 ### 5.4 Comunicación Entre Servicios
 
 - **gRPC**: Para consultas síncronas directo servicio-a-servicio
 - **RabbitMQ/NATS**: Para eventos asíncronos (order.created, user.registered, etc.)
-- **Redis**: Cache de sesiones y catálogo
+- **Redis Streams**: Bus de eventos asíncronos (替代 RabbitMQ para casos simples)
+- **Redis**: Cache de sesiones (JWT) y catálogo de productos
 ┌─────────────────────────────────────────────────────────────┐
 │                    AGUAFRESS                                │
 ├─────────────────────────────────────────────────────────────┤
