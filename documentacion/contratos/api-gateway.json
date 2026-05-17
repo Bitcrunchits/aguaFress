@@ -1,0 +1,14 @@
+{
+  "service": "api-gateway",
+  "port": 3000,
+  "responsibility": "Punto de entrada único. Routing, autenticación, rate limiting, balanceo de carga.",
+  "routes": [
+    { "path": "/auth/*", "target": "auth-service", "port": 3001 },
+    { "path": "/users/*", "target": "user-service", "port": 3002 },
+    { "path": "/products/*", "target": "products-service", "port": 3003 },
+    { "path": "/orders/*", "target": "orders-service", "port": 3004 },
+    { "path": "/analytics/*", "target": "analytics-service", "port": 3005 },
+    { "path": "/notifications/*", "target": "notifications-service", "port": 3006 },
+    { "path": "/payments/*", "target": "payment-service", "port": 3007 }
+  ]
+}

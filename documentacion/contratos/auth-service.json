@@ -1,0 +1,44 @@
+{
+  "service": "auth-service",
+  "port": 3001,
+  "database": "PostgreSQL",
+  "responsibility": "Autenticación, gestión de tokens JWT, roles y permisos.",
+  "endpoints": [
+    {
+      "path": "/auth/login",
+      "method": "POST",
+      "request": { "email": "string", "password": "string" },
+      "response": { "token": "string", "refreshToken": "string", "user": "object" }
+    },
+    {
+      "path": "/auth/register",
+      "method": "POST",
+      "request": { "email": "string", "password": "string", "role": "string", "name": "string" },
+      "response": { "user": "object" }
+    },
+    {
+      "path": "/auth/google",
+      "method": "POST",
+      "request": { "googleToken": "string" },
+      "response": { "token": "string", "user": "object" }
+    },
+    {
+      "path": "/auth/refresh",
+      "method": "POST",
+      "request": { "refreshToken": "string" },
+      "response": { "token": "string" }
+    },
+    {
+      "path": "/auth/validate",
+      "method": "POST",
+      "request": { "token": "string" },
+      "response": { "valid": "boolean", "user": "object" }
+    },
+    {
+      "path": "/auth/register-vendedor",
+      "method": "POST",
+      "request": { "email": "string", "password": "string", "name": "string", "phone": "string" },
+      "response": { "status": "pendiente", "vendedorId": "string" }
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "service": "notifications-service",
+  "port": 3006,
+  "database": "MongoDB",
+  "responsibility": "Mensajes, notificaciones push, activity logs, eventos asíncronos.",
+  "endpoints": [
+    {
+      "path": "/notifications",
+      "method": "GET",
+      "request": { "userId": "uuid", "leida": "boolean?" },
+      "response": [{ "id": "uuid", "titulo": "string", "mensaje": "string", "tipo": "string", "leida": "boolean", "fecha": "date" }]
+    },
+    {
+      "path": "/notifications/:id/read",
+      "method": "PATCH",
+      "request": {},
+      "response": { "id": "uuid", "leida": "boolean" }
+    },
+    {
+      "path": "/notifications/send",
+      "method": "POST",
+      "request": { "userId": "uuid", "titulo": "string", "mensaje": "string", "tipo": "info|pedido|alerta" },
+      "response": { "notificationId": "uuid", "enviada": "boolean" }
+    },
+    {
+      "path": "/logs",
+      "method": "GET",
+      "request": { "servicio": "string", "fechaDesde": "date?", "fechaHasta": "date?" },
+      "response": [{ "id": "uuid", "servicio": "string", "accion": "string", "datos": "object", "timestamp": "date" }]
+    },
+    {
+      "path": "/logs",
+      "method": "POST",
+      "request": { "servicio": "string", "accion": "string", "datos": "object", "usuarioId": "uuid?" },
+      "response": { "logId": "uuid", "created": "boolean" }
+    }
+  ]
+}

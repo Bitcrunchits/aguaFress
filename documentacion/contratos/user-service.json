@@ -1,0 +1,44 @@
+{
+  "service": "user-service",
+  "port": 3002,
+  "database": "PostgreSQL",
+  "responsibility": "Gestión de usuarios, clientes, asignación de vendedores, perfil.",
+  "endpoints": [
+    {
+      "path": "/users",
+      "method": "GET",
+      "request": { "query": "filters?" },
+      "response": [{ "id": "uuid", "email": "string", "name": "string", "role": "string" }]
+    },
+    {
+      "path": "/users/:id",
+      "method": "GET",
+      "request": {},
+      "response": { "id": "uuid", "email": "string", "name": "string", "role": "string", "vendedorId": "uuid?" }
+    },
+    {
+      "path": "/users/me",
+      "method": "GET",
+      "request": { "auth": "token" },
+      "response": { "id": "uuid", "email": "string", "name": "string", "role": "string", "profile": "object" }
+    },
+    {
+      "path": "/users/me",
+      "method": "PATCH",
+      "request": { "name": "string?", "phone": "string?", "address": "object?" },
+      "response": { "id": "uuid", "updated": "boolean" }
+    },
+    {
+      "path": "/users/mis-clientes",
+      "method": "GET",
+      "request": { "vendedorId": "uuid" },
+      "response": [{ "id": "uuid", "name": "string", "address": "string", "phone": "string" }]
+    },
+    {
+      "path": "/users/asignar-vendedor",
+      "method": "POST",
+      "request": { "clienteId": "uuid", "vendedorId": "uuid" },
+      "response": { "clienteId": "uuid", "vendedorId": "uuid", "updated": "boolean" }
+    }
+  ]
+}

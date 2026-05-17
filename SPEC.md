@@ -405,7 +405,80 @@ aguaFress/
 
 > **Principio SRP**: Cada servicio es independiente, tiene su propia DB, y se comunica por eventos.
 
-### 5.3 Modelo de Datos Entity-Relationship
+### 5.5 Contratos de Microservicios
+
+Los contratos detallados se encuentran en: `documentacion/contratos/`
+
+#### API Gateway (Puerto 3000)
+- **Responsabilidad:** Punto de entrada único. Routing, autenticación, rate limiting.
+- **Rutas:**
+  - `/auth/*` → auth-service:3001
+  - `/users/*` → user-service:3002
+  - `/products/*` → products-service:3003
+  - `/orders/*` → orders-service:3004
+  - `/analytics/*` → analytics-service:3005
+  - `/notifications/*` → notifications-service:3006
+  - `/payments/*` → payment-service:3007
+
+#### Auth Service (Puerto 3001) - PostgreSQL
+- **Responsabilidad:** Autenticación, JWT, roles y permisos.
+- **Endpoints principales:**
+  - `POST /auth/login` - Login email/password → `{token, user}`
+  - `POST /auth/register` - Crear usuario → `{user}`
+  - `POST /auth/google` - Login OAuth → `{token, user}`
+  - `POST /auth/refresh` - Renovar token → `{token}`
+  - `POST /auth/validate` - Validar token → `{valid, user}`
+
+#### User Service (Puerto 3002) - PostgreSQL
+- **Responsabilidad:** Gestión de usuarios, clientes, asignación de vendedores.
+- **Endpoints principales:**
+  - `GET /users/me` - Mi perfil → `User`
+  - `PATCH /users/me` - Actualizar perfil → `User`
+  - `GET /users/mis-clientes` - Lista de clientes del vendedor → `[Client]`
+  - `POST /users/asignar-vendedor` - Asignar cliente a vendedor → `Client`
+
+#### Products Service (Puerto 3003) - PostgreSQL
+- **Responsabilidad:** Catálogo de productos, categorías, favoritos.
+- **Endpoints principales:**
+  - `GET /products` - Listar catálogo → `[Product]`
+  - `POST /products` - Crear producto → `Product`
+  - `GET /products/search?q=` - Buscar productos → `[Product]`
+  - `POST /products/:id/favorite` - Agregar a favoritos → `Favorite`
+
+#### Orders Service (Puerto 3004) - PostgreSQL
+- **Responsabilidad:** Pedidos, carrito, estados.
+- **Endpoints principales:**
+  - `GET /orders` - Mis pedidos → `[Order]`
+  - `POST /orders` - Crear pedido → `Order`
+  - `POST /orders/:id/confirmar` - Confirmar visita → `Order`
+  - `POST /orders/:id/cancelar` - Cancelar visita → `Order`
+  - `GET /cart` - Ver carrito → `Cart`
+  - `POST /cart/items` - Agregar al carrito → `Cart`
+
+#### Analytics Service (Puerto 3005) - MySQL
+- **Responsabilidad:** Reportes, métricas OLAP.
+- **Endpoints principales:**
+  - `GET /analytics/ventas/cliente` - Ventas por cliente → `SalesByClient[]`
+  - `GET /analytics/ventas/producto` - Ventas por producto → `SalesByProduct[]`
+  - `GET /analytics/metricas` - Métricas globales → `Metrics`
+
+#### Notifications Service (Puerto 3006) - MongoDB
+- **Responsabilidad:** Notificaciones, logs, eventos.
+- **Endpoints principales:**
+  - `GET /notifications` - Mis notificaciones → `[Notification]`
+  - `PATCH /notifications/:id/read` - Marcar leída → `Notification`
+  - `POST /notifications/send` - Enviar notificación → `Notification`
+
+#### Payment Service (Puerto 3007) - PostgreSQL
+- **Responsabilidad:** Métodos de pago, facturas.
+- **Endpoints principales:**
+  - `GET /payments/metodos` - Métodos de pago → `[PaymentMethod]`
+  - `POST /payments/procesar` - Procesar pago → `PaymentResult`
+  - `POST /facturas/generar` - Generar factura → `Factura`
+
+> **Nota:** Los contratos completos en formato JSON están disponibles en `documentacion/contratos/`
+
+### 5.6 Modelo de Datos Entity-Relationship
 
 ```
 ┌────────────────────────────────────────────────────────────────────┐

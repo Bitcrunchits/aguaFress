@@ -1,0 +1,50 @@
+{
+  "service": "payment-service",
+  "port": 3007,
+  "database": "PostgreSQL",
+  "responsibility": "Gestión de métodos de pago, procesamiento de pagos, facturas.",
+  "endpoints": [
+    {
+      "path": "/payments/metodos",
+      "method": "GET",
+      "request": { "userId": "uuid" },
+      "response": [{ "id": "uuid", "tipo": "efectivo|tarjeta|transferencia", "ultimosDigitos": "string?", "predeterminado": "boolean" }]
+    },
+    {
+      "path": "/payments/metodos",
+      "method": "POST",
+      "request": { "userId": "uuid", "tipo": "string", "detalles": "object?" },
+      "response": { "metodoId": "uuid", "created": "boolean" }
+    },
+    {
+      "path": "/payments/procesar",
+      "method": "POST",
+      "request": { "orderId": "uuid", "metodoPago": "string" },
+      "response": { "paymentId": "uuid", "estado": "pendiente|aprobado|rechazado", "monto": "number" }
+    },
+    {
+      "path": "/payments/:id/confirmar",
+      "method": "POST",
+      "request": { "paymentId": "uuid", "codigoConfirmacion": "string?" },
+      "response": { "paymentId": "uuid", "estado": "aprobado", "fechaConfirmacion": "date" }
+    },
+    {
+      "path": "/payments/:id/rechazar",
+      "method": "POST",
+      "request": { "paymentId": "uuid", "motivo": "string" },
+      "response": { "paymentId": "uuid", "estado": "rechazado" }
+    },
+    {
+      "path": "/facturas/generar",
+      "method": "POST",
+      "request": { "orderId": "uuid", "tipoFactura": "B|C", "razonSocial": "string?", "cuit": "string?" },
+      "response": { "facturaId": "uuid", "numero": "string", "pdfUrl": "url" }
+    },
+    {
+      "path": "/facturas/:id",
+      "method": "GET",
+      "request": {},
+      "response": { "id": "uuid", "numero": "string", "pdfUrl": "url", "fecha": "date" }
+    }
+  ]
+}

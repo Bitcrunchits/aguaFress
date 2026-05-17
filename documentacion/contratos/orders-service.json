@@ -1,0 +1,68 @@
+{
+  "service": "orders-service",
+  "port": 3004,
+  "database": "PostgreSQL",
+  "responsibility": "Gestión de pedidos, estados, carrito de compras, confirmación de visitas.",
+  "endpoints": [
+    {
+      "path": "/orders",
+      "method": "GET",
+      "request": { "userId": "uuid", "vendedorId": "uuid?" },
+      "response": [{ "id": "uuid", "estado": "string", "total": "number", "fecha": "date" }]
+    },
+    {
+      "path": "/orders/:id",
+      "method": "GET",
+      "request": {},
+      "response": { "id": "uuid", "cliente": "object", "items": "array", "total": "number", "estado": "string", "metodoPago": "string", "direccion": "object" }
+    },
+    {
+      "path": "/orders",
+      "method": "POST",
+      "request": { "userId": "uuid", "items": [{ "productId": "uuid", "cantidad": "number }], "metodoPago": "string", "direccion": "object" },
+      "response": { "id": "uuid", "estado": "pendiente", "total": "number" }
+    },
+    {
+      "path": "/orders/:id/status",
+      "method": "PATCH",
+      "request": { "estado": "string" },
+      "response": { "id": "uuid", "estado": "string", "updated": "boolean" }
+    },
+    {
+      "path": "/orders/:id/confirmar",
+      "method": "POST",
+      "request": {},
+      "response": { "id": "uuid", "estado": "confirmado" }
+    },
+    {
+      "path": "/orders/:id/cancelar",
+      "method": "POST",
+      "request": { "motivo": "string?" },
+      "response": { "id": "uuid", "estado": "cancelado" }
+    },
+    {
+      "path": "/cart",
+      "method": "GET",
+      "request": { "userId": "uuid" },
+      "response": { "items": [{ "productId": "uuid", "cantidad": "number, "precio": "number }], "total": "number" }
+    },
+    {
+      "path": "/cart/items",
+      "method": "POST",
+      "request": { "userId": "uuid", "productId": "uuid", "cantidad": "number" },
+      "response": { "cartId": "uuid", "items": "array" }
+    },
+    {
+      "path": "/cart/items/:id",
+      "method": "PATCH",
+      "request": { "cantidad": "number" },
+      "response": { "updated": "boolean" }
+    },
+    {
+      "path": "/cart/items/:id",
+      "method": "DELETE",
+      "request": {},
+      "response": { "deleted": "boolean" }
+    }
+  ]
+}
