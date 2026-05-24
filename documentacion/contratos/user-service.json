@@ -2,43 +2,105 @@
   "service": "user-service",
   "port": 3002,
   "database": "PostgreSQL",
-  "responsibility": "Gestión de usuarios, clientes, asignación de vendedores, perfil.",
+  "responsibility": "Perfiles de vendedores y clientes, cartera, direcciones, QR, link público.",
   "endpoints": [
     {
       "path": "/users",
       "method": "GET",
+      "auth": "ADMIN",
       "request": { "query": "filters?" },
       "response": [{ "id": "uuid", "email": "string", "name": "string", "role": "string" }]
     },
     {
       "path": "/users/:id",
       "method": "GET",
+      "auth": "ADMIN",
       "request": {},
       "response": { "id": "uuid", "email": "string", "name": "string", "role": "string", "vendedorId": "uuid?" }
     },
     {
+      "path": "/users/:id",
+      "method": "PATCH",
+      "auth": "ADMIN",
+      "request": { "name": "string?", "phone": "string?", "role": "string?" },
+      "response": { "id": "uuid", "updated": "boolean" }
+    },
+    {
+      "path": "/users/:id",
+      "method": "DELETE",
+      "auth": "ADMIN",
+      "request": {},
+      "response": { "deleted": "boolean" }
+    },
+    {
+      "path": "/users/:id/activar",
+      "method": "PATCH",
+      "auth": "ADMIN",
+      "request": {},
+      "response": { "id": "uuid", "isActive": "boolean" }
+    },
+    {
+      "path": "/users/:id/desactivar",
+      "method": "PATCH",
+      "auth": "ADMIN",
+      "request": {},
+      "response": { "id": "uuid", "isActive": "boolean" }
+    },
+    {
       "path": "/users/me",
       "method": "GET",
-      "request": { "auth": "token" },
+      "auth": "authenticated",
+      "request": {},
       "response": { "id": "uuid", "email": "string", "name": "string", "role": "string", "profile": "object" }
     },
     {
       "path": "/users/me",
       "method": "PATCH",
+      "auth": "authenticated",
       "request": { "name": "string?", "phone": "string?", "address": "object?" },
       "response": { "id": "uuid", "updated": "boolean" }
     },
     {
       "path": "/users/mis-clientes",
       "method": "GET",
-      "request": { "vendedorId": "uuid" },
+      "auth": "VENDEDOR",
+      "request": {},
       "response": [{ "id": "uuid", "name": "string", "address": "string", "phone": "string" }]
+    },
+    {
+      "path": "/users/mi-vendedor",
+      "method": "GET",
+      "auth": "CLIENTE",
+      "request": {},
+      "response": { "id": "uuid", "name": "string", "empresa": "string", "phone": "string" }
     },
     {
       "path": "/users/asignar-vendedor",
       "method": "POST",
+      "auth": "ADMIN",
       "request": { "clienteId": "uuid", "vendedorId": "uuid" },
       "response": { "clienteId": "uuid", "vendedorId": "uuid", "updated": "boolean" }
+    },
+    {
+      "path": "/vendedor/qr",
+      "method": "POST",
+      "auth": "VENDEDOR",
+      "request": {},
+      "response": { "qrCode": "string", "url": "string", "expiresAt": "date" }
+    },
+    {
+      "path": "/vendedor/link",
+      "method": "POST",
+      "auth": "VENDEDOR",
+      "request": {},
+      "response": { "linkUrl": "string", "token": "string", "expiresAt": "date" }
+    },
+    {
+      "path": "/public/vendedor/:qrToken",
+      "method": "GET",
+      "auth": "none",
+      "request": {},
+      "response": { "vendedor": { "nombre": "string", "empresa": "string", "logo": "url?" }, "catalogo": "array" }
     }
   ]
 }

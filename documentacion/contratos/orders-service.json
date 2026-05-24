@@ -19,7 +19,7 @@
     {
       "path": "/orders",
       "method": "POST",
-      "request": { "userId": "uuid", "items": [{ "productId": "uuid", "cantidad": "number }], "metodoPago": "string", "direccion": "object" },
+      "request": { "userId": "uuid", "items": [{ "productId": "uuid", "cantidad": "number" }], "metodoPago": "contra_entrega", "direccion": "object" },
       "response": { "id": "uuid", "estado": "pendiente", "total": "number" }
     },
     {
@@ -44,7 +44,7 @@
       "path": "/cart",
       "method": "GET",
       "request": { "userId": "uuid" },
-      "response": { "items": [{ "productId": "uuid", "cantidad": "number, "precio": "number }], "total": "number" }
+      "response": { "items": [{ "productId": "uuid", "cantidad": "number", "precio": "number" }], "total": "number" }
     },
     {
       "path": "/cart/items",

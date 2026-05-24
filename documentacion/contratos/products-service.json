@@ -40,6 +40,7 @@
       "request": { "q": "string", "vendedorId": "uuid?" },
       "response": [{ "id": "uuid", "nombre": "string", "precio": "number" }]
     },
+    /* FUTURE: Favoritos
     {
       "path": "/products/:id/favorite",
       "method": "POST",
@@ -52,5 +53,6 @@
       "request": { "userId": "uuid" },
       "response": [{ "productId": "uuid", "nombre": "string", "precio": "number" }]
     }
+    */
   ]
 }
