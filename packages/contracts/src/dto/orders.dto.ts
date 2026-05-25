@@ -38,10 +38,14 @@ export interface CartItemResponse {
 }
 
 export interface CartResponse {
+  cartId: string;
+  vendedorId: string;
   items: CartItemResponse[];
   totalSinIva: number;
   iva: number;
   total: number;
+  /** ISO 8601 — el carrito expira 24hs después de creado */
+  expiresAt: string;
 }
 
 export interface UpdateCartItemRequest {
@@ -67,7 +71,7 @@ export interface CreateOrderRequest {
 export interface OrderResponse {
   id: string;
   pedidoNumero: string;
-  cliente: { id: string; nombre: string };
+  cliente: { id: string; nombre: string; apellido?: string };
   items: {
     productId: string;
     nombre: string;
@@ -84,7 +88,8 @@ export interface OrderResponse {
 }
 
 export interface OrderListFilters extends PaginationRequest {
-  userId?: string;
+  /** Filtra pedidos de un cliente específico (usado por VENDEDOR/ADMIN) */
+  clienteId?: string;
   vendedorId?: string;
   estado?: OrderEstado;
 }
@@ -95,6 +100,7 @@ export interface OrderListResponse {
   estado: OrderEstado;
   total: number;
   clienteNombre?: string;
+  clienteApellido?: string;
   createdAt: string;
 }
 

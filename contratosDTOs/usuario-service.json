@@ -3,27 +3,33 @@
   "port": 3001,
   "database": "PostgreSQL (2 schemas: auth, users)",
   "orm": "Prisma",
-  "responsibility": "Unifica autenticación + perfiles en un solo MS. Módulo auth: login JWT, registro, refresh. Módulo users: perfiles, cartera de clientes, QR/link de invitación.",
+  "responsibility": "Unifica autenticación + perfiles en un solo MS. Módulo auth: login JWT, registro, refresh, validate. Módulo users: perfiles, cartera de clientes, QR/link de invitación.",
+  "security_rules": [
+    "⚠️ userId/clienteId NUNCA viene del body. Se extrae del token JWT."
+  ],
   "modules": {
     "auth": {
+      "description": "Autenticación y registro",
+      "events_publishes": ["auth-stream: UserCreated"],
       "endpoints": [
-        { "path": "/auth/login", "method": "POST", "auth": "Público", "request": { "email": "string", "password": "string" }, "response": { "token": "string", "refreshToken": "string", "user": "object" } },
-        { "path": "/auth/register", "method": "POST", "auth": "ADMIN", "request": { "email": "string", "password": "string", "name": "string", "role": "vendedor|cliente", "qrToken?": "string" }, "response": { "user": "object" } },
-        { "path": "/auth/register-vendedor", "method": "POST", "auth": "Público", "request": { "email": "string", "password": "string", "name": "string", "phone": "string" }, "response": { "status": "pendiente", "vendedorId": "uuid" } },
+        { "path": "/auth/login", "method": "POST", "auth": "Público", "request": { "email": "string", "password": "string" }, "response": { "token": "string", "refreshToken": "string", "user": { "id": "uuid", "email": "string", "role": "UserRole", "nombre?": "string", "apellido?": "string" } } },
+        { "path": "/auth/register", "method": "POST", "auth": "ADMIN", "request": { "email": "string", "password": "string", "nombre": "string", "role": "vendedor|cliente", "qrToken?": "string" }, "response": { "user": { "id": "uuid", "email": "string", "role": "UserRole" } } },
+        { "path": "/auth/register-vendedor", "method": "POST", "auth": "Público", "request": { "email": "string", "password": "string", "nombre": "string", "telefono": "string", "ciudad?": "string", "zonaEntrega?": "string" }, "response": { "status": "pendiente", "vendedorId": "uuid" } },
         { "path": "/auth/refresh", "method": "POST", "auth": "Usuario", "request": { "refreshToken": "string" }, "response": { "token": "string" } },
-        { "path": "/auth/validate", "method": "POST", "auth": "Interno", "request": { "token": "string" }, "response": { "valid": "boolean", "user": "object|null" } }
+        { "path": "/auth/validate", "method": "POST", "auth": "Interno", "request": { "token": "string" }, "response": { "valid": "boolean", "user": { "id": "uuid", "email": "string", "role": "UserRole" } | null } }
       ]
     },
     "users": {
+      "description": "Perfiles, cartera y QR de invitación",
+      "events_publishes": ["user-stream: VendedorStatusChanged, CarteraClienteAdded"],
       "endpoints": [
-        { "path": "/users/me", "method": "GET", "auth": "Usuario", "response": { "id": "uuid", "email": "string", "role": "super_admin|vendedor|cliente", "profile?": "object" } },
-        { "path": "/users/me", "method": "PATCH", "auth": "Usuario", "request": { "name?": "string", "phone?": "string", "address?": "object" } },
-        { "path": "/users/mis-clientes", "method": "GET", "auth": "VENDEDOR", "response": [{ "id": "uuid", "name": "string", "phone?": "string" }] },
+        { "path": "/users/me", "method": "GET", "auth": "Usuario", "response": { "id": "uuid", "email": "string", "nombre?": "string", "apellido?": "string", "role": "UserRole", "telefono?": "string", "isActive": "boolean", "profile?": "VendedorProfile|ClienteProfile" } },
+        { "path": "/users/me", "method": "PATCH", "auth": "Usuario", "request": { "nombre?": "string", "apellido?": "string", "telefono?": "string", "address?": { "calle?": "string", "numero?": "string", "barrio?": "string", "latitude?": "number", "longitude?": "number" } } },
+        { "path": "/users/mis-clientes", "method": "GET", "auth": "VENDEDOR", "response": [{ "id": "uuid", "nombre": "string", "apellido?": "string", "telefono?": "string", "tipoFactura?": "TipoFactura" }] },
         { "path": "/users/asignar-vendedor", "method": "POST", "auth": "ADMIN", "request": { "clienteId": "uuid", "vendedorId": "uuid" }, "response": { "clienteId": "uuid", "vendedorId": "uuid", "updated": "boolean" } },
-        { "path": "/qr/generar", "method": "POST", "auth": "VENDEDOR", "response": { "qrCode": "string", "url": "string", "expiresAt": "string" } },
-        { "path": "/qr/:token", "method": "GET", "auth": "Público", "response": { "vendedor": "object", "catalogo?": "array" } }
+        { "path": "/qr/generar", "method": "POST", "auth": "VENDEDOR", "response": { "qrCode": "string", "url": "string", "expiresAt": "string (ISO 8601)" } },
+        { "path": "/qr/:token", "method": "GET", "auth": "Público", "response": { "vendedor": { "nombre": "string", "apellido?": "string", "empresa?": "string", "logo?": "string", "telefono?": "string", "ciudad?": "string" }, "catalogo?": "ProductResponse[]" } }
       ]
     }
-  },
-  "events_publishes": ["auth-stream: UserCreated", "user-stream: VendedorStatusChanged, CarteraClienteAdded"]
+  }
 }

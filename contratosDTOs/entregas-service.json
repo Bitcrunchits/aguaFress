@@ -2,28 +2,36 @@
   "service": "entregas-service",
   "port": 3005,
   "database": "PostgreSQL",
+  "orm": "Prisma",
   "responsibility": "Gestión de entregas del día, cambio de estado de reparto, confirmación de entrega. Vendedor = repartidor en MVP. Sin mapa GPS (feature futuro).",
+  "security_rules": [
+    "⚠️ vendedorId NUNCA viene del body/query. Se extrae del token JWT. Cada vendedor solo ve SUS entregas."
+  ],
+  "events_publishes": ["deliveries-stream: DeliveryStarted, DeliveryCompleted, DeliveryStatusChanged"],
+  "events_consumes": ["orders-stream: OrderCreated, OrderStatusChanged"],
   "endpoints": [
     {
       "path": "/deliveries",
       "method": "GET",
       "auth": "VENDEDOR",
-      "request": { "fecha": "date?", "vendedorId": "uuid" },
-      "response": [{ "id": "uuid", "orderId": "uuid", "estado": "pendiente|en_camino|entregada", "cliente": "object", "direccion": "object", "fechaAsignacion": "date" }]
+      "notes": "Lista entregas del vendedor autenticado. El vendedorId se obtiene del token.",
+      "request": { "fecha?": "string (YYYY-MM-DD)", "page?": "number", "limit?": "number" },
+      "response": { "data": [{ "id": "uuid", "orderId": "uuid", "vendedorId": "uuid", "estado": "DeliveryEstado", "cliente": { "nombre": "string", "telefono?": "string" }, "direccion": "DireccionEntrega", "fechaAsignacion": "string (ISO 8601)", "fechaEntrega?": "string (ISO 8601)", "notas?": "string" }], "pagination": { "page": "number", "limit": "number", "total": "number", "totalPages": "number" } }
     },
     {
       "path": "/deliveries/:id",
       "method": "GET",
       "auth": "VENDEDOR|ADMIN",
       "request": {},
-      "response": { "id": "uuid", "orderId": "uuid", "vendedorId": "uuid", "estado": "string", "direccion": "object", "fechaAsignacion": "date", "fechaEntrega": "date?", "notas": "string?" }
+      "response": { "id": "uuid", "orderId": "uuid", "vendedorId": "uuid", "estado": "DeliveryEstado", "cliente": { "nombre": "string", "telefono?": "string" }, "direccion": "DireccionEntrega", "fechaAsignacion": "string (ISO 8601)", "fechaEntrega?": "string (ISO 8601)", "notas?": "string" }
     },
     {
       "path": "/deliveries/:id/status",
       "method": "PATCH",
       "auth": "VENDEDOR",
-      "request": { "estado": "en_camino|entregada", "notas": "string?" },
-      "response": { "id": "uuid", "estado": "string", "updated": "boolean" }
+      "notes": "Transición válida: pendiente→en_camino→entregada.",
+      "request": { "estado": "en_camino|entregada", "notas?": "string" },
+      "response": { "id": "uuid", "estado": "DeliveryEstado", "updated": "boolean" }
     }
   ]
 }

@@ -21,6 +21,8 @@ export interface ProductResponse {
   categoria?: string;
   vendedorId: string;
   activo: boolean;
+  /** Si false, el precio no se muestra al cliente (oculto hasta configurar) */
+  mostrarPrecio?: boolean;
 }
 
 // ─── Crear ───
@@ -34,8 +36,12 @@ export interface CreateProductRequest {
   marcaId?: string;
   imagen?: string;
   stock: number;
-  /** Se extrae del token JWT del vendedor autenticado */
-  vendedorId: string;
+  /** Si false, el precio no se muestra al cliente (campo de producto, default true) */
+  mostrarPrecio?: boolean;
+  /**
+   * ⚠️ NUNCA viene del body. El service lo inyecta desde el token JWT
+   *    del vendedor autenticado (regla de seguridad §11.6).
+   */
 }
 
 // ─── Actualizar ───
@@ -47,6 +53,7 @@ export interface UpdateProductRequest {
   stock?: number;
   imagen?: string;
   activo?: boolean;
+  mostrarPrecio?: boolean;
 }
 
 // ─── Filtros y búsqueda ───

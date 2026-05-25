@@ -12,14 +12,25 @@ import type { ProductResponse } from './products.dto';
 export interface UserProfile {
   id: string;
   email: string;
-  name?: string;
+  /** Nombre (puede ser el nombre completo si apellido no está definido) */
+  nombre?: string;
+  /** Apellido (opcional — en MVP se completa después del registro) */
+  apellido?: string;
   role: UserRole;
-  phone?: string;
+  telefono?: string;
   isActive: boolean;
+  /**
+   * Perfil específico según el rol.
+   * - VENDEDOR → VendedorProfile (empresa, qrCode, linkPublico, etc.)
+   * - CLIENTE → ClienteProfile (dni, tipoFactura, etc.)
+   * Hacer narrowing: `if (profile && 'empresa' in profile)`
+   */
   profile?: VendedorProfile | ClienteProfile;
 }
 
 export interface VendedorProfile {
+  nombre?: string;
+  apellido?: string;
   empresa?: string;
   logo?: string;
   estado: VendedorEstado;
@@ -27,6 +38,8 @@ export interface VendedorProfile {
   linkPublico?: string;
   /** Nombre de ciudad/localidad por defecto para entregas */
   ciudadDefault?: string;
+  /** Zona de entrega/sector (texto libre — ej: 'Villa Crespo', 'Norte') */
+  zonaEntrega?: string;
 }
 
 export interface ClienteProfile {
@@ -40,8 +53,9 @@ export interface ClienteProfile {
 // ─── Actualización de perfil ───
 
 export interface UpdateProfileRequest {
-  name?: string;
-  phone?: string;
+  nombre?: string;
+  apellido?: string;
+  telefono?: string;
   address?: {
     calle?: string;
     numero?: string;
@@ -71,31 +85,39 @@ export interface AsignarVendedorResponse {
 
 export interface ClienteResponse {
   id: string;
-  name: string;
+  nombre: string;
+  apellido?: string;
+  /** Representación en una línea de la dirección (NO es DireccionEntrega completo) */
   address?: string;
-  phone?: string;
+  telefono?: string;
   tipoFactura?: TipoFactura;
 }
 
 export interface VendedorResponse {
   id: string;
-  name: string;
+  nombre: string;
+  apellido?: string;
   empresa?: string;
-  phone?: string;
+  telefono?: string;
+  ciudad?: string;
   estado?: VendedorEstado;
 }
 
 // ─── QR / Link de invitación ───
 
 export interface GenerarQRResponse {
+  /** Imagen QR en Base64 (PNG) */
   qrCode: string;
+  /** URL pública del link de invitación */
   url: string;
+  /** ISO 8601 — el QR expira en 48 horas */
   expiresAt: string;
 }
 
 export interface GenerarLinkResponse {
   linkUrl: string;
   token: string;
+  /** ISO 8601 — el link expira en 48 horas */
   expiresAt: string;
 }
 
@@ -104,9 +126,11 @@ export interface GenerarLinkResponse {
 export interface PerfilPublicoResponse {
   vendedor: {
     nombre: string;
+    apellido?: string;
     empresa?: string;
     logo?: string;
-    phone?: string;
+    telefono?: string;
+    ciudad?: string;
   };
   /** Productos activos, tipado completo desde products.dto */
   catalogo?: ProductResponse[];

@@ -21,7 +21,8 @@ export interface LoginResponse {
     id: string;
     email: string;
     role: UserRole;
-    name?: string;
+    nombre?: string;
+    apellido?: string;
   };
 }
 
@@ -30,8 +31,9 @@ export interface LoginResponse {
 export interface RegisterRequest {
   email: string;
   password: string;
-  name: string;
-  role: 'vendedor' | 'cliente';
+  /** Nombre completo (NO se separa en nombre+apellido) */
+  nombre: string;
+  role: UserRole.VENDEDOR | UserRole.CLIENTE;
   /** Solo si viene de link público QR */
   qrToken?: string;
 }
@@ -45,29 +47,18 @@ export interface RegisterResponse {
 export interface RegisterVendedorRequest {
   email: string;
   password: string;
-  name: string;
-  phone: string;
+  /** Nombre completo (se almacena como nombre; apellido se completa después) */
+  nombre: string;
+  telefono: string;
+  /** Ciudad/localidad de entrega (texto libre — MVP no tiene tabla CIUDAD) */
+  ciudad?: string;
+  /** Zona/sector de entrega (texto libre — ej: 'Villa Crespo', 'Zona Norte') */
+  zonaEntrega?: string;
 }
 
 export interface RegisterVendedorResponse {
   status: 'pendiente';
   vendedorId: string;
-}
-
-// ─── Google Auth ─────────────────────────────────────
-// @deprecated No implementado en MVP V1. Mantenemos la
-// interfaz para cuando se habilite, pero NO CODEEAR.
-// ─────────────────────────────────────────────────────
-
-/** @deprecated No implementar en MVP V1 */
-export interface GoogleAuthRequest {
-  googleToken: string;
-}
-
-/** @deprecated No implementar en MVP V1 */
-export interface GoogleAuthResponse {
-  token: string;
-  user: { id: string; email: string; role: UserRole; name?: string };
 }
 
 // ─── Refresh / Validate ───

@@ -2,57 +2,69 @@
   "service": "products-service",
   "port": 3003,
   "database": "PostgreSQL",
-  "responsibility": "Catálogo de productos, categorías, imágenes, búsquedas, favoritos.",
+  "orm": "Prisma",
+  "responsibility": "Catálogo de productos, categorías, marcas, stock, búsquedas.",
+  "security_rules": [
+    "⚠️ vendedorId NUNCA viene del body en create/update. Se extrae del token JWT.",
+    "⚠️ El precio se calcula server-side. El frontend manda precioSinIva, el service calcula precioFinal."
+  ],
+  "events_publishes": ["products-stream: ProductUpdated, ProductDeleted"],
   "endpoints": [
     {
       "path": "/products",
       "method": "GET",
-      "request": { "vendedorId": "uuid?", "categoria": "string?", "disponibles": "boolean?" },
-      "response": [{ "id": "uuid", "nombre": "string", "precio": "number", "imagen": "url", "stock": "number" }]
+      "auth": "VENDEDOR|Público",
+      "request": { "vendedorId?": "uuid", "categoria?": "string", "disponibles?": "boolean", "page?": "number", "limit?": "number" },
+      "response": { "data": [{ "id": "uuid", "nombre": "string", "descripcion?": "string", "precioSinIva": "number", "precioFinal": "number", "imagen?": "url", "stock": "number", "marca?": "string", "categoria?": "string", "vendedorId": "uuid", "activo": "boolean", "mostrarPrecio?": "boolean" }], "pagination": { "page": "number", "limit": "number", "total": "number", "totalPages": "number" } }
     },
     {
       "path": "/products/:id",
       "method": "GET",
+      "auth": "Público",
       "request": {},
-      "response": { "id": "uuid", "nombre": "string", "descripcion": "string", "precio": "number", "precioIva": "number", "imagen": "url", "stock": "number", "valoracion": "number", "categoria": "string" }
+      "response": { "id": "uuid", "nombre": "string", "descripcion?": "string", "precioSinIva": "number", "precioFinal": "number", "imagen?": "url", "stock": "number", "marca?": "string", "categoria?": "string", "vendedorId": "uuid", "activo": "boolean", "mostrarPrecio?": "boolean" }
     },
     {
       "path": "/products",
       "method": "POST",
-      "request": { "nombre": "string", "descripcion": "string", "precio": "number", "categoriaId": "uuid", "imagen": "url?", "stock": "number", "vendedorId": "uuid" },
+      "auth": "VENDEDOR",
+      "request": { "nombre": "string", "descripcion?": "string", "precioSinIva": "number", "categoriaId": "uuid", "marcaId?": "uuid", "imagen?": "url", "stock": "number", "mostrarPrecio?": "boolean" },
       "response": { "id": "uuid", "created": "boolean" }
     },
     {
       "path": "/products/:id",
       "method": "PATCH",
-      "request": { "nombre": "string?", "precio": "number?", "stock": "number?", "imagen": "url?" },
+      "auth": "VENDEDOR",
+      "request": { "nombre?": "string", "descripcion?": "string", "precioSinIva?": "number", "stock?": "number", "imagen?": "url", "activo?": "boolean", "mostrarPrecio?": "boolean" },
       "response": { "id": "uuid", "updated": "boolean" }
     },
     {
       "path": "/products/:id",
       "method": "DELETE",
+      "auth": "VENDEDOR",
       "request": {},
       "response": { "deleted": "boolean" }
     },
     {
       "path": "/products/search",
       "method": "GET",
-      "request": { "q": "string", "vendedorId": "uuid?" },
-      "response": [{ "id": "uuid", "nombre": "string", "precio": "number" }]
-    },
-    /* FUTURE: Favoritos
-    {
-      "path": "/products/:id/favorite",
-      "method": "POST",
-      "request": { "userId": "uuid" },
-      "response": { "favoriteId": "uuid", "created": "boolean" }
+      "auth": "Público",
+      "request": { "q": "string", "vendedorId?": "uuid" },
+      "response": [{ "id": "uuid", "nombre": "string", "precioFinal": "number", "imagen?": "url", "mostrarPrecio?": "boolean" }]
     },
     {
-      "path": "/favorites",
+      "path": "/categories",
       "method": "GET",
-      "request": { "userId": "uuid" },
-      "response": [{ "productId": "uuid", "nombre": "string", "precio": "number" }]
+      "auth": "Público",
+      "request": { "vendedorId": "uuid" },
+      "response": [{ "id": "uuid", "nombre": "string", "orden": "number", "vendedorId": "uuid" }]
+    },
+    {
+      "path": "/brands",
+      "method": "GET",
+      "auth": "Público",
+      "request": { "vendedorId": "uuid" },
+      "response": [{ "id": "uuid", "nombre": "string", "vendedorId": "uuid" }]
     }
-    */
   ]
 }

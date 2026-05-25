@@ -19,3 +19,4 @@ export * from './dto/products.dto';
 export * from './dto/orders.dto';
 export * from './dto/deliveries.dto';
 export * from './dto/notifications.dto';
+export * from './dto/super-admin.dto';

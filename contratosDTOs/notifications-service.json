@@ -2,19 +2,27 @@
   "service": "notifications-service",
   "port": 3006,
   "database": "MongoDB",
-  "responsibility": "Activity logs del sistema. Escucha todos los eventos del bus Redis y los persiste como auditoría.",
+  "orm": "Mongoose",
+  "responsibility": "Activity logs del sistema. Escucha TODOS los eventos del bus Redis Streams y los persiste como auditoría. No publica eventos, solo consume.",
+  "events_consumes": [
+    "auth-stream: UserCreated",
+    "user-stream: VendedorStatusChanged, CarteraClienteAdded",
+    "products-stream: ProductUpdated, ProductDeleted",
+    "orders-stream: OrderCreated, OrderStatusChanged",
+    "deliveries-stream: DeliveryStarted, DeliveryCompleted, DeliveryStatusChanged"
+  ],
   "collections": {
     "activity_logs": {
-      "description": "Registro de eventos de auditoría de todos los servicios",
+      "description": "Registro de auditoría de todos los eventos del sistema",
       "fields": {
         "_id": "ObjectId (PK)",
-        "usuario_id": "UUID? (nullable para eventos no asociados a usuario)",
-        "accion": "string (ej: OrderCreated, UserCreated, DeliveryStarted)",
-        "entidad_tipo": "string (ej: order, user, delivery)",
-        "entidad_id": "UUID?",
-        "metadata": "object (datos adicionales del evento)",
-        "servicio": "string (auth, user, products, orders, deliveries)",
-        "created_at": "timestamp"
+        "usuarioId": "string? (UUID del usuario asociado al evento, nullable)",
+        "accion": "string (type del evento: OrderCreated, UserCreated, DeliveryStarted...)",
+        "entidadTipo": "string (order, user, product, delivery)",
+        "entidadId": "string? (UUID de la entidad afectada)",
+        "metadata": "object (payload completo del evento)",
+        "servicio": "string (usuario-service | products | orders | entregas)",
+        "createdAt": "Date (ISO 8601)"
       }
     }
   },
@@ -23,8 +31,8 @@
       "path": "/activity-logs",
       "method": "GET",
       "auth": "ADMIN",
-      "request": { "servicio": "string?", "accion": "string?", "usuarioId": "uuid?", "fechaDesde": "date?", "fechaHasta": "date?" },
-      "response": [{ "id": "uuid", "servicio": "string", "accion": "string", "entidad_tipo": "string", "metadata": "object", "timestamp": "date" }]
+      "request": { "servicio?": "string", "accion?": "string", "usuarioId?": "uuid", "fechaDesde?": "string (ISO 8601)", "fechaHasta?": "string (ISO 8601)", "page?": "number", "limit?": "number" },
+      "response": { "data": [{ "id": "uuid", "usuarioId?": "string", "accion": "string", "entidadTipo": "string", "entidadId?": "string", "metadata": "object", "servicio": "string", "createdAt": "string (ISO 8601)" }], "pagination": { "page": "number", "limit": "number", "total": "number", "totalPages": "number" } }
     }
   ]
 }

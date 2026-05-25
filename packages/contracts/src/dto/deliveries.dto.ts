@@ -30,6 +30,6 @@ export interface DeliveryListFilters extends PaginationRequest {
 }
 
 export interface UpdateDeliveryStatusRequest {
-  estado: 'en_camino' | 'entregada';
+  estado: DeliveryEstado.EN_CAMINO | DeliveryEstado.ENTREGADA;
   notas?: string;
 }
