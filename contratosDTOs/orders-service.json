@@ -1,0 +1,75 @@
+{
+  "service": "orders-service",
+  "port": 3004,
+  "database": "PostgreSQL",
+  "orm": "Prisma",
+  "responsibility": "Gestión de carrito, pedidos, estados y facturas B/C. Solo contra_entrega como método de pago.",
+  "notes": "⚠️ userId/clienteId NUNCA viene del body, se extrae del token JWT.",
+  "endpoints": [
+    {
+      "path": "/orders",
+      "method": "GET",
+      "auth": "CLIENTE|VENDEDOR",
+      "request": { "estado?": "OrderEstado" },
+      "response": [{ "id": "uuid", "pedidoNumero": "string", "estado": "OrderEstado", "total": "number", "createdAt": "date" }]
+    },
+    {
+      "path": "/orders/:id",
+      "method": "GET",
+      "auth": "CLIENTE|VENDEDOR",
+      "request": {},
+      "response": { "id": "uuid", "cliente": "object", "items": "array", "total": "number", "estado": "OrderEstado", "metodoPago": "contra_entrega", "direccion": "object", "createdAt": "date" }
+    },
+    {
+      "path": "/orders",
+      "method": "POST",
+      "auth": "CLIENTE",
+      "request": { "metodoPago": "contra_entrega", "direccion": "object", "observaciones?": "string" },
+      "response": { "id": "uuid", "pedidoNumero": "string", "estado": "pendiente", "total": "number" }
+    },
+    {
+      "path": "/orders/:id/status",
+      "method": "PATCH",
+      "auth": "VENDEDOR",
+      "request": { "estado": "en_camino|entregado|cancelado" },
+      "response": { "id": "uuid", "estado": "OrderEstado", "updated": "boolean" }
+    },
+    {
+      "path": "/orders/:id/cancelar",
+      "method": "POST",
+      "auth": "CLIENTE",
+      "request": { "motivo?": "string" },
+      "response": { "id": "uuid", "estado": "cancelado" }
+    },
+    {
+      "path": "/cart",
+      "method": "GET",
+      "auth": "CLIENTE",
+      "request": {},
+      "response": { "items": "array", "totalSinIva": "number", "iva": "number", "total": "number" }
+    },
+    {
+      "path": "/cart/items",
+      "method": "POST",
+      "auth": "CLIENTE",
+      "request": { "productId": "uuid", "cantidad": "number" },
+      "response": { "items": "array", "total": "number" }
+    },
+    {
+      "path": "/cart/items/:id",
+      "method": "PATCH",
+      "auth": "CLIENTE",
+      "request": { "cantidad": "number" },
+      "response": { "updated": "boolean" }
+    },
+    {
+      "path": "/cart/items/:id",
+      "method": "DELETE",
+      "auth": "CLIENTE",
+      "request": {},
+      "response": { "deleted": "boolean" }
+    }
+  ],
+  "events_publishes": ["orders-stream: OrderCreated, OrderStatusChanged"],
+  "events_consumes": ["deliveries-stream: DeliveryCompleted"]
+}

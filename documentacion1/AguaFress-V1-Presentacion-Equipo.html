@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AguaFress — Presentación del Equipo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        @page { size: A4; margin: 1.2cm; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; font-size: 10pt; line-height: 1.45; color: #1a1a1a; background: #e2e8f0; padding: 10px; }
+        .page { width: 210mm; min-height: 297mm; margin: 0 auto 12px; background: white; padding: 14mm 16mm; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h1 { font-size: 22pt; color: #0a3b5c; margin-bottom: 2px; }
+        h2 { font-size: 14pt; color: #1e4a6b; border-left: 4px solid #2c7da0; padding-left: 10px; margin: 20px 0 10px; }
+        h3 { font-size: 11pt; color: #2c3e50; margin: 14px 0 6px; }
+        p { margin-bottom: 6px; }
+        .subtitle { font-size: 11pt; color: #2c7da0; margin-bottom: 14px; border-bottom: 2px solid #2c7da0; padding-bottom: 5px; }
+        .box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 14px; margin: 10px 0; }
+        .box-info { border-left: 4px solid #3b82f6; background: #eff6ff; }
+        .box-tip { border-left: 4px solid #22c55e; background: #f0fdf4; }
+        table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 9pt; }
+        th { background: #0a3b5c; color: white; padding: 5px 6px; text-align: left; }
+        td { padding: 4px 6px; border-bottom: 1px solid #e0e0e0; }
+        ul { margin: 4px 0 8px 18px; }
+        li { margin-bottom: 3px; }
+        .member-card { border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; margin: 10px 0; }
+        .member-card h3 { color: #0a3b5c; margin: 0 0 4px; }
+        .member-card .role { font-size: 9pt; color: #2c7da0; font-weight: 600; }
+        .member-card .tech { font-size: 8pt; color: #64748b; }
+        .footer { margin-top: 16px; padding-top: 6px; border-top: 1px solid #ddd; font-size: 7.5pt; color: #777; text-align: center; }
+        @media print { body { background: white; padding: 0; } .page { box-shadow: none; padding: 0; margin: 0 auto; } }
+    </style>
+</head>
+<body>
+
+<div class="page">
+    <h1>👥 AguaFress V1 — Presentación del Equipo</h1>
+    <div class="subtitle">Asignaciones, stack y cronograma</div>
+
+    <h2>Stack tecnológico</h2>
+    <table>
+        <tr><th>Componente</th><th>Tecnología</th></tr>
+        <tr><td>Backend</td><td>Node.js 20 LTS + NestJS 10 + TypeScript 5</td></tr>
+        <tr><td>ORM</td><td>Prisma 5</td></tr>
+        <tr><td>Bases de datos</td><td>PostgreSQL 15 + MongoDB 6 + Redis 7</td></tr>
+        <tr><td>Contenedores</td><td>Docker + Docker Compose (perfiles)</td></tr>
+        <tr><td>Gateway</td><td>NestJS API Gateway (puerto 3000)</td></tr>
+        <tr><td>Comunicación</td><td>Redis Streams</td></tr>
+        <tr><td>Frontend</td><td>React + Next.js (a definir)</td></tr>
+        <tr><td>Monorepo</td><td>npm workspaces (sin Nx/Turborepo)</td></tr>
+    </table>
+
+    <h2>Asignaciones</h2>
+
+    <div class="member-card">
+        <h3>Lucas Lagos</h3>
+        <div class="role">usuario-service (auth + users)</div>
+        <div class="tech">Puerto 3001 · PostgreSQL (2 schemas: auth, users) · Prisma</div>
+        <ul>
+            <li>Registro y login con JWT</li>
+            <li>Roles: super_admin, vendedor, cliente</li>
+            <li>Perfiles de usuario y cartera de clientes</li>
+            <li>QR / Link de invitación para vendedores</li>
+            <li>Refresh tokens y validación</li>
+        </ul>
+    </div>
+
+    <div class="member-card">
+        <h3>Emiliano Spagnolo</h3>
+        <div class="role">products-service</div>
+        <div class="tech">Puerto 3003 · PostgreSQL · Prisma</div>
+        <ul>
+            <li>CRUD de productos por vendedor</li>
+            <li>Categorías y marcas</li>
+            <li>Búsqueda y filtros</li>
+            <li>Stock management</li>
+            <li>Activar/desactivar productos</li>
+        </ul>
+    </div>
+
+    <div class="member-card">
+        <h3>Adrián Burdiles</h3>
+        <div class="role">orders-service + api-gateway</div>
+        <div class="tech">Puertos 3000 (gateway) y 3004 · PostgreSQL · Prisma</div>
+        <ul>
+            <li>API Gateway: routing, auth, rate limiting</li>
+            <li>Carrito de compras (expira 24hs)</li>
+            <li>Pedidos (create, cancel, status)</li>
+            <li>Facturación básica (B y C)</li>
+            <li>Método de pago: contra_entrega</li>
+        </ul>
+    </div>
+
+    <div class="member-card">
+        <h3>Milagros Alvarado</h3>
+        <div class="role">entregas-service</div>
+        <div class="tech">Puerto 3005 · PostgreSQL · Prisma</div>
+        <ul>
+            <li>Asignación de entregas a vendedor</li>
+            <li>Cambio de estado (pendiente → en_camino → entregada)</li>
+            <li>Historial de entregas por vendedor</li>
+            <li>Notas y observaciones</li>
+        </ul>
+    </div>
+
+    <div class="member-card">
+        <h3>Agustín Soto</h3>
+        <div class="role">notifications-service + frontend research</div>
+        <div class="tech">Puerto 3006 · MongoDB · Mongoose</div>
+        <ul>
+            <li>Activity Logs (registro de eventos)</li>
+            <li>Consumo de eventos Redis Streams</li>
+            <li>Investigación de stack frontend (React + Next.js)</li>
+            <li>Prototipo de vistas principales</li>
+        </ul>
+    </div>
+
+    <div class="footer"><strong>AguaFress</strong> — Presentación del Equipo — Página 1</div>
+</div>
+
+<div class="page section-break">
+
+    <h2>Cronograma</h2>
+    <table>
+        <tr><th>Mes</th><th>Objetivo</th><th>Qué se entrega</th></tr>
+        <tr>
+            <td><strong>Mes 1</strong></td>
+            <td>Código base</td>
+            <td>Proyectos NestJS, schemas Prisma, migrations, Docker, health checks</td>
+        </tr>
+        <tr>
+            <td><strong>Mes 2</strong></td>
+            <td>Eventos + integración</td>
+            <td>Redis Streams, comunicación entre servicios, lógica de negocio</td>
+        </tr>
+        <tr>
+            <td><strong>Mes 3</strong></td>
+            <td>Frontend</td>
+            <td>Vistas principales, conexión con Gateway, flujo completo</td>
+        </tr>
+        <tr>
+            <td><strong>Mes 4</strong></td>
+            <td>Cierre</td>
+            <td>Tests, bugs, documentación, ajustes UX, preparación deploy</td>
+        </tr>
+        <tr>
+            <td><strong>Mes 5</strong></td>
+            <td>Colchón</td>
+            <td>Imprevistos, bugs post-integración, mejoras</td>
+        </tr>
+    </table>
+
+    <h2>Hitos clave</h2>
+    <table>
+        <tr><th>Semana</th><th>Hito</th><th>Responsable</th></tr>
+        <tr><td>2</td><td>Primera integración: servicios + health checks + Redis</td><td>Todos</td></tr>
+        <tr><td>4</td><td>Contratos finalizados + flujo auth funcionando</td><td>Lucas + Adrián</td></tr>
+        <tr><td>6</td><td>Catálogo + pedidos funcionando con eventos</td><td>Emiliano + Adrián</td></tr>
+        <tr><td>8</td><td>Flujo completo: registro → pedido → entrega</td><td>Todos</td></tr>
+        <tr><td>12</td><td>Frontend conectado + pruebas E2E</td><td>Agustín + todos</td></tr>
+        <tr><td>16</td><td>MVP ready para deploy</td><td>Todos</td></tr>
+    </table>
+
+    <h2>Reglas de convivencia</h2>
+    <ul>
+        <li>Daily de 15 minutos a las 10:00 (qué hice, qué voy a hacer, blockers)</li>
+        <li>PR a develop cuando el código funciona (no esperar a tener todo perfecto)</li>
+        <li>Si un PR toca contracts, todos revisan</li>
+        <li>Si algo se rompe, se arregla antes de seguir</li>
+        <li>Dudas técnicas se discuten en Discord, no esperar a la daily</li>
+        <li>Aprendemos haciendo: código desde el día 1</li>
+    </ul>
+
+    <div class="box box-tip">
+        <strong>💡 Filosofía del proyecto:</strong> CONCEPTOS > CÓDIGO. Entender el por qué de cada decisión es más importante que escribir líneas rápido.
+    </div>
+
+    <div class="footer"><strong>AguaFress</strong> — Presentación del Equipo — Página 2</div>
+</div>
+
+</body>
+</html>

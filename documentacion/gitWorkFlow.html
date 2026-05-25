@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Resumen Git + GitHub + Trabajo en Equipo</title>
+  <style>
+    :root {
+      --bg-main: #02030f;
+      --glass-bg: rgba(8, 10, 30, 0.82);
+      --border-glass: rgba(255, 255, 255, 0.09);
+
+      --neon-green: #7fff00;
+      --neon-blue: #00e5ff;
+      --neon-magenta: #ff00ff;
+
+      --text-main: #f5f7ff;
+      --text-muted: #a2a7c3;
+
+      --shadow-neon: 0 0 18px rgba(0, 229, 255, 0.3);
+      --radius: 14px;
+      --font-mono: "Fira Code", Consolas, Monaco, monospace;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, Ubuntu, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: radial-gradient(circle at top, #071435 0, #02030f 55%, #000 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 30px 16px 60px;
+      display: flex;
+      justify-content: center;
+      line-height: 1.55;
+    }
+
+    .page {
+      width: 100%;
+      max-width: 1120px;
+      position: relative;
+    }
+
+    /* “dibujos” de fondo */
+    .neon-orbit {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+      opacity: 0.4;
+    }
+    .neon-orbit::before,
+    .neon-orbit::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      filter: blur(40px);
+      mix-blend-mode: screen;
+    }
+    .neon-orbit::before {
+      width: 380px;
+      height: 380px;
+      background: radial-gradient(circle, rgba(0, 229, 255, 0.6), transparent);
+      top: -80px;
+      right: 6%;
+    }
+    .neon-orbit::after {
+      width: 430px;
+      height: 430px;
+      background: radial-gradient(circle, rgba(255, 0, 255, 0.55), transparent);
+      bottom: -120px;
+      left: 4%;
+    }
+
+    h1, h2, h3 {
+      font-weight: 650;
+      letter-spacing: 0.03em;
+    }
+
+    .title-block {
+      margin-bottom: 26px;
+      padding: 16px 20px 22px;
+      border-radius: var(--radius);
+      background: linear-gradient(
+          135deg,
+          rgba(127, 255, 0, 0.07),
+          rgba(0, 229, 255, 0.05),
+          rgba(255, 0, 255, 0.07)
+        );
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 0 24px rgba(0, 0, 0, 0.6);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .title-block::before {
+      content: "";
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(127, 255, 0, 0.55), transparent);
+      filter: blur(26px);
+      opacity: 0.45;
+      top: -120px;
+      right: -40px;
+    }
+
+    .title-small {
+      text-transform: uppercase;
+      font-size: 13px;
+      color: var(--neon-blue);
+      margin-bottom: 4px;
+    }
+
+    h1 {
+      font-size: 26px;
+      margin-bottom: 4px;
+      text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+    }
+
+    .title-sub {
+      font-size: 14px;
+      color: var(--text-muted);
+      max-width: 660px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .section {
+      background: var(--glass-bg);
+      border-radius: var(--radius);
+      border: 1px solid var(--border-glass);
+      box-shadow: var(--shadow-neon);
+      padding: 16px 18px 18px;
+      margin-bottom: 18px;
+      backdrop-filter: blur(18px);
+      position: relative;
+      overflow: hidden;
+      page-break-inside: avoid;
+    }
+
+    .section::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: 0.16;
+      background:
+        radial-gradient(circle at top left, rgba(127, 255, 0, 0.18), transparent 55%),
+        radial-gradient(circle at bottom right, rgba(0, 229, 255, 0.18), transparent 60%);
+      pointer-events: none;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .section-chip {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: var(--neon-green);
+      box-shadow: 0 0 12px rgba(127, 255, 0, 0.37);
+      background: rgba(3, 7, 25, 0.95);
+    }
+
+    .section-title {
+      font-size: 17px;
+      text-transform: uppercase;
+      color: var(--neon-blue);
+    }
+
+    .section-body {
+      position: relative;
+      z-index: 1;
+      font-size: 14px;
+      color: var(--text-main);
+    }
+
+    .section-body p {
+      margin-bottom: 8px;
+    }
+
+    .tagline {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 2px 9px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-right: 6px;
+      margin-bottom: 4px;
+    }
+    .pill.green { color: var(--neon-green); }
+    .pill.blue { color: var(--neon-blue); }
+    .pill.magenta { color: var(--neon-magenta); }
+
+    .flow-diagram {
+      margin-top: 10px;
+      margin-bottom: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      color: var(--text-main);
+    }
+
+    .flow-step {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 140px;
+      padding: 6px 8px;
+      margin: 4px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: linear-gradient(
+        135deg,
+        rgba(127, 255, 0, 0.1),
+        rgba(0, 229, 255, 0.08)
+      );
+      box-shadow: 0 0 12px rgba(0, 229, 255, 0.28);
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .flow-arrow {
+      display: inline-block;
+      margin: 0 4px;
+      color: var(--neon-magenta);
+      font-weight: 600;
+    }
+
+    ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 4px 0 1px;
+    }
+    li {
+      margin-bottom: 4px;
+      position: relative;
+      padding-left: 13px;
+      font-size: 13px;
+    }
+    li::before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      top: 0;
+      color: var(--neon-green);
+      font-size: 14px;
+    }
+
+    code, pre {
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    pre {
+      margin: 6px 0 8px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(2, 6, 23, 0.96);
+      border: 1px solid rgba(0, 229, 255, 0.28);
+      color: #e5f9ff;
+      overflow-x: auto;
+      box-shadow: 0 0 14px rgba(0, 229, 255, 0.25);
+    }
+
+    .code-label {
+      font-size: 11px;
+      color: var(--neon-blue);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 3px;
+      margin-bottom: 2px;
+    }
+
+    .columns-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .mini-card {
+      padding: 8px 9px;
+      border-radius: 10px;
+      background: rgba(4, 7, 30, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 0 12px rgba(127, 255, 0, 0.15);
+      font-size: 13px;
+      page-break-inside: avoid;
+    }
+    .mini-card-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      color: var(--neon-green);
+      margin-bottom: 3px;
+      letter-spacing: 0.06em;
+    }
+    .mini-card p {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .branch-diagram {
+      margin-top: 8px;
+      margin-bottom: 4px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-main);
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .branch-diagram pre {
+      border-color: rgba(255, 0, 255, 0.32);
+      box-shadow: 0 0 16px rgba(255, 0, 255, 0.32);
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+    }
+    .dot-main { background: var(--neon-blue); }
+    .dot-feature { background: var(--neon-green); }
+    .dot-pr { background: var(--neon-magenta); }
+
+    .cheatsheet-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: var(--neon-magenta);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 4px;
+    }
+
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .cheatsheet-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    /* Ajustes para PDF / impresión */
+    @media print {
+      body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        background: #02030f;
+        padding: 10mm;
+      }
+
+      .page {
+        max-width: 100%;
+      }
+
+      .neon-orbit {
+        /* si ves que satura mucho el fondo en PDF, déjalo en none */
+        opacity: 0.25;
+      }
+
+      .section {
+        box-shadow: none;
+        border-color: rgba(255, 255, 255, 0.18);
+      }
+
+      pre {
+        box-shadow: none;
+      }
+
+      a[href]:after {
+        content: "";
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="neon-orbit"></div>
+
+  <div class="page">
+    <!-- Título -->
+    <header class="title-block">
+      <div class="title-small">Git + GitHub + Trabajo en equipo</div>
+      <h1>Flujo profesional, commits limpios y colaboración efectiva</h1>
+      <p class="title-sub">
+        Resumen completo del flujo de trabajo en equipo usando Git y GitHub:
+        ramas, Pull Requests, revisión de código y convención de commits
+        (Conventional Commits) para mantener proyectos ordenados y trazables.
+      </p>
+    </header>
+
+    <!-- Grid principal -->
+    <div class="grid">
+      <!-- 1. Flujo de trabajo -->
+      <section class="section">
+        <div class="section-header">
+          <div class="section-chip">1</div>
+          <h2 class="section-title">Flujo de trabajo en equipo</h2>
+        </div>
+        <div class="section-body">
+          <p class="tagline">
+            De la clonación del repositorio al merge en <strong>main</strong>,
+            pasando por ramas de feature y Pull Requests.
+          </p>
+
+          <div class="flow-diagram" aria-label="Diagrama de flujo Git">
+            <div class="flow-step">
+              [1] git clone
+            </div>
+            <span class="flow-arrow">⟶</span>
+            <div class="flow-step">
+              [2] Crear rama<br>feature/nombre-feature
+            </div>
+            <span class="flow-arrow">⟶</span>
+            <div class="flow-step">
+              [3] Desarrollar<br>código + tests
+            </div>
+            <span class="flow-arrow">⟶</span>
+            <div class="flow-step">
+              [4] git add +<br>git commit
+            </div>
+            <span class="flow-arrow">⟶</span>
+            <div class="flow-step">
+              [5] git push origin<br>feature/...
+            </div>
+            <span class="flow-arrow">⟶</span>
+            <div class="flow-step">
+              [6] Pull Request
+            </div>
+            <span class="flow-arrow">⟶</span>
+            <div class="flow-step">
+              [7] Review
+            </div>
+            <span class="flow-arrow">⟶</span>
+            <div class="flow-step">
+              [8] Merge a main
+            </div>
+          </div>
+
+          <div class="code-label">Ejemplo práctico de comandos</div>
+          <pre>
+git clone https://github.com/empresa/proyecto.git
+cd proyecto
+git checkout -b feature/login-jwt
+# (desarrollo)
+git add .
+git commit -m "feat(auth): agregar login con JWT"
+git push origin feature/login-jwt
+# Crear Pull Request hacia main en GitHub
+          </pre>
+        </div>
+      </section>
+
+      <!-- 2. Reglas del equipo -->
+      <section class="section">
+        <div class="section-header">
+          <div class="section-chip">2</div>
+          <h2 class="section-title">Reglas del equipo</h2>
+        </div>
+        <div class="section-body">
+          <p class="tagline">
+            Convenciones mínimas para mantener el repositorio limpio y
+            colaborativo.
+          </p>
+
+          <ul>
+            <li>
+              <strong>Protección de main:</strong> nadie trabaja directo sobre
+              <code>main</code>. Todo pasa por ramas + PR.
+            </li>
+            <li>
+              <strong>Ramas por tarea:</strong> una rama por Issue/tarea, con
+              nombres descriptivos.
+            </li>
+            <li>
+              <strong>Commits atómicos:</strong> un cambio lógico por commit.
+            </li>
+            <li>
+              <strong>Review obligatorio:</strong> todo cambio se integra vía
+              Pull Request revisado por otra persona.
+            </li>
+            <li>
+              <strong>Issues vinculados:</strong> cada PR referencia su Issue
+              (<code>Closes #id</code>) para trazabilidad.
+            </li>
+          </ul>
+
+          <div class="code-label">Ejemplos de nombres de ramas</div>
+          <pre>
+feature/login-jwt
+feature/filtrado-productos
+fix/timeout-lista-usuarios
+refactor/estructura-servicios-api
+          </pre>
+        </div>
+      </section>
+    </div>
+
+    <!-- 3. Convención de Commits + tipos + scopes -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-chip">3</div>
+        <h2 class="section-title">Convención de commits</h2>
+      </div>
+      <div class="section-body">
+        <p class="tagline">
+          Uso de <strong>Conventional Commits</strong> para mensajes claros,
+          automatizables y fáciles de leer.
+        </p>
+
+        <div>
+          <span class="pill green">Formato básico</span>
+          <pre>
+tipo(scope): descripción corta
+          </pre>
+        </div>
+
+        <div class="columns-3">
+          <div class="mini-card">
+            <div class="mini-card-title">Tipos comunes</div>
+            <p><strong>feat</strong> → nueva funcionalidad</p>
+            <p><strong>fix</strong> → corrección de bug</p>
+            <p><strong>docs</strong> → solo documentación</p>
+            <p><strong>style</strong> → formato/estilo sin lógica</p>
+            <p><strong>refactor</strong> → cambio interno sin nuevo comportamiento</p>
+            <p><strong>test</strong> → tests</p>
+            <p><strong>chore</strong> → mantenimiento/configuración</p>
+          </div>
+
+          <div class="mini-card">
+            <div class="mini-card-title">Scope (zona afectada)</div>
+            <p><strong>auth</strong> → autenticación/autorización</p>
+            <p><strong>users</strong> → gestión de usuarios</p>
+            <p><strong>ui</strong> → interfaz de usuario</p>
+            <p><strong>api</strong> → endpoints y servicios</p>
+            <p><strong>database</strong> → modelos/migraciones</p>
+            <p><strong>config</strong> → configuración/env vars</p>
+          </div>
+
+          <div class="mini-card">
+            <div class="mini-card-title">Ejemplos</div>
+            <pre>
+feat(users): crear endpoint de registro
+fix(auth): corregir validación de token
+refactor(api): mejorar estructura de servicios
+docs(readme): documentar setup del proyecto
+            </pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Ejemplos por tipo + breaking changes -->
+    <section class="section">
+      <div class="section-header">
+        <div class="section-chip">4</div>
+        <h2 class="section-title">Ejemplos y Breaking Changes</h2>
+      </div>
+      <div class="section-body">
+        <p class="tagline">
+          Mensajes de commit bien construidos y cómo marcar cambios que rompen compatibilidad.
+        </p>
+
+        <div class="columns-3">
+          <div class="mini-card">
+            <div class="mini-card-title">feat</div>
+            <pre>
+feat(users): crear endpoint de usuarios
+feat(api): implementar paginación en lista
+feat(ui): añadir componente de búsqueda
+            </pre>
+          </div>
+          <div class="mini-card">
+            <div class="mini-card-title">fix</div>
+            <pre>
+fix(auth): corregir validación de token
+fix(api): solucionar error de timeout
+fix(ui): arreglar estilo responsive
+            </pre>
+          </div>
+          <div class="mini-card">
+            <div class="mini-card-title">refactor</div>
+            <pre>
+refactor(api): mejorar estructura de servicios
+refactor(users): simplificar lógica de validación
+refactor(database): optimizar consultas
+            </pre>
+          </div>
+        </div>
+
+        <br>
+
+        <span class="pill magenta">Breaking changes</span>
+        <p

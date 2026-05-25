@@ -1,0 +1,58 @@
+{
+  "service": "products-service",
+  "port": 3003,
+  "database": "PostgreSQL",
+  "responsibility": "Catálogo de productos, categorías, imágenes, búsquedas, favoritos.",
+  "endpoints": [
+    {
+      "path": "/products",
+      "method": "GET",
+      "request": { "vendedorId": "uuid?", "categoria": "string?", "disponibles": "boolean?" },
+      "response": [{ "id": "uuid", "nombre": "string", "precio": "number", "imagen": "url", "stock": "number" }]
+    },
+    {
+      "path": "/products/:id",
+      "method": "GET",
+      "request": {},
+      "response": { "id": "uuid", "nombre": "string", "descripcion": "string", "precio": "number", "precioIva": "number", "imagen": "url", "stock": "number", "valoracion": "number", "categoria": "string" }
+    },
+    {
+      "path": "/products",
+      "method": "POST",
+      "request": { "nombre": "string", "descripcion": "string", "precio": "number", "categoriaId": "uuid", "imagen": "url?", "stock": "number", "vendedorId": "uuid" },
+      "response": { "id": "uuid", "created": "boolean" }
+    },
+    {
+      "path": "/products/:id",
+      "method": "PATCH",
+      "request": { "nombre": "string?", "precio": "number?", "stock": "number?", "imagen": "url?" },
+      "response": { "id": "uuid", "updated": "boolean" }
+    },
+    {
+      "path": "/products/:id",
+      "method": "DELETE",
+      "request": {},
+      "response": { "deleted": "boolean" }
+    },
+    {
+      "path": "/products/search",
+      "method": "GET",
+      "request": { "q": "string", "vendedorId": "uuid?" },
+      "response": [{ "id": "uuid", "nombre": "string", "precio": "number" }]
+    },
+    /* FUTURE: Favoritos
+    {
+      "path": "/products/:id/favorite",
+      "method": "POST",
+      "request": { "userId": "uuid" },
+      "response": { "favoriteId": "uuid", "created": "boolean" }
+    },
+    {
+      "path": "/favorites",
+      "method": "GET",
+      "request": { "userId": "uuid" },
+      "response": [{ "productId": "uuid", "nombre": "string", "precio": "number" }]
+    }
+    */
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "service": "api-gateway",
+  "port": 3000,
+  "responsibility": "Punto de entrada único. Routing, autenticación JWT, rate limiting, forwarding a microservicios.",
+  "routes": [
+    { "path": "/auth/*", "target": "usuario-service (auth)", "port": 3001, "auth": false },
+    { "path": "/users/*", "target": "usuario-service (users)", "port": 3001, "auth": true },
+    { "path": "/qr/*", "target": "usuario-service (users)", "port": 3001, "auth": false },
+    { "path": "/products/*", "target": "products-service", "port": 3003, "auth": true },
+    { "path": "/orders/*", "target": "orders-service", "port": 3004, "auth": true },
+    { "path": "/cart/*", "target": "orders-service", "port": 3004, "auth": true },
+    { "path": "/deliveries/*", "target": "entregas-service", "port": 3005, "auth": true },
+    { "path": "/activity-logs/*", "target": "notifications-service", "port": 3006, "auth": true }
+  ]
+}

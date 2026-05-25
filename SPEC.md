@@ -1,11 +1,14 @@
 # AguaFress - Specification Document
 
-**Versión:** 1.0  
-**Fecha:** Abril 2026  
+**Versión:** 1.1  
+**Fecha:** Mayo 2026  
 **Estado:** Aprobado para Desarrollo  
 **Proyecto:** AguaFress - Plataforma de Pedidos y Gestión para Distribuidores de Agua y Soda  
 **Equipo:** AguaFress Development (5 personas)  
 **Carrera:** Desarrollo Full Stack
+
+> ⚠️ **Este SPEC refleja la arquitectura V1.0 MVP actual.**  
+> Todo el código nuevo debe cumplir **SOLID + Clean Code** (ver sección 11).
 
 ---
 
@@ -42,16 +45,17 @@ AguaFress es una plataforma marketplace web que conecta directamente vendedores 
 
 | Incluido | Excluido |
 |---------|----------|
-| Registro/Login email + Google OAuth | Registro de empresas con CUIT (V2.0) |
+| Registro/Login email + JWT | Registro de empresas con CUIT (V2.0) |
 | Perfil consumidor (datos básicos) | Chat en tiempo real (V2.0) |
 | Catálogo productos con fotos | AI y comandos por voz (V2.0) |
-| Carrito de compras | React Native (V2.0) |
-| Pedidos (anticipado + contra entrega) | |
-| Confirmación de visitas | |
-| Dashboard vendedor | |
-| Mapa con GPS | |
-| Informes de ventas | |
-| Facturas digitales | |
+| Carrito de compras (expira 24hs) | React Native (V2.0) |
+| Pedidos (solo contra entrega) | Google OAuth (V2.0) |
+| Confirmación de visitas | Pago anticipado (V2.0) |
+| Dashboard vendedor | Analytics / Reportes (V2.0) |
+| QR / Link de invitación | Favoritos y valoraciones (V2.0) |
+| Facturas B y C | Mapa con GPS (V2.0) |
+| Activity Logs (MongoDB) | Payment Service (V2.0) |
+| Entrega Service (puerto 3005) | Chat Service (V2.0) |
 
 ### 2.2 Versión 2.0 (Futuro) - Planeado
 
@@ -96,7 +100,7 @@ AguaFress es una plataforma marketplace web que conecta directamente vendedores 
 | AUTH-01 | Registro de usuarios | Admins crean usuarios (clientes) | Alta |
 | AUTH-01B | Autoregistro vendedor | Vendedor se registra solo, espera activación | Alta |
 | AUTH-02 | Login email/password | Autenticación tradicional | Alta |
-| AUTH-03 | Login Google OAuth | Autenticación con Google | Alta |
+| AUTH-03 | Login Google OAuth | @deprecated - No implementar en MVP | Baja |
 | AUTH-04 | Recuperación contraseña | Reset por email | Media |
 | AUTH-05 | JWT Refresh | Mantener sesión | Alta |
 | PERF-01 | Ver mi perfil | Datos del usuario | Alta |
@@ -116,10 +120,8 @@ AguaFress es una plataforma marketplace web que conecta directamente vendedores 
 | CAT-05 | Precio sin IVA | Base imponible | Alta |
 | CAT-06 | Precio final | Con impuestos | Alta |
 | CAT-07 | Stock disponible | Unidades | Alta |
-| CAT-08 | Valoraciones | 5 estrellas | Alta |
-| CAT-09 | Favoritos | Productos guardados | Alta |
-| CAT-10 | Búsqueda | Filtrar productos | Media |
-| CAT-11 | Carga productos | Vendedor admin | Alta |
+| CAT-08 | Búsqueda | Filtrar productos | Media |
+| CAT-09 | Carga productos | Vendedor admin | Alta |
 
 ### 3.3 Carrito de Compras
 
@@ -139,9 +141,8 @@ AguaFress es una plataforma marketplace web que conecta directamente vendedores 
 | ID | Requerimiento | Descripción | Prioridad |
 |----|--------------|-------------|-----------|
 | PED-01 | Crear pedido | Desde carrito | Alta |
-| PED-02 | Pago anticipado |提前付款 | Alta |
-| PED-03 | Pago contra entrega | Entrega时付款 | Alta |
-| PED-04 | Confirmar visita | Cliente confirma | Alta |
+| PED-02 | Pago contra entrega | Único método en MVP | Alta |
+| PED-03 | Confirmar visita | Cliente confirma | Alta |
 | PED-05 | Cancelar visita | Cliente rechaza | Alta |
 | PED-06 | Estado: pendiente | Esperando | Alta |
 | PED-07 | Estado: confirmado | Aprobado | Alta |
@@ -177,9 +178,8 @@ AguaFress es una plataforma marketplace web que conecta directamente vendedores 
 | CONS-05 | Tipo factura | B o C | Alta |
 | CONS-06 | Ver catálogo | Productos del vendedor | Alta |
 | CONS-07 | Carrito | Compra online | Alta |
-| CONS-08 | Pago | Métodos | Alta |
-| CONS-09 | Confirmar visita | Programación | Alta |
-| CONS-10 | Recibir facturas | Descarga | Media |
+| CONS-08 | Confirmar visita | Programación | Alta |
+| CONS-09 | Recibir facturas | Descarga | Media |
 
 ---
 
@@ -286,34 +286,28 @@ AguaFress es una plataforma marketplace web que conecta directamente vendedores 
 | Servicio | Puerto | DB | ORM | Funcionalidad |
 |----------|--------|-----|-----|--------------|
 | **api-gateway** | 3000 | - | - | Routing, Auth, Rate limit |
-| **auth-service** | 3001 | PostgreSQL | TypeORM | Login, JWT, Roles, Users |
-| **user-service** | 3002 | PostgreSQL | TypeORM | Gestión de usuarios, Clientes |
-| **products-service** | 3003 | PostgreSQL | TypeORM | Catálogo, Productos |
-| **orders-service** | 3004 | PostgreSQL | TypeORM | Pedidos, Carrito |
-| **analytics-service** | 3005 | MySQL | TypeORM | Reportes, Métricas OLAP |
-| **notifications-service** | 3006 | MongoDB | Mongoose | Logs, Push, Events |
-| **payment-service** | 3007 | PostgreSQL | TypeORM | Pagos |
-| **chat-service** | 3008 | Redis Streams | ioredis | Mensajería tiempo real |
+| **usuario-service** (auth + users) | 3001 | PostgreSQL (2 schemas) | Prisma | Login, JWT, Roles, Perfiles, Cartera, QR |
+| **products-service** | 3003 | PostgreSQL | Prisma | Catálogo, Productos, Marcas, Categorías |
+| **orders-service** | 3004 | PostgreSQL | Prisma | Pedidos, Carrito, Facturas B/C |
+| **entregas-service** | 3005 | PostgreSQL | Prisma | Repartos, Estados, Asignación |
+| **notifications-service** | 3006 | MongoDB | Mongoose | Activity Logs (solo consume eventos) |
 
 ### 5.3 Puertos de Infraestructura
 
 | Componente | Puerto | Propósito |
 |------------|--------|-----------|
-| PostgreSQL | 5432 | Datos transaccionales |
-| Redis | 6379 | Cache + Streams (eventos) |
-| RabbitMQ | 5672 | Message Broker (opcional) |
-| Consul | 8500 | Service Discovery |
-| Elasticsearch | 9200 | Logs centralizados |
-| Kibana | 5601 | Visualización de logs |
-| Prometheus | 9090 | Métricas |
-| Grafana | 3000 | Dashboard métricas |
+| PostgreSQL | 5432 | Datos transaccionales (todos los services) |
+| MongoDB | 27017 | Activity Logs (notifications-service) |
+| Redis | 6379 | Streams de eventos + caché |
+| Mailhog | 1025 | Email test (desarrollo) |
 
 ### 5.4 Comunicación Entre Servicios
 
-- **gRPC**: Para consultas síncronas directo servicio-a-servicio
-- **RabbitMQ/NATS**: Para eventos asíncronos (order.created, user.registered, etc.)
-- **Redis Streams**: Bus de eventos asíncronos (替代 RabbitMQ para casos simples)
+- **Redis Streams**: Único bus de eventos asíncronos (order.created, user.registered, etc.)
 - **Redis**: Cache de sesiones (JWT) y catálogo de productos
+- **HTTP REST**: Comunicación síncrona a través del API Gateway
+
+> Decisión de arquitectura: evitar gRPC y RabbitMQ en MVP para reducir complejidad operativa.
 ┌─────────────────────────────────────────────────────────────┐
 │                    AGUAFRESS                                │
 ├─────────────────────────────────────────────────────────────┤
@@ -355,128 +349,111 @@ AguaFress es una plataforma marketplace web que conecta directamente vendedores 
 
 ```
 aguaFress/
-├── api-gateway/              # NestJS - Puerto 3000
+├── services/
+│   ├── usuario-service/         # NestJS - Puerto 3001
+│   │   ├── src/
+│   │   │   ├── auth/              # Módulo auth (login, JWT, register)
+│   │   │   ├── users/             # Módulo users (perfiles, cartera, QR)
+│   │   │   └── common/
+│   │   └── test/
+│   │
+│   ├── products-service/        # NestJS - Puerto 3003
+│   │   ├── src/
+│   │   │   ├── products/
+│   │   │   ├── categories/
+│   │   │   └── common/
+│   │   └── test/
+│   │
+│   ├── orders-service/          # NestJS - Puerto 3004
+│   │   ├── src/
+│   │   │   ├── orders/
+│   │   │   ├── cart/
+│   │   │   └── common/
+│   │   └── test/
+│   │
+│   ├── entregas-service/       # NestJS - Puerto 3005 (NUEVO)
+│   │   ├── src/
+│   │   │   ├── deliveries/
+│   │   │   └── common/
+│   │   └── test/
+│   │
+│   └── notifications-service/  # NestJS - Puerto 3006 (MongoDB)
+│       ├── src/
+│       │   ├── activity-logs/
+│       │   └── common/
+│       └── test/
+│
+├── gateway/                     # NestJS - Puerto 3000
 │   ├── src/
-│   │   ├── gateway/
-│   │   │   ├── gateway.module.ts
-│   │   │   ├── grpc.proxy.ts
-│   │   │   └── routing.service.ts
+│   │   ├── routes/
 │   │   └── main.ts
 │   └── test/
 │
-├── auth-service/            # NestJS - Puerto 3001
-│   ├── src/
-│   │   ├── auth/
-│   │   ├── users/
-│   │   └── common/
-│   └── test/
+├── packages/
+│   └── contracts/               # DTOs, eventos, enums compartidos
+│       └── src/
+│           ├── enums.ts
+│           ├── events.ts
+│           └── dto/
 │
-├── products-service/       # NestJS - Puerto 3003
-│   ├── src/
-│   │   ├── products/
-│   │   ├── categories/
-│   │   └── common/
-│   └── test/
-│
-├── orders-service/         # NestJS - Puerto 3002
-│   ├── src/
-│   │   ├── orders/
-│   │   ├── cart/
-│   │   └── common/
-│   └── test/
-│
-├── analytics-service/      # NestJS - Puerto 3004 (MySQL)
-│   ├── src/
-│   │   ├── reports/
-│   │   └── metrics/
-│   └── test/
-│
-├── notifications-service/ # NestJS - Puerto 3005 (MongoDB)
-│   ├── src/
-│   │   ├── notifications/
-│   │   ├── logs/
-│   │   └── common/
-│   └── test/
-│
-└── frontend/             # React 18 + TS
-    ├── src/
-    └── test/
+├── contratosDTOs/              # Contratos JSON de cada servicio
+├── documentacion/              # Documentación del proyecto
+├── docker-compose.yml          # Perfiles por servicio
+└── package.json                # npm workspaces raíz
+
+> **Principio**: Monorepo con npm workspaces, sin Nx/Turborepo.
 ```
 
 > **Principio SRP**: Cada servicio es independiente, tiene su propia DB, y se comunica por eventos.
 
 ### 5.5 Contratos de Microservicios
 
-Los contratos detallados se encuentran en: `documentacion/contratos/`
+Los DTOs TypeScript compartidos están en: `packages/contracts/src/dto/`
+Los contratos JSON están en: `contratosDTOs/`
 
 #### API Gateway (Puerto 3000)
 - **Responsabilidad:** Punto de entrada único. Routing, autenticación, rate limiting.
 - **Rutas:**
-  - `/auth/*` → auth-service:3001
-  - `/users/*` → user-service:3002
+  - `/auth/*` → usuario-service:3001 (módulo auth)
+  - `/users/*` → usuario-service:3001 (módulo users)
   - `/products/*` → products-service:3003
   - `/orders/*` → orders-service:3004
-  - `/analytics/*` → analytics-service:3005
+  - `/deliveries/*` → entregas-service:3005
   - `/notifications/*` → notifications-service:3006
-  - `/payments/*` → payment-service:3007
 
-#### Auth Service (Puerto 3001) - PostgreSQL
-- **Responsabilidad:** Autenticación, JWT, roles y permisos.
-- **Endpoints principales:**
-  - `POST /auth/login` - Login email/password → `{token, user}`
-  - `POST /auth/register` - Crear usuario → `{user}`
-  - `POST /auth/google` - Login OAuth → `{token, user}`
-  - `POST /auth/refresh` - Renovar token → `{token}`
-  - `POST /auth/validate` - Validar token → `{valid, user}`
-
-#### User Service (Puerto 3002) - PostgreSQL
-- **Responsabilidad:** Gestión de usuarios, clientes, asignación de vendedores.
-- **Endpoints principales:**
-  - `GET /users/me` - Mi perfil → `User`
-  - `PATCH /users/me` - Actualizar perfil → `User`
-  - `GET /users/mis-clientes` - Lista de clientes del vendedor → `[Client]`
-  - `POST /users/asignar-vendedor` - Asignar cliente a vendedor → `Client`
+#### usuario-service (Puerto 3001) - PostgreSQL (2 schemas: auth, users)
+- **Responsabilidad:** Autenticación + perfiles (unificados en 1 MS).
+- **Módulo auth:** Login, JWT, registro, refresh, validate
+- **Módulo users:** Perfiles, cartera de clientes, QR/link de invitación
 
 #### Products Service (Puerto 3003) - PostgreSQL
-- **Responsabilidad:** Catálogo de productos, categorías, favoritos.
+- **Responsabilidad:** Catálogo de productos, categorías, marcas.
 - **Endpoints principales:**
   - `GET /products` - Listar catálogo → `[Product]`
   - `POST /products` - Crear producto → `Product`
   - `GET /products/search?q=` - Buscar productos → `[Product]`
-  - `POST /products/:id/favorite` - Agregar a favoritos → `Favorite`
 
 #### Orders Service (Puerto 3004) - PostgreSQL
-- **Responsabilidad:** Pedidos, carrito, estados.
+- **Responsabilidad:** Pedidos, carrito, facturas B/C.
 - **Endpoints principales:**
   - `GET /orders` - Mis pedidos → `[Order]`
   - `POST /orders` - Crear pedido → `Order`
-  - `POST /orders/:id/confirmar` - Confirmar visita → `Order`
-  - `POST /orders/:id/cancelar` - Cancelar visita → `Order`
+  - `POST /orders/:id/cancelar` - Cancelar pedido → `Order`
   - `GET /cart` - Ver carrito → `Cart`
   - `POST /cart/items` - Agregar al carrito → `Cart`
 
-#### Analytics Service (Puerto 3005) - MySQL
-- **Responsabilidad:** Reportes, métricas OLAP.
+#### Entregas Service (Puerto 3005) - PostgreSQL
+- **Responsabilidad:** Repartos, asignación a vendedor, cambio de estados.
 - **Endpoints principales:**
-  - `GET /analytics/ventas/cliente` - Ventas por cliente → `SalesByClient[]`
-  - `GET /analytics/ventas/producto` - Ventas por producto → `SalesByProduct[]`
-  - `GET /analytics/metricas` - Métricas globales → `Metrics`
+  - `GET /deliveries` - Mis entregas → `[Delivery]`
+  - `PATCH /deliveries/:id/status` - Actualizar estado → `Delivery`
 
 #### Notifications Service (Puerto 3006) - MongoDB
-- **Responsabilidad:** Notificaciones, logs, eventos.
+- **Responsabilidad:** Activity logs (solo consume eventos de Redis Streams).
 - **Endpoints principales:**
-  - `GET /notifications` - Mis notificaciones → `[Notification]`
-  - `PATCH /notifications/:id/read` - Marcar leída → `Notification`
-  - `POST /notifications/send` - Enviar notificación → `Notification`
+  - `GET /activity-logs` - Listar logs → `[ActivityLog]`
 
-#### Payment Service (Puerto 3007) - PostgreSQL
-- **Responsabilidad:** Métodos de pago, facturas.
-- **Endpoints principales:**
-  - `GET /payments/metodos` - Métodos de pago → `[PaymentMethod]`
-  - `POST /payments/procesar` - Procesar pago → `PaymentResult`
-  - `POST /facturas/generar` - Generar factura → `Factura`
-
-> **Nota:** Los contratos completos en formato JSON están disponibles en `documentacion/contratos/`
+> **Nota:** Los contratos completos en formato JSON están disponibles en `contratosDTOs/`
 
 ### 5.6 Modelo de Datos Entity-Relationship
 
@@ -517,43 +494,52 @@ Los contratos detallados se encuentran en: `documentacion/contratos/`
 └────────────────────────────────────────────────────────────────────┘
 ```
 
-### 5.4 Enums Definidos
+### 5.6 Enums Definidos
+
+> ⚠️ Los enums definitivos están en `packages/contracts/src/enums.ts`. Este es un resumen.
 
 ```typescript
 // Roles de usuario
 export enum UserRole {
-  SUPER_ADMIN = 'super_admin', // Administrador de plataforma
-  VENDEDOR = 'vendedor',   // Owner de cartera
-  CLIENTE = 'cliente'     // Consumidor final
+  SUPER_ADMIN = 'super_admin',
+  VENDEDOR = 'vendedor',
+  CLIENTE = 'cliente',
 }
 
 // Estado de cuenta de vendedor
-export enum VendedorStatus {
-  PENDIENTE = 'pendiente',  // Esperando activación
-  ACTIVO = '_activo',      // Habilitado
-  INACTIVO = 'inactivo',  // Suspendido por mora
-  BLOQUEADO = 'bloqueado'   // Inhabilitado permanente
-}
-
-// Tipo de factura
-export enum TipoFactura {
-  B = 'B',
-  C = 'C'
+export enum VendedorEstado {
+  PENDIENTE = 'pendiente',
+  ACTIVO = 'activo',
+  INACTIVO = 'inactivo',
+  BLOQUEADO = 'bloqueado',
 }
 
 // Estado del pedido
-export enum OrderStatus {
+export enum OrderEstado {
   PENDIENTE = 'pendiente',
   CONFIRMADO = 'confirmado',
   EN_CAMINO = 'en_camino',
   ENTREGADO = 'entregado',
-  CANCELADO = 'cancelado'
+  CANCELADO = 'cancelado',
+  VENCIDO = 'vencido',
 }
 
-// Modalidad de pago
-export enum PaymentMethod {
-  ANTICIPADO = 'anticipado',
-  CONTRA_ENTREGA = 'contra_entrega'
+// Estado de entrega
+export enum DeliveryEstado {
+  PENDIENTE = 'pendiente',
+  EN_CAMINO = 'en_camino',
+  ENTREGADA = 'entregada',
+}
+
+// Método de pago (MVP solo CONTRA_ENTREGA)
+export enum MetodoPago {
+  CONTRA_ENTREGA = 'contra_entrega',
+}
+
+// Tipo de factura (AFIP)
+export enum TipoFactura {
+  B = 'B',
+  C = 'C',
 }
 ```
 
@@ -573,38 +559,38 @@ export enum PaymentMethod {
 | GET | /super-admin/vendedores/:id/metricas | SUPER_ADMIN | Métricas de vendedor específico |
 | GET | /super-admin/vendedores/:id/clientes | SUPER_ADMIN | Cantidad de clientes (#) |
 
-### 6.0.1 AUTOREGISTRO VENDEDORES (NUEVO)
+### 6.0.1 AUTOREGISTRO VENDEDORES
 
 | Método | Endpoint | Acceso | Descripción |
 |--------|----------|--------|-------------|
 | POST | /auth/register-vendedor | Público | Auto-registro de vendedor |
 | GET | /vendedor/pediente | PENDIENTE | Verificar estado de solicitud |
-| POST | /vendedor/verificar-pago | PENDIENTE | Verificar pago para reactivacion |
 
-### 6.1 AUTH - Autenticación
+### 6.1 AUTH - Autenticación (usuario-service, módulo auth)
 
 | Método | Endpoint | Acceso | Descripción |
 |--------|----------|--------|-------------|
 | POST | /auth/login | Público | Login email+password |
 | POST | /auth/register | ADMIN | Crear usuario |
-| POST | /auth/google | Público | Login OAuth |
+| POST | /auth/register-vendedor | Público | Auto-registro de vendedor |
 | POST | /auth/refresh | Usuario | Renovar token |
-| POST | /auth/logout | Usuario | Cerrar sesión |
+| POST | /auth/validate | Interno | Validar token JWT |
 
-### 6.2 USERS - Usuarios
+> @deprecated Google OAuth — No implementar en MVP V1.
+
+### 6.2 USERS - Usuarios (usuario-service, módulo users)
 
 | Método | Endpoint | Acceso | Descripción |
 |--------|----------|--------|-------------|
 | GET | /users/me | Usuario | Mi perfil |
 | PATCH | /users/me | Usuario | Actualizar perfil |
-| GET | /users | ADMIN | Listar todos |
-| GET | /users/:id | ADMIN | Ver uno |
-| PATCH | /users/:id | ADMIN | Actualizar |
-| DELETE | /users/:id | ADMIN | Eliminar |
-| GET | /users/mis-clientes | VENDEDOR | Mis clientes |
-| GET | /users/mi-vendedor | CLIENTE | Mi vendedor |
+| GET | /users/mis-clientes | VENDEDOR | Mis clientes (cartera) |
+| POST | /users/asignar-vendedor | ADMIN | Asignar cliente a vendedor |
+| GET | /users/:id | ADMIN | Ver usuario |
+| POST | /qr/generar | VENDEDOR | Generar QR de invitación |
+| GET | /qr/:token | Público | Perfil público + catálogo |
 
-### 6.3 PRODUCTS - Productos
+### 6.3 PRODUCTS - Productos (products-service)
 
 | Método | Endpoint | Acceso | Descripción |
 |--------|----------|--------|-------------|
@@ -614,6 +600,8 @@ export enum PaymentMethod {
 | PATCH | /products/:id | VENDEDOR | Actualizar |
 | DELETE | /products/:id | VENDEDOR | Eliminar |
 | GET | /products/search | Público | Buscar |
+| GET | /categories | Público | Listar categorías |
+| GET | /brands | Público | Listar marcas |
 
 ### 6.4 CART - Carrito
 
@@ -625,55 +613,37 @@ export enum PaymentMethod {
 | DELETE | /cart/items/:id | Usuario | Eliminar item |
 | DELETE | /cart | Usuario | Vaciar carrito |
 
-### 6.5 ORDERS - Pedidos
+### 6.5 ORDERS - Pedidos (orders-service)
 
 | Método | Endpoint | Acceso | Descripción |
 |--------|----------|--------|-------------|
 | GET | /orders | Usuario | Mis pedidos |
 | GET | /orders/:id | Usuario | Ver pedido |
-| POST | /orders | Usuario | Crear pedido |
+| POST | /orders | CLIENTE | Crear pedido desde carrito |
 | PATCH | /orders/:id/status | VENDEDOR | Actualizar estado |
-| POST | /orders/:id/confirmar | CLIENTE | Confirmar visita |
-| POST | /orders/:id/cancelar | CLIENTE | Cancelar visita |
+| POST | /orders/:id/cancelar | CLIENTE | Cancelar pedido |
 
-### 6.6 FAVORITES - Favoritos
-
-| Método | Endpoint | Acceso | Descripción |
-|--------|----------|--------|-------------|
-| GET | /favorites | Usuario | Mis favoritos |
-| POST | /favorites | Usuario | Agregar |
-| DELETE | /favorites/:id | Usuario | Eliminar |
-
-### 6.7 ANALYTICS - Reportes
+### 6.6 DELIVERIES - Entregas (entregas-service)
 
 | Método | Endpoint | Acceso | Descripción |
 |--------|----------|--------|-------------|
-| GET | /analytics/ventas/cliente | VENDEDOR | Por cliente |
-| GET | /analytics/ventas/producto | VENDEDOR | Por producto |
-| GET | /analytics/historial/:cliente | VENDEDOR | Historial |
+| GET | /deliveries | VENDEDOR | Mis entregas asignadas |
+| GET | /deliveries/:id | VENDEDOR | Ver detalle de entrega |
+| PATCH | /deliveries/:id/status | VENDEDOR | Actualizar estado |
 
-### 6.9 QR - Código QR (NUEVO)
+### @deprecated - Fuera del MVP V1
+- Favoritos (V2.0)
+- Analytics / Reportes (V2.0)
+- Editor de imágenes (V2.0)
+- Payment Service (V2.0)
+- Mapa con GPS (V2.0)
 
-| Método | Endpoint | Acceso | Descripción |
-|--------|----------|--------|-------------|
-| POST | /qr/generar | VENDEDOR | Generar QR con token único |
-| GET | /qr/:token | Público | Ver perfil público por QR |
-| GET | /qr/:token/productos | Público | Catálogo público |
-
-### 6.10 IMAGES - Editor de Imágenes (NUEVO)
-
-| Método | Endpoint | Acceso | Descripción |
-|--------|----------|--------|-------------|
-| POST | /images/upload | VENDEDOR | Subir imagen con compresión |
-| POST | /images/procesar | VENDEDOR | Aplicar edición (recortar, rotar) |
-| GET | /images/:id/thumbnail | Público | Obtener thumbnail |
-
-### 6.8 NOTIFICATIONS - Notificaciones
+### 6.8 ACTIVITY LOGS - Activity Logs (notifications-service)
 
 | Método | Endpoint | Acceso | Descripción |
 |--------|----------|--------|-------------|
-| GET | /notifications | Usuario | Mis notificaciones |
-| PATCH | /notifications/:id/read | Usuario | Marcar leída |
+| GET | /activity-logs | Usuario | Listar activity logs |
+| GET | /activity-logs?servicio= | Usuario | Filtrar por servicio |
 
 ---
 
@@ -913,13 +883,13 @@ export enum PaymentMethod {
 - [ ] Consumidor ve catálogo de su vendedor asignado
 - [ ] Consumidor puede agregar productos al carrito
 - [ ] Consumidor puede realizar pedido
-- [ ] Consumidor puede pagar anticipado o contra entrega
-- [ ] Consumidor puede confirmar/cancelar visita
-- [ ] Vendedor ve sus pedidos confirmados
+- [ ] Consumidor puede pagar contra entrega (único método)
+- [ ] Consumidor puede cancelar pedido
+- [ ] Vendedor ve sus pedidos y entregas
 - [ ] Vendedor puede gestionar productos
-- [ ] Vendedor tiene mapa con GPS
-- [ ] Vendedor puede generar informes
-- [ ] Aislamiento de datos funciona correctamente
+- [ ] Vendedor puede asignar entregas
+- [ ] Aislamiento de datos funciona correctamente (cartera por vendedor)
+- [ ] Los eventos fluyen correctamente por Redis Streams
 
 ### 10.2 No Funcionales
 
@@ -983,16 +953,86 @@ export enum PaymentMethod {
 
 ---
 
-## 13. Historial de Versiones
+## 11. Principios SOLID + Buenas Prácticas (OBLIGATORIO)
+
+> A partir de Mayo 2026, todo el código nuevo y refactors DEBEN cumplir estos principios.
+> Aplica a: servicios NestJS, gateway, contracts, configuraciones, tests.
+
+### 11.1 SRP — Single Responsibility
+
+- Cada clase/archivo/módulo tiene **UN solo motivo de cambio**.
+- Separar en archivos diferentes si hay más de una responsabilidad.
+- Ejemplo: `auth.module.ts` solo maneja autenticación, `users.module.ts` solo maneja perfiles.
+
+### 11.2 OCP — Open/Closed
+
+- Las interfaces se extienden, NO se modifican.
+- **Eventos**: nuevos eventos se agregan a la unión por stream (`OrderEvent`, `ProductEvent`...), no se modifican interfaces existentes.
+- **DTOs**: para agregar campos, crear `FooV2DTO extends FooDTO`. O usar alias tipo `MetodoPagoPermitido`.
+- **Switch**: usar discriminated unions para que TypeScript fuerce manejar todos los casos.
+
+### 11.3 LSP — Liskov Substitution
+
+- Subtipos deben ser sustituibles por su tipo base.
+- Todos los eventos extienden `BaseEvent` (garantizan `timestamp`).
+- Una función que recibe `BaseEvent` debe poder recibir cualquier evento concreto.
+
+### 11.4 ISP — Interface Segregation
+
+- **Eventos**: separados por stream (`AuthEvent`, `OrderEvent`, `DeliveryEvent`...).
+- Un consumidor de deliveries NO debe depender de eventos de products.
+- **DTOs**: crear interfaces específicas por endpoint, no reusar el mismo DTO para request y response.
+- **Paginación**: `PaginationRequest` y `PaginationResponse` son separados.
+
+### 11.5 DIP — Dependency Inversion
+
+- Depender de interfaces/contratos abstractos, no de implementaciones concretas.
+- Los módulos dependen de `@agua/contracts`, no de types definidos en otros servicios.
+- Los eventos usan **enums** (abstractos), no string literals.
+
+### 11.6 Clean Code — Reglas adicionales
+
+| Regla | Descripción |
+|-------|-------------|
+| ❌ **No userId en body** | Se extrae del token JWT en el middleware. |
+| ❌ **No string para estados** | Usar enums tipados (`OrderEstado`, `VendedorEstado`). |
+| ❌ **No dead code** | Enums sin usar, interfaces @deprecated, imports sin referencia → remover. |
+| ❌ **No unknown[] en responses** | Tipar con el DTO concreto. |
+| ✅ **Eventos con type** | Todos los eventos tienen un campo `type` discriminante. |
+| ✅ **IDs consistentes** | `userId`, `orderId`, `vendedorId`, `clienteId`. Nunca mezclar. |
+| ✅ **ISO 8601** | Todas las fechas en formato ISO string. |
+| ✅ **Conventional commits** | `feat(scope): msg`, `fix(scope): msg`, `refactor(scope): msg` |
+| ✅ **Tests** | Unit tests para lógica de negocio. Integration tests para endpoints. |
+
+### 11.7 Stack actual
+
+| Componente | Tecnología |
+|------------|-----------|
+| Backend | Node.js 20 LTS + NestJS 10 + TypeScript 5 |
+| ORM | Prisma 5 (TODOS los servicios) |
+| PostgreSQL 15 | Servicios: usuario, products, orders, entregas |
+| MongoDB 6 | notifications (activity logs) |
+| Redis 7 | Streams (eventos) + caché |
+| Monorepo | npm workspaces (sin Nx/Turborepo) |
+| Docker | Compose único con perfiles |
+| Comunicación | Redis Streams + HTTP REST (Gateway) |
+| Contratos | `packages/contracts/` (DTOs TypeScript + enums) |
+| Frontend | Por definir (React + Next.js) |
+
+---
+
+## 12. Historial de Versiones
 
 | Versión | Fecha | Descripción | Autor |
 |---------|-------|-------------|--------|
 | 1.0 | Abril 2026 | Versión inicial del SPEC | Equipo AguaFress |
+| 1.1 | Mayo 2026 | Refactor SOLID de contracts, actualización arquitectura MVP | Adrián Burdiles |
 | 2.0 | Por definir | Desarrollo Móvil y Funcionalidades Avanzadas | Por definir |
 
 ---
 
 **Documento aprobado para desarrollo**
+**⚠️ SOLID + Clean Code es obligatorio en todo el código nuevo**
 
 _AguaFress - SPEC.md_  
-_Abril 2026_
+_Mayo 2026_

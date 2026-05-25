@@ -1,0 +1,29 @@
+{
+  "service": "usuario-service",
+  "port": 3001,
+  "database": "PostgreSQL (2 schemas: auth, users)",
+  "orm": "Prisma",
+  "responsibility": "Unifica autenticación + perfiles en un solo MS. Módulo auth: login JWT, registro, refresh. Módulo users: perfiles, cartera de clientes, QR/link de invitación.",
+  "modules": {
+    "auth": {
+      "endpoints": [
+        { "path": "/auth/login", "method": "POST", "auth": "Público", "request": { "email": "string", "password": "string" }, "response": { "token": "string", "refreshToken": "string", "user": "object" } },
+        { "path": "/auth/register", "method": "POST", "auth": "ADMIN", "request": { "email": "string", "password": "string", "name": "string", "role": "vendedor|cliente", "qrToken?": "string" }, "response": { "user": "object" } },
+        { "path": "/auth/register-vendedor", "method": "POST", "auth": "Público", "request": { "email": "string", "password": "string", "name": "string", "phone": "string" }, "response": { "status": "pendiente", "vendedorId": "uuid" } },
+        { "path": "/auth/refresh", "method": "POST", "auth": "Usuario", "request": { "refreshToken": "string" }, "response": { "token": "string" } },
+        { "path": "/auth/validate", "method": "POST", "auth": "Interno", "request": { "token": "string" }, "response": { "valid": "boolean", "user": "object|null" } }
+      ]
+    },
+    "users": {
+      "endpoints": [
+        { "path": "/users/me", "method": "GET", "auth": "Usuario", "response": { "id": "uuid", "email": "string", "role": "super_admin|vendedor|cliente", "profile?": "object" } },
+        { "path": "/users/me", "method": "PATCH", "auth": "Usuario", "request": { "name?": "string", "phone?": "string", "address?": "object" } },
+        { "path": "/users/mis-clientes", "method": "GET", "auth": "VENDEDOR", "response": [{ "id": "uuid", "name": "string", "phone?": "string" }] },
+        { "path": "/users/asignar-vendedor", "method": "POST", "auth": "ADMIN", "request": { "clienteId": "uuid", "vendedorId": "uuid" }, "response": { "clienteId": "uuid", "vendedorId": "uuid", "updated": "boolean" } },
+        { "path": "/qr/generar", "method": "POST", "auth": "VENDEDOR", "response": { "qrCode": "string", "url": "string", "expiresAt": "string" } },
+        { "path": "/qr/:token", "method": "GET", "auth": "Público", "response": { "vendedor": "object", "catalogo?": "array" } }
+      ]
+    }
+  },
+  "events_publishes": ["auth-stream: UserCreated", "user-stream: VendedorStatusChanged, CarteraClienteAdded"]
+}
