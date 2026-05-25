@@ -1,29 +1,30 @@
 // ─── Entregas Service ───
-// Puerto 3005 · PostgreSQL
+// Puerto: 3005
+// Base de datos: PostgreSQL
+//
+// ⚠️ El vendedor autenticado se obtiene del token JWT.
+//    Los endpoints usan ese ID para filtrar sus entregas.
+
+import { DeliveryEstado } from '../enums';
+import type { DireccionEntrega, PaginationRequest } from './common.dto';
 
 export interface DeliveryResponse {
   id: string;
   orderId: string;
   vendedorId: string;
-  estado: 'pendiente' | 'en_camino' | 'entregada';
+  estado: DeliveryEstado;
   cliente: {
     nombre: string;
     telefono?: string;
   };
-  direccion: {
-    calle: string;
-    numero: string;
-    pisoDepto?: string;
-    referencia?: string;
-    latitude?: number;
-    longitude?: number;
-  };
+  direccion: DireccionEntrega;
   fechaAsignacion: string;
   fechaEntrega?: string;
   notas?: string;
 }
 
-export interface DeliveryListFilters {
+export interface DeliveryListFilters extends PaginationRequest {
+  /** Fecha ISO (YYYY-MM-DD) */
   fecha?: string;
   vendedorId: string;
 }

@@ -1,5 +1,13 @@
 // ─── Products Service ───
-// Puerto 3003 · PostgreSQL
+// Puerto: 3003
+// Base de datos: PostgreSQL
+//
+// NOTA: El precio SIEMPRE se calcula server-side.
+// El frontend NO manda precio al crear/actualizar un producto.
+
+import type { PaginationRequest } from './common.dto';
+
+// ─── Producto ───
 
 export interface ProductResponse {
   id: string;
@@ -15,31 +23,47 @@ export interface ProductResponse {
   activo: boolean;
 }
 
-export interface ProductListFilters {
-  vendedorId?: string;
-  categoria?: string;
-  disponibles?: boolean;
-}
+// ─── Crear ───
 
 export interface CreateProductRequest {
   nombre: string;
   descripcion?: string;
-  precio: number;
+  /** Monto SIN IVA. El service calcula precioFinal automáticamente. */
+  precioSinIva: number;
   categoriaId: string;
   marcaId?: string;
   imagen?: string;
   stock: number;
+  /** Se extrae del token JWT del vendedor autenticado */
   vendedorId: string;
 }
+
+// ─── Actualizar ───
 
 export interface UpdateProductRequest {
   nombre?: string;
   descripcion?: string;
-  precio?: number;
+  precioSinIva?: number;
   stock?: number;
   imagen?: string;
   activo?: boolean;
 }
+
+// ─── Filtros y búsqueda ───
+
+export interface ProductListFilters extends PaginationRequest {
+  vendedorId?: string;
+  categoria?: string;
+  /** Solo productos con stock > 0 y activo = true */
+  disponibles?: boolean;
+}
+
+export interface SearchProductQuery {
+  q: string;
+  vendedorId?: string;
+}
+
+// ─── Marcas y Categorías ───
 
 export interface MarcaResponse {
   id: string;
@@ -52,9 +76,4 @@ export interface CategoriaResponse {
   nombre: string;
   orden: number;
   vendedorId: string;
-}
-
-export interface SearchProductQuery {
-  q: string;
-  vendedorId?: string;
 }

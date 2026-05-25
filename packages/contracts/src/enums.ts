@@ -1,4 +1,4 @@
-// ─── Roles ───
+// ─── Roles del sistema ───
 export enum UserRole {
   SUPER_ADMIN = 'super_admin',
   VENDEDOR = 'vendedor',
@@ -13,7 +13,7 @@ export enum VendedorEstado {
   BLOQUEADO = 'bloqueado',
 }
 
-// ─── Estados de pedido ───
+// ─── Estados de un pedido ───
 export enum OrderEstado {
   PENDIENTE = 'pendiente',
   CONFIRMADO = 'confirmado',
@@ -23,7 +23,7 @@ export enum OrderEstado {
   VENCIDO = 'vencido',
 }
 
-// ─── Estados de entrega ───
+// ─── Estados de una entrega / reparto ───
 export enum DeliveryEstado {
   PENDIENTE = 'pendiente',
   EN_CAMINO = 'en_camino',
@@ -31,25 +31,20 @@ export enum DeliveryEstado {
 }
 
 // ─── Métodos de pago ───
+// MVP V1: solo CONTRA_ENTREGA. Futuros métodos se agregan aquí.
 export enum MetodoPago {
-  ANTICIPADO = 'anticipado',
   CONTRA_ENTREGA = 'contra_entrega',
 }
 
-// ─── Tipo de dirección ───
-export enum TipoDireccion {
-  FACTURACION = 'facturacion',
-  ENTREGA = 'entrega',
-  PERSONAL = 'personal',
-}
-
-// ─── Tipo de factura ───
+// ─── Tipo de factura (Argentina AFIP) ───
 export enum TipoFactura {
   B = 'B',
   C = 'C',
 }
 
 // ─── Nombres de streams Redis ───
+// Cada servicio PUBLICA en su stream y los demás CONSUMEN.
+// Notifications solo consume (activity_log), no publica.
 export const RedisStreams = {
   AUTH: 'auth-stream',
   USER: 'user-stream',
