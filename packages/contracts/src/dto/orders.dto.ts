@@ -105,6 +105,25 @@ export interface OrderListResponse {
 }
 
 // ════════════════════════════════════════════
+//  CONFIRMAR VISITA
+// ════════════════════════════════════════════
+
+/**
+ * El cliente confirma la visita del vendedor.
+ * Puede opcionalmente actualizar la dirección de entrega.
+ */
+export interface ConfirmOrderRequest {
+  /** Opcional — si el cliente quiere cambiar la dirección antes de la visita */
+  direccion?: DireccionEntrega;
+}
+
+export interface ConfirmOrderResponse {
+  orderId: string;
+  estado: OrderEstado.CONFIRMADO;
+  mensaje: string;
+}
+
+// ════════════════════════════════════════════
 //  ESTADOS
 // ════════════════════════════════════════════
 

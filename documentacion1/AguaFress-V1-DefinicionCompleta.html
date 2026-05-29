@@ -271,8 +271,7 @@
 │ :80      │     │ :3000        │     │ (síncrono)      │
 └──────────┘     └──────┬──────┘     └──────────────────┘
                         │
-                        ├──▶ auth-service (3001)
-                        ├──▶ user-service (3002)
+                        ├──▶ usuario-service :3001 (auth + users)
                         ├──▶ products-service (3003)
                         ├──▶ orders-service (3004)
                         ├──▶ entregas-service (3005)
@@ -288,8 +287,8 @@ Redis ──▶ Streams: auth-stream, user-stream, products-stream,
 2. Vendedor genera QR y link público (/vendedor/qr, /vendedor/link)
 3. Vendedor comparte QR/link con sus clientes
 4. Cliente abre link → ve formulario de registro
-5. Se registra → auth-service crea USER con role=cliente
-6. User-service escucha UserCreated + token QR → crea CLIENTE + RELACION_CARTERA
+5. Se registra → usuario-service (módulo auth) crea USER con role=cliente
+6. usuario-service (módulo users) escucha UserCreated + token QR → crea CLIENTE + RELACION_CARTERA
 7. Cliente ya está en la cartera del vendedor 🎯</div>
 
     <!-- ESTADOS PEDIDO -->
@@ -308,52 +307,45 @@ Redis ──▶ Streams: auth-stream, user-stream, products-stream,
 <!-- ============ PAGE 2 ============ -->
 <div class="page section-break">
 
-    <!-- AUTH SERVICE -->
-    <h2>🔐 1. Auth Service <span class="badge badge-dev">Lucas</span></h2>
+    <!-- USUARIO SERVICE (auth + users unificados) -->
+    <h2>🔐👤 1. usuario-service <span class="badge badge-dev">Lucas</span></h2>
     <div class="ms-card">
-        <div class="meta">Puerto 3001 · PostgreSQL · Prisma</div>
-        <h4>Tablas</h4>
-        <p><code>USER</code> (id, email, password_hash, role, created_at, updated_at, deleted_at)<br>
-        <code>SESSION</code> (id, user_id, token, expires_at)<br>
-        <code>REFRESH_TOKEN</code> (id, user_id, token, expires_at)</p>
+        <div class="meta">Puerto 3001 · PostgreSQL (2 schemas: auth, users) · Prisma · 2 módulos</div>
 
+        <h4>📌 Módulo auth</h4>
+        <p><strong>Tablas:</strong> <code>USER</code> (id, email, password_hash, role, created_at, updated_at, deleted_at) · <code>SESSION</code> · <code>REFRESH_TOKEN</code></p>
         <h4>Endpoints</h4>
         <span class="endpoint">POST /auth/login &mdash; email+password → JWT</span>
         <span class="endpoint">POST /auth/register &mdash; admin crea usuario (clientes)</span>
         <span class="endpoint">POST /auth/register-vendedor &mdash; público, queda pendiente</span>
-        <span class="endpoint">POST /auth/google &mdash; Google OAuth → JWT</span>
+        <span class="endpoint">POST /auth/google &mdash; <span class="badge badge-db">@deprecated</span> No implementar en MVP</span>
         <span class="endpoint">POST /auth/refresh &mdash; refresh token → nuevo JWT</span>
         <span class="endpoint">POST /auth/logout &mdash; invalida token</span>
-
         <h4>Eventos que publica</h4>
-        <span class="badge badge-event">UserCreated</span> <code>{ userId, email, role, timestamp }</code>
-    </div>
+        <span class="badge badge-event">UserCreated</span> <code>{ userId, email, role, qrToken?, timestamp }</code>
 
-    <!-- USER SERVICE -->
-    <h2>👤 2. User Service <span class="badge badge-dev">Lucas</span></h2>
-    <div class="ms-card">
-        <div class="meta">Puerto 3002 · PostgreSQL · Prisma</div>
-        <h4>Tablas</h4>
-        <p><code>VENDEDOR</code> · <code>CLIENTE</code> · <code>RELACION_CARTERA</code> · <code>DIRECCION</code> · <code>CIUDAD</code> · <code>BARRIO</code><br>
-        <code>RUTA</code> · <code>QR_CODE</code> · <code>LINK_INVITACION</code> · <code>EXPORT_DATA</code></p>
+        <hr style="margin: 8px 0;">
 
-        <h4>Endpoints principales</h4>
+        <h4>📌 Módulo users</h4>
+        <p><strong>Tablas:</strong> <code>VENDEDOR</code> · <code>CLIENTE</code> · <code>RELACION_CARTERA</code> · <code>DIRECCION</code> · <code>QR_CODE</code> · <code>LINK_INVITACION</code></p>
+        <p><em>Nota: CIUDAD, BARRIO, RUTA son texto libre en MVP (sin tabla separada). EXPORT_DATA es futuro.</em></p>
+        <h4>Endpoints</h4>
         <span class="endpoint">GET /users/me &mdash; mi perfil</span>
         <span class="endpoint">PATCH /users/me &mdash; actualizar mi perfil</span>
         <span class="endpoint">GET /users &mdash; admin lista todos</span>
         <span class="endpoint">PATCH /users/:id/asignar-vendedor &mdash; admin asigna cliente a vendedor</span>
         <span class="endpoint">GET /users/mis-clientes &mdash; vendedor ve su cartera</span>
         <span class="endpoint">GET /users/mi-vendedor &mdash; cliente ve su vendedor</span>
-        <span class="endpoint">POST /vendedor/qr &mdash; vendedor genera QR</span>
-        <span class="endpoint">POST /vendedor/link &mdash; vendedor genera link público</span>
-        <span class="endpoint">GET /public/vendedor/:qrToken &mdash; perfil público vía QR</span>
+        <span class="endpoint">POST /vendedores/:id/qr &mdash; vendedor genera QR</span>
+        <span class="endpoint">POST /vendedores/:id/link &mdash; vendedor genera link público</span>
+        <span class="endpoint">GET /publico/vendedor/:token &mdash; perfil público vía QR</span>
         <span class="endpoint">+ CRUD admin (listar, ver, actualizar, baja lógica, activar/desactivar)</span>
 
         <h4>Escucha</h4>
-        <span class="badge badge-event">UserCreated</span> (de auth) → crea perfil VENDEDOR o CLIENTE
+        <span class="badge badge-event">UserCreated</span> (del módulo auth) → crea perfil VENDEDOR o CLIENTE
 
         <h4>Eventos que publica</h4>
-        <span class="badge badge-event">VendedorStatusChanged</span> <code>{ vendedorId, estado, timestamp }</code><br>
+        <span class="badge badge-event">VendedorStatusChanged</span> <code>{ vendedorId, estadoAnterior, estadoNuevo, timestamp }</code><br>
         <span class="badge badge-event">CarteraClienteAdded</span> <code>{ vendedorId, clienteId, timestamp }</code>
     </div>
 
@@ -451,11 +443,12 @@ Redis ──▶ Streams: auth-stream, user-stream, products-stream,
         </ul>
 
         <h4>Escucha</h4>
-        <span class="badge badge-event">OrderConfirmed</span> (de orders) → crea ENTREGA con estado <code>pendiente</code>
+        <span class="badge badge-event">OrderStatusChanged</span> (de orders, cuando estado = <code>confirmado</code>) → crea ENTREGA con estado <code>pendiente</code>
 
         <h4>Eventos que publica</h4>
-        <span class="badge badge-event">DeliveryStarted</span> <code>{ deliveryId, orderId, timestamp }</code><br>
-        <span class="badge badge-event">DeliveryCompleted</span> <code>{ deliveryId, orderId, timestamp }</code>
+        <span class="badge badge-event">DeliveryStarted</span> <code>{ deliveryId, orderId, vendedorId, timestamp }</code><br>
+        <span class="badge badge-event">DeliveryCompleted</span> <code>{ deliveryId, orderId, vendedorId, timestamp }</code><br>
+        <span class="badge badge-event">DeliveryStatusChanged</span> <code>{ deliveryId, orderId, estadoAnterior, estadoNuevo, timestamp }</code> <span class="badge badge-nuevo">NUEVO</span>
     </div>
 
     <!-- NOTIFICATIONS SERVICE -->
@@ -485,14 +478,14 @@ Redis ──▶ Streams: auth-stream, user-stream, products-stream,
         <h4>Routing</h4>
         <table>
             <tr><th>Path</th><th>Target</th><th>Puerto</th></tr>
-            <tr><td><code>/auth/*</code></td><td>auth-service</td><td>3001</td></tr>
-            <tr><td><code>/users/*</code></td><td>user-service</td><td>3002</td></tr>
+            <tr><td><code>/auth/*</code></td><td>usuario-service (módulo auth)</td><td>3001</td></tr>
+            <tr><td><code>/users/*</code></td><td>usuario-service (módulo users)</td><td>3001</td></tr>
             <tr><td><code>/products/*</code></td><td>products-service</td><td>3003</td></tr>
             <tr><td><code>/orders/*</code></td><td>orders-service</td><td>3004</td></tr>
             <tr><td><code>/cart/*</code></td><td>orders-service</td><td>3004</td></tr>
             <tr><td><code>/deliveries/*</code></td><td>entregas-service</td><td>3005</td></tr>
-            <tr><td><code>/logs/*</code></td><td>notifications-service</td><td>3006</td></tr>
-            <tr><td><code>/public/*</code></td><td>user-service (sin auth)</td><td>3002</td></tr>
+            <tr><td><code>/activity-logs/*</code></td><td>notifications-service</td><td>3006</td></tr>
+            <tr><td><code>/publico/*</code></td><td>usuario-service (módulo users, sin auth)</td><td>3001</td></tr>
         </table>
 
         <h4>Nginx</h4>
@@ -540,15 +533,16 @@ Redis ──▶ Streams: auth-stream, user-stream, products-stream,
     <h2>📡 10. Resumen de Eventos</h2>
     <table>
         <tr><th>Evento</th><th>Publica</th><th>Lo escuchan</th></tr>
-        <tr><td>UserCreated</td><td>auth-service</td><td>user-service</td></tr>
-        <tr><td>VendedorStatusChanged</td><td>user-service</td><td>— (futuro: notificaciones)</td></tr>
-        <tr><td>CarteraClienteAdded</td><td>user-service</td><td>— (futuro: notificaciones)</td></tr>
+        <tr><td>UserCreated</td><td>usuario-service (auth)</td><td>usuario-service (users), notifications</td></tr>
+        <tr><td>VendedorStatusChanged</td><td>usuario-service (users)</td><td>notifications</td></tr>
+        <tr><td>CarteraClienteAdded</td><td>usuario-service (users)</td><td>— (futuro)</td></tr>
         <tr><td>ProductUpdated</td><td>products-service</td><td>— (futuro: cache)</td></tr>
         <tr><td>ProductDeleted</td><td>products-service</td><td>—</td></tr>
         <tr><td>OrderCreated</td><td>orders-service</td><td>notifications-service</td></tr>
         <tr><td>OrderStatusChanged</td><td>orders-service</td><td>notifications-service</td></tr>
         <tr><td>DeliveryStarted</td><td>entregas-service</td><td>notifications-service</td></tr>
         <tr><td>DeliveryCompleted</td><td>entregas-service</td><td>notifications-service</td></tr>
+        <tr><td>DeliveryStatusChanged</td><td>entregas-service</td><td>notifications-service</td></tr>
     </table>
     <p><em>Todos los eventos llegan a notifications-service que los registra como activity_logs.</em></p>
 
@@ -556,8 +550,7 @@ Redis ──▶ Streams: auth-stream, user-stream, products-stream,
     <h2>🗃️ 11. Modelo de Datos — Resumen</h2>
     <table>
         <tr><th>Servicio</th><th>Tablas / Colecciones</th><th>DB</th></tr>
-        <tr><td>auth-service (3001)</td><td>USER, SESSION, REFRESH_TOKEN</td><td>PostgreSQL</td></tr>
-        <tr><td>user-service (3002)</td><td>VENDEDOR, CLIENTE, RELACION_CARTERA, DIRECCION, CIUDAD, BARRIO, RUTA, QR_CODE, LINK_INVITACION, EXPORT_DATA</td><td>PostgreSQL</td></tr>
+        <tr><td>usuario-service (3001)</td><td>USER, SESSION, REFRESH_TOKEN, VENDEDOR, CLIENTE, RELACION_CARTERA, DIRECCION, QR_CODE, LINK_INVITACION</td><td>PostgreSQL (2 schemas)</td></tr>
         <tr><td>products-service (3003)</td><td>PRODUCTO, MARCA, CATEGORIA, PRODUCTO_IMAGEN, DESCUENTO</td><td>PostgreSQL</td></tr>
         <tr><td>orders-service (3004)</td><td>CART, CART_ITEM, ORDER, ORDER_ITEM, ORDER_HISTORY, FACTURA</td><td>PostgreSQL</td></tr>
         <tr><td>entregas-service (3005)</td><td>ENTREGA</td><td>PostgreSQL</td></tr>

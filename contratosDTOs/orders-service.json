@@ -9,6 +9,7 @@
   ],
   "events_publishes": ["orders-stream: OrderCreated, OrderStatusChanged"],
   "events_consumes": ["deliveries-stream: DeliveryCompleted"],
+  "events_listens": ["deliveries-stream: DeliveryStarted, DeliveryCompleted, DeliveryStatusChanged"],
   "endpoints": [
     {
       "path": "/orders",
@@ -47,6 +48,14 @@
       "notes": "El cliente solo puede cancelar pedidos en estado pendiente.",
       "request": { "motivo?": "string" },
       "response": { "id": "uuid", "estado": "cancelado" }
+    },
+    {
+      "path": "/orders/:id/confirmar",
+      "method": "POST",
+      "auth": "CLIENTE",
+      "notes": "El cliente confirma la visita del vendedor. Opcionalmente puede actualizar dirección de entrega.",
+      "request": { "direccion?": "DireccionEntrega" },
+      "response": { "orderId": "uuid", "estado": "confirmado", "mensaje": "string" }
     },
     {
       "path": "/cart",

@@ -418,8 +418,10 @@ Los contratos JSON están en: `contratosDTOs/`
   - `/users/*` → usuario-service:3001 (módulo users)
   - `/products/*` → products-service:3003
   - `/orders/*` → orders-service:3004
+  - `/cart/*` → orders-service:3004
   - `/deliveries/*` → entregas-service:3005
-  - `/notifications/*` → notifications-service:3006
+  - `/activity-logs/*` → notifications-service:3006
+  - `/publico/*` → usuario-service:3001 (módulo users, sin auth)
 
 #### usuario-service (Puerto 3001) - PostgreSQL (2 schemas: auth, users)
 - **Responsabilidad:** Autenticación + perfiles (unificados en 1 MS).
@@ -587,8 +589,9 @@ export enum TipoFactura {
 | GET | /users/mis-clientes | VENDEDOR | Mis clientes (cartera) |
 | POST | /users/asignar-vendedor | ADMIN | Asignar cliente a vendedor |
 | GET | /users/:id | ADMIN | Ver usuario |
-| POST | /qr/generar | VENDEDOR | Generar QR de invitación |
-| GET | /qr/:token | Público | Perfil público + catálogo |
+| POST | /vendedores/:id/qr | VENDEDOR | Generar QR de invitación |
+| POST | /vendedores/:id/link | VENDEDOR | Generar link público de invitación |
+| GET | /publico/vendedor/:token | Público | Perfil público + catálogo |
 
 ### 6.3 PRODUCTS - Productos (products-service)
 
@@ -642,8 +645,8 @@ export enum TipoFactura {
 
 | Método | Endpoint | Acceso | Descripción |
 |--------|----------|--------|-------------|
-| GET | /activity-logs | Usuario | Listar activity logs |
-| GET | /activity-logs?servicio= | Usuario | Filtrar por servicio |
+| GET | /activity-logs | ADMIN | Listar activity logs |
+| GET | /activity-logs?servicio=&accion=&usuarioId=&fechaDesde=&fechaHasta | ADMIN | Filtrar logs |
 
 ---
 

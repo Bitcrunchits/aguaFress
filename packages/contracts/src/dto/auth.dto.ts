@@ -61,6 +61,26 @@ export interface RegisterVendedorResponse {
   vendedorId: string;
 }
 
+// ─── Logout ───
+
+export interface LogoutResponse {
+  message: string;
+}
+
+// ─── Google OAuth (DEPRECATED — No implementar en MVP V1) ───
+
+/** @deprecated No implementar en MVP V1. Mantenido para documentación futura. */
+export interface GoogleLoginRequest {
+  token: string;
+}
+
+/** @deprecated No implementar en MVP V1. */
+export interface GoogleLoginResponse {
+  token: string;
+  refreshToken: string;
+  user: { id: string; email: string; role: UserRole };
+}
+
 // ─── Refresh / Validate ───
 
 export interface RefreshTokenRequest {

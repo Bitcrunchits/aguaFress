@@ -7,6 +7,41 @@
 import { TipoFactura, UserRole, VendedorEstado } from '../enums';
 import type { ProductResponse } from './products.dto';
 
+// ─── Listado de usuarios (admin) ───
+
+import type { PaginatedResponse, PaginationRequest } from './common.dto';
+
+export interface UserListFilters extends PaginationRequest {
+  role?: UserRole;
+  search?: string;
+  activo?: boolean;
+}
+
+export interface UserListItem {
+  id: string;
+  email: string;
+  nombre?: string;
+  apellido?: string;
+  role: UserRole;
+  isActive: boolean;
+  telefono?: string;
+  createdAt: string;
+}
+
+export type UserListResponse = PaginatedResponse<UserListItem>;
+
+// ─── Mi vendedor (cliente) ───
+
+export interface MiVendedorResponse {
+  id: string;
+  nombre: string;
+  apellido?: string;
+  empresa?: string;
+  logo?: string;
+  telefono?: string;
+  ciudad?: string;
+}
+
 // ─── Perfiles ───
 
 export interface UserProfile {
