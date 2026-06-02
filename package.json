@@ -5,8 +5,7 @@
   "description": "AguaFress — Plataforma de pedidos para distribuidores de agua y soda",
   "workspaces": [
     "packages/*",
-    "services/*",
-    "gateway"
+    "services/*"
   ],
   "scripts": {
     "build:contracts": "npm run build -w @agua/contracts",
