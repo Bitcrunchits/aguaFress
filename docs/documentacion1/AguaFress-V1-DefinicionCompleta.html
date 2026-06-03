@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AguaFress V1.0 — Definición Completa</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        @page { size: A4; margin: 1.2cm; }
+
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            font-size: 9.5pt;
+            line-height: 1.45;
+            color: #1a1a1a;
+            background: #e2e8f0;
+            padding: 10px;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto 12px auto;
+            background: white;
+            padding: 14mm 16mm;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            font-size: 22pt;
+            color: #0a3b5c;
+            margin-bottom: 2px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        h2 {
+            font-size: 13pt;
+            color: #1e4a6b;
+            border-left: 4px solid #2c7da0;
+            padding-left: 10px;
+            margin: 18px 0 8px 0;
+            font-weight: 600;
+        }
+
+        h3 {
+            font-size: 10.5pt;
+            color: #2c3e50;
+            margin: 12px 0 5px 0;
+            font-weight: 600;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 2px;
+        }
+
+        h4 {
+            font-size: 9.5pt;
+            color: #3a5a70;
+            margin: 8px 0 3px 0;
+            font-weight: 600;
+        }
+
+        p { margin-bottom: 5px; text-align: justify; }
+
+        .subtitle {
+            font-size: 11pt;
+            color: #2c7da0;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #2c7da0;
+            padding-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .subtitle span { font-size: 8pt; color: #64748b; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 6px 0 10px 0;
+            font-size: 8pt;
+        }
+        th {
+            background: #0a3b5c;
+            color: white;
+            padding: 5px 5px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 7.5pt;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        td {
+            padding: 4px 5px;
+            border-bottom: 1px solid #e0e0e0;
+            vertical-align: top;
+        }
+        tr:nth-child(even) { background: #f8fafc; }
+
+        .badge {
+            display: inline-block;
+            padding: 1px 6px;
+            border-radius: 8px;
+            font-size: 7pt;
+            font-weight: 600;
+        }
+        .badge-dev { background: #dbeafe; color: #1e40af; }
+        .badge-ms { background: #e0f2fe; color: #075985; }
+        .badge-event { background: #fef3c7; color: #92400e; }
+        .badge-db { background: #d1fae5; color: #065f46; }
+        .badge-nuevo { background: #fce7f3; color: #9d174d; }
+
+        code {
+            font-family: Consolas, 'Courier New', monospace;
+            font-size: 7.5pt;
+            background: #f1f5f9;
+            padding: 1px 4px;
+            border-radius: 3px;
+            color: #c7254e;
+        }
+
+        .endpoint {
+            font-family: Consolas, monospace;
+            font-size: 7.5pt;
+            background: #f8fafc;
+            padding: 1px 5px;
+            border-left: 3px solid #2c7da0;
+            display: block;
+            margin: 1px 0;
+            color: #0a3b5c;
+        }
+
+        .ms-card {
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin: 8px 0;
+            page-break-inside: avoid;
+        }
+        .ms-card h3 {
+            border-bottom: none;
+            margin: 0 0 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .ms-card .meta {
+            font-size: 7pt;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+
+        .asignacion-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 8px 0;
+        }
+        .asignacion-item {
+            flex: 1 1 160px;
+            background: #f1f5f9;
+            border-left: 4px solid #0a3b5c;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 8pt;
+        }
+        .asignacion-item strong {
+            display: block;
+            color: #0a3b5c;
+            font-size: 9pt;
+        }
+        .asignacion-item .servicios {
+            color: #2c7da0;
+            font-size: 7.5pt;
+        }
+
+        .diagrama {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 8px 10px;
+            margin: 6px 0;
+            font-family: Consolas, monospace;
+            font-size: 7pt;
+            white-space: pre;
+            overflow-x: auto;
+            line-height: 1.3;
+            border-radius: 4px;
+        }
+
+        hr {
+            margin: 14px 0;
+            border: 0;
+            height: 1px;
+            background: linear-gradient(90deg, #cbd5e1, transparent);
+        }
+
+        .footer {
+            margin-top: 14px;
+            padding-top: 6px;
+            border-top: 1px solid #ddd;
+            font-size: 7.5pt;
+            color: #777;
+            text-align: center;
+        }
+
+        .section-break { page-break-before: always; }
+        .keep-together { page-break-inside: avoid; }
+
+        ul { margin: 3px 0 6px 18px; }
+        li { margin-bottom: 2px; }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .page { box-shadow: none; padding: 0; margin: 0 auto; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ============ PAGE 1 ============ -->
+<div class="page">
+    <h1>💧 AguaFress V1.0</h1>
+    <div class="subtitle">
+        Definición Completa del Proyecto — MVP
+        <span>Mayo 2026</span>
+    </div>
+
+    <!-- EQUIPO -->
+    <h2>👥 Equipo y Asignación</h2>
+    <div class="asignacion-grid">
+        <div class="asignacion-item">
+            <strong>Lucas Lagos</strong>
+            <span class="servicios">auth-service (3001) + user-service (3002)</span>
+        </div>
+        <div class="asignacion-item">
+            <strong>Emiliano Spagnolo</strong>
+            <span class="servicios">products-service (3003)</span>
+        </div>
+        <div class="asignacion-item" style="border-left-color: #2c7da0;">
+            <strong>Adrián Burdiles</strong>
+            <span class="servicios">orders-service (3004)</span>
+        </div>
+        <div class="asignacion-item" style="border-left-color: #0ea5e9;">
+            <strong>Milagros Alvarado</strong>
+            <span class="servicios">entregas-service (3005) <span class="badge badge-nuevo">NUEVO</span></span>
+        </div>
+        <div class="asignacion-item" style="border-left-color: #7c3aed;">
+            <strong>Agustín Zoto</strong>
+            <span class="servicios">notifications-service (3006) + Frontend Research</span>
+        </div>
+    </div>
+
+    <!-- STACK -->
+    <h2>📦 Stack Tecnológico</h2>
+    <table>
+        <tr><th>Categoría</th><th>Tecnología</th><th>Versión</th></tr>
+        <tr><td>Backend</td><td>Node.js + NestJS + TypeScript</td><td>20 LTS / 10.x / 5.x</td></tr>
+        <tr><td>Frontend (research)</td><td>React + TypeScript</td><td>18.x / 5.x</td></tr>
+        <tr><td>DB Transaccional</td><td>PostgreSQL</td><td>15.x</td></tr>
+        <tr><td>DB Logs</td><td>MongoDB</td><td>6.x</td></tr>
+        <tr><td>ORM</td><td>Prisma</td><td>5.x</td></tr>
+        <tr><td>Cache / Event Bus</td><td>Redis</td><td>7.x</td></tr>
+        <tr><td>Auth</td><td>JWT + bcrypt + Google OAuth</td><td>—</td></tr>
+        <tr><td>Infra</td><td>Docker + Docker Compose + Nginx</td><td>24.x / v2.x / 1.24</td></tr>
+    </table>
+
+    <!-- TCP + REDIS -->
+    <h2>🔗 Comunicación entre Servicios</h2>
+    <div class="diagrama">┌──────────┐     ┌─────────────┐     ┌──────────────────┐
+│ Nginx    │────▶│ API Gateway  │────▶│ TCP ClientProxy │
+│ :80      │     │ :3000        │     │ (síncrono)      │
+└──────────┘     └──────┬──────┘     └──────────────────┘
+                        │
+                        ├──▶ usuario-service :3001 (auth + users)
+                        ├──▶ products-service (3003)
+                        ├──▶ orders-service (3004)
+                        ├──▶ entregas-service (3005)
+                        └──▶ notifications-service (3006)
+
+Redis ──▶ Streams: auth-stream, user-stream, products-stream,
+                   orders-stream, deliveries-stream
+     ──▶ Cache: session:{userId}, products:{vendedorId} (TTL 5min)</div>
+
+    <!-- FLUJO QR/LINK -->
+    <h2>🔗 Flujo QR / Link — Invitación de Vendedor</h2>
+    <div class="diagrama">1. Admin activa vendedor → status: pendiente → activo
+2. Vendedor genera QR y link público (/vendedor/qr, /vendedor/link)
+3. Vendedor comparte QR/link con sus clientes
+4. Cliente abre link → ve formulario de registro
+5. Se registra → usuario-service (módulo auth) crea USER con role=cliente
+6. usuario-service (módulo users) escucha UserCreated + token QR → crea CLIENTE + RELACION_CARTERA
+7. Cliente ya está en la cartera del vendedor 🎯</div>
+
+    <!-- ESTADOS PEDIDO -->
+    <h2>📊 Estados del Pedido</h2>
+    <div class="diagrama">PENDIENTE ──▶ CONFIRMADO ──▶ EN_CAMINO ──▶ ENTREGADO
+    │               │              │
+    ├── VENCIDO     └── CANCELADO  └── CANCELADO
+    (24hs sin
+     confirmar)</div>
+
+    <div class="footer">
+        <strong>AguaFress V1.0</strong> — Definición Completa — Mayo 2026 — Página 1
+    </div>
+</div>
+
+<!-- ============ PAGE 2 ============ -->
+<div class="page section-break">
+
+    <!-- USUARIO SERVICE (auth + users unificados) -->
+    <h2>🔐👤 1. usuario-service <span class="badge badge-dev">Lucas</span></h2>
+    <div class="ms-card">
+        <div class="meta">Puerto 3001 · PostgreSQL (2 schemas: auth, users) · Prisma · 2 módulos</div>
+
+        <h4>📌 Módulo auth</h4>
+        <p><strong>Tablas:</strong> <code>USER</code> (id, email, password_hash, role, created_at, updated_at, deleted_at) · <code>SESSION</code> · <code>REFRESH_TOKEN</code></p>
+        <h4>Endpoints</h4>
+        <span class="endpoint">POST /auth/login &mdash; email+password → JWT</span>
+        <span class="endpoint">POST /auth/register &mdash; admin crea usuario (clientes)</span>
+        <span class="endpoint">POST /auth/register-vendedor &mdash; público, queda pendiente</span>
+        <span class="endpoint">POST /auth/google &mdash; <span class="badge badge-db">@deprecated</span> No implementar en MVP</span>
+        <span class="endpoint">POST /auth/refresh &mdash; refresh token → nuevo JWT</span>
+        <span class="endpoint">POST /auth/logout &mdash; invalida token</span>
+        <h4>Eventos que publica</h4>
+        <span class="badge badge-event">UserCreated</span> <code>{ userId, email, role, qrToken?, timestamp }</code>
+
+        <hr style="margin: 8px 0;">
+
+        <h4>📌 Módulo users</h4>
+        <p><strong>Tablas:</strong> <code>VENDEDOR</code> · <code>CLIENTE</code> · <code>RELACION_CARTERA</code> · <code>DIRECCION</code> · <code>QR_CODE</code> · <code>LINK_INVITACION</code></p>
+        <p><em>Nota: CIUDAD, BARRIO, RUTA son texto libre en MVP (sin tabla separada). EXPORT_DATA es futuro.</em></p>
+        <h4>Endpoints</h4>
+        <span class="endpoint">GET /users/me &mdash; mi perfil</span>
+        <span class="endpoint">PATCH /users/me &mdash; actualizar mi perfil</span>
+        <span class="endpoint">GET /users &mdash; admin lista todos</span>
+        <span class="endpoint">PATCH /users/:id/asignar-vendedor &mdash; admin asigna cliente a vendedor</span>
+        <span class="endpoint">GET /users/mis-clientes &mdash; vendedor ve su cartera</span>
+        <span class="endpoint">GET /users/mi-vendedor &mdash; cliente ve su vendedor</span>
+        <span class="endpoint">POST /vendedores/:id/qr &mdash; vendedor genera QR</span>
+        <span class="endpoint">POST /vendedores/:id/link &mdash; vendedor genera link público</span>
+        <span class="endpoint">GET /publico/vendedor/:token &mdash; perfil público vía QR</span>
+        <span class="endpoint">+ CRUD admin (listar, ver, actualizar, baja lógica, activar/desactivar)</span>
+
+        <h4>Escucha</h4>
+        <span class="badge badge-event">UserCreated</span> (del módulo auth) → crea perfil VENDEDOR o CLIENTE
+
+        <h4>Eventos que publica</h4>
+        <span class="badge badge-event">VendedorStatusChanged</span> <code>{ vendedorId, estadoAnterior, estadoNuevo, timestamp }</code><br>
+        <span class="badge badge-event">CarteraClienteAdded</span> <code>{ vendedorId, clienteId, timestamp }</code>
+    </div>
+
+    <div class="footer">
+        <strong>AguaFress V1.0</strong> — Definición Completa — Mayo 2026 — Página 2
+    </div>
+</div>
+
+<!-- ============ PAGE 3 ============ -->
+<div class="page section-break">
+
+    <!-- PRODUCTS SERVICE -->
+    <h2>📦 3. Products Service <span class="badge badge-dev">Emiliano</span></h2>
+    <div class="ms-card">
+        <div class="meta">Puerto 3003 · PostgreSQL · Prisma</div>
+        <h4>Tablas</h4>
+        <p><code>PRODUCTO</code> (vendedor_id, sku, nombre, descripcion, marca_id, categoria_id, precio_sin_iva, precio_final, stock, stock_minimo, activo, mostrar_precio)<br>
+        <code>MARCA</code> · <code>CATEGORIA</code> · <code>PRODUCTO_IMAGEN</code> · <code>DESCUENTO</code> (modelo, sin feature activa)</p>
+
+        <h4>Endpoints</h4>
+        <span class="endpoint">GET /products?vendedorId&categoria &mdash; catálogo con filtros</span>
+        <span class="endpoint">GET /products/:id &mdash; detalle producto</span>
+        <span class="endpoint">POST /products &mdash; vendedor crea producto</span>
+        <span class="endpoint">PATCH /products/:id &mdash; vendedor actualiza</span>
+        <span class="endpoint">DELETE /products/:id &mdash; vendedor elimina (baja lógica)</span>
+        <span class="endpoint">GET /products/search?q&vendedorId &mdash; búsqueda</span>
+
+        <h4>Eventos que publica</h4>
+        <span class="badge badge-event">ProductUpdated</span> <code>{ productId, vendedorId, timestamp }</code><br>
+        <span class="badge badge-event">ProductDeleted</span> <code>{ productId, vendedorId, timestamp }</code>
+    </div>
+
+    <!-- ORDERS SERVICE -->
+    <h2>🛒 4. Orders Service <span class="badge badge-dev">Adrián</span></h2>
+    <div class="ms-card">
+        <div class="meta">Puerto 3004 · PostgreSQL · Prisma</div>
+        <h4>Tablas</h4>
+        <p><code>CART</code> (usuario_id, vendedor_id, expires_at)<br>
+        <code>CART_ITEM</code> (cart_id, producto_id, cantidad, precio_unitario)<br>
+        <code>ORDER</code> (pedido_numero, usuario_id, vendedor_id, direccion_entrega_id, estado, metodo_pago, total_sin_iva, iva, total, observaciones)<br>
+        <code>ORDER_ITEM</code> · <code>ORDER_HISTORY</code> · <code>FACTURA</code></p>
+
+        <h4>Endpoints — Carrito</h4>
+        <span class="endpoint">GET /cart?userId &mdash; ver carrito activo</span>
+        <span class="endpoint">POST /cart/items &mdash; agregar producto</span>
+        <span class="endpoint">PATCH /cart/items/:id &mdash; modificar cantidad</span>
+        <span class="endpoint">DELETE /cart/items/:id &mdash; quitar producto</span>
+
+        <h4>Endpoints — Pedidos</h4>
+        <span class="endpoint">GET /orders?userId&vendedorId &mdash; listar pedidos</span>
+        <span class="endpoint">GET /orders/:id &mdash; detalle pedido</span>
+        <span class="endpoint">POST /orders &mdash; crear pedido desde carrito</span>
+        <span class="endpoint">PATCH /orders/:id/status &mdash; cambiar estado</span>
+        <span class="endpoint">POST /orders/:id/confirmar &mdash; cliente confirma visita</span>
+        <span class="endpoint">POST /orders/:id/cancelar &mdash; cancelar pedido</span>
+
+        <h4>Reglas de negocio</h4>
+        <ul>
+            <li>Carrito expira a las 24hs (estado <code>vencido</code>)</li>
+            <li>Método de pago: solo <strong>contra_entrega</strong> en MVP</li>
+            <li>Estados: pendiente → confirmado → en_camino → entregado / cancelado / vencido</li>
+            <li>Factura: el vendedor sube imagen (PDF/JPG)</li>
+        </ul>
+
+        <h4>Eventos que publica</h4>
+        <span class="badge badge-event">OrderCreated</span> <code>{ orderId, vendedorId, clienteId, total, timestamp }</code><br>
+        <span class="badge badge-event">OrderStatusChanged</span> <code>{ orderId, estado, timestamp }</code>
+    </div>
+
+    <div class="footer">
+        <strong>AguaFress V1.0</strong> — Definición Completa — Mayo 2026 — Página 3
+    </div>
+</div>
+
+<!-- ============ PAGE 4 ============ -->
+<div class="page section-break">
+
+    <!-- ENTREGAS SERVICE -->
+    <h2>🚚 5. Entregas Service <span class="badge badge-dev">Milagros</span> <span class="badge badge-nuevo">NUEVO</span></h2>
+    <div class="ms-card">
+        <div class="meta">Puerto 3005 · PostgreSQL · Prisma</div>
+
+        <h4>Tabla</h4>
+        <p><code>ENTREGA</code> (id, order_id, vendedor_id, estado, direccion_entrega [JSON], fecha_asignacion, fecha_entrega, notas)</p>
+
+        <h4>Endpoints</h4>
+        <span class="endpoint">GET /deliveries?fecha=HOY &mdash; vendedor ve entregas del día</span>
+        <span class="endpoint">GET /deliveries/:id &mdash; detalle de una entrega</span>
+        <span class="endpoint">PATCH /deliveries/:id/status &mdash; cambiar estado (en_camino | entregada)</span>
+
+        <h4>Reglas de negocio</h4>
+        <ul>
+            <li>Vendedor = repartidor (misma persona en MVP)</li>
+            <li>Sin mapa GPS interactivo en MVP (feature futuro)</li>
+        </ul>
+
+        <h4>Escucha</h4>
+        <span class="badge badge-event">OrderStatusChanged</span> (de orders, cuando estado = <code>confirmado</code>) → crea ENTREGA con estado <code>pendiente</code>
+
+        <h4>Eventos que publica</h4>
+        <span class="badge badge-event">DeliveryStarted</span> <code>{ deliveryId, orderId, vendedorId, timestamp }</code><br>
+        <span class="badge badge-event">DeliveryCompleted</span> <code>{ deliveryId, orderId, vendedorId, timestamp }</code><br>
+        <span class="badge badge-event">DeliveryStatusChanged</span> <code>{ deliveryId, orderId, estadoAnterior, estadoNuevo, timestamp }</code> <span class="badge badge-nuevo">NUEVO</span>
+    </div>
+
+    <!-- NOTIFICATIONS SERVICE -->
+    <h2>📋 6. Notifications Service <span class="badge badge-dev">Agustín</span></h2>
+    <div class="ms-card">
+        <div class="meta">Puerto 3006 · MongoDB · Mongoose</div>
+
+        <h4>Colección</h4>
+        <p><code>ACTIVITY_LOG</code> (_id, usuario_id, accion, entidad_tipo, entidad_id, metadata [object], created_at)</p>
+
+        <h4>Endpoints</h4>
+        <span class="endpoint">GET /logs?servicio&accion&usuarioId&fechaDesde&fechaHasta &mdash; solo admin</span>
+
+        <h4>Comportamiento</h4>
+        <ul>
+            <li>Escucha TODOS los eventos del bus Redis Streams</li>
+            <li>Registra cada evento como un activity_log</li>
+            <li>Sin notificaciones push en MVP (V2.0)</li>
+        </ul>
+    </div>
+
+    <!-- API GATEWAY -->
+    <h2>🌐 7. API Gateway</h2>
+    <div class="ms-card">
+        <div class="meta">Puerto 3000 · (quien tenga menos carga al final)</div>
+
+        <h4>Routing</h4>
+        <table>
+            <tr><th>Path</th><th>Target</th><th>Puerto</th></tr>
+            <tr><td><code>/auth/*</code></td><td>usuario-service (módulo auth)</td><td>3001</td></tr>
+            <tr><td><code>/users/*</code></td><td>usuario-service (módulo users)</td><td>3001</td></tr>
+            <tr><td><code>/products/*</code></td><td>products-service</td><td>3003</td></tr>
+            <tr><td><code>/orders/*</code></td><td>orders-service</td><td>3004</td></tr>
+            <tr><td><code>/cart/*</code></td><td>orders-service</td><td>3004</td></tr>
+            <tr><td><code>/deliveries/*</code></td><td>entregas-service</td><td>3005</td></tr>
+            <tr><td><code>/activity-logs/*</code></td><td>notifications-service</td><td>3006</td></tr>
+            <tr><td><code>/publico/*</code></td><td>usuario-service (módulo users, sin auth)</td><td>3001</td></tr>
+        </table>
+
+        <h4>Nginx</h4>
+        <p>Puerto 80 → <code>proxy_pass</code> → Gateway :3000. Sin SSL en desarrollo.</p>
+    </div>
+
+    <div class="footer">
+        <strong>AguaFress V1.0</strong> — Definición Completa — Mayo 2026 — Página 4
+    </div>
+</div>
+
+<!-- ============ PAGE 5 ============ -->
+<div class="page section-break">
+
+    <!-- FRONTEND RESEARCH -->
+    <h2>🎨 8. Frontend — Research <span class="badge badge-dev">Agustín</span></h2>
+    <div class="ms-card">
+        <p><strong>Objetivo:</strong> Investigar y documentar la propuesta de frontend para que el equipo decida.</p>
+        <ul>
+            <li>Definir stack frontend definitivo (React 18 + TypeScript + librerías)</li>
+            <li>Buscar diseños de referencia en Canva para la UI</li>
+            <li>Crear wireframe modelo (pantallas: login, catálogo, carrito, pedido, perfil, dashboard vendedor, entregas)</li>
+            <li>Documentar decisión con tradeoffs</li>
+            <li>Presentar al equipo para elección</li>
+        </ul>
+    </div>
+
+    <!-- FUERA DEL MVP -->
+    <h2>⏭️ 9. Fuera del MVP (futuros sprints)</h2>
+    <table>
+        <tr><th>Feature</th><th>Versión estimada</th><th>Nota</th></tr>
+        <tr><td>Payment Service</td><td>V1.1 / V2.0</td><td>Dejamos camino preparado en el modelo</td></tr>
+        <tr><td>Mapa GPS interactivo</td><td>V1.1</td><td>Feature de Entregas</td></tr>
+        <tr><td>Analytics Service (MySQL)</td><td>V1.1 / V2.0</td><td>Métricas y reportes avanzados</td></tr>
+        <tr><td>Favoritos</td><td>V1.1</td><td>Products Service</td></tr>
+        <tr><td>Reviews / Valoraciones</td><td>V1.1</td><td>Orders Service</td></tr>
+        <tr><td>Descuentos</td><td>V1.1</td><td>Products Service</td></tr>
+        <tr><td>Notificaciones Push</td><td>V2.0</td><td>Notifications Service + FCM</td></tr>
+        <tr><td>Chat en tiempo real</td><td>V2.0</td><td>Chat Service (3008) + Socket.IO</td></tr>
+        <tr><td>App Móvil React Native</td><td>V2.0</td><td>Mobile</td></tr>
+        <tr><td>IA (análisis, rutas, voz)</td><td>V2.0+</td><td>Futuro</td></tr>
+    </table>
+
+    <!-- REDIS EVENTS -->
+    <h2>📡 10. Resumen de Eventos</h2>
+    <table>
+        <tr><th>Evento</th><th>Publica</th><th>Lo escuchan</th></tr>
+        <tr><td>UserCreated</td><td>usuario-service (auth)</td><td>usuario-service (users), notifications</td></tr>
+        <tr><td>VendedorStatusChanged</td><td>usuario-service (users)</td><td>notifications</td></tr>
+        <tr><td>CarteraClienteAdded</td><td>usuario-service (users)</td><td>— (futuro)</td></tr>
+        <tr><td>ProductUpdated</td><td>products-service</td><td>— (futuro: cache)</td></tr>
+        <tr><td>ProductDeleted</td><td>products-service</td><td>—</td></tr>
+        <tr><td>OrderCreated</td><td>orders-service</td><td>notifications-service</td></tr>
+        <tr><td>OrderStatusChanged</td><td>orders-service</td><td>notifications-service</td></tr>
+        <tr><td>DeliveryStarted</td><td>entregas-service</td><td>notifications-service</td></tr>
+        <tr><td>DeliveryCompleted</td><td>entregas-service</td><td>notifications-service</td></tr>
+        <tr><td>DeliveryStatusChanged</td><td>entregas-service</td><td>notifications-service</td></tr>
+    </table>
+    <p><em>Todos los eventos llegan a notifications-service que los registra como activity_logs.</em></p>
+
+    <!-- MODELO DE DATOS COMPACTO -->
+    <h2>🗃️ 11. Modelo de Datos — Resumen</h2>
+    <table>
+        <tr><th>Servicio</th><th>Tablas / Colecciones</th><th>DB</th></tr>
+        <tr><td>usuario-service (3001)</td><td>USER, SESSION, REFRESH_TOKEN, VENDEDOR, CLIENTE, RELACION_CARTERA, DIRECCION, QR_CODE, LINK_INVITACION</td><td>PostgreSQL (2 schemas)</td></tr>
+        <tr><td>products-service (3003)</td><td>PRODUCTO, MARCA, CATEGORIA, PRODUCTO_IMAGEN, DESCUENTO</td><td>PostgreSQL</td></tr>
+        <tr><td>orders-service (3004)</td><td>CART, CART_ITEM, ORDER, ORDER_ITEM, ORDER_HISTORY, FACTURA</td><td>PostgreSQL</td></tr>
+        <tr><td>entregas-service (3005)</td><td>ENTREGA</td><td>PostgreSQL</td></tr>
+        <tr><td>notifications-service (3006)</td><td>ACTIVITY_LOG</td><td>MongoDB</td></tr>
+    </table>
+
+    <div class="footer">
+        <strong>AguaFress V1.0</strong> — Definición Completa — Mayo 2026 — Página 5
+    </div>
+</div>
+
+</body>
+</html>

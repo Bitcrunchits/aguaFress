@@ -1,0 +1,90 @@
+{
+  "service": "orders-service",
+  "port": 3004,
+  "database": "PostgreSQL",
+  "orm": "Prisma",
+  "responsibility": "Gestión de carrito, pedidos, estados y facturas B/C. Solo contra_entrega como método de pago.",
+  "security_rules": [
+    "⚠️ userId/clienteId NUNCA viene del body. Se extrae del token JWT en el middleware."
+  ],
+  "events_publishes": ["orders-stream: OrderCreated, OrderStatusChanged"],
+  "events_consumes": ["deliveries-stream: DeliveryCompleted"],
+  "events_listens": ["deliveries-stream: DeliveryStarted, DeliveryCompleted, DeliveryStatusChanged"],
+  "endpoints": [
+    {
+      "path": "/orders",
+      "method": "GET",
+      "auth": "CLIENTE|VENDEDOR",
+      "request": { "estado?": "OrderEstado", "page?": "number", "limit?": "number" },
+      "response": { "data": [{ "id": "uuid", "pedidoNumero": "string", "estado": "OrderEstado", "total": "number", "clienteNombre?": "string", "clienteApellido?": "string", "createdAt": "string (ISO 8601)" }], "pagination": { "page": "number", "limit": "number", "total": "number", "totalPages": "number" } }
+    },
+    {
+      "path": "/orders/:id",
+      "method": "GET",
+      "auth": "CLIENTE|VENDEDOR",
+      "request": {},
+      "response": { "id": "uuid", "pedidoNumero": "string", "cliente": { "id": "uuid", "nombre": "string", "apellido?": "string" }, "items": [{ "productId": "uuid", "nombre": "string", "cantidad": "number", "precioUnitario": "number" }], "totalSinIva": "number", "iva": "number", "total": "number", "estado": "OrderEstado", "metodoPago": "contra_entrega", "direccion": "DireccionEntrega", "createdAt": "string (ISO 8601)" }
+    },
+    {
+      "path": "/orders",
+      "method": "POST",
+      "auth": "CLIENTE",
+      "notes": "Crea pedido desde el carrito del usuario autenticado. Los items se toman del carrito, no del body.",
+      "request": { "metodoPago": "contra_entrega", "direccion": "DireccionEntrega", "observaciones?": "string" },
+      "response": { "id": "uuid", "pedidoNumero": "string", "estado": "pendiente", "total": "number" }
+    },
+    {
+      "path": "/orders/:id/status",
+      "method": "PATCH",
+      "auth": "VENDEDOR",
+      "notes": "Transiciones válidas: pendiente→confirmado→en_camino→entregado. Cualquier estado→cancelado.",
+      "request": { "estado": "confirmado|en_camino|entregado|cancelado" },
+      "response": { "id": "uuid", "estado": "OrderEstado", "updated": "boolean" }
+    },
+    {
+      "path": "/orders/:id/cancelar",
+      "method": "POST",
+      "auth": "CLIENTE",
+      "notes": "El cliente solo puede cancelar pedidos en estado pendiente.",
+      "request": { "motivo?": "string" },
+      "response": { "id": "uuid", "estado": "cancelado" }
+    },
+    {
+      "path": "/orders/:id/confirmar",
+      "method": "POST",
+      "auth": "CLIENTE",
+      "notes": "El cliente confirma la visita del vendedor. Opcionalmente puede actualizar dirección de entrega.",
+      "request": { "direccion?": "DireccionEntrega" },
+      "response": { "orderId": "uuid", "estado": "confirmado", "mensaje": "string" }
+    },
+    {
+      "path": "/cart",
+      "method": "GET",
+      "auth": "CLIENTE",
+      "request": {},
+      "response": { "cartId": "uuid", "vendedorId": "uuid", "items": [{ "id": "uuid", "productId": "uuid", "nombre": "string", "cantidad": "number", "precioUnitario": "number" }], "totalSinIva": "number", "iva": "number", "total": "number", "expiresAt": "string (ISO 8601)" }
+    },
+    {
+      "path": "/cart/items",
+      "method": "POST",
+      "auth": "CLIENTE",
+      "notes": "Agrega un item al carrito del usuario autenticado.",
+      "request": { "productId": "uuid", "cantidad": "number" },
+      "response": { "items": "array", "total": "number" }
+    },
+    {
+      "path": "/cart/items/:id",
+      "method": "PATCH",
+      "auth": "CLIENTE",
+      "request": { "cantidad": "number" },
+      "response": { "updated": "boolean" }
+    },
+    {
+      "path": "/cart/items/:id",
+      "method": "DELETE",
+      "auth": "CLIENTE",
+      "request": {},
+      "response": { "deleted": "boolean" }
+    }
+  ]
+}

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AguaFress - Requerimientos Funcionaes y No Funcionales</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        @page { size: A4; margin: 1.5cm; }
+        
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #1a1a1a;
+            background: #f5f5f5;
+            padding: 10px;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: white;
+            padding: 15mm 18mm;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        h1 { font-size: 18pt; color: #0a3b5c; margin-bottom: 5px; font-weight: 700; }
+        h2 { font-size: 12pt; color: #1e4a6b; border-left: 4px solid #2c7da0; padding-left: 8px; margin: 15px 0 8px 0; font-weight: 600; }
+        h3 { font-size: 10pt; color: #2c3e50; margin: 10px 0 5px 0; font-weight: 600; border-bottom: 1px solid #ddd; padding-bottom: 3px; }
+        h4 { font-size: 9pt; color: #3a5a70; margin: 8px 0 4px 0; font-weight: 600; }
+        
+        p { margin-bottom: 6px; text-align: justify; }
+
+        .subtitle { font-size: 10pt; color: #5a7a8a; margin-bottom: 15px; border-bottom: 2px solid #2c7da0; padding-bottom: 6px; }
+        
+        table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 8pt; }
+        th { background: #0a3b5c; color: white; padding: 5px 4px; text-align: left; font-weight: 600; font-size: 8pt; }
+        td { padding: 4px 5px; border-bottom: 1px solid #e0e0e0; vertical-align: top; }
+        tr:nth-child(even) { background: #f8fafc; }
+
+        .badge { display: inline-block; padding: 1px 5px; border-radius: 8px; font-size: 7pt; font-weight: 600; }
+        .badge-alta { background: #d4edda; color: #155724; }
+        .badge-media { background: #fff3cd; color: #856404; }
+        .badge-baja { background: #f8d7da; color: #721c24; }
+        
+        .w-small { width: 40px; }
+        .w-medium { width: 60px; }
+
+        code { font-family: Consolas, monospace; font-size: 8pt; background: #f0f4f8; padding: 1px 3px; border-radius: 2px; color: #c7254e; }
+        
+        hr { margin: 15px 0; border: 0; height: 1px; background: linear-gradient(90deg, #ccc, transparent); }
+        
+        .footer { margin-top: 15px; padding-top: 8px; border-top: 1px solid #ddd; font-size: 8pt; color: #777; text-align: center; }
+
+        .section-break { page-break-before: always; }
+
+        @media print {
+            body { background: white; }
+            .page { box-shadow: none; padding: 10mm 12mm; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <h1>💧 AguaFress - Requerimientos Completos</h1>
+        <div class="subtitle">
+            Resumen de Requerimientos Funcionaes y No Funcionales<br>
+            <strong>Versión:</strong> 1.0 | <strong>Fecha:</strong> Abril 2026
+        </div>
+
+        <!-- AUTENTICACIÓN -->
+        <h2>1. Autenticación y Usuarios</h2>
+        <table>
+            <thead><tr><th class="w-small">ID</th><th>Requerimiento</th><th class="w-medium">Prioridad</th></tr></thead>
+            <tbody>
+                <tr><td class="w-small">AUTH-01</td><td>Registro de usuarios (solo admins)</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>AUTH-02</td><td>Login con email/password</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>AUTH-03</td><td>Login con Google OAuth</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>AUTH-04</td><td>Recuperación de contraseña</td><td><span class="badge badge-media">Media</span></td></tr>
+                <tr><td>AUTH-05</td><td>Renovación de token JWT</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>PERF-01</td><td>Ver mi perfil</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>PERF-02</td><td>Actualizar mi perfil</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>PERF-03</td><td>Gestión de usuarios (admin)</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>PERF-04</td><td>Asignar cliente a vendedor</td><td><span class="badge badge-alta">Alta</span></td></tr>
+            </tbody>
+        </table>
+
+        <!-- CATÁLOGO -->
+        <h2>2. Catálogo de Productos</h2>
+        <table>
+            <thead><tr><th class="w-small">ID</th><th>Requerimiento</th><th class="w-medium">Prioridad</th></tr></thead>
+            <tbody>
+                <tr><td>CAT-01</td><td>Ver catálogo de productos</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CAT-02</td><td>Foto del producto</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CAT-03</td><td>Marca del producto</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CAT-04</td><td>Volumen del producto</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CAT-05</td><td>Precio sin IVA</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CAT-06</td><td>Precio final (con IVA)</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CAT-07</td><td>Stock disponible</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CAT-08</td><td>Valoraciones (5 estrellas)</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CAT-09</td><td>Productos favoritos</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CAT-10</td><td>Búsqueda de productos</td><td><span class="badge badge-media">Media</span></td></tr>
+                <tr><td>CAT-11</td><td>Carga de productos por vendedor</td><td><span class="badge badge-alta">Alta</span></td></tr>
+            </tbody>
+        </table>
+
+        <!-- CARRITO -->
+        <h2>3. Carrito de Compras</h2>
+        <table>
+            <thead><tr><th class="w-small">ID</th><th>Requerimiento</th><th class="w-medium">Prioridad</th></tr></thead>
+            <tbody>
+                <tr><td>CART-01</td><td>Agregar productos al carrito</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CART-02</td><td>Definir cantidad por producto</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CART-03</td><td>Mostrar precio sin impuestos</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CART-04</td><td>Mostrar impuestos aplicados</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CART-05</td><td>Mostrar precio total del pedido</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CART-06</td><td>Modificar cantidad en carrito</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CART-07</td><td>Eliminar producto del carrito</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CART-08</td><td>Vaciar carrito</td><td><span class="badge badge-media">Media</span></td></tr>
+            </tbody>
+        </table>
+
+        <!-- PEDIDOS -->
+        <h2>4. Gestión de Pedidos</h2>
+        <table>
+            <thead><tr><th class="w-small">ID</th><th>Requerimiento</th><th class="w-medium">Prioridad</th></tr></thead>
+            <tbody>
+                <tr><td>PED-01</td><td>Realizar pedido desde el carrito</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>PED-02</td><td>Modalidad de pago: anticipado</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>PED-03</td><td>Modalidad de pago: contra entrega</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>PED-04</td><td>Confirmación de visita por consumidor</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>PED-05</td><td>Cancelación de visita por consumidor</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>PED-06</td><td>Estado: pendiente</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>PED-07</td><td>Estado: confirmado</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>PED-08</td><td>Estado: en camino</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>PED-09</td><td>Estado: entregado</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>PED-10</td><td>Estado: cancelado</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>PED-11</td><td>Notificaciones de cambio de estado</td><td><span class="badge badge-media">Media</span></td></tr>
+            </tbody>
+        </table>
+
+        <div class="section-break"></div>
+
+        <!-- VISTA VENDEDOR -->
+        <h2>5. Vista del Vendedor</h2>
+        <table>
+            <thead><tr><th class="w-small">ID</th><th>Requerimiento</th><th class="w-medium">Prioridad</th></tr></thead>
+            <tbody>
+                <tr><td>VEND-01</td><td>Dashboard de pedidos</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>VEND-02</td><td>Listado de pedidos confirmados</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>VEND-03</td><td>Detalle pedido (cliente, producto, cantidad, estado, teléfono, dirección)</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>VEND-04</td><td>Mapa interactivo con ubicaciones</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>VEND-05</td><td>Navegación GPS (Google Maps / Waze)</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>VEND-06</td><td>Botón de navegación desde pedido</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>VEND-07</td><td>Informes de ventas por cliente</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>VEND-08</td><td>Informes de ventas por producto</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>VEND-09</td><td>Historial de compras por cliente</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>VEND-10</td><td>Envío de facturas digitales</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>VEND-11</td><td>Carga y administración de productos</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>VEND-12</td><td>Registro de clientes</td><td><span class="badge badge-media">Media</span></td></tr>
+            </tbody>
+        </table>
+
+        <!-- VISTA CONSUMIDOR -->
+        <h2>6. Vista del Consumidor</h2>
+        <table>
+            <thead><tr><th class="w-small">ID</th><th>Requerimiento</th><th class="w-medium">Prioridad</th></tr></thead>
+            <tbody>
+                <tr><td>CONS-01</td><td>Registro/Login (email + Google)</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CONS-02</td><td>Perfil (nombre, apellido, DNI, mail, dirección entrega)</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CONS-03</td><td>Dirección de facturación</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CONS-04</td><td>Detalles de dirección para entrega</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CONS-05</td><td>Tipo de factura (B o C)</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CONS-06</td><td>Ver catálogo del vendedor asignado</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CONS-07</td><td>Agregar al carrito</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CONS-08</td><td>Pago anticipado o contra entrega</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CONS-09</td><td>Confirmación de visitas programadas</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CONS-10</td><td>Recepción de facturas</td><td><span class="badge badge-media">Media</span></td></tr>
+            </tbody>
+        </table>
+
+        <!-- V2.0 -->
+        <h2>7. Funcionalidades V1.0 (Móvil y Avanzadas)</h2>
+
+        <h3>7.1 App Móvil React Native</h3>
+        <table>
+            <thead><tr><th class="w-small">ID</th><th>Requerimiento</th><th class="w-medium">Prioridad</th></tr></thead>
+            <tbody>
+                <tr><td>MOB-01</td><td>App React Native 0.74+</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>MOB-02</td><td>Login móvil</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>MOB-03</td><td>Dashboard vendedor móvil</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>MOB-04</td><td>GPS en tiempo real</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>MOB-05</td><td>Notificaciones push (FCM)</td><td><span class="badge badge-alta">Alta</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>7.2 Chat en Tiempo Real (Socket.IO)</h3>
+        <table>
+            <thead><tr><th class="w-small">ID</th><th>Requerimiento</th><th class="w-medium">Prioridad</th></tr></thead>
+            <tbody>
+                <tr><td>CHAT-01</td><td>Chat de delivery (repartidor ↔ cliente)</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CHAT-02</td><td>Chat General</td><td><span class="badge badge-media">Media</span></td></tr>
+                <tr><td>CHAT-03</td><td>Estados de conexión (Online/Offline)</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>CHAT-04</td><td>Historial de mensajes</td><td><span class="badge badge-media">Media</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>7.3 Inteligencia Artificial</h3>
+        <table>
+            <thead><tr><th class="w-small">ID</th><th>Requerimiento</th><th class="w-medium">Prioridad</th></tr></thead>
+            <tbody>
+                <tr><td>AI-01</td><td>Análisis de ventas predictivo</td><td><span class="badge badge-baja">Baja</span></td></tr>
+                <tr><td>AI-02</td><td>Comandos por voz</td><td><span class="badge badge-baja">Baja</span></td></tr>
+                <tr><td>AI-03</td><td>Generador de rutas</td><td><span class="badge badge-baja">Baja</span></td></tr>
+                <tr><td>AI-04</td><td>Generador de informes</td><td><span class="badge badge-baja">Baja</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>7.4 Empresas y Pagos</h3>
+        <table>
+            <thead><tr><th class="w-small">ID</th><th>Requerimiento</th><th class="w-medium">Prioridad</th></tr></thead>
+            <tbody>
+                <tr><td>EMP-01</td><td>Registro de empresas con CUIT</td><td><span class="badge badge-media">Media</span></td></tr>
+                <tr><td>EMP-02</td><td>Pago anticipado obligatorio</td><td><span class="badge badge-media">Media</span></td></tr>
+                <tr><td>EMP-03</td><td>Verificación de pagos</td><td><span class="badge badge-media">Media</span></td></tr>
+            </tbody>
+        </table>
+
+        <hr>
+
+        <!-- NO FUNCIONALES -->
+        <h2>8. Requerimientos No Funcionales</h2>
+        
+        <h3>Rendimiento</h3>
+        <table>
+            <thead><tr><th class="w-small">ID</th><th>Requerimiento</th><th class="w-medium">Prioridad</th></tr></thead>
+            <tbody>
+                <tr><td>RNF-01</td><td>Tiempo de respuesta &lt; 2 segundos</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>RNF-02</td><td>Soporte concurrencia (100 usuarios)</td><td><span class="badge badge-media">Media</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Seguridad</h3>
+        <table>
+            <thead><tr><th class="w-small">ID</th><th>Requerimiento</th><th class="w-medium">Prioridad</th></tr></thead>
+            <tbody>
+                <tr><td>SEG-01</td><td>Passwords hasheadas (bcrypt)</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>SEG-02</td><td>JWT con expiración 24h</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>SEG-03</td><td>Aislamiento de datos por vendedor</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>SEG-04</td><td>HTTPS obligatorio</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>SEG-05</td><td>Validación de email único</td><td><span class="badge badge-alta">Alta</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Infraestructura</h3>
+        <table>
+            <thead><tr><th class="w-small">ID</th><th>Requerimiento</th><th class="w-medium">Prioridad</th></tr></thead>
+            <tbody>
+                <tr><td>INF-01</td><td>Docker + Docker Compose</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>INF-02</td><td>PostgreSQL (transaccional)</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>INF-03</td><td>MySQL (analytics)</td><td><span class="badge badge-media">Media</span></td></tr>
+                <tr><td>INF-04</td><td>MongoDB (logs)</td><td><span class="badge badge-media">Media</span></td></tr>
+                <tr><td>INF-05</td><td>Redis (Cache + Streams + Sessions)</td><td><span class="badge badge-media">Media</span></td></tr>
+                <tr><td>INF-06</td><td>Consul (Service Discovery)</td><td><span class="badge badge-media">Media</span></td></tr>
+                <tr><td>INF-07</td><td>Elasticsearch + Kibana (Logging)</td><td><span class="badge badge-media">Media</span></td></tr>
+                <tr><td>INF-08</td><td>Prometheus + Grafana (Monitoreo)</td><td><span class="badge badge-media">Media</span></td></tr>
+                <tr><td>INF-09</td><td>Socket.IO (Tiempo real)</td><td><span class="badge badge-alta">Alta</span></td></tr>
+            </tbody>
+        </table>
+
+        <h3>Usabilidad</h3>
+        <table>
+            <thead><tr><th class="w-small">ID</th><th>Requerimiento</th><th class="w-medium">Prioridad</th></tr></thead>
+            <tbody>
+                <tr><td>USA-01</td><td>Diseño responsive</td><td><span class="badge badge-alta">Alta</span></td></tr>
+                <tr><td>USA-02</td><td>Interfaz intuitiva</td><td><span class="badge badge-media">Media</span></td></tr>
+                <tr><td>USA-03</td><td>Colores accesibles</td><td><span class="badge badge-media">Media</span></td></tr>
+            </tbody>
+        </table>
+
+        <hr>
+
+        <h2>9. Stack Tecnológico</h2>
+        <table>
+            <thead><tr><th>Capa</th><th>Tecnología</th></tr></thead>
+            <tbody>
+                <tr><td>Backend</td><td>NestJS v10+, TypeORM, Passport, JWT, Google OAuth, Socket.IO</td></tr>
+                <tr><td>Frontend Web</td><td>React 18+, TypeScript</td></tr>
+                <tr><td>Frontend Mobile</td><td>React Native 0.74+ (V2.0)</td></tr>
+                <tr><td>DB Principal</td><td>PostgreSQL</td></tr>
+                <tr><td>DB Analytics</td><td>MySQL</td></tr>
+                <tr><td>DB Logs</td><td>MongoDB</td></tr>
+                <tr><td>Cache + Sessions</td><td>Redis (JWT tokens, catálogo productos)</td></tr>
+                <tr><td>Event Bus</td><td>Redis Streams (取代 RabbitMQ para eventos simples)</td></tr>
+                <tr><td>Message Broker</td><td>RabbitMQ / NATS (opcional)</td></tr>
+                <tr><td>Service Discovery</td><td>Consul</td></tr>
+                <tr><td>Logging</td><td>Elasticsearch + Kibana</td></tr>
+                <tr><td>Monitoreo</td><td>Prometheus + Grafana</td></tr>
+                <tr><td>Chat / Tiempo Real</td><td>Socket.IO</td></tr>
+            </tbody>
+        </table>
+
+        <div class="footer">
+            <p><strong>AguaFress - Requerimientos</strong> | Versión 1.0 | Abril 2026</p>
+            <p>Versión 2.0: App Móvil + Chat + AI</p>
+        </div>
+    </div>
+</body>
+</html>

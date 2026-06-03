@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AguaFress - Manual Técnico</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #0a3b5c;
+            --secondary: #2c7da0;
+            --accent: #61a5c2;
+            --light: #f8fafc;
+            --dark: #1a1a1a;
+            --gray: #64748b;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: white;
+            color: var(--dark);
+            line-height: 1.5;
+            font-size: 10pt;
+        }
+
+        h1 { color: var(--primary); font-size: 16pt; margin: 15px 0 10px; border-bottom: 2px solid var(--secondary); padding-bottom: 5px; }
+        h2 { color: var(--secondary); font-size: 12pt; margin: 12px 0 8px; font-weight: 600; }
+        h3 { color: var(--primary); font-size: 11pt; margin: 10px 0 6px; }
+        p { margin-bottom: 8px; text-align: justify; }
+
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 8pt; }
+        th, td { padding: 5px 8px; text-align: left; border: 1px solid var(--border); }
+        th { background: var(--primary); color: white; font-weight: 600; text-transform: uppercase; font-size: 7pt; }
+        tr:nth-child(even) { background: var(--light); }
+
+        ul, ol { margin: 8px 0 10px 15px; }
+        li { margin-bottom: 4px; }
+
+        /* Portada */
+        .portada {
+            text-align: center;
+            padding: 80px 40px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            min-height: calc(297mm - 3cm);
+        }
+        .portada h1 { color: white; font-size: 42pt; border: none; }
+        .portada h2 { color: white; opacity: 0.9; font-size: 16pt; }
+        .portada .info { margin-top: 50px; font-size: 11pt; }
+
+        /* Índice */
+        .indice { padding: 30px 40px; }
+        .indice h1 { font-size: 18pt; }
+        .indice ul { columns: 2; column-gap: 40px; list-style: none; }
+        .indice li { padding: 4px 0; border-bottom: 1px solid var(--border); break-inside: avoid; }
+        .indice a { color: var(--primary); text-decoration: none; }
+
+        /* Cajas */
+        .caja { background: var(--light); border-left: 3px solid var(--primary); padding: 8px 12px; margin: 8px 0; border-radius: 0 6px 6px 0; }
+        .caja.azul { border-left-color: var(--primary); }
+        .caja.verde { border-left-color: var(--secondary); }
+        .caja.amarillo { border-left-color: var(--accent); }
+        .caja h3 { margin: 0 0 5px; }
+
+        /* Grid */
+        .features-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 8px 0; }
+        .feature-item { background: var(--light); border: 1px solid var(--border); border-radius: 6px; padding: 8px; }
+        .feature-item strong { color: var(--primary); display: block; font-size: 9pt; }
+        .feature-item p { font-size: 8pt; margin: 0; }
+
+        /* Código */
+        pre { background: #1e1e1e; color: #d4d4d4; padding: 10px; border-radius: 6px; overflow-x: auto; font-size: 7pt; margin: 8px 0; line-height: 1.3; }
+
+        /* Section header */
+        .section-header { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 8px 15px; border-radius: 6px; margin: 10px 0; }
+        .section-header h2 { color: white; margin: 0; font-size: 11pt; }
+
+        /* Imágenes */
+        figure { margin: 10px 0; text-align: center; }
+        figure img { max-width: 100%; max-height: 350px; border: 1px solid var(--border); border-radius: 6px; }
+        figcaption { font-size: 8pt; color: var(--gray); margin-top: 4px; }
+
+        .page { padding: 15px 20px; }
+
+        @media print {
+            body { font-size: 9pt; }
+            .portada, table, th, td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Portada -->
+    <div class="page">
+        <div class="portada">
+            <h1>💧 AguaFress</h1>
+            <h2>Manual Técnico del Proyecto</h2>
+            <div class="info">
+                <p><strong>Versión:</strong> 1.0 | <strong>Fecha:</strong> Mayo 2026 | <strong>Estado:</strong> Aprobado para Desarrollo</p>
+                <p><strong>Carrera:</strong> Desarrollo Full Stack</p>
+                <p style="margin-top: 30px;">Equipo: Alvarado Milagros, Burdiles Adrián, Lagos Lucas, Spagnolo Emiliano, Soto Agustín</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Índice -->
+    <div class="page">
+        <div class="indice">
+            <h1>Índice</h1>
+            <ul>
+                <li>1. Introducción y Visión del Proyecto</li>
+                <li>2. Problema y Solución</li>
+                <li>3. Alcance del Proyecto</li>
+                <li>4. Requerimientos Funcionales</li>
+                <li>5. Requerimientos No Funcionales</li>
+                <li>6. Arquitectura del Sistema</li>
+                <li>7. Modelo de Datos</li>
+                <li>8. Stack Tecnológico</li>
+                <li>9. Flujos de Usuario</li>
+                <li>10. Endpoints API</li>
+                <li>11. Contratos de Microservicios</li>
+                <li>12. Criterios de Aceptación</li>
+                <li>13. Equipo de Desarrollo</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 1-2: Introducción y Problema -->
+    <div class="page">
+        <h1>1. Introducción y Visión del Proyecto</h1>
+        <p><strong>AguaFress</strong> es una plataforma marketplace web que conecta vendedores y consumidores de agua/soda en Argentina, reemplazando el modelo tradicional de visitas semanales fijas por un sistema de pedidos digitales con confirmación de visita.</p>
+        
+        <div class="features-grid">
+            <div class="feature-item"><strong>✅ Pedido directo del consumidor</strong><p>Ninguna app en Argentina lo permite</p></div>
+            <div class="feature-item"><strong>✅ Confirmación de visita</strong><p>Evita viajes improductivos</p></div>
+            <div class="feature-item"><strong>✅ Pedidos fuera del día de ruta</strong><p>Flexibilidad total</p></div>
+            <div class="feature-item"><strong>✅ Ruta inteligente con GPS</strong><p>Integración Google Maps/Waze</p></div>
+            <div class="feature-item"><strong>✅ Valoraciones y favoritos</strong><p>Experiencia e-commerce</p></div>
+            <div class="feature-item"><strong>✅ Marketplace bidireccional</strong><p>Une ambas partes activamente</p></div>
+        </div>
+
+        <h1 style="margin-top: 20px;">2. Problema y Solución</h1>
+        <table>
+            <tr><th>Stakeholder</th><th>Problema Actual</th><th>Solución AguaFress</th></tr>
+            <tr><td><strong>Vendedor</strong></td><td>Combustible gastado en visitas sin venta</td><td>Pedidos confirmados antes de salir</td></tr>
+            <tr><td><strong>Vendedor</strong></td><td>No sabe si el cliente necesita producto</td><td>Cliente pide cuando necesita</td></tr>
+            <tr><td><strong>Consumidor</strong></td><td>Debe esperar visita programada</td><td>Pedido on-demand 24/7</td></tr>
+            <tr><td><strong>Consumidor</strong></td><td>No puede comprar cuando se queda sin producto</td><td>Auto-servicio disponible</td></tr>
+        </table>
+    </div>
+
+    <!-- 3: Alcance -->
+    <div class="page">
+        <h1>3. Alcance del Proyecto</h1>
+        
+        <h2>3.1 V1.0 MVP Web</h2>
+        <table>
+            <tr><th>Incluido ✅</th><th>Excluido ❌</th></tr>
+            <tr><td>Registro/Login email + Google OAuth</td><td>Registro de empresas con CUIT (V2.0)</td></tr>
+            <tr><td>Perfil consumidor (datos básicos)</td><td>Chat en tiempo real (V2.0)</td></tr>
+            <tr><td>Catálogo productos con fotos</td><td>AI y comandos por voz (V2.0)</td></tr>
+            <tr><td>Carrito de compras</td><td>React Native (V2.0)</td></tr>
+            <tr><td>Pedidos (anticipado + contra entrega)</td><td></td></tr>
+            <tr><td>Confirmación de visitas, Dashboard vendedor</td><td></td></tr>
+            <tr><td>Mapa con GPS, Informes de ventas</td><td></td></tr>
+            <tr><td>Facturas digitales</td><td></td></tr>
+        </table>
+
+        <h2>3.2 V2.0 Futuro - MVP Móvil React Native</h2>
+        <div class="caja azul">
+            <h3>App Móvil (React Native 0.74+)</h3>
+            <ul><li>MOB-01: App para vendedores y consumidores</li><li>MOB-02: Login móvil</li><li>MOB-03: Dashboard vendedor móvil</li><li>MOB-04: GPS en tiempo real</li><li>MOB-05: Notificaciones push (Firebase)</li></ul>
+        </div>
+        <div class="caja verde">
+            <h3>Chat en Tiempo Real</h3>
+            <ul><li>CHAT-01: Chat de delivery</li><li>CHAT-02: Chat general vendedor-cliente</li><li>CHAT-03: Estados de conexión</li></ul>
+        </div>
+    </div>
+
+    <!-- 4: Requerimientos Funcionales -->
+    <div class="page">
+        <h1>4. Requerimientos Funcionales</h1>
+        
+        <h2>4.1 Super Admin (V1.0)</h2>
+        <table>
+            <tr><th>ID</th><th>Requerimiento</th><th>Descripción</th></tr>
+            <tr><td>SADMIN-01</td><td>Dashboard métricas</td><td>Vista principal con resumen de plataforma</td></tr>
+            <tr><td>SADMIN-02</td><td>Listado vendedores</td><td>Ver todos los vendedores registrados</td></tr>
+            <tr><td>SADMIN-03</td><td>Activar vendedor</td><td>Aprobar registro de nuevo vendedor</td></tr>
+            <tr><td>SADMIN-04</td><td>Métricas vendedor</td><td>Ver ventas globales</td></tr>
+            <tr><td>SADMIN-07</td><td>Suspensión cuenta</td><td>Inactivar vendedor por mora</td></tr>
+        </table>
+
+        <h2>4.2 Autenticación y Usuarios</h2>
+        <table>
+            <tr><th>ID</th><th>Requerimiento</th><th>Descripción</th></tr>
+            <tr><td>AUTH-01</td><td>Registro de usuarios</td><td>Admins crean usuarios</td></tr>
+            <tr><td>AUTH-01B</td><td>Autoregistro vendedor</td><td>Vendedor se registra solo, espera activación</td></tr>
+            <tr><td>AUTH-02</td><td>Login email/password</td><td>Autenticación tradicional</td></tr>
+            <tr><td>AUTH-03</td><td>Login Google OAuth</td><td>Autenticación con Google</td></tr>
+            <tr><td>AUTH-05</td><td>JWT Refresh</td><td>Mantener sesión</td></tr>
+            <tr><td>PERF-05</td><td>Aislamiento de cartera</td><td>Cada vendedor sus clientes</td></tr>
+        </table>
+
+        <h2>4.3 Catálogo de Productos</h2>
+        <table>
+            <tr><th>ID</th><th>Requerimiento</th><th>Descripción</th></tr>
+            <tr><td>CAT-01</td><td>Ver catálogo</td><td>Listado de productos</td></tr>
+            <tr><td>CAT-02</td><td>Foto producto</td><td>Imagen visual</td></tr>
+            <tr><td>CAT-05/06</td><td>Precio sin IVA / final</td><td>Base imponible y con impuestos</td></tr>
+            <tr><td>CAT-08</td><td>Valoraciones</td><td>5 estrellas</td></tr>
+            <tr><td>CAT-09</td><td>Favoritos</td><td>Productos guardados</td></tr>
+            <tr><td>CAT-11</td><td>Carga productos</td><td>Vendedor admin</td></tr>
+        </table>
+
+        <h2>4.4 Carrito y Pedidos</h2>
+        <table>
+            <tr><th>ID</th><th>Requerimiento</th><th>Descripción</th></tr>
+            <tr><td>CART-01</td><td>Agregar al carrito</td><td>Seleccionar producto</td></tr>
+            <tr><td>CART-05</td><td>Total pedido</td><td>Sumatoria final</td></tr>
+            <tr><td>PED-02</td><td>Pago anticipado</td><td>Pago por adelantado</td></tr>
+            <tr><td>PED-03</td><td>Pago contra entrega</td><td>Pago en el momento</td></tr>
+            <tr><td>PED-04/05</td><td>Confirmar/Cancelar visita</td><td>Cliente confirma o rechaza</td></tr>
+            <tr><td>PED-06/07/08/09</td><td>Estados pedido</td><td>Pendiente, Confirmado, En camino, Entregado, Cancelado</td></tr>
+        </table>
+    </div>
+
+    <!-- 4.5-4.7: Vistas -->
+    <div class="page">
+        <h2>4.5 Vista del Vendedor</h2>
+        <table>
+            <tr><th>ID</th><th>Requerimiento</th><th>Descripción</th></tr>
+            <tr><td>VEND-01</td><td>Dashboard</td><td>Resumen general</td></tr>
+            <tr><td>VEND-02</td><td>Pedidos confirmados</td><td>Listado activo</td></tr>
+            <tr><td>VEND-04</td><td>Mapa interactivo</td><td>Ubicaciones</td></tr>
+            <tr><td>VEND-05</td><td>Navegación GPS</td><td>Google/Waze</td></tr>
+            <tr><td>VEND-07/08</td><td>Informes</td><td>Por cliente y producto</td></tr>
+            <tr><td>VEND-10</td><td>Facturas PDF</td><td>Digitales</td></tr>
+            <tr><td>VEND-11</td><td>Admin productos</td><td>CRUD</td></tr>
+        </table>
+
+        <h2>4.6 Vista del Consumidor</h2>
+        <table>
+            <tr><th>ID</th><th>Requerimiento</th><th>Descripción</th></tr>
+            <tr><td>CONS-01</td><td>Login completo</td><td>Acceso al sistema</td></tr>
+            <tr><td>CONS-02</td><td>Perfil completo</td><td>Datos personales</td></tr>
+            <tr><td>CONS-03/04</td><td>Dirección entrega/facturación</td><td>Ubicación y datos factura</td></tr>
+            <tr><td>CONS-05</td><td>Tipo factura</td><td>B o C</td></tr>
+            <tr><td>CONS-06/07</td><td>Ver catálogo / Carrito</td><td>Productos y compra online</td></tr>
+            <tr><td>CONS-09</td><td>Confirmar visita</td><td>Programación</td></tr>
+        </table>
+    </div>
+
+    <!-- 5: No Funcionales -->
+    <div class="page">
+        <h1>5. Requerimientos No Funcionales</h1>
+        
+        <h2>5.1 Rendimiento</h2>
+        <table>
+            <tr><th>ID</th><th>Requerimiento</th><th>Criterio</th><th>Meta</th></tr>
+            <tr><td>RNF-01</td><td>Tiempo de respuesta</td><td>API calls</td><td>< 2 segundos</td></tr>
+            <tr><td>RNF-02</td><td>Carga concurrente</td><td>Usuarios simultáneos</td><td>100 usuarios</td></tr>
+            <tr><td>RNF-03</td><td>Disponibilidad</td><td>Uptime</td><td>99%</td></tr>
+        </table>
+
+        <h2>5.2 Seguridad</h2>
+        <table>
+            <tr><th>ID</th><th>Requerimiento</th><th>Criterio</th></tr>
+            <tr><td>SEG-01</td><td>Hash de passwords</td><td>bcrypt</td></tr>
+            <tr><td>SEG-02</td><td>Tokens</td><td>JWT 24h expiry</td></tr>
+            <tr><td>SEG-03</td><td>Aislamiento datos</td><td>Por vendedor</td></tr>
+            <tr><td>SEG-04</td><td>HTTPS</td><td>Obligatorio</td></tr>
+        </table>
+
+        <h2>5.3 Infraestructura</h2>
+        <table>
+            <tr><th>ID</th><th>Requerimiento</th><th>Tecnología</th></tr>
+            <tr><td>INF-01</td><td>Contenedores</td><td>Docker</td></tr>
+            <tr><td>INF-02</td><td>Orquestación</td><td>Docker Compose</td></tr>
+            <tr><td>INF-03</td><td>Cache</td><td>Redis</td></tr>
+            <tr><td>INF-04</td><td>Email test</td><td>Mailhog</td></tr>
+            <tr><td>INF-05</td><td>Service Discovery</td><td>Consul</td></tr>
+            <tr><td>INF-06</td><td>Logging</td><td>Elasticsearch + Kibana</td></tr>
+            <tr><td>INF-07</td><td>Monitoreo</td><td>Prometheus + Grafana</td></tr>
+        </table>
+
+        <h2>5.4 Base de Datos (3 Motores)</h2>
+        <table>
+            <tr><th>Motor</th><th>Servicios</th><th>Datos</th></tr>
+            <tr><td><strong>PostgreSQL</strong></td><td>Auth, Products, Orders, User, Payment</td><td>Usuarios, Productos, Pedidos, Facturación</td></tr>
+            <tr><td><strong>MySQL</strong></td><td>Analytics</td><td>Historial ventas, Métricas, Reportes OLAP</td></tr>
+            <tr><td><strong>MongoDB</strong></td><td>Notifications</td><td>Mensajes, Notificaciones, Activity Logs</td></tr>
+        </table>
+    </div>
+
+    <!-- 6: Arquitectura -->
+    <div class="page">
+        <h1>6. Arquitectura del Sistema</h1>
+        
+        <h2>6.1 Diagrama de Arquitectura</h2>
+        <figure>
+            <img src="assets/imgAguaFress.png" alt="Arquitectura de AguaFress">
+            <figcaption>Arquitectura general del sistema AguaFress</figcaption>
+        </figure>
+
+        <h2>6.2 Diagramas de Flujo</h2>
+        <figure>
+            <img src="documentacion/diagramas de flujos/Diagrama Flujo compra.dia (1).png" alt="Flujo de Compra">
+            <figcaption>Diagrama de flujo - Proceso de Compra</figcaption>
+        </figure>
+        <p style="font-size: 9pt; color: var(--gray);">Nota: El diagrama de Registro y Login se encuentra en documentacion/diagramas de flujos/Flujo de registro y login.pdf</p>
+
+        <h2>6.3 Distribución de Servicios (7 Microservicios + Gateway)</h2>
+        <table>
+            <tr><th>Servicio</th><th>Puerto</th><th>DB</th><th>Funcionalidad</th></tr>
+            <tr><td><strong>api-gateway</strong></td><td>3000</td><td>-</td><td>Routing, Auth, Rate limit</td></tr>
+            <tr><td>auth-service</td><td>3001</td><td>PostgreSQL</td><td>Login, JWT, Roles, Tokens</td></tr>
+            <tr><td>user-service</td><td>3002</td><td>PostgreSQL</td><td>Gestión de usuarios, Clientes</td></tr>
+            <tr><td>products-service</td><td>3003</td><td>PostgreSQL</td><td>Catálogo, Productos, Imágenes</td></tr>
+            <tr><td>orders-service</td><td>3004</td><td>PostgreSQL</td><td>Pedidos, Carrito, Items</td></tr>
+            <tr><td>analytics-service</td><td>3005</td><td>MySQL</td><td>Reportes, Métricas OLAP</td></tr>
+            <tr><td>notifications-service</td><td>3006</td><td>MongoDB</td><td>Mensajes, Notificaciones, Logs</td></tr>
+            <tr><td>payment-service</td><td>3007</td><td>PostgreSQL</td><td>Pagos, Métodos de pago</td></tr>
+        </table>
+    </div>
+
+    <!-- 7: Modelo de Datos -->
+    <div class="page">
+        <h1>7. Modelo de Datos</h1>
+        
+        <h2>7.1 Entity-Relationship</h2>
+        <pre>
+┌────────────────────────────────────────────────────────────────┐
+│  USER ──┬──► USER (vendedor)     PRODUCT ──┬──► ORDER_ITEM   │
+│  (UUID) │   (relación vendedor)   (UUID)    │   (UUID)        │
+│         │                                  │                 │
+│         └────► ORDER (UUID) ◄───────────────┘                 │
+│                        │                                     │
+│                        └────► ORDER_ITEM ◄──► PRODUCT       │
+│                                                             │
+│  ROLE (enum)    FAVORITE (UUID)                            │
+└────────────────────────────────────────────────────────────────┘
+        </pre>
+
+        <h2>7.2 Relaciones</h2>
+        <ul>
+            <li>USER ──► user.vendedor_id ──► USER (vendedor)</li>
+            <li>ORDER ──► order.user ──► USER</li>
+            <li>ORDER ──► order.items ──► ORDER_ITEM</li>
+            <li>ORDER_ITEM ──► item.product ──► PRODUCT</li>
+            <li>FAVORITE ──► favorite.user ──► USER</li>
+            <li>FAVORITE ──► favorite.product ──► PRODUCT</li>
+        </ul>
+
+        <h2>7.3 Enums</h2>
+        <table>
+            <tr><th>Enum</th><th>Valores</th></tr>
+            <tr><td><strong>UserRole</strong></td><td>SUPER_ADMIN, VENDEDOR, CLIENTE</td></tr>
+            <tr><td><strong>VendedorStatus</strong></td><td>PENDIENTE, ACTIVO, INACTIVO, BLOQUEADO</td></tr>
+            <tr><td><strong>OrderStatus</strong></td><td>PENDIENTE, CONFIRMADO, EN_CAMINO, ENTREGADO, CANCELADO</td></tr>
+            <tr><td><strong>PaymentMethod</strong></td><td>ANTICIPADO, CONTRA_ENTREGA</td></tr>
+            <tr><td><strong>TipoFactura</strong></td><td>B, C</td></tr>
+        </table>
+    </div>
+
+    <!-- 8: Stack Tecnológico -->
+    <div class="page">
+        <h1>8. Stack Tecnológico</h1>
+        
+        <div class="features-grid">
+            <div class="feature-item"><strong>Backend</strong><p>NestJS v10+</p></div>
+            <div class="feature-item"><strong>ORM Principal</strong><p>TypeORM v5+</p></div>
+            <div class="feature-item"><strong>Auth</strong><p>Passport.js + JWT</p></div>
+            <div class="feature-item"><strong>OAuth</strong><p>Google OAuth</p></div>
+            <div class="feature-item"><strong>NoSQL</strong><p>Mongoose</p></div>
+            <div class="feature-item"><strong>WebSocket</strong><p>Socket.IO</p></div>
+            <div class="feature-item"><strong>Frontend</strong><p>React v18+ + TypeScript</p></div>
+            <div class="feature-item"><strong>Mobile V2.0</strong><p>React Native 0.74+</p></div>
+            <div class="feature-item"><strong>Contenedores</strong><p>Docker + Docker Compose</p></div>
+            <div class="feature-item"><strong>Cache</strong><p>Redis</p></div>
+            <div class="feature-item"><strong>Service Discovery</strong><p>Consul</p></div>
+            <div class="feature-item"><strong>Logging</strong><p>Elasticsearch + Kibana</p></div>
+            <div class="feature-item"><strong>Métricas</strong><p>Prometheus + Grafana</p></div>
+            <div class="feature-item"><strong>Message Broker</strong><p>RabbitMQ / NATS</p></div>
+            <div class="feature-item"><strong>Email Test</strong><p>Mailhog</p></div>
+            <div class="feature-item"><strong>Despliegue</strong><p>Railway / Vercel</p></div>
+        </div>
+    </div>
+
+    <!-- 9: Flujos de Usuario -->
+    <div class="page">
+        <h1>9. Flujos de Usuario</h1>
+        
+        <h2>9.1 Flujo de Autenticación</h2>
+        <pre>
+[USUARIO] → /auth/login → [OK] → JWT Token → [APP SEGÚN ROL]
+        </pre>
+
+        <h2>9.2 Flujo de Compra</h2>
+        <pre>
+[CONSUMIDOR] → Ver Catálogo → Agregar al Carrito → Checkout →
+→ Elegir Pago (anticipado/contra entrega) → Crear Pedido (PENDIENTE) →
+→ Confirmar Visita → [VENDEDOR] → Ruta con GPS → Entregar/Cancelar
+        </pre>
+
+        <h2>9.3 Aislamiento de Cartera</h2>
+        <div class="caja azul">
+            <p>Cada vendedor solo puede ver y gestionar sus propios clientes. Las consultas incluyen siempre: <code>WHERE vendedor_id = 'id-del-vendedor'</code></p>
+        </div>
+    </div>
+
+    <!-- 10: Endpoints -->
+    <div class="page">
+        <h1>10. Endpoints API</h1>
+        
+        <table>
+            <tr><th>Módulo</th><th>Método</th><th>Endpoint</th><th>Descripción</th></tr>
+            <tr rowspan="3"><td><strong>Auth</strong></td><td>POST</td><td>/auth/login</td><td>Login email+password</td></tr>
+            <tr><td>POST</td><td>/auth/register</td><td>Crear usuario</td></tr>
+            <tr><td>POST</td><td>/auth/google</td><td>Login OAuth</td></tr>
+            <tr rowspan="3"><td><strong>Users</strong></td><td>GET</td><td>/users/me</td><td>Mi perfil</td></tr>
+            <tr><td>PATCH</td><td>/users/me</td><td>Actualizar perfil</td></tr>
+            <tr><td>GET</td><td>/users/mis-clientes</td><td>Mis clientes (vendedor)</td></tr>
+            <tr rowspan="3"><td><strong>Products</strong></td><td>GET</td><td>/products</td><td>Listar catálogo</td></tr>
+            <tr><td>POST</td><td>/products</td><td>Crear producto</td></tr>
+            <tr><td>DELETE</td><td>/products/:id</td><td>Eliminar producto</td></tr>
+            <tr rowspan="3"><td><strong>Orders</strong></td><td>GET</td><td>/orders</td><td>Mis pedidos</td></tr>
+            <tr><td>POST</td><td>/orders</td><td>Crear pedido</td></tr>
+            <tr><td>POST</td><td>/orders/:id/confirmar</td><td>Confirmar visita</td></tr>
+            <tr><td><strong>Super Admin</strong></td><td>GET</td><td>/super-admin/dashboard</td><td>Métricas globales</td></tr>
+            <tr><td></td><td>POST</td><td>/super-admin/vendedores/:id/activar</td><td>Activar vendedor</td></tr>
+        </table>
+    </div>
+
+    <!-- 11: Contratos de Microservicios -->
+    <div class="page">
+        <h1>11. Contratos de Microservicios</h1>
+        
+        <h2>11.1 API Gateway (Puerto 3000)</h2>
+        <p><strong>Responsabilidad:</strong> Punto de entrada único. Routing, autenticación, rate limiting, balanceo de carga.</p>
+        <table>
+            <tr><th>Endpoint Interno</th><th>Método</th><th>Descripción</th></tr>
+            <tr><td>/auth/*</td><td>*</td><td>Redirige a auth-service</td></tr>
+            <tr><td>/users/*</td><td>*</td><td>Redirige a user-service</td></tr>
+            <tr><td>/products/*</td><td>*</td><td>Redirige a products-service</td></tr>
+            <tr><td>/orders/*</td><td>*</td><td>Redirige a orders-service</td></tr>
+            <tr><td>/analytics/*</td><td>*</td><td>Redirige a analytics-service</td></tr>
+            <tr><td>/notifications/*</td><td>*</td><td>Redirige a notifications-service</td></tr>
+            <tr><td>/payments/*</td><td>*</td><td>Redirige a payment-service</td></tr>
+        </table>
+
+        <h2>11.2 Auth Service (Puerto 3001) - PostgreSQL</h2>
+        <p><strong>Responsabilidad:</strong> Autenticación, gestión de tokens JWT, roles y permisos.</p>
+        <table>
+            <tr><th>Endpoint</th><th>Método</th><th>Request</th><th>Response</th></tr>
+            <tr><td>/auth/login</td><td>POST</td><td>{email, password}</td><td>{token, user}</td></tr>
+            <tr><td>/auth/register</td><td>POST</td><td>{email, password, role}</td><td>{user}</td></tr>
+            <tr><td>/auth/google</td><td>POST</td><td>{googleToken}</td><td>{token, user}</td></tr>
+            <tr><td>/auth/refresh</td><td>POST</td><td>{refreshToken}</td><td>{token}</td></tr>
+            <tr><td>/auth/validate</td><td>POST</td><td>{token}</td><td>{valid, user}</td></tr>
+        </table>
+
+        <h2>11.3 User Service (Puerto 3002) - PostgreSQL</h2>
+        <p><strong>Responsabilidad:</strong> Gestión de usuarios, clientes, asignación de vendedores, perfil.</p>
+        <table>
+            <tr><th>Endpoint</th><th>Método</th><th>Request</th><th>Response</th></tr>
+            <tr><td>/users</td><td>GET</td><td>-</td><td>[User]</td></tr>
+            <tr><td>/users/:id</td><td>GET</td><td>-</td><td>User</td></tr>
+            <tr><td>/users/me</td><td>GET</td><td>token</td><td>User</td></tr>
+            <tr><td>/users/me</td><td>PATCH</td><td>{name, phone...}</td><td>User</td></tr>
+            <tr><td>/users/mis-clientes</td><td>GET</td><td>vendedorId</td><td>[Client]</td></tr>
+            <tr><td>/users/asignar-vendedor</td><td>POST</td><td>{clienteId, vendedorId}</td><td>Client</td></tr>
+        </table>
+
+        <h2>11.4 Products Service (Puerto 3003) - PostgreSQL</h2>
+        <p><strong>Responsabilidad:</strong> Catálogo de productos, categorías, imágenes, búsquedas, favoritos.</p>
+        <table>
+            <tr><th>Endpoint</th><th>Método</th><th>Request</th><th>Response</th></tr>
+            <tr><td>/products</td><td>GET</td><td>vendedorId?</td><td>[Product]</td></tr>
+            <tr><td>/products/:id</td><td>GET</td><td>-</td><td>Product</td></tr>
+            <tr><td>/products</td><td>POST</td><td>{name, price, vendorId...}</td><td>Product</td></tr>
+            <tr><td>/products/:id</td><td>PATCH</td><td>{...}</td><td>Product</td></tr>
+            <tr><td>/products/:id</td><td>DELETE</td><td>-</td><td>{deleted}</td></tr>
+            <tr><td>/products/search</td><td>GET</td><td>q=...</td><td>[Product]</td></tr>
+            <tr><td>/products/:id/favorite</td><td>POST</td><td>userId</td><td>Favorite</td></tr>
+        </table>
+
+        <h2>11.5 Orders Service (Puerto 3004) - PostgreSQL</h2>
+        <p><strong>Responsabilidad:</strong> Gestión de pedidos, estados, carrito de compras, confirmación de visitas.</p>
+        <table>
+            <tr><th>Endpoint</th><th>Método</th><th>Request</th><th>Response</th></tr>
+            <tr><td>/orders</td><td>GET</td><td>userId</td><td>[Order]</td></tr>
+            <tr><td>/orders/:id</td><td>GET</td><td>-</td><td>Order + Items</td></tr>
+            <tr><td>/orders</td><td>POST</td><td>{userId, items[], paymentMethod}</td><td>Order</td></tr>
+            <tr><td>/orders/:id/status</td><td>PATCH</td><td>{status}</td><td>Order</td></tr>
+            <tr><td>/orders/:id/confirmar</td><td>POST</td><td>-</td><td>Order</td></tr>
+            <tr><td>/orders/:id/cancelar</td><td>POST</td><td>-</td><td>Order</td></tr>
+            <tr><td>/cart</td><td>GET</td><td>userId</td><td>Cart</td></tr>
+            <tr><td>/cart/items</td><td>POST</td><td>{productId, qty}</td><td>Cart</td></tr>
+        </table>
+
+        <h2>11.6 Analytics Service (Puerto 3005) - MySQL</h2>
+        <p><strong>Responsabilidad:</strong> Reportes, métricas, historial de ventas OLAP, datos de solo lectura.</p>
+        <table>
+            <tr><th>Endpoint</th><th>Método</th><th>Request</th><th>Response</th></tr>
+            <tr><td>/analytics/ventas/cliente</td><td>GET</td><td>vendedorId</td><td>SalesByClient[]</td></tr>
+            <tr><td>/analytics/ventas/producto</td><td>GET</td><td>vendedorId</td><td>SalesByProduct[]</td></tr>
+            <tr><td>/analytics/historial/:cliente</td><td>GET</td><td>clienteId</td><td>OrderHistory[]</td></tr>
+            <tr><td>/analytics/metricas</td><td>GET</td><td>vendedorId, range</td><td>Metrics</td></tr>
+            <tr><td>/analytics/dashboard</td><td>GET</td><td>vendedorId</td><td>DashboardData</td></tr>
+        </table>
+
+        <h2>11.7 Notifications Service (Puerto 3006) - MongoDB</h2>
+        <p><strong>Responsabilidad:</strong> Mensajes, notificaciones push, activity logs, eventos asíncronos.</p>
+        <table>
+            <tr><th>Endpoint</th><th>Método</th><th>Request</th><th>Response</th></tr>
+            <tr><td>/notifications</td><td>GET</td><td>userId</td><td>[Notification]</td></tr>
+            <tr><td>/notifications/:id/read</td><td>PATCH</td><td>-</td><td>Notification</td></tr>
+            <tr><td>/notifications/send</td><td>POST</td><td>{userId, message, type}</td><td>Notification</td></tr>
+            <tr><td>/logs</td><td>GET</td><td>service, date</td><td>[ActivityLog]</td></tr>
+            <tr><td>/logs</td><td>POST</td><td>{service, action, data}</td><td>Log</td></tr>
+        </table>
+
+        <h2>11.8 Payment Service (Puerto 3007) - PostgreSQL</h2>
+        <p><strong>Responsabilidad:</strong> Gestión de métodos de pago, procesamiento de pagos, facturas.</p>
+        <table>
+            <tr><th>Endpoint</th><th>Método</th><th>Request</th><th>Response</th></tr>
+            <tr><td>/payments/metodos</td><td>GET</td><td>userId</td><td>[PaymentMethod]</td></tr>
+            <tr><td>/payments/procesar</td><td>POST</td><td>{orderId, method}</td><td>PaymentResult</td></tr>
+            <tr><td>/payments/confirmar</td><td>POST</td><td>{paymentId}</td><td>Payment</td></tr>
+            <tr><td>/payments/rechazar</td><td>POST</td><td>{paymentId}</td><td>Payment</td></tr>
+            <tr><td>/facturas/generar</td><td>POST</td><td>{orderId, tipo}</td><td>Factura</td></tr>
+        </table>
+    </div>
+
+    <!-- 12: Criterios y Equipo -->
+    <div class="page">
+        <h1>11. Criterios de Aceptación</h1>
+        
+        <h2>11.1 Funcionales</h2>
+        <ul>
+            <li>✓ Usuario puede registrarse y hacer login</li>
+            <li>✓ Consumidor ve catálogo de su vendedor asignado</li>
+            <li>✓ Consumidor puede agregar productos al carrito y realizar pedido</li>
+            <li>✓ Consumidor puede pagar anticipado o contra entrega</li>
+            <li>✓ Consumidor puede confirmar/cancelar visita</li>
+            <li>✓ Vendedor ve sus pedidos confirmados</li>
+            <li>✓ Vendedor puede gestionar productos y generar informes</li>
+            <li>✓ Vendedor tiene mapa con GPS</li>
+            <li>✓ Aislamiento de datos funciona correctamente</li>
+        </ul>
+
+        <h2>11.2 No Funcionales</h2>
+        <ul>
+            <li>✓ Tiempo de respuesta < 2 segundos</li>
+            <li>✓ HTTPS configurado</li>
+            <li>✓ Contraseñas hasheadas con bcrypt</li>
+            <li>✓ JWT expira correctamente (24h)</li>
+            <li>✓ Docker compose levanta todo</li>
+            <li>✓ Tests unitarios pasando</li>
+        </ul>
+
+        <h1 style="margin-top: 20px;">12. Equipo de Desarrollo</h1>
+        <div class="features-grid">
+            <div class="feature-item"><strong>👩‍💻 Alvarado Milagros</strong><p>Desarrolladora Full Stack</p></div>
+            <div class="feature-item"><strong>👨‍💻 Burdiles Adrián</strong><p>Desarrollador Full Stack</p></div>
+            <div class="feature-item"><strong>👨‍💻 Lagos Lucas</strong><p>Desarrollador Full Stack</p></div>
+            <div class="feature-item"><strong>👨‍💻 Spagnolo Emiliano</strong><p>Desarrollador Full Stack</p></div>
+            <div class="feature-item"><strong>👨‍💻 Soto Agustín</strong><p>Desarrollador Full Stack</p></div>
+        </div>
+
+        <div style="margin-top: 20px; padding: 15px; background: var(--light); border-radius: 8px; text-align: center;">
+            <p><strong>Información del Proyecto</strong></p>
+            <p>Nombre: AguaFress | Versión: 1.0 | Fecha: Mayo 2026 | Estado: Aprobado para Desarrollo</p>
+            <p>Carrera: Desarrollo Full Stack | Materias: Desarrollo Full Stack, Arquitectura de Software, Proyecto Integrador</p>
+            <p style="margin-top: 15px; color: var(--gray); font-size: 9pt;">Documento generado para presentación al profesor</p>
+        </div>
+    </div>
+</body>
+</html>

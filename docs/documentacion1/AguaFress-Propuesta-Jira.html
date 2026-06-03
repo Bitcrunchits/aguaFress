@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AguaFress — Propuesta de Organización en Jira</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        @page { size: A4; margin: 1.2cm; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; font-size: 10pt; line-height: 1.45; color: #1a1a1a; background: #e2e8f0; padding: 10px; }
+        .page { width: 210mm; min-height: 297mm; margin: 0 auto 12px; background: white; padding: 14mm 16mm; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h1 { font-size: 22pt; color: #0a3b5c; margin-bottom: 2px; }
+        h2 { font-size: 14pt; color: #1e4a6b; border-left: 4px solid #2c7da0; padding-left: 10px; margin: 20px 0 10px; }
+        h3 { font-size: 11pt; color: #2c3e50; margin: 14px 0 6px; }
+        p { margin-bottom: 6px; }
+        .subtitle { font-size: 11pt; color: #2c7da0; margin-bottom: 14px; border-bottom: 2px solid #2c7da0; padding-bottom: 5px; }
+        .box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 14px; margin: 10px 0; }
+        .box-tip { border-left: 4px solid #22c55e; background: #f0fdf4; }
+        .box-warn { border-left: 4px solid #f59e0b; background: #fffbeb; }
+        .box-info { border-left: 4px solid #3b82f6; background: #eff6ff; }
+        table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 9pt; }
+        th { background: #0a3b5c; color: white; padding: 5px 6px; text-align: left; }
+        td { padding: 4px 6px; border-bottom: 1px solid #e0e0e0; }
+        ul { margin: 4px 0 8px 18px; }
+        li { margin-bottom: 3px; }
+        .option-card { border: 2px solid #2c7da0; border-radius: 8px; padding: 14px; margin: 12px 0; }
+        .option-card h3 { margin-top: 0; color: #0a3b5c; }
+        .option-card .badge { display: inline-block; background: #0a3b5c; color: white; padding: 2px 10px; border-radius: 12px; font-size: 8pt; font-weight: bold; margin-bottom: 6px; }
+        .footer { margin-top: 16px; padding-top: 6px; border-top: 1px solid #ddd; font-size: 7.5pt; color: #777; text-align: center; }
+        .section-break { page-break-before: always; }
+        @media print { body { background: white; padding: 0; } .page { box-shadow: none; padding: 0; margin: 0 auto; } }
+    </style>
+</head>
+<body>
+
+<div class="page">
+    <h1>📋 AguaFress — Propuesta de Organización en Jira</h1>
+    <div class="subtitle">3 opciones para estructurar el proyecto</div>
+
+    <h2>Contexto</h2>
+    <p>5 devs, 4 meses de desarrollo + 1 mes de colchón, 6 microservicios + gateway + frontend. La organización en Jira debe permitir trackear progreso sin generar overhead administrativo.</p>
+
+    <h2>Opción A — Epic por mes (recomendada)</h2>
+    <div class="option-card">
+        <div class="badge">RECOMENDADA</div>
+        <h3>Una Epic por cada mes de desarrollo</h3>
+        <table>
+            <tr><th>Epic</th><th>Mes</th><th>Contenido</th></tr>
+            <tr><td>AG-MES-1</td><td>Mes 1</td><td>Base: proyectos NestJS, Prisma schemas, migrations, Docker, health checks</td></tr>
+            <tr><td>AG-MES-2</td><td>Mes 2</td><td>Eventos: Redis Streams, integración entre servicios, contratos</td></tr>
+            <tr><td>AG-MES-3</td><td>Mes 3</td><td>Frontend: vistas principales, conexión con Gateway</td></tr>
+            <tr><td>AG-MES-4</td><td>Mes 4</td><td>Cierre: tests, bugs, documentación, deploy</td></tr>
+        </table>
+        <p><strong>✅ Ventajas:</strong> Simple, clara, alineada al cronograma. Cada mes tiene un objetivo medible.</p>
+        <p><strong>❌ Desventajas:</strong> Mezcla servicios en la misma epic. Difícil ver el progreso individual.</p>
+    </div>
+
+    <h2>Opción B — Epic por dev</h2>
+    <div class="option-card">
+        <h3>Una Epic por cada desarrollador</h3>
+        <table>
+            <tr><th>Epic</th><th>Dev</th><th>Servicio</th></tr>
+            <tr><td>AG-LUCAS</td><td>Lucas Lagos</td><td>usuario-service (auth + users)</td></tr>
+            <tr><td>AG-EMI</td><td>Emiliano Spagnolo</td><td>products-service</td></tr>
+            <tr><td>AG-ADRIAN</td><td>Adrián Burdiles</td><td>orders-service + api-gateway</td></tr>
+            <tr><td>AG-MILI</td><td>Milagros Alvarado</td><td>entregas-service</td></tr>
+            <tr><td>AG-AGUS</td><td>Agustín Soto</td><td>notifications-service + frontend research</td></tr>
+        </table>
+        <p><strong>✅ Ventajas:</strong> Cada uno ve su progreso claramente.</p>
+        <p><strong>❌ Desventajas:</strong> No refleja la dependencia entre servicios. Dependencias cruzadas difíciles de trackear.</p>
+    </div>
+
+    <div class="footer"><strong>AguaFress</strong> — Propuesta Jira — Página 1</div>
+</div>
+
+<div class="page section-break">
+
+    <h2>Opción C — Híbrido (epics por mes + stories por dev)</h2>
+    <div class="option-card">
+        <h3>Epics por mes, stories asignadas a cada dev</h3>
+        <p>Es la combinación de las dos anteriores:</p>
+        <ul>
+            <li>4 epics (una por mes) como la Opción A</li>
+            <li>Dentro de cada epic, stories asignadas a cada dev</li>
+            <li>Cada story tiene acceptance criteria y depende de otras stories</li>
+        </ul>
+        <h3>Ejemplo: Mes 1 (AG-MES-1)</h3>
+        <table>
+            <tr><th>Story</th><th>Dev</th><th>Descripción</th><th>Depende de</th></tr>
+            <tr><td>AG-1</td><td>Todos</td><td>Definir contratos y DTOs TypeScript</td><td>—</td></tr>
+            <tr><td>AG-2</td><td>Lucas</td><td>Crear proyecto usuario-service + Prisma schema auth</td><td>AG-1</td></tr>
+            <tr><td>AG-3</td><td>Emiliano</td><td>Crear proyecto products-service + Prisma schema</td><td>AG-1</td></tr>
+            <tr><td>AG-4</td><td>Adrián</td><td>Crear proyecto orders-service + Prisma schema</td><td>AG-1</td></tr>
+            <tr><td>AG-5</td><td>Milagros</td><td>Crear proyecto entregas-service + Prisma schema</td><td>AG-1</td></tr>
+            <tr><td>AG-6</td><td>Agustín</td><td>Crear proyecto notifications-service + MongoDB</td><td>AG-1</td></tr>
+            <tr><td>AG-7</td><td>Adrián</td><td>Crear api-gateway + configuración rutas</td><td>AG-2..6</td></tr>
+            <tr><td>AG-8</td><td>Todos</td><td>Docker compose con perfiles + health checks</td><td>AG-2..7</td></tr>
+        </table>
+        <p><strong>✅ Ventajas:</strong> Lo mejor de ambos mundos. Visibilidad mensual + responsabilidad individual. Las dependencias son explícitas.</p>
+        <p><strong>❌ Desventajas:</strong> Requiere más planificación inicial. Más stories que mantener.</p>
+    </div>
+
+    <h2>Recomendación final</h2>
+    <div class="box box-tip">
+        <strong>✅ Opción C — Híbrido.</strong> Epics por mes para visión general, stories por dev para responsabilidad individual. Es la que mejor escala para equipos que están aprendiendo.
+    </div>
+
+    <h2>Cómo seguir</h2>
+    <ol>
+        <li>Elegir una opción en equipo (discutir en la daily)</li>
+        <li>Crear las epics en Jira</li>
+        <li>Generar las stories del Mes 1 con acceptance criteria</li>
+        <li>Asignar a cada dev y arrancar</li>
+    </ol>
+
+    <div class="footer"><strong>AguaFress</strong> — Propuesta Jira — Página 2</div>
+</div>
+
+</body>
+</html>

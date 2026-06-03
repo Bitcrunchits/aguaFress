@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AguaFress - Modelo de Datos</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        @page { size: A4; margin: 1.5cm; }
+        
+        @media print {
+            .page { box-shadow: none; padding: 10mm 12mm; }
+            .no-print { display: none; }
+        }
+        
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
+            font-size: 9pt;
+            line-height: 1.3;
+            color: #1a1a1a;
+            background: #f5f5f5;
+            padding: 10px;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: white;
+            padding: 15mm 18mm;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        h1 { font-size: 16pt; color: #0a3b5c; margin-bottom: 4px; font-weight: 700; }
+        h2 { font-size: 11pt; color: #1e4a6b; border-left: 4px solid #2c7da0; padding-left: 8px; margin: 12px 0 6px 0; font-weight: 600; }
+        h3 { font-size: 9pt; color: #2c3e50; margin: 8px 0 4px 0; font-weight: 600; border-bottom: 1px solid #ddd; padding-bottom: 2px; }
+        h4 { font-size: 8pt; color: #3a5a70; margin: 6px 0 3px 0; font-weight: 600; }
+        
+        p { margin-bottom: 4px; text-align: justify; font-size: 8pt; }
+
+        .subtitle { font-size: 9pt; color: #5a7a8a; margin-bottom: 10px; border-bottom: 2px solid #2c7da0; padding-bottom: 4px; }
+        
+        table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 7pt; }
+        th { background: #0a3b5c; color: white; padding: 4px 3px; text-align: left; font-weight: 600; font-size: 7pt; }
+        td { padding: 3px 4px; border-bottom: 1px solid #e0e0e0; vertical-align: top; font-size: 7pt; }
+        tr:nth-child(even) { background: #f8fafc; }
+
+        .badge { display: inline-block; padding: 1px 4px; border-radius: 6px; font-size: 6pt; font-weight: 600; }
+        .badge-alta { background: #d4edda; color: #155724; }
+        .badge-media { background: #fff3cd; color: #856404; }
+        .badge-enum { background: #e2e3e5; color: #383d41; }
+        
+        .w-small { width: 30px; }
+        .w-tipo { width: 60px; }
+        .w-desc { width: 90px; }
+
+        code { font-family: Consolas, monospace; font-size: 7pt; background: #f0f4f8; padding: 1px 2px; border-radius: 2px; color: #c7254e; }
+        
+        hr { margin: 10px 0; border: 0; height: 1px; background: linear-gradient(90deg, #ccc, transparent); }
+        
+        .footer { margin-top: 10px; padding-top: 6px; border-top: 1px solid #ddd; font-size: 7pt; color: #777; text-align: center; }
+
+        .section-break { page-break-before: always; }
+
+        .diagrama {
+            background: #f8fafc;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 8px 0;
+            font-family: Consolas, monospace;
+            font-size: 6pt;
+            white-space: pre;
+            overflow-x: auto;
+        }
+
+        .resumen-tabla {
+            display: table;
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0;
+        }
+        .resumen-tabla .fila { display: table-row; }
+        .resumen-tabla .celda { display: table-cell; padding: 4px 8px; border: 1px solid #ddd; }
+        .resumen-tabla .header { background: #0a3b5c; color: white; font-weight: 600; }
+
+        .entidad-box {
+            display: inline-block;
+            background: #e8f4f8;
+            border: 1px solid #2c7da0;
+            padding: 3px 8px;
+            margin: 2px;
+            border-radius: 4px;
+            font-size: 7pt;
+        }
+
+        .print-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #2c7da0;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10pt;
+        }
+        .print-btn:hover { background: #1e5a70; }
+    </style>
+</head>
+<body>
+    <button class="print-btn no-print" onclick="window.print()">Imprimir PDF</button>
+    
+    <div class="page">
+        <h1>🌊 AguaFress - Modelo de Datos</h1>
+        <div class="subtitle">
+            Resumen Visual del Modelo de Datos<br>
+            <strong>Versión:</strong> 1.0 | <strong>Fecha:</strong> Mayo 2026
+        </div>
+
+        <h2>1. Visión General</h2>
+        <p>AguaFress utiliza <strong>7 microservicios</strong>, cada uno con su propia base de datos PostgreSQL/MySQL/MongoDB. El modelo soporta 27 entidades principales.</p>
+        
+        <table class="resumen-tabla">
+            <tr class="header"><td>Servicio</td><td>Puerto</td><td>Entidades</td><td>Base</td></tr>
+            <tr><td>auth-service</td><td>3001</td><td>USER, SESSION, REFRESH_TOKEN</td><td>PostgreSQL</td></tr>
+            <tr><td>user-service</td><td>3002</td><td>VENDEDOR, CLIENTE, DIRECCION, CIUDAD, BARRIO, RUTA, QR, LINK</td><td>PostgreSQL</td></tr>
+            <tr><td>products-service</td><td>3003</td><td>PRODUCTO, MARCA, CATEGORIA, IMAGEN, DESCUENTO</td><td>PostgreSQL</td></tr>
+            <tr><td>orders-service</td><td>3004</td><td>CART, ORDER, ORDER_ITEM, REVIEW, FACTURA</td><td>PostgreSQL</td></tr>
+            <tr><td>analytics-service</td><td>3005</td><td>METRICAS_VENTA, VENTAS_POR_CLIENTE/PRODUCTO</td><td>MySQL</td></tr>
+            <tr><td>notifications-service</td><td>3006</td><td>NOTIFICATION, PUSH_TOKEN, ACTIVITY_LOG</td><td>MongoDB</td></tr>
+            <tr><td>payment-service</td><td>3007</td><td>PAGO</td><td>PostgreSQL</td></tr>
+        </table>
+
+        <h2>2. Modelo Conceptual</h2>
+        <div class="diagrama">
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         USUARIO (USER)                                      │
+│         ┌──────────────────────────────┬──────────────────────┐             │
+│         │ rol: super_admin             │ rol: VENDEDOR        │             │
+│         ├──────────────────────────────┼──────────────────────┤             │
+│         │                              │ •-empresa            │             │
+│         │         SESSION              │ •-qr_code            │             │
+│         │         (auth)               │ •-link_publico       │             │
+│         │                              │                      │             │
+│         │         •token               │     PRODUCTO         │             │
+│         │         •expires             │     (catalogo)       │             │
+│         │                              │ •-sku                │             │
+│         │         VENDEDOR             │ •-precio             │             │
+│         │         (perfil)             │ •-stock              │             │
+│         │         •empresa             │ •-imagenes           │             │
+│         │         •estado              │ •-descuento          │             │
+│         │         •zonas               │                      │             │
+│         │                              │     CARRITO          │             │
+│         │         CLIENTE              │     (24hs)           │             │
+│         │         •tipo_factura        │     •items           │             │
+│         │         •dni                 │ •-expires_at         │             │
+│         │         •telefono            │                      │             │
+│         │                              │     PEDIDO           │             │
+│         │     DIRECCION                │     (6 estados)      │             │
+│         │     (3 tipos)                │ •-estado             │             │
+│         │     •facturacion             │ •-pago               │             │
+│         │     •entrega                 │ •-items              │             │
+│         │     •personal                │ •-factura            │             │
+│         │         •barrio              │                      │             │
+│         │         •coords              │     FAMILIA          │             │
+│         │                              │                      │             │
+│         │     RELACION_CARTERA         │     REVIEW           │             │
+│         │     (vendedor ←→ cliente)    │     (5★)             │             │
+└─────────────────────────────────────────────────────────────────────────────┘
+        </div>
+
+        <h2>3. Entidades Principales</h2>
+        <p><strong>auth-service (3001)</strong></p>
+        <div>
+            <span class="entidad-box">USER</span>
+            <span class="entidad-box">SESSION</span>
+            <span class="entidad-box">REFRESH_TOKEN</span>
+        </div>
+        
+        <p><strong>user-service (3002)</strong></p>
+        <div>
+            <span class="entidad-box">VENDEDOR</span>
+            <span class="entidad-box">CLIENTE</span>
+            <span class="entidad-box">RELACION_CARTERA</span>
+            <span class="entidad-box">DIRECCION</span>
+            <span class="entidad-box">CIUDAD</span>
+            <span class="entidad-box">BARRIO</span>
+            <span class="entidad-box">RUTA</span>
+            <span class="entidad-box">QR_CODE</span>
+            <span class="entidad-box">LINK_INVITACION</span>
+        </div>
+        
+        <p><strong>products-service (3003)</strong></p>
+        <div>
+            <span class="entidad-box">PRODUCTO</span>
+            <span class="entidad-box">MARCA</span>
+            <span class="entidad-box">CATEGORIA</span>
+            <span class="entidad-box">PRODUCTO_IMAGEN</span>
+            <span class="entidad-box">DESCUENTO</span>
+        </div>
+        
+        <p><strong>orders-service (3004)</strong></p>
+        <div>
+            <span class="entidad-box">CART</span>
+            <span class="entidad-box">CART_ITEM</span>
+            <span class="entidad-box">ORDER</span>
+            <span class="entidad-box">ORDER_ITEM</span>
+            <span class="entidad-box">ORDER_HISTORY</span>
+            <span class="entidad-box">REVIEW</span>
+            <span class="entidad-box">FACTURA</span>
+        </div>
+
+        <p><strong>analytics-service (3005)</strong></p>
+        <div>
+            <span class="entidad-box">METRICAS_VENTA</span>
+            <span class="entidad-box">VENTAS_POR_CLIENTE</span>
+            <span class="entidad-box">VENTAS_POR_PRODUCTO</span>
+        </div>
+
+        <p><strong>notifications-service (3006)</strong></p>
+        <div>
+            <span class="entidad-box">NOTIFICATION</span>
+            <span class="entidad-box">PUSH_TOKEN</span>
+            <span class="entidad-box">ACTIVITY_LOG</span>
+        </div>
+
+        <p><strong>payment-service (3007)</strong></p>
+        <div>
+            <span class="entidad-box">PAGO</span>
+        </div>
+
+        <h2>4. Enums Principales</h2>
+        <table>
+            <tr><th class="w-small">Enum</th><th>Valores</th></tr>
+            <tr><td><code>UserRole</code></td><td>super_admin, vendedor, cliente</td></tr>
+            <tr><td><code>VendedorEstado</code></td><td>pendiente, activo, inactivo, bloqueado</td></tr>
+            <tr><td><code>TipoDireccion</code></td><td>facturacion, entrega, personal</td></tr>
+            <tr><td><code>TipoFactura</code></td><td>B, C</td></tr>
+            <tr><td><code>OrderEstado</code></td><td>pendiente, confirmado, en_camino, entregado, cancelado, vencido</td></tr>
+            <tr><td><code>MetodoPago</code></td><td>anticipado, contra_entrega</td></tr>
+            <tr><td><code>TipoDescuento</code></td><td>producto, categoria</td></tr>
+        </table>
+
+        <h2>5. Estados del Pedido</h2>
+        <table>
+            <tr><th>Estado</th><th>Descripción</th><th>Transición</th></tr>
+            <tr><td><span class="badge badge-media">PENDIENTE</span></td><td>Cliente creó pedido, sin confirmar</td><td>→ confirmado, cancelado, vencido</td></tr>
+            <tr><td><span class="badge badge-alta">CONFIRMADO</span></td><td>Cliente confirmó visita</td><td>→ en_camino, cancelado</td></tr>
+            <tr><td><span class="badge badge-alta">EN_CAMINO</span></td><td>Vendedor salió a entregar</td><td>→ entregado, cancelado</td></tr>
+            <tr><td><span class="badge badge-alta">ENTREGADO</span></td><td>Pedido completado</td><td>Final</td></tr>
+            <tr><td><span class="badge badge-enum">CANCELADO</span></td><td>Pedido cancelado</td><td>Final</td></tr>
+            <tr><td><span class="badge badge-enum">VENCIDO</span></td><td>Carrito expiró (24hs)</td><td>Historial</td></tr>
+        </table>
+
+        <h2>6. Notas Importantes</h2>
+        <ul style="font-size: 8pt; margin-left: 20px;">
+            <li>Cada <strong>vendedor tiene su propio catálogo</strong> de productos. SKUs son únicos por vendedor.</li>
+            <li>El <strong>carrito vence a las 24hs</strong> de creado.</li>
+            <li>Las <strong>facturas son imágenes PDF</strong> cargadas por el vendedor.</li>
+            <li>Un <strong>cliente puede tener múltiples vendedores</strong> en su cartera.</li>
+            <li>Las <strong>zonas son orientativas</strong> para organizar repartos en mapas GPS.</li>
+            <li><strong>QR/Link público</strong> muestra catálogo del vendedor incluyendo precios y descuentos.</li>
+        </ul>
+
+        <div class="footer">
+            <p><strong>AguaFress - Modelo de Datos</strong> | Versión 1.0 | Mayo 2026</p>
+        </div>
+    </div>
+
+    <div class="page section-break">
+        <h1>📋 Detalle de Entidades</h1>
+        <div class="subtitle">
+            Entidades por Servicio - Detalle Completo<br>
+            <strong>Versión:</strong> 1.0 | <strong>Fecha:</strong> Mayo 2026
+        </div>
+
+        <h2>auth-service (3001) - USER</h2>
+        <table>
+            <tr><th>Campo</th><th class="w-tipo">Tipo</th><th class="w-desc">Descripción</th></tr>
+            <tr><td>id</td><td>UUID</td><td>PK</td></tr>
+            <tr><td>email</td><td>VARCHAR(255)</td><td>Unique, not null</td></tr>
+            <tr><td>password_hash</td><td>VARCHAR(255)</td><td>bcrypt</td></tr>
+            <tr><td>role</td><td>ENUM</td><td>super_admin, vendedor, cliente</td></tr>
+            <tr><td>created_at</td><td>TIMESTAMP</td><td></td></tr>
+            <tr><td>updated_at</td><td>TIMESTAMP</td><td></td></tr>
+        </table>
+
+        <h2>user-service (3002) - VENDEDOR</h2>
+        <table>
+            <tr><th>Campo</th><th class="w-tipo">Tipo</th><th class="w-desc">Descripción</th></tr>
+            <tr><td>id</td><td>UUID</td><td>PK → FK(USER)</td></tr>
+            <tr><td>nombre</td><td>VARCHAR(100)</td><td></td></tr>
+            <tr><td>apellido</td><td>VARCHAR(100)</td><td></td></tr>
+            <tr><td>telefono</td><td>VARCHAR(20)</td><td></td></tr>
+            <tr><td>empresa</td><td>VARCHAR(255)</td><td>Nombre del emprendimiento</td></tr>
+            <tr><td>logo</td><td>VARCHAR(500)</td><td>URL imagen</td></tr>
+            <tr><td>estado</td><td>ENUM</td><td>pendiente, activo, inactivo, bloqueado</td></tr>
+            <tr><td>qr_code</td><td>VARCHAR(50)</td><td>Unique</td></tr>
+            <tr><td>link_publico</td><td>VARCHAR(255)</td><td>URL para invitar</td></tr>
+        </table>
+
+        <h2>user-service (3002) - CLIENTE</h2>
+        <table>
+            <tr><th>Campo</th><th class="w-tipo">Tipo</th><th class="w-desc">Descripción</th></tr>
+            <tr><td>id</td><td>UUID</td><td>PK → FK(USER)</td></tr>
+            <tr><td>nombre</td><td>VARCHAR(100)</td><td></td></tr>
+            <tr><td>apellido</td><td>VARCHAR(100)</td><td></td></tr>
+            <tr><td>telefono</td><td>VARCHAR(20)</td><td></td></tr>
+            <tr><td>dni</td><td>VARCHAR(20)</td><td></td></tr>
+            <tr><td>tipo_factura</td><td>ENUM</td><td>B, C</td></tr>
+        </table>
+
+        <h2>user-service (3002) - DIRECCION</h2>
+        <table>
+            <tr><th>Campo</th><th class="w-tipo">Tipo</th><th class="w-desc">Descripción</th></tr>
+            <tr><td>id</td><td>UUID</td><td>PK</td></tr>
+            <tr><td>usuario_id</td><td>UUID</td><td>FK → USER</td></tr>
+            <tr><td>tipo</td><td>ENUM</td><td>facturacion, entrega, personal</td></tr>
+            <tr><td>barrio_id</td><td>UUID</td><td>FK → BARRIO</td></tr>
+            <tr><td>calle</td><td>VARCHAR(255)</td><td></td></tr>
+            <tr><td>numero</td><td>VARCHAR(20)</td><td></td></tr>
+            <tr><td>piso_depta</td><td>VARCHAR(50)</td><td>Opcional</td></tr>
+            <tr><td>referencia</td><td>TEXT</td><td></td></tr>
+            <tr><td>latitude</td><td>DECIMAL(10,8)</td><td></td></tr>
+            <tr><td>longitude</td><td>DECIMAL(11,8)</td><td></td></tr>
+            <tr><td>principal</td><td>BOOLEAN</td><td></td></tr>
+        </table>
+
+        <h2>products-service (3003) - PRODUCTO</h2>
+        <table>
+            <tr><th>Campo</th><th class="w-tipo">Tipo</th><th class="w-desc">Descripción</th></tr>
+            <tr><td>id</td><td>UUID</td><td>PK</td></tr>
+            <tr><td>vendedor_id</td><td>UUID</td><td>FK → USER</td></tr>
+            <tr><td>sku</td><td>VARCHAR(50)</td><td>Unique x vendedor</td></tr>
+            <tr><td>nombre</td><td>VARCHAR(255)</td><td></td></tr>
+            <tr><td>descripcion</td><td>TEXT</td><td></td></tr>
+            <tr><td>marca_id</td><td>UUID</td><td>FK → MARCA</td></tr>
+            <tr><td>categoria_id</td><td>UUID</td><td>FK → CATEGORIA</td></tr>
+            <tr><td>precio_sin_iva</td><td>DECIMAL(10,2)</td><td></td></tr>
+            <tr><td>precio_final</td><td>DECIMAL(10,2)</td><td>Con IVA</td></tr>
+            <tr><td>stock</td><td>INTEGER</td><td>0 = ilimitado</td></tr>
+            <tr><td>stock_minimo</td><td>INTEGER</td><td>Alerta</td></tr>
+            <tr><td>activo</td><td>BOOLEAN</td><td></td></tr>
+            <tr><td>mostrar_precio</td><td>BOOLEAN</td><td></td></tr>
+        </table>
+
+        <h2>orders-service (3004) - ORDER</h2>
+        <table>
+            <tr><th>Campo</th><th class="w-tipo">Tipo</th><th class="w-desc">Descripción</th></tr>
+            <tr><td>id</td><td>UUID</td><td>PK</td></tr>
+            <tr><td>pedido_numero</td><td>VARCHAR(20)</td><td>Sequential x vendedor</td></tr>
+            <tr><td>usuario_id</td><td>UUID</td><td>FK → USER (cliente)</td></tr>
+            <tr><td>vendedor_id</td><td>UUID</td><td>FK → USER</td></tr>
+            <tr><td>direccion_entrega_id</td><td>UUID</td><td>FK → DIRECCION</td></tr>
+            <tr><td>estado</td><td>ENUM</td><td>6 estados</td></tr>
+            <tr><td>metodo_pago</td><td>ENUM</td><td>anticipado, contra_entrega</td></tr>
+            <tr><td>total_sin_iva</td><td>DECIMAL(10,2)</td><td></td></tr>
+            <tr><td>iva</td><td>DECIMAL(10,2)</td><td></td></tr>
+            <tr><td>total</td><td>DECIMAL(10,2)</td><td></td></tr>
+            <tr><td>observaciones</td><td>TEXT</td><td></td></tr>
+        </table>
+
+        <h2>orders-service (3004) - CART</h2>
+        <table>
+            <tr><th>Campo</th><th class="w-tipo">Tipo</th><th class="w-desc">Descripción</th></tr>
+            <tr><td>id</td><td>UUID</td><td>PK</td></tr>
+            <tr><td>usuario_id</td><td>UUID</td><td>FK → USER</td></tr>
+            <tr><td>vendedor_id</td><td>UUID</td><td>FK → USER</td></tr>
+            <tr><td>expires_at</td><td>TIMESTAMP</td><td>created_at + 24hs</td></tr>
+        </table>
+
+        <div class="footer">
+            <p><strong>AguaFress - Modelo de Datos</strong> | Versión 1.0 | Mayo 2026 | Página 2</p>
+        </div>
+    </div>
+</body>
+</html>

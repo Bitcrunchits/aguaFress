@@ -7,18 +7,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --agua: #00d4aa;
-            --agua-dark: #00a885;
-            --magenta: #ff00aa;
-            --magenta-light: #ff66cc;
-            --amarillo: #ffdd00;
-            --amarillo-dark: #ccb300;
-            --negro: #0a0a0a;
-            --negro-claro: #151515;
-            --negro-medio: #1f1f1f;
-            --blanco: #ffffff;
-            --gris: #888888;
-            --gris-claro: #cccccc;
+            --primary: #0a3b5c;
+            --secondary: #2c7da0;
+            --accent: #61a5c2;
+            --light: #f8fafc;
+            --dark: #1a1a1a;
+            --gray: #64748b;
+            --border: #e2e8f0;
+            --white: #ffffff;
+            --black: #0a0a0a;
+        }
+
+        body {
+            background: var(--light);
+            color: var(--dark);
         }
 
         * {
@@ -34,8 +36,8 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--negro);
-            color: var(--blanco);
+            background: var(--light);
+            color: var(--dark);
             line-height: 1.7;
             font-size: 15px;
         }
@@ -49,9 +51,9 @@
             width: 100%;
             height: 100%;
             background: 
-                radial-gradient(ellipse at 20% 20%, rgba(0, 212, 170, 0.08) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 80%, rgba(255, 0, 170, 0.06) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 50%, rgba(255, 221, 0, 0.03) 0%, transparent 60%);
+                radial-gradient(ellipse at 20% 20%, rgba(10, 59, 92, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(44, 125, 160, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(97, 165, 194, 0.03) 0%, transparent 60%);
             pointer-events: none;
             z-index: -1;
         }
@@ -78,7 +80,7 @@
             transform: translateX(-50%);
             width: 100px;
             height: 3px;
-            background: linear-gradient(90deg, var(--agua), var(--magenta), var(--amarillo));
+            background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
             border-radius: 2px;
         }
 
@@ -86,7 +88,7 @@
             font-family: 'Space Grotesk', sans-serif;
             font-size: 64px;
             font-weight: 700;
-            background: linear-gradient(135deg, var(--agua) 0%, var(--magenta) 50%, var(--amarillo) 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--accent) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -96,7 +98,7 @@
 
         .tagline {
             font-size: 20px;
-            color: var(--gris-claro);
+            color: var(--gray);
             font-weight: 300;
         }
 
@@ -126,70 +128,59 @@
         }
 
         h2 .icon.agua {
-            background: linear-gradient(135deg, rgba(0, 212, 170, 0.2), rgba(0, 212, 170, 0.05));
-            border: 1px solid var(--agua);
+            background: linear-gradient(135deg, rgba(10, 59, 92, 0.2), rgba(10, 59, 92, 0.05));
+            border: 1px solid var(--primary);
         }
 
         h2 .icon.magenta {
-            background: linear-gradient(135deg, rgba(255, 0, 170, 0.2), rgba(255, 0, 170, 0.05));
-            border: 1px solid var(--magenta);
+            background: linear-gradient(135deg, rgba(44, 125, 160, 0.2), rgba(44, 125, 160, 0.05));
+            border: 1px solid var(--secondary);
         }
 
         h2 .icon.amarillo {
-            background: linear-gradient(135deg, rgba(255, 221, 0, 0.2), rgba(255, 221, 0, 0.05));
-            border: 1px solid var(--amarillo);
+            background: linear-gradient(135deg, rgba(97, 165, 194, 0.2), rgba(97, 165, 194, 0.05));
+            border: 1px solid var(--accent);
         }
 
         h3 {
             font-size: 18px;
             font-weight: 600;
             margin-bottom: 15px;
-            color: var(--agua);
+            color: var(--primary);
         }
 
         p {
             margin-bottom: 15px;
-            color: var(--gris-claro);
+            color: var(--dark);
             text-align: justify;
         }
 
         /* Cards / Containers */
         .card {
-            background: linear-gradient(135deg, 
-                rgba(31, 31, 31, 0.9) 0%, 
-                rgba(21, 21, 21, 0.85) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: white;
+            border: 1px solid var(--border);
             border-radius: 20px;
             padding: 30px;
             margin-bottom: 25px;
-            backdrop-filter: blur(10px);
             transition: all 0.3s ease;
         }
 
         .card:hover {
-            border-color: rgba(0, 212, 170, 0.3);
+            border-color: var(--secondary);
             transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
         }
 
         .card.agua {
-            border-left: 4px solid var(--agua);
-            background: linear-gradient(135deg, 
-                rgba(0, 212, 170, 0.08) 0%, 
-                rgba(21, 21, 21, 0.9) 30%);
+            border-left: 4px solid var(--primary);
         }
 
         .card.magenta {
-            border-left: 4px solid var(--magenta);
-            background: linear-gradient(135deg, 
-                rgba(255, 0, 170, 0.08) 0%, 
-                rgba(21, 21, 21, 0.9) 30%);
+            border-left: 4px solid var(--secondary);
         }
 
         .card.amarillo {
-            border-left: 4px solid var(--amarillo);
-            background: linear-gradient(135deg, 
-                rgba(255, 221, 0, 0.08) 0%, 
-                rgba(21, 21, 21, 0.9) 30%);
+            border-left: 4px solid var(--accent);
         }
 
         .card-title {
@@ -197,7 +188,7 @@
             font-size: 22px;
             font-weight: 600;
             margin-bottom: 15px;
-            color: var(--blanco);
+            color: var(--primary);
         }
 
         /* Tables */
@@ -215,8 +206,8 @@
         }
 
         th {
-            background: rgba(0, 212, 170, 0.1);
-            color: var(--agua);
+            background: rgba(10, 59, 92, 0.1);
+            color: var(--primary);
             font-weight: 600;
             text-transform: uppercase;
             font-size: 11px;
@@ -235,11 +226,11 @@
 
         li {
             margin-bottom: 10px;
-            color: var(--gris-claro);
+            color: var(--dark);
         }
 
         li::marker {
-            color: var(--agua);
+            color: var(--primary);
         }
 
         /* Highlight boxes */
@@ -254,21 +245,21 @@
         }
 
         .highlight.agua {
-            background: rgba(0, 212, 170, 0.15);
-            color: var(--agua);
-            border: 1px solid var(--agua);
+            background: rgba(10, 59, 92, 0.15);
+            color: var(--primary);
+            border: 1px solid var(--primary);
         }
 
         .highlight.magenta {
-            background: rgba(255, 0, 170, 0.15);
-            color: var(--magenta-light);
-            border: 1px solid var(--magenta);
+            background: rgba(44, 125, 160, 0.15);
+            color: var(--secondary);
+            border: 1px solid var(--secondary);
         }
 
         .highlight.amarillo {
-            background: rgba(255, 221, 0, 0.15);
-            color: var(--amarillo);
-            border: 1px solid var(--amarillo);
+            background: rgba(97, 165, 194, 0.15);
+            color: var(--accent);
+            border: 1px solid var(--accent);
         }
 
         /* Grid para features */
@@ -280,16 +271,16 @@
         }
 
         .feature-item {
-            background: rgba(31, 31, 31, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: var(--light);
+            border: 1px solid var(--border);
             border-radius: 15px;
             padding: 20px;
             transition: all 0.3s ease;
         }
 
         .feature-item:hover {
-            border-color: var(--agua);
-            background: rgba(0, 212, 170, 0.05);
+            border-color: var(--primary);
+            background: white;
         }
 
         .feature-item .icon {
@@ -298,7 +289,7 @@
         }
 
         .feature-item h4 {
-            color: var(--blanco);
+            color: var(--primary);
             font-size: 16px;
             margin-bottom: 8px;
         }
@@ -306,6 +297,7 @@
         .feature-item p {
             font-size: 13px;
             margin: 0;
+            color: var(--gray);
         }
 
         /* Tech stack */
@@ -322,19 +314,19 @@
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 25px;
             font-size: 13px;
-            color: var(--gris-claro);
+            color: var(--gray);
             transition: all 0.3s ease;
         }
 
         .tech-tag:hover {
-            border-color: var(--agua);
-            color: var(--agua);
+            border-color: var(--primary);
+            color: var(--primary);
         }
 
         /* Divider */
         .divider {
             height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(0, 212, 170, 0.3), transparent);
+            background: linear-gradient(90deg, transparent, rgba(10, 59, 92, 0.3), transparent);
             margin: 40px 0;
         }
 
@@ -343,16 +335,16 @@
             text-align: center;
             padding: 40px 0;
             margin-top: 60px;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-top: 1px solid var(--border);
         }
 
         footer p {
-            color: var(--gris);
+            color: var(--gray);
             font-size: 13px;
         }
 
         footer .team {
-            color: var(--agua);
+            color: var(--primary);
             font-weight: 600;
         }
 
@@ -368,12 +360,12 @@
         }
 
         .version-badge.v1 {
-            background: linear-gradient(135deg, var(--agua), var(--agua-dark));
-            color: var(--negro);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: var(--blanco);
         }
 
         .version-badge.v2 {
-            background: linear-gradient(135deg, var(--magenta), var(--magenta-light));
+            background: linear-gradient(135deg, var(--secondary), var(--accent));
             color: var(--blanco);
         }
 
@@ -401,6 +393,42 @@
                 <span class="version-badge v2" style="margin-left: 10px;">V2.0 Mobile</span>
             </p>
         </header>
+        <!-- Equipo de Desarrollo -->
+        <section>
+            <h2>
+                <span class="icon magenta">👥</span>
+                Equipo de Desarrollo
+            </h2>
+            <div class="card magenta">
+                <div class="features-grid">
+                    <div class="feature-item">
+                        <div class="icon">👩‍💻</div>
+                        <h4>Alvarado Milagros</h4>
+                        <p>Estudiante Full Stack Developer</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon">👨‍💻</div>
+                        <h4>Burdiles Adrián</h4>
+                       <p>Estudiante Full Stack Developer</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon">👨‍💻</div>
+                        <h4>Lagos Lucas</h4>
+                       <p>Estudiante Full Stack Developer</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon">👨‍💻</div>
+                        <h4>Spagnolo Emiliano</h4>
+                        <p>Estudiante Full Stack Developer</p>
+                    </div>
+                    <div class="feature-item">
+                        <div class="icon">👨‍💻</div>
+                        <h4>Zoto Agustín</h4>
+                        <p>Estudiante Full Stack Developer</p>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <!-- El Problema -->
         <section>
@@ -425,7 +453,7 @@
                 Nuestra Solución
             </h2>
             <div class="card agua">
-                <p><strong>aguaFress</strong> es una plataforma marketplace que conecta directamente vendedor y consumidor:</p>
+                <p><strong>AguaFress</strong> es una plataforma marketplace que conecta directamente vendedor y consumidor:</p>
                 <ol>
                     <li>El consumidor puede pedir agua/soda en cualquier momento desde su app/web</li>
                     <li>El vendedor recibe los pedidos y planifica su ruta diaria</li>
@@ -498,42 +526,42 @@
                             <td>❌</td>
                             <td>❌</td>
                             <td>❌</td>
-                            <td style="color: var(--agua); font-weight: bold;">✅</td>
+                            <td style="color: var(--primary); font-weight: bold;">✅</td>
                         </tr>
                         <tr>
                             <td>Confirmación de visita</td>
                             <td>❌</td>
                             <td>❌</td>
                             <td>❌</td>
-                            <td style="color: var(--agua); font-weight: bold;">✅</td>
+                            <td style="color: var(--primary); font-weight: bold;">✅</td>
                         </tr>
                         <tr>
                             <td>Pedidos fuera del día de ruta</td>
                             <td>❌</td>
                             <td>❌</td>
                             <td>❌</td>
-                            <td style="color: var(--agua); font-weight: bold;">✅</td>
+                            <td style="color: var(--primary); font-weight: bold;">✅</td>
                         </tr>
                         <tr>
                             <td>Valoraciones de productos</td>
                             <td>❌</td>
                             <td>❌</td>
                             <td>❌</td>
-                            <td style="color: var(--agua); font-weight: bold;">✅</td>
+                            <td style="color: var(--primary); font-weight: bold;">✅</td>
                         </tr>
                         <tr>
                             <td>Favoritos</td>
                             <td>❌</td>
                             <td>❌</td>
                             <td>❌</td>
-                            <td style="color: var(--agua); font-weight: bold;">✅</td>
+                            <td style="color: var(--primary); font-weight: bold;">✅</td>
                         </tr>
                         <tr>
                             <td>Ruta automática con GPS</td>
                             <td>✅</td>
                             <td>✅</td>
                             <td>✅</td>
-                            <td style="color: var(--agua); font-weight: bold;">✅+</td>
+                            <td style="color: var(--primary); font-weight: bold;">✅+</td>
                         </tr>
                     </tbody>
                 </table>
@@ -609,41 +637,65 @@
             </div>
 
             <div class="card">
-                <h3 class="card-title">🏗️ Arquitectura Multi-Database en NestJS</h3>
-                <p>En un mismo proyecto NestJS, cada módulo se conecta a una DB específica:</p>
+                <h3 class="card-title">🏗️ Arquitectura Microservicios en NestJS</h3>
+                <p>AguaFress utiliza 7 microservicios + API Gateway:</p>
                 <table>
                     <thead>
                         <tr>
-                            <th>Módulo</th>
+                            <th>Servicio</th>
+                            <th>Puerto</th>
                             <th>Base de Datos</th>
-                            <th>Entidades</th>
+                            <th>Funcionalidad</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td>Auth Module</td>
-                            <td><span class="highlight agua">PostgreSQL</span></td>
-                            <td>Users, Roles, Tokens</td>
+                            <td><strong>API Gateway</strong></td>
+                            <td>3000</td>
+                            <td>-</td>
+                            <td>Routing, Auth, Rate limit</td>
                         </tr>
                         <tr>
-                            <td>Products Module</td>
+                            <td>Auth Service</td>
+                            <td>3001</td>
                             <td><span class="highlight agua">PostgreSQL</span></td>
-                            <td>Products, Categories, Images</td>
+                            <td>Login, JWT, Roles, Tokens</td>
                         </tr>
                         <tr>
-                            <td>Orders Module</td>
+                            <td>User Service</td>
+                            <td>3002</td>
                             <td><span class="highlight agua">PostgreSQL</span></td>
-                            <td>Orders, OrderItems, Payments</td>
+                            <td>Gestión de usuarios, Clientes</td>
                         </tr>
                         <tr>
-                            <td>Analytics Module</td>
+                            <td>Products Service</td>
+                            <td>3003</td>
+                            <td><span class="highlight agua">PostgreSQL</span></td>
+                            <td>Catálogo, Productos, Imágenes</td>
+                        </tr>
+                        <tr>
+                            <td>Orders Service</td>
+                            <td>3004</td>
+                            <td><span class="highlight agua">PostgreSQL</span></td>
+                            <td>Pedidos, Carrito, Items</td>
+                        </tr>
+                        <tr>
+                            <td>Analytics Service</td>
+                            <td>3005</td>
                             <td><span class="highlight magenta">MySQL</span></td>
-                            <td>SalesHistory, Reports, Metrics</td>
+                            <td>Reportes, Métricas OLAP</td>
                         </tr>
                         <tr>
-                            <td>Notifications Module</td>
+                            <td>Notifications Service</td>
+                            <td>3006</td>
                             <td><span class="highlight amarillo">MongoDB</span></td>
-                            <td>Messages, PushNotifications, Logs</td>
+                            <td>Mensajes, Notificaciones, Logs</td>
+                        </tr>
+                        <tr>
+                            <td>Payment Service</td>
+                            <td>3007</td>
+                            <td><span class="highlight agua">PostgreSQL</span></td>
+                            <td>Pagos, Métodos de pago</td>
                         </tr>
                     </tbody>
                 </table>
@@ -652,7 +704,7 @@
 
         <div class="divider"></div>
 
-        <!-- Funcionalidades V1.0 y V2.0 -->
+        <!-- Funcionalidades V1.0 -->
         <section>
             <h2>
                 <span class="icon agua">⚡</span>
@@ -684,7 +736,7 @@
             </div>
 
             <div class="card magenta">
-                <h3 class="card-title"><span class="version-badge v2">V2.0</span> Futuro - App Móvil</h3>
+                <h3 class="card-title"><span class="version-badge v2">V1.0</span> Futuro - App Móvil</h3>
                 <ul>
                     <li>Registro de empresas (CUIT, Razón Social, IVA Responsable Inscripto)</li>
                     <li>Pago obligatorio anticipado con verificación</li>
@@ -703,7 +755,7 @@
         <div class="divider"></div>
 
         <!-- Equipo -->
-        <section>
+        <!-- <section>
             <h2>
                 <span class="icon magenta">👥</span>
                 Distribución del Equipo (5 personas)
@@ -737,8 +789,8 @@
                 </div>
             </div>
             
-            <p style="text-align: center; color: var(--gris); margin-top: 20px;">* Todos participan en: Testing, Documentación, Integración, Docker</p>
-        </section>
+            <p style="text-align: center; color: var(--gray); margin-top: 20px;">* Todos participan en: Testing, Documentación, Integración, Docker</p>
+        </section> -->
 
         <div class="divider"></div>
 
@@ -820,9 +872,10 @@
 
         <!-- Footer -->
         <footer>
-            <p><strong>aguaFress</strong> - Proyecto Full Stack</p>
-            <p class="team">Equipo de Desarrollo (5 personas)</p>
-            <p>3 Materias Integradas</p>
+            <p>💧 AguaFress - Proyecto </p>
+                
+                <p>Equipo de trabajo: Alvarado Milagros - Burdiles Adrián - Lagos Lucas - Spagnolo Emiliano - Zoto
+                    Agustín</p>
         </footer>
     </div>
 </body>

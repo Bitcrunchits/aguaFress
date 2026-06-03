@@ -1,0 +1,14 @@
+{
+  "name": "aguafress",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AguaFress — Plataforma de pedidos para distribuidores de agua y soda",
+  "workspaces": [
+    "packages/*",
+    "services/*"
+  ],
+  "scripts": {
+    "build:contracts": "npm run build -w @agua/contracts",
+    "build": "npm run build:contracts"
+  }
+}

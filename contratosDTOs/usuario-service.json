@@ -1,0 +1,41 @@
+{
+  "service": "usuario-service",
+  "port": 3001,
+  "database": "PostgreSQL (2 schemas: auth, users)",
+  "orm": "Prisma",
+  "responsibility": "Unifica autenticación + perfiles en un solo MS. Módulo auth: login JWT, registro, refresh, validate, logout. Módulo users: perfiles, cartera de clientes, QR/link de invitación.",
+  "security_rules": [
+    "⚠️ userId NUNCA viene del body. Se extrae del token JWT."
+  ],
+  "modules": {
+    "auth": {
+      "description": "Autenticación y registro",
+      "events_publishes": ["auth-stream: UserCreated"],
+      "endpoints": [
+        { "path": "/auth/login", "method": "POST", "auth": "Público", "request": { "email": "string", "password": "string" }, "response": { "token": "string", "refreshToken": "string", "user": { "id": "uuid", "email": "string", "role": "UserRole", "nombre?": "string", "apellido?": "string" } } },
+        { "path": "/auth/register", "method": "POST", "auth": "ADMIN", "request": { "email": "string", "password": "string", "nombre": "string", "role": "vendedor|cliente", "qrToken?": "string" }, "response": { "user": { "id": "uuid", "email": "string", "role": "UserRole" } } },
+        { "path": "/auth/register-vendedor", "method": "POST", "auth": "Público", "request": { "email": "string", "password": "string", "nombre": "string", "telefono": "string", "ciudad?": "string", "zonaEntrega?": "string" }, "response": { "status": "pendiente", "vendedorId": "uuid" } },
+        { "path": "/auth/google", "method": "POST", "auth": "Público", "deprecated": true, "notes": "@deprecated No implementar en MVP V1", "request": { "token": "string" }, "response": { "token": "string", "refreshToken": "string", "user": { "id": "uuid", "email": "string", "role": "UserRole" } } },
+        { "path": "/auth/refresh", "method": "POST", "auth": "Usuario", "request": { "refreshToken": "string" }, "response": { "token": "string" } },
+        { "path": "/auth/logout", "method": "POST", "auth": "Usuario", "request": {}, "response": { "message": "string" } },
+        { "path": "/auth/validate", "method": "POST", "auth": "Interno", "request": { "token": "string" }, "response": { "valid": "boolean", "user": { "id": "uuid", "email": "string", "role": "UserRole" } | null } }
+      ]
+    },
+    "users": {
+      "description": "Perfiles, cartera de clientes y QR/link de invitación",
+      "events_publishes": ["user-stream: VendedorStatusChanged, CarteraClienteAdded"],
+      "events_consumes": ["auth-stream: UserCreated"],
+      "endpoints": [
+        { "path": "/users/me", "method": "GET", "auth": "Usuario", "response": { "id": "uuid", "email": "string", "nombre?": "string", "apellido?": "string", "role": "UserRole", "telefono?": "string", "isActive": "boolean", "profile?": "VendedorProfile|ClienteProfile" } },
+        { "path": "/users/me", "method": "PATCH", "auth": "Usuario", "request": { "nombre?": "string", "apellido?": "string", "telefono?": "string", "address?": { "calle?": "string", "numero?": "string", "pisoDepto?": "string", "referencia?": "string", "barrio?": "string", "latitude?": "number", "longitude?": "number" } } },
+        { "path": "/users", "method": "GET", "auth": "ADMIN", "notes": "Listar todos los usuarios con paginación y filtros.", "request": { "role?": "UserRole", "search?": "string", "activo?": "boolean", "page?": "number", "limit?": "number" }, "response": { "data": [{ "id": "uuid", "email": "string", "nombre?": "string", "apellido?": "string", "role": "UserRole", "isActive": "boolean", "telefono?": "string", "createdAt": "string (ISO 8601)" }], "pagination": { "page": "number", "limit": "number", "total": "number", "totalPages": "number" } } },
+        { "path": "/users/mis-clientes", "method": "GET", "auth": "VENDEDOR", "response": [{ "id": "uuid", "nombre": "string", "apellido?": "string", "telefono?": "string", "tipoFactura?": "TipoFactura" }] },
+        { "path": "/users/mi-vendedor", "method": "GET", "auth": "CLIENTE", "response": { "id": "uuid", "nombre": "string", "apellido?": "string", "empresa?": "string", "logo?": "string", "telefono?": "string", "ciudad?": "string" } },
+        { "path": "/users/:id/asignar-vendedor", "method": "PATCH", "auth": "ADMIN", "request": { "clienteId": "uuid", "vendedorId": "uuid" }, "response": { "clienteId": "uuid", "vendedorId": "uuid", "updated": "boolean" } },
+        { "path": "/vendedores/:id/qr", "method": "POST", "auth": "VENDEDOR", "response": { "qrCode": "string (Base64)", "url": "string", "expiresAt": "string (ISO 8601)" } },
+        { "path": "/vendedores/:id/link", "method": "POST", "auth": "VENDEDOR", "response": { "linkUrl": "string", "token": "string", "expiresAt": "string (ISO 8601)" } },
+        { "path": "/publico/vendedor/:token", "method": "GET", "auth": "Público", "response": { "vendedor": { "nombre": "string", "apellido?": "string", "empresa?": "string", "logo?": "string", "telefono?": "string", "ciudad?": "string" }, "catalogo?": "ProductResponse[]" } }
+      ]
+    }
+  }
+}

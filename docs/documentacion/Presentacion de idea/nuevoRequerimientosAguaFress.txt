@@ -1,0 +1,27 @@
+Esta funcionalidades son para la version 1.0 y estarán incluida en la V2.0 movil
+
+Perfil y vista de super admin. administrador de plataforma aguafress
+-funcionalidad de super admin: Este puede CREAR Y especialmente ACTIVAR registros de vendedores, que hayan solicitado ser parte de la plataforma como vendedores. 
+    FLujo de activación-> 
+        a-Un vendedor se registra en la plataforma como interesado en utilizar el servicio de la plataforma.
+        b-Llena el formulario con todos los datos que figuran en el archivo idea aguasFress (en directorio presentación de idea).
+        luego de verificar que el interesado llene todos los campos que se solicitan en su registro, y sean evaluados por super Admin, se procederá a 
+        activar su cuenta.
+-Super admin Tendrá un dasboard con métricas de vendedores. que incluiran ->
+    a-Campo donde puede ver el listado de vendedores tipo lista con scroll
+    b-Selecciona vendedor y accede a metricas de sus ventas (solo como observador no puede tocar nada) puede ver ventas globales diarias, mensuales y anuales, promedios
+    c-Puede ver la cantidad de clientes de cada vendedor(solo numeros, nada de datos sensibles de sus clientes.)
+    d- Puede suspender cuentas de vendedores, para casos de mora en los pagos por el servicio de plataforma.
+    c- No se pueden borrar registros de vendedores ni sus perfiles, Solo se inactivan.
+
+
+
+
+Perfil de Vendedores Agregamos los siguientes funcionalidades
+    En la versión V2.0 movil: cada vendedor podra generar un qr de su espacio en la plataforma en donde afrece sus producotos para invitar a sus clientes a que sean parte de 
+    su cartera.
+    EL vendedor podra subir las fotos de sus productos usaremos alguna libreria como Filerobot / Uppy: u otra parecida. En V2.0 movil tener en cuenta un editor de 
+    fotos como herramienta.
+    
+
+una vez aceptados las funcionalidades modifica los docuementos relacionados: *.md, requerimientos, modulos,  wireframe y spec.md

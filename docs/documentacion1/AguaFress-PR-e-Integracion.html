@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AguaFress — PRs e Integración</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        @page { size: A4; margin: 1.2cm; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; font-size: 10pt; line-height: 1.45; color: #1a1a1a; background: #e2e8f0; padding: 10px; }
+        .page { width: 210mm; min-height: 297mm; margin: 0 auto 12px; background: white; padding: 14mm 16mm; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h1 { font-size: 22pt; color: #0a3b5c; margin-bottom: 2px; }
+        h2 { font-size: 14pt; color: #1e4a6b; border-left: 4px solid #2c7da0; padding-left: 10px; margin: 20px 0 10px; }
+        h3 { font-size: 11pt; color: #2c3e50; margin: 14px 0 6px; }
+        p { margin-bottom: 6px; }
+        .subtitle { font-size: 11pt; color: #2c7da0; margin-bottom: 14px; border-bottom: 2px solid #2c7da0; padding-bottom: 5px; }
+        code { font-family: Consolas, monospace; font-size: 9pt; background: #f1f5f9; padding: 1px 5px; border-radius: 3px; color: #c7254e; }
+        .cmd { display: block; background: #0f172a; color: #e2e8f0; padding: 8px 12px; margin: 6px 0; border-radius: 6px; font-family: Consolas, monospace; font-size: 9pt; white-space: pre-wrap; }
+        .cmd .prompt { color: #22c55e; }
+        .box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px 14px; margin: 10px 0; }
+        .box-tip { border-left: 4px solid #22c55e; background: #f0fdf4; }
+        .box-warn { border-left: 4px solid #f59e0b; background: #fffbeb; }
+        .box-info { border-left: 4px solid #3b82f6; background: #eff6ff; }
+        table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 9pt; }
+        th { background: #0a3b5c; color: white; padding: 5px 6px; text-align: left; }
+        td { padding: 4px 6px; border-bottom: 1px solid #e0e0e0; }
+        ul { margin: 4px 0 8px 18px; }
+        li { margin-bottom: 3px; }
+        .footer { margin-top: 16px; padding-top: 6px; border-top: 1px solid #ddd; font-size: 7.5pt; color: #777; text-align: center; }
+        .section-break { page-break-before: always; }
+        @media print { body { background: white; padding: 0; } .page { box-shadow: none; padding: 0; margin: 0 auto; } }
+    </style>
+</head>
+<body>
+
+<div class="page">
+    <h1>🔄 AguaFress — PRs e Integración</h1>
+    <div class="subtitle">Flujo de trabajo con Pull Requests y sesiones de integración</div>
+
+    <h2>1. Flujo de trabajo diario</h2>
+
+    <div class="box box-warn">
+        <strong>⚠️ Regla de oro:</strong> Nunca codees directo en <code>develop</code> ni en <code>main</code>.
+    </div>
+
+    <h3>1.1 Crear una rama</h3>
+    <div class="cmd"><span class="prompt">$</span> git checkout develop && git pull
+<span class="prompt">$</span> git checkout -b nombre/apodo-descripcion
+<span class="comment"># Ej: lucas/usuario-base, emiliano/productos-crud, adrian/ordenes-carrito</span></div>
+
+    <h3>1.2 Codear y commitear</h3>
+    <p>Commits atómicos con mensajes claros:</p>
+    <div class="cmd"><span class="prompt">$</span> git add -A
+<span class="prompt">$</span> git commit -m "feat(auth): login con JWT"
+<span class="prompt">$</span> git commit -m "feat(users): CRUD de perfiles"</div>
+
+    <table>
+        <tr><th>Tipo</th><th>Cuándo</th><th>Ejemplo</th></tr>
+        <tr><td><code>feat</code></td><td>Nueva funcionalidad</td><td><code>feat(orders): crear pedido desde carrito</code></td></tr>
+        <tr><td><code>fix</code></td><td>Corrección de bug</td><td><code>fix(products): precio sin IVA no se calculaba</code></td></tr>
+        <tr><td><code>refactor</code></td><td>Reestructuración</td><td><code>refactor(auth): extraer middleware JWT</code></td></tr>
+        <tr><td><code>docs</code></td><td>Documentación</td><td><code>docs: actualizar guía de contratos</code></td></tr>
+        <tr><td><code>chore</code></td><td>Configuración</td><td><code>chore: agregar Docker profile para entregas</code></td></tr>
+    </table>
+
+    <h3>1.3 Subir y crear PR</h3>
+    <div class="cmd"><span class="prompt">$</span> git push origin nombre/apodo-descripcion</div>
+    <p>Ir a GitHub → crear Pull Request a <code>develop</code>. En la descripción incluir:</p>
+    <ul>
+        <li>📌 Qué hace el PR</li>
+        <li>🔗 Issue de Jira relacionado (ej: AG-12)</li>
+        <li>🧪 Cómo probarlo (endpoints, payloads)</li>
+        <li>⚠️ Breaking changes, si los hay</li>
+    </ul>
+
+    <div class="footer"><strong>AguaFress</strong> — PRs e Integración — Página 1</div>
+</div>
+
+<div class="page section-break">
+
+    <h2>2. Revisión de PRs</h2>
+
+    <h3>2.1 ¿Quién revisa?</h3>
+    <table>
+        <tr><th>Servicio</th><th>Revisor principal</th><th>Revisor secundario</th></tr>
+        <tr><td>usuario-service</td><td>Lucas Lagos</td><td>Adrián Burdiles</td></tr>
+        <tr><td>products-service</td><td>Emiliano Spagnolo</td><td>Milagros Alvarado</td></tr>
+        <tr><td>orders-service</td><td>Adrián Burdiles</td><td>Lucas Lagos</td></tr>
+        <tr><td>entregas-service</td><td>Milagros Alvarado</td><td>Emiliano Spagnolo</td></tr>
+        <tr><td>notifications-service</td><td>Agustín Soto</td><td>Adrián Burdiles</td></tr>
+        <tr><td>api-gateway</td><td>Adrián Burdiles</td><td>Todos</td></tr>
+        <tr><td>packages/contracts</td><td>Todos</td><td>Adrián Burdiles</td></tr>
+    </table>
+
+    <h3>2.2 Criterios de aprobación</h3>
+    <ul>
+        <li>✅ Compila sin errores (<code>npm run build</code>)</li>
+        <li>✅ Endpoints funcionan (probado con Postman o Thunder Client)</li>
+        <li>✅ No hay código comentado ni console.log sueltos</li>
+        <li>✅ Los mensajes de commit siguen conventional commits</li>
+        <li>✅ No rompe otros servicios (revisar que los contratos sigan vigentes)</li>
+    </ul>
+
+    <div class="box box-tip">
+        <strong>💡</strong> Si el PR toca <code>packages/contracts/</code>, TODOS los devs deben revisarlo.
+    </div>
+
+    <h3>2.3 Merge</h3>
+    <p>Usar <strong>Squash & Merge</strong> para mantener el historial limpio. Un PR = un commit en develop.</p>
+
+    <div class="footer"><strong>AguaFress</strong> — PRs e Integración — Página 2</div>
+</div>
+
+<div class="page section-break">
+
+    <h2>3. Sesiones de integración</h2>
+
+    <div class="box box-info">
+        <strong>🎯 Objetivo:</strong> Detectar problemas de comunicación entre servicios. NO es para terminar código pendiente.
+    </div>
+
+    <h3>3.1 Periodicidad</h3>
+    <ul>
+        <li><strong>Semana 2:</strong> Primera integración — solo levantar servicios + health check + Redis</li>
+        <li><strong>Semanas 4-5:</strong> Integración con lógica de negocio parcial</li>
+        <li><strong>Semanas 7-8:</strong> Integración completa del MVP</li>
+        <li><strong>Ad-hoc:</strong> Cuando un PR toca contracts o eventos</li>
+    </ul>
+
+    <h3>3.2 Formato</h3>
+    <table>
+        <tr><th>Presencial</th><th>Remoto</th></tr>
+        <tr>
+            <td>
+                <ul>
+                    <li>Host conecta proyector</li>
+                    <li>Todos ven la misma pantalla</li>
+                    <li>Host prueba endpoints mientras los otros observan</li>
+                </ul>
+            </td>
+            <td>
+                <ul>
+                    <li>Host comparte pantalla (Discord/Zoom)</li>
+                    <li>Host ngrok tuneliza localhost</li>
+                    <li>Cada uno prueba desde su máquina contra la URL de ngrok</li>
+                </ul>
+            </td>
+        </tr>
+    </table>
+
+    <h3>3.3 Qué hacer durante la sesión</h3>
+    <ol>
+        <li>Host levanta todo: <code>docker compose --profile all up --build</code></li>
+        <li>Verificar health checks de todos los servicios</li>
+        <li>Probar flujo completo: registro → login → crear producto → crear pedido</li>
+        <li>Verificar que los eventos lleguen a Redis Streams</li>
+        <li>Anotar TODO lo que falle (no arreglarlo en la sesión)</li>
+        <li>Crear issues en Jira para cada problema detectado</li>
+    </ol>
+
+    <div class="box box-warn">
+        <strong>⚠️</strong> La sesión de integración NO es para arreglar código. Es para DETECTAR problemas. Cada uno arregla su servicio después en su rama.
+    </div>
+
+    <div class="footer"><strong>AguaFress</strong> — PRs e Integración — Página 3</div>
+</div>
+
+</body>
+</html>
