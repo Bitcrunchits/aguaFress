@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────
+
+enum UserRole {
+  super_admin
+  vendedor
+  cliente
+}
+
+enum VendedorEstado {
+  pendiente
+  activo
+  inactivo
+  bloqueado
+}
+
+// ─── Tablas ───────────────────────────────────────────────────
+
+model User {
+  id             String         @id @default(uuid()) @db.Uuid
+  email          String         @unique @db.VarChar(255)
+  password       String         @db.VarChar(255)
+  role           UserRole
+
+  // Datos personales
+  nombre         String?        @db.VarChar(100)
+  apellido       String?        @db.VarChar(100)
+  dni            String?        @db.VarChar(20)
+  telefono       String?        @db.VarChar(20)
+
+  // Estado de cuenta
+  is_active      Boolean        @default(true)
+  is_verified    Boolean        @default(false)
+
+  // Auto-relación: vendedor → clientes
+  vendedor_id    String?        @db.Uuid
+  vendedor       User?          @relation("VendedorClientes", fields: [vendedor_id], references: [id])
+  clientes       User[]         @relation("VendedorClientes")
+
+  // Campos específicos de vendedor
+  empresa        String?        @db.VarChar(255)
+  logo           String?        @db.VarChar(500)
+  estado_vendedor VendedorEstado?
+  ciudad_default String?        @db.VarChar(100)
+  zona_entrega   String?        @db.VarChar(100)
+  qr_token       String?        @unique @db.VarChar(50)
+
+  // Timestamps
+  created_at     DateTime       @default(now())
+  updated_at     DateTime       @updatedAt
+
+  // Relaciones hacia otras tablas
+  cartera_vendedor Cartera[]     @relation("CarteraVendedor")
+  cartera_cliente  Cartera[]     @relation("CarteraCliente")
+  qr_codes       QrCode[]
+  links          LinkInvitacion[]
+
+  @@map("USER")
+}
+
+model Cartera {
+  id           String   @id @default(uuid()) @db.Uuid
+  vendedor_id  String   @db.Uuid
+  cliente_id   String   @db.Uuid
+  activo       Boolean  @default(true)
+  created_at   DateTime @default(now())
+
+  vendedor     User     @relation("CarteraVendedor", fields: [vendedor_id], references: [id])
+  cliente      User     @relation("CarteraCliente", fields: [cliente_id], references: [id])
+
+  @@unique([vendedor_id, cliente_id])
+  @@map("RELACION_CARTERA")
+}
+
+model QrCode {
+  id           String   @id @default(uuid()) @db.Uuid
+  vendedor_id  String   @db.Uuid
+  codigo       String   @unique @db.VarChar(50)
+  activo       Boolean  @default(true)
+  created_at   DateTime @default(now())
+  expires_at   DateTime
+
+  vendedor     User     @relation(fields: [vendedor_id], references: [id])
+
+  @@map("QR_CODE")
+}
+
+model LinkInvitacion {
+  id           String   @id @default(uuid()) @db.Uuid
+  vendedor_id  String   @db.Uuid
+  token        String   @unique @db.VarChar(50)
+  activo       Boolean  @default(true)
+  created_at   DateTime @default(now())
+  expires_at   DateTime
+
+  vendedor     User     @relation(fields: [vendedor_id], references: [id])
+
+  @@map("LINK_INVITACION")
+}
