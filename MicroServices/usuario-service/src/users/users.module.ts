@@ -1,1 +1,4 @@
-// Módulo users — Perfiles, cartera, QR, links públicos
+import { Module } from '@nestjs/common';
+
+@Module({})
+export class UsersModule {}

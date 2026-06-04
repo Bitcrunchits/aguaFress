@@ -1,1 +1,5 @@
-// Common — Guards, decorators, pipes compartidos del servicio
+import { Module, Global } from '@nestjs/common';
+
+@Global()
+@Module({})
+export class CommonModule {}

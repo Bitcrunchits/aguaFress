@@ -1,1 +1,4 @@
-// Módulo auth — Login, JWT, register, refresh
+import { Module } from '@nestjs/common';
+
+@Module({})
+export class AuthModule {}
