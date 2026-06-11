@@ -28,47 +28,100 @@
 
 ### 2.1 usuario-service (Puerto 3001 — PostgreSQL, schema: users)
 
-#### USER
+Las tablas se separaron por rol siguiendo SRP: `AUTH_USER` solo tiene datos de login,
+`VENDEDOR`, `CLIENTE` y `SUPER_ADMIN` tienen los datos específicos de cada perfil.
+`AUDIT_LOG` provee trazabilidad interna sin depender de MongoDB.
+
+#### AUTH_USER
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | id | UUID | PK |
 | email | VARCHAR(255) | Unique, not null |
 | password | VARCHAR(255) | bcrypt hash |
 | role | ENUM | super_admin, vendedor, cliente |
-| nombre | VARCHAR(100) | Nombre (puede ser completo si apellido no está definido) |
-| apellido | VARCHAR(100) | Opcional — se completa después del registro |
-| dni | VARCHAR(20) | Opcional |
-| telefono | VARCHAR(20) | Opcional |
 | is_active | BOOLEAN | Default true |
 | is_verified | BOOLEAN | Default false (email verificado) |
-| vendedor_id | UUID (FK → USER) | Self-ref: cliente → vendedor asignado |
-| qr_token | VARCHAR(50) | Unique — token para QR público |
-| estado_vendedor | ENUM | pendiente, activo, inactivo, bloqueado (solo si role=vendedor) |
-| ciudad_default | VARCHAR(100) | Ciudad/localidad de entrega (texto libre, MVP sin tabla CIUDAD) |
+| created_at | TIMESTAMP | |
+| updated_at | TIMESTAMP | |
+
+**Relaciones:** 1:1 con VENDEDOR, CLIENTE o SUPER_ADMIN según `role`.
+
+#### VENDEDOR
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | UUID | PK |
+| auth_user_id | UUID | FK → AUTH_USER (unique) |
+| nombre | VARCHAR(100) | |
+| apellido | VARCHAR(100) | Opcional |
+| telefono | VARCHAR(20) | Opcional |
+| empresa | VARCHAR(255) | Nombre del emprendimiento |
+| logo | VARCHAR(500) | URL del logo |
+| estado | ENUM | pendiente, activo, inactivo, bloqueado |
+| ciudad_default | VARCHAR(100) | Ciudad/localidad de entrega (texto libre) |
 | zona_entrega | VARCHAR(100) | Zona/sector de entrega (texto libre) |
-| empresa | VARCHAR(255) | Nombre del emprendimiento (vendedor) |
-| logo | VARCHAR(500) | URL del logo (vendedor) |
+| qr_token | VARCHAR(50) | Unique — token activo para QR público |
 | created_at | TIMESTAMP | |
 | updated_at | TIMESTAMP | |
 
 **Relaciones:**
-- `vendedor_id` → self-ref: un vendedor tiene N clientes
-- Un cliente tiene 1 vendedor asignado
+- `auth_user_id` → AUTH_USER (1:1)
+- Tiene N clientes via CARTERA
+- Tiene N QR_CODE y LINK_INVITACION
+
+#### CLIENTE
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | UUID | PK |
+| auth_user_id | UUID | FK → AUTH_USER (unique) |
+| nombre | VARCHAR(100) | |
+| apellido | VARCHAR(100) | Opcional |
+| dni | VARCHAR(20) | Opcional |
+| telefono | VARCHAR(20) | Opcional |
+| tipo_factura | ENUM | B o C (opcional) |
+| direccion_calle | VARCHAR(200) | Opcional |
+| direccion_numero | VARCHAR(20) | Opcional |
+| direccion_piso | VARCHAR(20) | Opcional (piso/depto) |
+| direccion_referencia | VARCHAR(200) | Opcional |
+| direccion_barrio | VARCHAR(100) | Opcional (texto libre) |
+| direccion_ciudad | VARCHAR(100) | Opcional |
+| direccion_provincia | VARCHAR(100) | Opcional |
+| direccion_cp | VARCHAR(20) | Opcional (código postal) |
+| latitud | DECIMAL(10,7) | Opcional |
+| longitud | DECIMAL(10,7) | Opcional |
+| vendedor_id | UUID | FK → VENDEDOR (cliente asignado) |
+| created_at | TIMESTAMP | |
+| updated_at | TIMESTAMP | |
+
+**Relaciones:**
+- `auth_user_id` → AUTH_USER (1:1)
+- `vendedor_id` → VENDEDOR (N:1 — cada cliente tiene 1 vendedor)
+
+#### SUPER_ADMIN
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | UUID | PK |
+| auth_user_id | UUID | FK → AUTH_USER (unique) |
+| nombre | VARCHAR(100) | |
+| apellido | VARCHAR(100) | Opcional |
+| created_at | TIMESTAMP | |
+| updated_at | TIMESTAMP | |
 
 #### RELACION_CARTERA
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | id | UUID | PK |
-| vendedor_id | UUID | FK → USER (vendedor) |
-| cliente_id | UUID | FK → USER (cliente) |
+| vendedor_id | UUID | FK → VENDEDOR |
+| cliente_id | UUID | FK → CLIENTE |
 | activo | BOOLEAN | Default true |
 | created_at | TIMESTAMP | |
+
+**Unique:** (vendedor_id, cliente_id)
 
 #### QR_CODE
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | id | UUID | PK |
-| vendedor_id | UUID | FK → USER |
+| vendedor_id | UUID | FK → VENDEDOR |
 | codigo | VARCHAR(50) | Unique |
 | activo | BOOLEAN | |
 | created_at | TIMESTAMP | |
@@ -78,11 +131,22 @@
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | id | UUID | PK |
-| vendedor_id | UUID | FK → USER |
+| vendedor_id | UUID | FK → VENDEDOR |
 | token | VARCHAR(50) | Unique |
 | activo | BOOLEAN | |
 | created_at | TIMESTAMP | |
 | expires_at | TIMESTAMP | 48hs |
+
+#### AUDIT_LOG
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | UUID | PK |
+| usuario_id | UUID | FK → AUTH_USER (quién ejecutó la acción) |
+| target_id | UUID | FK → AUTH_USER (sobre quién se actuó) |
+| accion | VARCHAR(50) | Ej: "profile.updated", "client.assigned" |
+| detalle | JSON | Datos adicionales / diff de cambios |
+| ip | VARCHAR(45) | Dirección IP de quien ejecutó |
+| created_at | TIMESTAMP | |
 
 ---
 
@@ -285,11 +349,13 @@ export const RedisStreams = {
 ## 4. Diagrama de Relaciones (MVP)
 
 ```
-USER (role: super_admin)
+AUTH_USER
     │
-    ├──► USER (role: vendedor)
+    ├──► SUPER_ADMIN (1:1)
+    │
+    ├──► VENDEDOR (1:1)
     │       │
-    │       ├──► RELACION_CARTERA ──► USER (role: cliente)
+    │       ├──► RELACION_CARTERA ──► CLIENTE
     │       │
     │       ├──► PRODUCTO ──┬──► MARCA
     │       │               └──► CATEGORIA
@@ -302,6 +368,10 @@ USER (role: super_admin)
     │       ├──► DELIVERY
     │       ├──► QR_CODE
     │       └──► LINK_INVITACION
+    │
+    └──► CLIENTE (1:1)
+            │
+            └──► VENDEDOR (N:1 via vendedor_id)
 ```
 
 ---
@@ -343,6 +413,7 @@ USER (role: super_admin)
 |---------|-------|-------------|
 | 1.0 | Abril 2026 | Versión inicial (TypeORM, servicios separados auth/user) |
 | 1.1 | Mayo 2026 | Actualización a Prisma, usuario-service unificado, scope MVP |
+| 1.2 | Junio 2026 | Table splitting AUTH_USER/VENDEDOR/CLIENTE/SUPER_ADMIN, +AUDIT_LOG, +direcciones cliente |
 
 ---
 

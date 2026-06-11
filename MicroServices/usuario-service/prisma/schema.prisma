@@ -22,86 +22,166 @@ enum VendedorEstado {
   bloqueado
 }
 
-// ─── Tablas ───────────────────────────────────────────────────
-
-model User {
-  id             String         @id @default(uuid()) @db.Uuid
-  email          String         @unique @db.VarChar(255)
-  password       String         @db.VarChar(255)
-  role           UserRole
-
-  // Datos personales
-  nombre         String?        @db.VarChar(100)
-  apellido       String?        @db.VarChar(100)
-  dni            String?        @db.VarChar(20)
-  telefono       String?        @db.VarChar(20)
-
-  // Estado de cuenta
-  is_active      Boolean        @default(true)
-  is_verified    Boolean        @default(false)
-
-  // Auto-relación: vendedor → clientes
-  vendedor_id    String?        @db.Uuid
-  vendedor       User?          @relation("VendedorClientes", fields: [vendedor_id], references: [id])
-  clientes       User[]         @relation("VendedorClientes")
-
-  // Campos específicos de vendedor
-  empresa        String?        @db.VarChar(255)
-  logo           String?        @db.VarChar(500)
-  estado_vendedor VendedorEstado?
-  ciudad_default String?        @db.VarChar(100)
-  zona_entrega   String?        @db.VarChar(100)
-  qr_token       String?        @unique @db.VarChar(50)
-
-  // Timestamps
-  created_at     DateTime       @default(now())
-  updated_at     DateTime       @updatedAt
-
-  // Relaciones hacia otras tablas
-  cartera_vendedor Cartera[]     @relation("CarteraVendedor")
-  cartera_cliente  Cartera[]     @relation("CarteraCliente")
-  qr_codes       QrCode[]
-  links          LinkInvitacion[]
-
-  @@map("USER")
+enum TipoFactura {
+  B
+  C
 }
 
-model Cartera {
-  id           String   @id @default(uuid()) @db.Uuid
-  vendedor_id  String   @db.Uuid
-  cliente_id   String   @db.Uuid
-  activo       Boolean  @default(true)
-  created_at   DateTime @default(now())
+// ─── AuthUser ─── Solo login, sin datos de perfil ────────────
 
-  vendedor     User     @relation("CarteraVendedor", fields: [vendedor_id], references: [id])
-  cliente      User     @relation("CarteraCliente", fields: [cliente_id], references: [id])
+model AuthUser {
+  id          String    @id @default(uuid()) @db.Uuid
+  email       String    @unique @db.VarChar(255)
+  password    String    @db.VarChar(255)
+  role        UserRole
+  is_active   Boolean   @default(true)
+  is_verified Boolean   @default(false)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  vendedor    Vendedor?
+  cliente     Cliente?
+  super_admin SuperAdmin?
+  audit_logs  AuditLog[]   @relation("AuditLogActor")
+  audit_targets AuditLog[] @relation("AuditLogTarget")
+
+  @@map("AUTH_USER")
+}
+
+// ─── Vendedor ─────────────────────────────────────────────────
+
+model Vendedor {
+  id              String         @id @default(uuid()) @db.Uuid
+  auth_user_id    String         @unique @db.Uuid
+  auth_user       AuthUser       @relation(fields: [auth_user_id], references: [id])
+  nombre          String         @db.VarChar(100)
+  apellido        String?        @db.VarChar(100)
+  telefono        String?        @db.VarChar(20)
+  empresa         String?        @db.VarChar(255)
+  logo            String?        @db.VarChar(500)
+  estado          VendedorEstado
+  ciudad_default  String?        @db.VarChar(100)
+  zona_entrega    String?        @db.VarChar(100)
+  qr_token        String?        @unique @db.VarChar(50)
+  created_at      DateTime       @default(now())
+  updated_at      DateTime       @updatedAt
+
+  clientes        Cliente[]
+  cartera         Cartera[]          @relation("CarteraVendedor")
+  qr_codes        QrCode[]
+  links           LinkInvitacion[]
+
+  @@map("VENDEDOR")
+}
+
+// ─── Cliente ─── Perfil + dirección de entrega ───────────────
+
+model Cliente {
+  id                  String         @id @default(uuid()) @db.Uuid
+  auth_user_id        String         @unique @db.Uuid
+  auth_user           AuthUser       @relation(fields: [auth_user_id], references: [id])
+  nombre              String         @db.VarChar(100)
+  apellido            String?        @db.VarChar(100)
+  dni                 String?        @db.VarChar(20)
+  telefono            String?        @db.VarChar(20)
+  tipo_factura        TipoFactura?
+
+  // Dirección de entrega por defecto (se copia al crear pedido)
+  direccion_calle       String?  @db.VarChar(200)
+  direccion_numero      String?  @db.VarChar(20)
+  direccion_piso        String?  @db.VarChar(20)
+  direccion_referencia  String?  @db.VarChar(200)
+  direccion_barrio      String?  @db.VarChar(100)
+  direccion_ciudad      String?  @db.VarChar(100)
+  direccion_provincia   String?  @db.VarChar(100)
+  direccion_cp          String?  @db.VarChar(20)
+  latitud               Decimal? @db.Decimal(10, 7)
+  longitud              Decimal? @db.Decimal(10, 7)
+
+  // Relación con vendedor (cada cliente tiene UN vendedor asignado)
+  vendedor_id    String             @db.Uuid
+  vendedor       Vendedor           @relation(fields: [vendedor_id], references: [id])
+  cartera        Cartera[]          @relation("CarteraCliente")
+
+  created_at     DateTime           @default(now())
+  updated_at     DateTime           @updatedAt
+
+  @@map("CLIENTE")
+}
+
+// ─── SuperAdmin ───────────────────────────────────────────────
+
+model SuperAdmin {
+  id           String   @id @default(uuid()) @db.Uuid
+  auth_user_id String   @unique @db.Uuid
+  auth_user    AuthUser @relation(fields: [auth_user_id], references: [id])
+  nombre       String   @db.VarChar(100)
+  apellido     String?  @db.VarChar(100)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@map("SUPER_ADMIN")
+}
+
+// ─── Cartera ─── Relación vendedor ↔ cliente ─────────────────
+
+model Cartera {
+  id          String   @id @default(uuid()) @db.Uuid
+  vendedor_id String   @db.Uuid
+  cliente_id  String   @db.Uuid
+  activo      Boolean  @default(true)
+  created_at  DateTime @default(now())
+
+  vendedor    Vendedor @relation("CarteraVendedor", fields: [vendedor_id], references: [id])
+  cliente     Cliente  @relation("CarteraCliente", fields: [cliente_id], references: [id])
 
   @@unique([vendedor_id, cliente_id])
   @@map("RELACION_CARTERA")
 }
 
-model QrCode {
-  id           String   @id @default(uuid()) @db.Uuid
-  vendedor_id  String   @db.Uuid
-  codigo       String   @unique @db.VarChar(50)
-  activo       Boolean  @default(true)
-  created_at   DateTime @default(now())
-  expires_at   DateTime
+// ─── QrCode ─── QR generados por vendedor ────────────────────
 
-  vendedor     User     @relation(fields: [vendedor_id], references: [id])
+model QrCode {
+  id          String   @id @default(uuid()) @db.Uuid
+  vendedor_id String   @db.Uuid
+  codigo      String   @unique @db.VarChar(50)
+  activo      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  expires_at  DateTime
+
+  vendedor    Vendedor @relation(fields: [vendedor_id], references: [id])
 
   @@map("QR_CODE")
 }
 
-model LinkInvitacion {
-  id           String   @id @default(uuid()) @db.Uuid
-  vendedor_id  String   @db.Uuid
-  token        String   @unique @db.VarChar(50)
-  activo       Boolean  @default(true)
-  created_at   DateTime @default(now())
-  expires_at   DateTime
+// ─── LinkInvitacion ─── Links generados por vendedor ─────────
 
-  vendedor     User     @relation(fields: [vendedor_id], references: [id])
+model LinkInvitacion {
+  id          String   @id @default(uuid()) @db.Uuid
+  vendedor_id String   @db.Uuid
+  token       String   @unique @db.VarChar(50)
+  activo      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  expires_at  DateTime
+
+  vendedor    Vendedor @relation(fields: [vendedor_id], references: [id])
 
   @@map("LINK_INVITACION")
+}
+
+// ─── AuditLog ─── Trazabilidad interna del servicio ──────────
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  usuario_id String?  @db.Uuid   // Quién hizo la acción (auth_user id del admin)
+  target_id  String?  @db.Uuid   // Sobre quién se actuó (auth_user id del target)
+  accion     String   @db.VarChar(50)
+  detalle    Json?
+  ip         String?  @db.VarChar(45)
+  created_at DateTime @default(now())
+
+  actor      AuthUser? @relation("AuditLogActor", fields: [usuario_id], references: [id])
+  target     AuthUser? @relation("AuditLogTarget", fields: [target_id], references: [id])
+
+  @@map("AUDIT_LOG")
 }
