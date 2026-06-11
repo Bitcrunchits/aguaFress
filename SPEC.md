@@ -399,9 +399,10 @@ aguaFress/
 ├── contratosDTOs/              # Contratos JSON de cada servicio
 ├── documentacion/              # Documentación del proyecto
 ├── docker-compose.yml          # Perfiles por servicio
-└── package.json                # npm workspaces raíz
+├── pnpm-workspace.yaml          # pnpm workspace (packages/*, MicroServices/*)
+└── package.json                 # pnpm workspace raíz
 
-> **Principio**: Monorepo con npm workspaces, sin Nx/Turborepo.
+> **Principio**: Monorepo con pnpm workspaces, sin Nx/Turborepo.
 ```
 
 > **Principio SRP**: Cada servicio es independiente, tiene su propia DB, y se comunica por eventos.
@@ -1016,7 +1017,7 @@ export enum TipoFactura {
 | PostgreSQL 15 | Servicios: usuario, products, orders, entregas |
 | MongoDB 6 | notifications (activity logs) |
 | Redis 7 | Streams (eventos) + caché |
-| Monorepo | npm workspaces (sin Nx/Turborepo) |
+| Monorepo | pnpm workspaces (sin Nx/Turborepo) |
 | Docker | Compose único con perfiles |
 | Comunicación | Redis Streams + HTTP REST (Gateway) |
 | Contratos | `packages/contracts/` (DTOs TypeScript + enums) |

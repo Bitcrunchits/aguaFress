@@ -321,23 +321,19 @@
 <span class="prompt">$</span> cd aguaFress</span>
 
     <h3>3.2 Instalar todo (raíz)</h3>
-    <span class="cmd"><span class="prompt">$</span> npm install
-<span class="comment"># Esto instala las dependencias de TODOS los servicios y paquetes</span></span>
+    <span class="cmd"><span class="prompt">$</span> pnpm install
+<span class="comment"># Instala las dependencias de TODOS los servicios y paquetes</span></span>
 
-    <p>Esto funciona porque en la raíz tenemos <code>package.json</code> con:</p>
-    <span class="cmd">{<br>
-    &nbsp; "workspaces": [<br>
-    &nbsp; &nbsp; "packages/*",<br>
-    &nbsp; &nbsp; "services/*",<br>
-    &nbsp; &nbsp; "gateway"<br>
-    &nbsp; ]<br>
-    }</span>
+    <p>Esto funciona porque tenemos <code>pnpm-workspace.yaml</code> en la raíz:</p>
+    <span class="cmd">packages:<br>
+    &nbsp; - "packages/*"<br>
+    &nbsp; - "MicroServices/*"</span>
 
     <h3>3.3 Setear el contrato en tu servicio</h3>
     <p>En el <code>package.json</code> de cada servicio:</p>
     <span class="cmd">{<br>
     &nbsp; "dependencies": {<br>
-    &nbsp; &nbsp; "@agua/contracts": "*"<br>
+    &nbsp;     &nbsp; "@agua/contracts": "workspace:*"<br>
     &nbsp; &nbsp; ...<br>
     &nbsp; }<br>
     }</span>
@@ -370,7 +366,7 @@ import { UserCreatedEvent } from '@agua/contracts';</span>
     <div class="workflow-step">
         <div class="num">4</div>
         <div><strong>Corré tu microservicio</strong>
-        <p style="font-size: 8pt; margin: 0;">En otra terminal, <code>npm run start:dev</code> dentro de <code>services/tu-servicio/</code>.</p></div>
+        <p style="font-size: 8pt; margin: 0;">En otra terminal, <code>pnpm run start:dev</code> dentro de <code>services/tu-servicio/</code>.</p></div>
     </div>
 
     <div class="workflow-step">
@@ -644,12 +640,12 @@ import {
 
     <span class="cmd">{<br>
     &nbsp; "dependencies": {<br>
-    &nbsp; &nbsp; "@agua/contracts": "*",<br>
+    &nbsp;     &nbsp; "@agua/contracts": "workspace:*",<br>
     &nbsp; &nbsp; ...<br>
     &nbsp; }<br>
 }</span>
 
-    <p>Como estamos en un monorepo con npm workspaces, <code>npm install</code> desde la raíz ya lo linkea automáticamente. No necesitás publicarlo a npm.</p>
+    <p>Como estamos en un monorepo con pnpm workspaces, <code>pnpm install</code> desde la raíz ya lo linkea automáticamente via <code>workspace:*</code>. No necesitás publicarlo a un registry.</p>
 
     <h3>8.2 Ejemplo real: publicar un evento</h3>
     <span class="cmd"><span class="comment">// auth-service publica UserCreated</span>
@@ -677,7 +673,7 @@ async handleMessage(raw: string) {
 }</span>
 
     <div class="box box-tip">
-        <strong>💡 Tip:</strong> Si necesitás agregar un campo a un evento existente, <strong>hablalo con el equipo primero</strong>. Los contratos los mantenemos acá en la raíz. Cambiás el interface, build, push, y todos actualizan con <code>git pull + npm install</code>.
+        <strong>💡 Tip:</strong> Si necesitás agregar un campo a un evento existente, <strong>hablalo con el equipo primero</strong>. Los contratos los mantenemos acá en la raíz. Cambiás el interface, build, push, y todos actualizan con <code>git pull + pnpm install</code>.
     </div>
 
     <h3>8.4 Resumen de eventos del sistema</h3>
@@ -797,8 +793,8 @@ async handleMessage(raw: string) {
         <tr><th width="30%">Problema</th><th width="40%">Causa</th><th width="30%">Solución</th></tr>
         <tr>
             <td>❌ <code>Cannot find module @agua/contracts</code></td>
-            <td>No corriste <code>npm install</code> en la raíz, o no linkeó bien el workspace.</td>
-            <td><code>npm install</code> desde la raíz.</td>
+            <td>No corriste <code>pnpm install</code> en la raíz, o no linkeó bien el workspace.</td>
+            <td><code>pnpm install</code> desde la raíz.</td>
         </tr>
         <tr>
             <td>❌ Puerto ocupado</td>
@@ -847,7 +843,7 @@ async handleMessage(raw: string) {
 
     <table>
         <tr><th>#</th><th>Task</th><th width="14%">Check</th></tr>
-        <tr><td>1</td><td>Cloné el repo, corrí <code>npm install</code> en la raíz y no dio error</td><td>⬜</td></tr>
+        <tr><td>1</td><td>Cloné el repo, corrí <code>pnpm install</code> en la raíz y no dio error</td><td>⬜</td></tr>
         <tr><td>2</td><td>Corrí <code>docker compose --profile miperfil up</code> y Redis + mi DB están levantados</td><td>⬜</td></tr>
         <tr><td>3</td><td>Creé mi proyecto NestJS en <code>services/mi-servicio/</code> con Prisma</td><td>⬜</td></tr>
         <tr><td>4</td><td>Configuré el schema de Prisma con la URL de mi base</td><td>⬜</td></tr>

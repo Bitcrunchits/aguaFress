@@ -332,7 +332,7 @@ USER (role: super_admin)
 | Comunicación | Redis Streams + HTTP REST (Gateway) |
 | Frontend | Por definir (React + posible Next.js) |
 | Contratos Compartidos | `packages/contracts/` (TypeScript) |
-| Monorepo | npm workspaces |
+| Monorepo | pnpm workspaces |
 | Contenedores | Docker Compose único con perfiles |
 
 ---
