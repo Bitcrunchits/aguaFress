@@ -1,0 +1,70 @@
+# ───────────────────────────────────────────────────────────────
+#  AguaFress — Docker Compose (desarrollo)
+#  ───────────────────────────────────────────────────────────────
+#  Uso:
+#    docker compose up -d                    → levanta todo
+#    docker compose up -d postgres redis     → solo infra
+#    docker compose logs -f usuario-service  → logs del MS
+#    docker compose down -v                  → destruye todo + volúmenes
+# ───────────────────────────────────────────────────────────────
+
+services:
+  # ─── PostgreSQL ─────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: agua-postgres
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: agua
+    volumes:
+      - agua-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d agua"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ─── Redis ──────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: agua-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - agua-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ─── usuario-service ────────────────────────────────────────
+  usuario-service:
+    build:
+      context: .
+      dockerfile: MicroServices/usuario-service/Dockerfile
+    container_name: agua-usuario-service
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/agua"
+      JWT_SECRET: "aguafress-dev-secret-no-usar-en-prod"
+      JWT_EXPIRATION: "24h"
+      REDIS_URL: "redis://redis:6379"
+      PORT: 3001
+      NODE_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  agua-postgres-data:
+  agua-redis-data:
