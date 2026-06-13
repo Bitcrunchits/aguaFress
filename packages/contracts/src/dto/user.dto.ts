@@ -9,7 +9,7 @@ import type { ProductResponse } from './products.dto';
 
 // ─── Listado de usuarios (admin) ───
 
-import type { PaginatedResponse, PaginationRequest } from './common.dto';
+import type { DireccionEntrega, PaginatedResponse, PaginationRequest } from './common.dto';
 
 export interface UserListFilters extends PaginationRequest {
   role?: UserRole;
@@ -83,6 +83,8 @@ export interface ClienteProfile {
   telefono?: string;
   dni?: string;
   tipoFactura?: TipoFactura;
+  direccionFacturacion?: string;
+  direccionEntrega?: DireccionEntrega;
 }
 
 // ─── Actualización de perfil ───
@@ -98,6 +100,9 @@ export interface UpdateProfileRequest {
     referencia?: string;
     /** Nombre de barrio libre — NO es id. No existe tabla barrios en MVP */
     barrio?: string;
+    ciudad?: string;
+    provincia?: string;
+    codigoPostal?: string;
     latitude?: number;
     longitude?: number;
   };

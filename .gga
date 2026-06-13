@@ -1,0 +1,24 @@
+# Gentleman Guardian Angel Configuration
+# https://github.com/your-org/gga
+
+# AI Provider
+# Usamos opencode para que coincida con el entorno actual
+PROVIDER="opencode"
+
+# File patterns to include in review
+FILE_PATTERNS="*.ts,*.tsx,*.js,*.jsx,*.json,*.prisma"
+
+# File patterns to exclude from review
+EXCLUDE_PATTERNS="*.test.ts,*.spec.ts,*.test.tsx,*.spec.tsx,*.d.ts,package-lock.json"
+
+# File containing code review rules
+RULES_FILE="AGENTS.md"
+
+# Strict mode: fail if AI response is ambiguous
+STRICT_MODE="true"
+
+# Timeout in seconds for AI provider response
+TIMEOUT="300"
+
+# Base branch for --pr-mode
+PR_BASE_BRANCH="develop"

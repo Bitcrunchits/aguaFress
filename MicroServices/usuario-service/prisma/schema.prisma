@@ -1,0 +1,378 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ENUMS DEL SISTEMA
+// ═══════════════════════════════════════════════════════════════
+
+enum UserRole {
+  super_admin
+  vendedor
+  cliente
+}
+
+enum VendedorEstado {
+  pendiente
+  activo
+  inactivo
+  bloqueado
+}
+
+enum OrderEstado {
+  pendiente
+  confirmado
+  en_camino
+  entregado
+  cancelado
+  vencido
+}
+
+enum DeliveryEstado {
+  pendiente
+  en_camino
+  entregada
+}
+
+enum MetodoPago {
+  contra_entrega
+}
+
+enum TipoFactura {
+  B
+  C
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  usuario-service (AUTH + USERS)
+// ═══════════════════════════════════════════════════════════════
+
+model AuthUser {
+  id          String    @id @default(uuid()) @db.Uuid
+  email       String    @unique @db.VarChar(255)
+  password    String    @db.VarChar(255)
+  role        UserRole
+  is_active   Boolean   @default(true)
+  is_verified Boolean   @default(false)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  vendedor      Vendedor?
+  cliente       Cliente?
+  super_admin   SuperAdmin?
+  audit_logs    AuditLog[]     @relation("AuditLogActor")
+  audit_targets AuditLog[]     @relation("AuditLogTarget")
+
+  @@map("AUTH_USER")
+}
+
+model Vendedor {
+  id              String         @id @default(uuid()) @db.Uuid
+  auth_user_id    String         @unique @db.Uuid
+  auth_user       AuthUser       @relation(fields: [auth_user_id], references: [id])
+  nombre          String         @db.VarChar(100)
+  apellido        String?        @db.VarChar(100)
+  telefono        String?        @db.VarChar(20)
+  empresa         String?        @db.VarChar(255)
+  logo            String?        @db.VarChar(500)
+  estado          VendedorEstado
+  ciudad_default  String?        @db.VarChar(100)
+  zona_entrega    String?        @db.VarChar(100)
+  qr_token        String?        @unique @db.VarChar(50)
+  created_at      DateTime       @default(now())
+  updated_at      DateTime       @updatedAt
+
+  clientes  Cliente[]
+  cartera   Cartera[]    @relation("CarteraVendedor")
+  qr_codes  QrCode[]
+  links     LinkInvitacion[]
+  productos Product[]
+
+  @@map("VENDEDOR")
+}
+
+model Cliente {
+  id                  String         @id @default(uuid()) @db.Uuid
+  auth_user_id        String         @unique @db.Uuid
+  auth_user           AuthUser       @relation(fields: [auth_user_id], references: [id])
+  nombre              String         @db.VarChar(100)
+  apellido            String?        @db.VarChar(100)
+  dni                 String?        @db.VarChar(20)
+  telefono            String?        @db.VarChar(20)
+  tipo_factura        TipoFactura?
+
+  // Dirección de entrega por defecto
+  direccion_calle       String?  @db.VarChar(200)
+  direccion_numero      String?  @db.VarChar(20)
+  direccion_piso        String?  @db.VarChar(20)
+  direccion_referencia  String?  @db.VarChar(200)
+  direccion_barrio      String?  @db.VarChar(100)
+  direccion_ciudad      String?  @db.VarChar(100)
+  direccion_provincia   String?  @db.VarChar(100)
+  direccion_cp          String?  @db.VarChar(20)
+  latitud               Decimal? @db.Decimal(10, 7)
+  longitud              Decimal? @db.Decimal(10, 7)
+
+  vendedor_id    String    @db.Uuid
+  vendedor       Vendedor  @relation(fields: [vendedor_id], references: [id])
+  cartera        Cartera[] @relation("CarteraCliente")
+  pedidos        Order[]
+  carritos       Cart[]
+
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+
+  @@map("CLIENTE")
+}
+
+model SuperAdmin {
+  id           String   @id @default(uuid()) @db.Uuid
+  auth_user_id String   @unique @db.Uuid
+  auth_user    AuthUser @relation(fields: [auth_user_id], references: [id])
+  nombre       String   @db.VarChar(100)
+  apellido     String?  @db.VarChar(100)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@map("SUPER_ADMIN")
+}
+
+model Cartera {
+  id          String   @id @default(uuid()) @db.Uuid
+  vendedor_id String   @db.Uuid
+  cliente_id  String   @db.Uuid
+  activo      Boolean  @default(true)
+  created_at  DateTime @default(now())
+
+  vendedor Vendedor @relation("CarteraVendedor", fields: [vendedor_id], references: [id])
+  cliente  Cliente  @relation("CarteraCliente", fields: [cliente_id], references: [id])
+
+  @@unique([vendedor_id, cliente_id])
+  @@map("RELACION_CARTERA")
+}
+
+model QrCode {
+  id          String   @id @default(uuid()) @db.Uuid
+  vendedor_id String   @db.Uuid
+  codigo      String   @unique @db.VarChar(50)
+  activo      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  expires_at  DateTime
+
+  vendedor Vendedor @relation(fields: [vendedor_id], references: [id])
+
+  @@map("QR_CODE")
+}
+
+model LinkInvitacion {
+  id          String   @id @default(uuid()) @db.Uuid
+  vendedor_id String   @db.Uuid
+  token       String   @unique @db.VarChar(50)
+  activo      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  expires_at  DateTime
+
+  vendedor Vendedor @relation(fields: [vendedor_id], references: [id])
+
+  @@map("LINK_INVITACION")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  usuario_id String?  @db.Uuid
+  target_id  String?  @db.Uuid
+  accion     String   @db.VarChar(50)
+  detalle    Json?
+  ip         String?  @db.VarChar(45)
+  created_at DateTime @default(now())
+
+  actor  AuthUser? @relation("AuditLogActor", fields: [usuario_id], references: [id])
+  target AuthUser? @relation("AuditLogTarget", fields: [target_id], references: [id])
+
+  @@map("AUDIT_LOG")
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  products-service
+// ═══════════════════════════════════════════════════════════════
+
+model Category {
+  id          String   @id @default(uuid()) @db.Uuid
+  nombre      String   @db.VarChar(100)
+  orden       Int      @default(0)
+  vendedor_id String   @db.Uuid
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  productos Product[]
+
+  @@map("CATEGORY")
+}
+
+model Brand {
+  id          String   @id @default(uuid()) @db.Uuid
+  nombre      String   @db.VarChar(100)
+  vendedor_id String   @db.Uuid
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  productos Product[]
+
+  @@map("BRAND")
+}
+
+model Product {
+  id              String   @id @default(uuid()) @db.Uuid
+  vendedor_id     String   @db.Uuid
+  categoria_id    String   @db.Uuid
+  marca_id        String?  @db.Uuid
+  nombre          String   @db.VarChar(255)
+  descripcion     String?  @db.Text
+  precio_sin_iva  Decimal  @db.Decimal(10, 2)
+  precio_final    Decimal  @db.Decimal(10, 2)
+  imagen          String?  @db.VarChar(500)
+  stock           Int      @default(0)
+  activo          Boolean  @default(true)
+  mostrar_precio  Boolean  @default(true)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  vendedor   Vendedor @relation(fields: [vendedor_id], references: [id])
+  categoria  Category @relation(fields: [categoria_id], references: [id])
+  marca      Brand?   @relation(fields: [marca_id], references: [id])
+
+  @@map("PRODUCT")
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  orders-service
+// ═══════════════════════════════════════════════════════════════
+
+model Cart {
+  id          String   @id @default(uuid()) @db.Uuid
+  cliente_id  String   @db.Uuid
+  vendedor_id String   @db.Uuid
+  created_at  DateTime @default(now())
+  expires_at  DateTime
+
+  cliente Cliente    @relation(fields: [cliente_id], references: [id])
+  items   CartItem[]
+
+  @@map("CART")
+}
+
+model CartItem {
+  id              String  @id @default(uuid()) @db.Uuid
+  cart_id         String  @db.Uuid
+  product_id      String  @db.Uuid
+  nombre          String  @db.VarChar(255)
+  cantidad        Int
+  precio_unitario Decimal @db.Decimal(10, 2)
+
+  cart Cart @relation(fields: [cart_id], references: [id], onDelete: Cascade)
+
+  @@map("CART_ITEM")
+}
+
+model Order {
+  id                  String       @id @default(uuid()) @db.Uuid
+  pedido_numero       String       @unique @db.VarChar(20)
+  cliente_id          String       @db.Uuid
+  vendedor_id         String       @db.Uuid
+  estado              OrderEstado
+  metodo_pago         MetodoPago
+  total_sin_iva       Decimal      @db.Decimal(10, 2)
+  iva                 Decimal      @db.Decimal(10, 2)
+  total               Decimal      @db.Decimal(10, 2)
+
+  // Snapshot de dirección al momento del pedido
+  direccion_calle       String   @db.VarChar(200)
+  direccion_numero      String   @db.VarChar(20)
+  direccion_piso        String?  @db.VarChar(20)
+  direccion_referencia  String?  @db.VarChar(200)
+  direccion_barrio      String?  @db.VarChar(100)
+  direccion_ciudad      String   @db.VarChar(100)
+  direccion_provincia   String   @db.VarChar(100)
+  direccion_cp          String?  @db.VarChar(20)
+  latitud               Decimal? @db.Decimal(10, 7)
+  longitud              Decimal? @db.Decimal(10, 7)
+
+  observaciones String?  @db.Text
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  cliente  Cliente      @relation(fields: [cliente_id], references: [id])
+  items    OrderItem[]
+  factura  Invoice?
+  delivery Delivery?
+
+  @@map("ORDER")
+}
+
+model OrderItem {
+  id              String  @id @default(uuid()) @db.Uuid
+  order_id        String  @db.Uuid
+  product_id      String  @db.Uuid
+  nombre          String  @db.VarChar(255)
+  cantidad        Int
+  precio_unitario Decimal @db.Decimal(10, 2)
+
+  order Order @relation(fields: [order_id], references: [id], onDelete: Cascade)
+
+  @@map("ORDER_ITEM")
+}
+
+model Invoice {
+  id        String      @id @default(uuid()) @db.Uuid
+  order_id  String      @unique @db.Uuid
+  tipo      TipoFactura
+  numero    String      @unique @db.VarChar(50)
+  pdf_url   String?     @db.VarChar(500)
+  created_at DateTime  @default(now())
+
+  order Order @relation(fields: [order_id], references: [id])
+
+  @@map("INVOICE")
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  entregas-service
+// ═══════════════════════════════════════════════════════════════
+
+model Delivery {
+  id                  String          @id @default(uuid()) @db.Uuid
+  order_id            String          @unique @db.Uuid
+  vendedor_id         String          @db.Uuid
+  estado              DeliveryEstado
+
+  // Snapshot de datos del cliente al asignar entrega
+  cliente_nombre      String          @db.VarChar(255)
+  cliente_telefono    String?         @db.VarChar(20)
+
+  // Snapshot de dirección
+  direccion_calle       String   @db.VarChar(200)
+  direccion_numero      String   @db.VarChar(20)
+  direccion_piso        String?  @db.VarChar(20)
+  direccion_referencia  String?  @db.VarChar(200)
+  direccion_barrio      String?  @db.VarChar(100)
+  direccion_ciudad      String   @db.VarChar(100)
+  direccion_provincia   String   @db.VarChar(100)
+  direccion_cp          String?  @db.VarChar(20)
+  latitud               Decimal? @db.Decimal(10, 7)
+  longitud              Decimal? @db.Decimal(10, 7)
+
+  fecha_asignacion DateTime @default(now())
+  fecha_entrega    DateTime?
+  notas            String?  @db.Text
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  order Order @relation(fields: [order_id], references: [id])
+
+  @@map("DELIVERY")
+}
