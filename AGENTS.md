@@ -54,3 +54,43 @@
 - ✅ Timestamps `created_at` y `updated_at` en todas las tablas.
 - ✅ IDs UUID generados con `@default(uuid())`.
 - ✅ Relaciones explícitas con `@relation()` nombrado.
+
+## Sesión 12/06 — Infraestructura Docker + Schema Unificado
+
+### docker-compose.yml (raíz)
+- `postgres:15-alpine` en puerto `5433`, DB `agua`, user `postgres:postgres`
+- `redis:7-alpine` en puerto `6379`
+- `usuario-service` construido desde `MicroServices/usuario-service/Dockerfile`
+- Los services esperan healthcheck de postgres y redis antes de arrancar
+
+### Dockerfile (usuario-service)
+- Multi-stage con `node:22-alpine` (pnpm 11 requiere Node 22+)
+- Stage build: instalar deps, copiar source, build contracts, build usuario-service, prisma generate
+- Stage run: copiar solo dist + prisma + node_modules, ejecutar `prisma db push` al iniciar
+- Se instaló `openssl` via apk para que Prisma funcione en Alpine
+
+### Schema unificado (17 tablas en una DB)
+- Todas las tablas de todos los microservicios viven en `MicroServices/usuario-service/prisma/schema.prisma`
+- Cuando un MS se separa a su propio Docker, lleva solo sus tablas
+- Tablas de usuario-service: AUTH_USER, VENDEDOR, CLIENTE, SUPER_ADMIN, RELACION_CARTERA, QR_CODE, LINK_INVITACION, AUDIT_LOG
+- Tablas de products-service: CATEGORY, BRAND, PRODUCT
+- Tablas de orders-service: CART, CART_ITEM, ORDER, ORDER_ITEM, INVOICE
+- Tablas de entregas-service: DELIVERY
+- Enums: UserRole, VendedorEstado, OrderEstado, DeliveryEstado, MetodoPago, TipoFactura
+
+### .env actualizado
+```env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5433/agua"
+```
+
+### Comandos útiles
+```bash
+docker compose up -d                    # levantar todo
+docker compose logs -f usuario-service  # logs del MS
+docker compose exec postgres psql -U postgres -d agua  # consola SQL
+docker compose down -v                  # destruir todo + volúmenes
+```
+
+### Pendiente para próxima sesión
+- Revisar Jira
+- Implementar AuthModule y UsersModule (controllers + servicios)
