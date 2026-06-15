@@ -21,6 +21,6 @@ SwaggerModule.setup('api/docs', app, document);
 const PORT = process.env.PORT || 3005;
 await app.listen(PORT, () => {
     console.log(`Entregas Service corriendo en el puerto ${PORT}`);
-}
+});
 }
 bootstrap();
