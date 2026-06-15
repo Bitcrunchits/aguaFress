@@ -10,6 +10,7 @@
     "sourceMap": true,
     "incremental": true,
     "skipLibCheck": true,
+    "types": ["node"],
     "strictNullChecks": true,
     "noImplicitAny": true,
     "strictBindCallApply": true,
