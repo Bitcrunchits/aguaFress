@@ -3,7 +3,7 @@
 
 /**
  * Dirección de entrega
- * Usada en: orders.dto, deliveries.dto
+ * Usada en: orders.dto, deliveries.dto, user.dto
  * NOTA: barrio es nombre libre, NO id — no existe tabla barrios en MVP
  */
 export interface DireccionEntrega {
@@ -12,6 +12,9 @@ export interface DireccionEntrega {
   pisoDepto?: string;
   referencia?: string;
   barrio?: string;
+  ciudad?: string;
+  provincia?: string;
+  codigoPostal?: string;
   latitude?: number;
   longitude?: number;
 }

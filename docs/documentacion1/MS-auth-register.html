@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>usuario-service — Guía de Estudio y Presentación</title>
+<style>
+  @page { size: A4; margin: 2cm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 10pt;
+    line-height: 1.5;
+    color: #1a1a1a;
+    max-width: 190mm;
+    margin: 0 auto;
+    padding: 20px 0;
+  }
+
+  /* ─── Portada ─── */
+  .cover {
+    text-align: center;
+    padding: 60px 0 40px;
+    border-bottom: 3px solid #2563eb;
+    margin-bottom: 30px;
+  }
+  .cover h1 { font-size: 22pt; margin: 0 0 8px; color: #1e3a5f; }
+  .cover .subtitle { font-size: 13pt; color: #475569; margin-bottom: 20px; }
+  .cover .meta { font-size: 9pt; color: #64748b; }
+  .cover .meta span { display: inline-block; margin: 0 12px; }
+
+  /* ─── Secciones ─── */
+  h2 {
+    font-size: 14pt;
+    color: #1e3a5f;
+    border-bottom: 2px solid #2563eb;
+    padding-bottom: 3px;
+    margin: 35px 0 15px;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 11pt;
+    color: #2563eb;
+    margin: 22px 0 10px;
+    page-break-after: avoid;
+  }
+  h4 {
+    font-size: 10pt;
+    color: #334155;
+    margin: 16px 0 8px;
+  }
+  p { margin: 6px 0; }
+
+  /* ─── Código ─── */
+  pre {
+    background: #0f172a;
+    color: #e2e8f0;
+    font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+    font-size: 8.5pt;
+    line-height: 1.45;
+    padding: 12px 14px;
+    border-radius: 6px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 8px 0;
+  }
+  code {
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 9pt;
+    background: #eef2ff;
+    color: #1e40af;
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  pre code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+  }
+
+  /* ─── Tablas ─── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+    font-size: 9pt;
+  }
+  th, td {
+    border: 1px solid #cbd5e1;
+    padding: 5px 8px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: #2563eb;
+    color: #fff;
+    font-weight: 600;
+  }
+  tr:nth-child(even) { background: #f8fafc; }
+
+  /* ─── Cajas especiales ─── */
+  .box {
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #2563eb;
+    border-radius: 0 6px 6px 0;
+    padding: 10px 14px;
+    margin: 12px 0;
+    background: #f8fafc;
+  }
+  .box-warn {
+    border-left-color: #f59e0b;
+    background: #fffbeb;
+  }
+  .box-error {
+    border-left-color: #ef4444;
+    background: #fef2f2;
+  }
+  .box-success {
+    border-left-color: #22c55e;
+    background: #f0fdf4;
+  }
+  .box-title { font-weight: 700; margin-bottom: 4px; font-size: 9.5pt; }
+
+  /* ─── Badges ─── */
+  .tag {
+    display: inline-block;
+    font-size: 7.5pt;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 10px;
+    margin-right: 4px;
+  }
+  .tag-schema { background: #dbeafe; color: #1e40af; }
+  .tag-dto { background: #f3e8ff; color: #6b21a8; }
+  .tag-evento { background: #fce7f3; color: #9d174d; }
+  .tag-problema { background: #fef3c7; color: #92400e; }
+
+  /* ─── Estructura de carpetas ─── */
+  .tree { font-family: 'JetBrains Mono', 'Consolas', monospace; font-size: 8.5pt; line-height: 1.6; background: #f1f5f9; padding: 10px 14px; border-radius: 6px; margin: 8px 0; }
+
+  /* ─── Listas ─── */
+  ul, ol { margin: 4px 0; padding-left: 22px; }
+  li { margin: 2px 0; }
+
+  /* ─── Navegación ─── */
+  .toc { margin: 15px 0; }
+  .toc ol { counter-reset: toc; }
+  .toc ol li { list-style: none; counter-increment: toc; }
+  .toc ol li::before { content: counter(toc) ". "; font-weight: 600; color: #2563eb; }
+
+  /* ─── Saltos de página ─── */
+  .page-break { page-break-before: always; }
+
+  /* ─── Timeline de problemas ─── */
+  .problem { border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; margin: 12px 0; background: #fff; }
+  .problem h4 { margin: 0 0 4px; color: #991b1b; }
+  .problem .context { font-size: 9pt; color: #475569; margin: 2px 0; }
+  .problem .solution { margin: 6px 0 2px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ PORTADA ═══════════════ -->
+<div class="cover">
+  <h1>usuario-service</h1>
+  <p class="subtitle">Módulo Auth + Users — Microservicio de Autenticación y Gestión de Usuarios</p>
+  <p class="meta">
+    <span>📚 Desarrollo Web 2</span>
+    <span>📅 Junio 2026</span>
+    <span>🏷️ NestJS 10 + Prisma 5 + PostgreSQL + Redis</span>
+  </p>
+</div>
+
+<!-- ═══════════════ ÍNDICE ═══════════════ -->
+<h2>Índice</h2>
+<div class="toc">
+  <ol>
+    <li>Contexto del Proyecto — ¿Qué es AguaFress?</li>
+    <li>Arquitectura del Microservicio</li>
+    <li>Modelo de Datos — Prisma Schema Explicado</li>
+    <li>DTOs y Contratos Compartidos (@agua/contracts)</li>
+    <li>Flujo de Registro y Login (con código)</li>
+    <li>Eventos con Redis Streams</li>
+    <li>Problemas Encontrados y Soluciones</li>
+    <li>Puntos Clave para la Presentación</li>
+  </ol>
+</div>
+
+<!-- ═══════════════ 1. CONTEXTO ═══════════════ -->
+<div class="page-break"></div>
+<h2>1. Contexto del Proyecto</h2>
+
+<p><strong>AguaFress</strong> es una plataforma marketplace que conecta distribuidores de agua y soda con sus clientes. El modelo de negocio es <em>por cartera</em>: cada vendedor (distribuidor) maneja sus propios clientes, productos y pedidos, con aislamiento total entre vendedores.</p>
+
+<h3>1.1 Stack Tecnológico</h3>
+<table>
+  <tr><th>Componente</th><th>Tecnología</th></tr>
+  <tr><td>Backend</td><td>Node.js 22 + NestJS 10 + TypeScript 5</td></tr>
+  <tr><td>ORM</td><td>Prisma 5</td></tr>
+  <tr><td>Base de datos</td><td>PostgreSQL 15</td></tr>
+  <tr><td>Cache / Event Bus</td><td>Redis 7 con Streams</td></tr>
+  <tr><td>Package Manager</td><td>pnpm 11.5 (monorepo)</td></tr>
+  <tr><td>Autenticación</td><td>JWT + Passport + bcrypt</td></tr>
+</table>
+
+<h3>1.2 Los 3 Roles del Sistema</h3>
+<table>
+  <tr><th>Rol</th><th>Qué puede hacer</th><th>Ejemplo</th></tr>
+  <tr><td><code>super_admin</code></td><td>Ver todo, crear vendedores, activar/suspender</td><td>Dueño de la plataforma</td></tr>
+  <tr><td><code>vendedor</code></td><td>Gestiona SUS clientes, productos, pedidos</td><td>Distribuidor de agua</td></tr>
+  <tr><td><code>cliente</code></td><td>Solo ve SU vendedor asignado, hace pedidos</td><td>Cliente final</td></tr>
+</table>
+
+<div class="box box-warn">
+  <div class="box-title">⚠️ Principio importante</div>
+  <strong>Aislamiento de cartera:</strong> un vendedor NO puede ver los clientes de otro vendedor. Un cliente NO puede ver otros vendedores. Cada query debe filtrar por la relación del usuario autenticado.
+</div>
+
+<!-- ═══════════════ 2. ARQUITECTURA ═══════════════ -->
+<div class="page-break"></div>
+<h2>2. Arquitectura del Microservicio</h2>
+
+<h3>2.1 Estructura de Carpetas</h3>
+<div class="tree">
+MicroServices/usuario-service/
+├── prisma/
+│   └── schema.prisma              ← Definición de tablas (fuente de verdad)
+├── src/
+│   ├── main.ts                    ← Punto de entrada (bootstrap)
+│   ├── app.module.ts              ← Módulo raíz
+│   ├── auth/
+│   │   └── auth.module.ts         ← Módulo de autenticación (login, register, JWT)
+│   ├── users/
+│   │   └── users.module.ts        ← Módulo de perfiles (CRUD, cartera, QR)
+│   └── common/
+│       ├── common.module.ts       ← Módulo global
+│       └── prisma/
+│           └── prisma.service.ts  ← Servicio de Prisma (conexión a DB)
+├── package.json                   ← Dependencias del servicio
+├── tsconfig.json                  ← TypeScript config
+└── nest-cli.json                  ← NestJS CLI config
+</div>
+
+<h3>2.2 Patrón NestJS: Module → Controller → Service</h3>
+<p>NestJS organiza el código en <strong>módulos</strong>. Cada módulo agrupa controladores (HTTP) y servicios (lógica de negocio).</p>
+
+<div class="box">
+  <div class="box-title">🔁 Flujo de una request</div>
+  <code>HTTP Request</code> → <strong>Controller</strong> (valida input) → <strong>Service</strong> (reglas de negocio) → <strong>Prisma</strong> (base de datos) → <strong>Event</strong> (Redis Stream) → Response
+</div>
+
+<h3>2.3 Archivo main.ts — Bootstrap de NestJS</h3>
+<pre><code>import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
+import { AppModule } from './app.module';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  app.setGlobalPrefix('api');
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,              // Elimina campos que no están en el DTO
+      forbidNonWhitelisted: true,   // Error si mandan campos extra
+      transform: true,              // Convierte strings a tipos (ej: "5" → 5)
+    }),
+  );
+
+  const port = process.env.PORT || 3001;
+  await app.listen(port);
+}
+bootstrap();</code></pre>
+
+<div class="box box-success">
+  <div class="box-title">✅ Buenas prácticas aplicadas</div>
+  <code>whitelist: true</code> + <code>forbidNonWhitelisted: true</code> evita que manden datos maliciosos.
+  <code>transform: true</code> convierte automáticamente tipos (query params string → number).
+</div>
+
+<h3>2.4 Dependencias (package.json)</h3>
+<table>
+  <tr><th>Paquete</th><th>Para qué sirve</th></tr>
+  <tr><td>@nestjs/jwt</td><td>Generar y validar tokens JWT</td></tr>
+  <tr><td>@nestjs/passport + passport + passport-jwt</td><td>Estrategias de autenticación (JWT Strategy)</td></tr>
+  <tr><td>@prisma/client</td><td>ORM para PostgreSQL</td></tr>
+  <tr><td>bcrypt</td><td>Hash de contraseñas (salt + hash)</td></tr>
+  <tr><td>class-validator + class-transformer</td><td>Validación de DTOs con decoradores</td></tr>
+  <tr><td>@agua/contracts</td><td>Tipos compartidos entre microservicios</td></tr>
+</table>
+
+<!-- ═══════════════ 3. MODELO DE DATOS ═══════════════ -->
+<div class="page-break"></div>
+<h2>3. Modelo de Datos — Prisma Schema</h2>
+
+<h3>3.1 La Decisión Arquitectónica Más Importante</h3>
+<p><strong>Problema original:</strong> los 3 roles (admin, vendedor, cliente) estaban en una sola tabla <code>USER</code> con 22 columnas, la mayoría <code>nullable</code>. Esto viola SRP (Single Responsibility): la misma tabla manejaba login + perfil de vendedor + perfil de cliente + relaciones.</p>
+
+<div class="box box-error">
+  <div class="box-title">❌ Tabla única — Antes (Anti-patrón)</div>
+  <pre style="font-size:8pt"><code>model User {
+  id          String    @id
+  email       String    // login
+  password    String    // login
+  role        UserRole
+  nombre      String?   // perfil
+  apellido    String?   // perfil
+  dni         String?   // SOLO cliente
+  telefono    String?   // ambos
+  empresa     String?   // SOLO vendedor
+  logo        String?   // SOLO vendedor
+  estado_vendedor VendedorEstado? // SOLO vendedor
+  ciudad_default String?  // SOLO vendedor
+  qr_token    String?   // SOLO vendedor
+  // ... 22 columnas, 14 nullable
+}</code></pre>
+  <p><strong>Problemas:</strong> columnas sin sentido para cada rol, validación compleja, riesgo de bugs, violación de SRP.</p>
+</div>
+
+<div class="box box-success">
+  <div class="box-title">✅ Tablas separadas — Ahora (SRP)</div>
+  <pre style="font-size:8pt"><code>// 1. Solo login
+model AuthUser {
+  id          String    @id
+  email       String    @unique
+  password    String
+  role        UserRole
+  is_active   Boolean
+  is_verified Boolean
+}
+
+// 2. Solo vendedor
+model Vendedor {
+  id              String    @id
+  auth_user_id    String    @unique  // FK → AuthUser
+  nombre          String
+  empresa         String?
+  estado          VendedorEstado
+  qr_token        String?   @unique
+}
+
+// 3. Solo cliente (con dirección completa)
+model Cliente {
+  id                String    @id
+  auth_user_id      String    @unique  // FK → AuthUser
+  nombre            String
+  dni               String?
+  tipo_factura      TipoFactura?
+  direccion_calle   String?
+  direccion_ciudad  String?
+  direccion_cp      String?
+  vendedor_id       String             // FK → Vendedor
+}
+
+// 4. Solo admin
+model SuperAdmin {
+  id           String  @id
+  auth_user_id String  @unique  // FK → AuthUser
+  nombre       String
+}
+
+// 5. Trazabilidad
+model AuditLog {
+  id         String  @id
+  usuario_id String? // FK → AuthUser (quién)
+  target_id  String? // FK → AuthUser (sobre quién)
+  accion     String  // "profile.updated", "client.assigned"
+  detalle    Json?   // diff de cambios
+  ip         String?
+}</code></pre>
+</div>
+
+<h3>3.2 Modelos Completos (Prisma)</h3>
+
+<p><span class="tag tag-schema">AUTH_USER</span> Solo credenciales de login.</p>
+<pre><code>model AuthUser {
+  id          String    @id @default(uuid()) @db.Uuid
+  email       String    @unique @db.VarChar(255)
+  password    String    @db.VarChar(255)      // bcrypt hash
+  role        UserRole                        // super_admin | vendedor | cliente
+  is_active   Boolean   @default(true)
+  is_verified Boolean   @default(false)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  vendedor    Vendedor?
+  cliente     Cliente?
+  super_admin SuperAdmin?
+  audit_logs  AuditLog[]   @relation("AuditLogActor")
+  audit_targets AuditLog[] @relation("AuditLogTarget")
+
+  @@map("AUTH_USER")
+}</code></pre>
+
+<p><span class="tag tag-schema">VENDEDOR</span> Datos específicos del vendedor + QR.</p>
+<pre><code>model Vendedor {
+  id              String         @id @default(uuid()) @db.Uuid
+  auth_user_id    String         @unique @db.Uuid
+  auth_user       AuthUser       @relation(fields: [auth_user_id], references: [id])
+  nombre          String         @db.VarChar(100)
+  apellido        String?        @db.VarChar(100)
+  telefono        String?        @db.VarChar(20)
+  empresa         String?        @db.VarChar(255)
+  logo            String?        @db.VarChar(500)
+  estado          VendedorEstado // pendiente | activo | inactivo | bloqueado
+  ciudad_default  String?        @db.VarChar(100)
+  zona_entrega    String?        @db.VarChar(100)
+  qr_token        String?        @unique @db.VarChar(50)
+
+  clientes        Cliente[]
+  cartera         Cartera[]          @relation("CarteraVendedor")
+  qr_codes        QrCode[]
+  links           LinkInvitacion[]
+
+  @@map("VENDEDOR")
+}</code></pre>
+
+<p><span class="tag tag-schema">CLIENTE</span> Perfil completo + dirección de entrega.</p>
+<pre><code>model Cliente {
+  id                  String    @id @default(uuid()) @db.Uuid
+  auth_user_id        String    @unique @db.Uuid
+  nombre              String    @db.VarChar(100)
+  apellido            String?   @db.VarChar(100)
+  dni                 String?   @db.VarChar(20)
+  telefono            String?   @db.VarChar(20)
+  tipo_factura        TipoFactura?  // B | C
+
+  // Dirección de entrega (estructurada, no JSON)
+  direccion_calle       String?  @db.VarChar(200)
+  direccion_numero      String?  @db.VarChar(20)
+  direccion_piso        String?  @db.VarChar(20)
+  direccion_referencia  String?  @db.VarChar(200)
+  direccion_barrio      String?  @db.VarChar(100)
+  direccion_ciudad      String?  @db.VarChar(100)
+  direccion_provincia   String?  @db.VarChar(100)
+  direccion_cp          String?  @db.VarChar(20)
+  latitud               Decimal? @db.Decimal(10, 7)
+  longitud              Decimal? @db.Decimal(10, 7)
+
+  vendedor_id    String    @db.Uuid     // FK → Vendedor
+  vendedor       Vendedor  @relation(fields: [vendedor_id], references: [id])
+
+  @@map("CLIENTE")
+}</code></pre>
+
+<div class="box box-warn">
+  <div class="box-title">🔑 ¿Por qué separamos dirección en columnas y no JSON?</div>
+  Porque podemos <strong>consultar por ciudad</strong> (<code>WHERE direccion_ciudad = 'Córdoba'</code>), <strong>indexar</strong> campos, y mantener integridad referencial. Si fuera JSON, no podríamos filtrar eficientemente.
+</div>
+
+<p><span class="tag tag-schema">AUDIT_LOG</span> Trazabilidad SIN MongoDB.</p>
+<pre><code>model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  usuario_id String?  @db.Uuid    // Quién ejecutó la acción
+  target_id  String?  @db.Uuid    // Sobre quién se actuó
+  accion     String   @db.VarChar(50)
+  detalle    Json?                // Datos extra / diff
+  ip         String?  @db.VarChar(45)
+  created_at DateTime @default(now())
+
+  actor   AuthUser? @relation("AuditLogActor", fields: [usuario_id], references: [id])
+  target  AuthUser? @relation("AuditLogTarget", fields: [target_id], references: [id])
+
+  @@map("AUDIT_LOG")
+}</code></pre>
+
+<p>Además, las tablas <strong>RELACION_CARTERA</strong>, <strong>QR_CODE</strong> y <strong>LINK_INVITACION</strong> completan el modelo de datos (ver <code>schema.prisma</code> completo).</p>
+
+<!-- ═══════════════ 4. DTOs ═══════════════ -->
+<div class="page-break"></div>
+<h2>4. DTOs y Contratos Compartidos</h2>
+
+<p>Todos los microservicios comparten tipos desde <code>packages/contracts/src/</code>. Esto garantiza que si un endpoint cambia su forma, TypeScript lo detecta al compilar.</p>
+
+<h3>4.1 Estructura del Paquete</h3>
+<div class="tree">
+packages/contracts/src/
+├── index.ts              ← Re-exporta todo
+├── enums.ts              ← Enums del sistema (UserRole, VendedorEstado, etc.)
+├── events.ts             ← Eventos para Redis Streams
+└── dto/
+    ├── common.dto.ts     ← DireccionEntrega, Pagination, ErrorResponse
+    ├── auth.dto.ts       ← LoginRequest, RegisterRequest, etc.
+    ├── user.dto.ts       ← UserProfile, ClienteProfile, Cartera, QR
+    ├── products.dto.ts   ← Productos (products-service)
+    ├── orders.dto.ts     ← Pedidos (orders-service)
+    ├── deliveries.dto.ts ← Entregas (entregas-service)
+    ├── notifications.dto.ts ← Activity logs
+    └── super-admin.dto.ts   ← Dashboard y gestión de admins
+</div>
+
+<h3>4.2 DTOs de Auth (login + register)</h3>
+<pre><code>// ─── Login ───
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  token: string;            // JWT de acceso
+  refreshToken: string;     // Para renovar el token
+  user: {
+    id: string;
+    email: string;
+    role: UserRole;
+    nombre?: string;
+    apellido?: string;
+  };
+}
+
+// ─── Registro (desde link público) ───
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  nombre: string;
+  role: UserRole.VENDEDOR | UserRole.CLIENTE;
+  qrToken?: string;         // Si viene de un QR de invitación
+}
+
+export interface RegisterResponse {
+  user: { id: string; email: string; role: UserRole };
+}</code></pre>
+
+<h3>4.3 DireccionEntrega (compartida entre servicios)</h3>
+<pre><code>// Se usa en: pedidos (snapshot), entregas (snapshot), perfil del cliente
+export interface DireccionEntrega {
+  calle: string;
+  numero: string;
+  pisoDepto?: string;
+  referencia?: string;
+  barrio?: string;       // Texto libre — no existe tabla barrios en MVP
+  ciudad?: string;
+  provincia?: string;
+  codigoPostal?: string;
+  latitude?: number;
+  longitude?: number;
+}</pre></code>
+
+<h3>4.4 Perfiles por Rol</h3>
+<pre><code>export interface UserProfile {
+  id: string;
+  email: string;
+  role: UserRole;
+  profile?: VendedorProfile | ClienteProfile;
+  // Usar narrowing: if (profile && 'empresa' in profile) → es vendedor
+}
+
+export interface VendedorProfile {
+  empresa?: string;
+  logo?: string;
+  estado: VendedorEstado;
+  qrCode?: string;
+  linkPublico?: string;
+  ciudadDefault?: string;
+}
+
+export interface ClienteProfile {
+  dni?: string;
+  tipoFactura?: TipoFactura;
+  direccionFacturacion?: string;
+  direccionEntrega?: DireccionEntrega;  // <-- dirección estructurada
+}</code></pre>
+
+<div class="box">
+  <div class="box-title">💡 Discriminated Union</div>
+  <code>UserProfile.profile</code> es una unión de <code>VendedorProfile | ClienteProfile</code>. Con TypeScript, usamos <code>if ('empresa' in profile)</code> para saber qué tipo es. Esto se llama <strong>narrowing</strong>.
+</div>
+
+<!-- ═══════════════ 5. FLUJO REGISTRO/LOGIN ═══════════════ -->
+<div class="page-break"></div>
+<h2>5. Flujo de Registro y Login (con código)</h2>
+
+<h3>5.1 Registro de Cliente (desde link QR)</h3>
+<ol>
+  <li>El vendedor genera un QR de invitación</li>
+  <li>El cliente escanea el QR y llega a un formulario de registro</li>
+  <li>El frontend envía <code>POST /api/auth/register</code> con <code>{ email, password, nombre, role: "cliente", qrToken }</code></li>
+  <li>El AuthService valida, hashea el password con bcrypt, y crea el <code>AuthUser</code></li>
+  <li>Según el <code>role</code>, crea el perfil correspondiente (<code>Cliente</code>)</li>
+  <li>Si viene con <code>qrToken</code>, busca el QR y asigna el vendedor automáticamente</li>
+  <li>Publica <code>UserCreatedEvent</code> en Redis Stream (auth-stream)</li>
+  <li>Devuelve <code>{ user: { id, email, role } }</code></li>
+</ol>
+
+<p><strong>Código conceptual del servicio:</strong></p>
+<pre><code>// auth.service.ts (estructura planeada)
+async register(dto: RegisterRequest) {
+  const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+  // 1. Crear AuthUser
+  const authUser = await this.prisma.authUser.create({
+    data: {
+      email: dto.email,
+      password: hashedPassword,
+      role: dto.role,
+    },
+  });
+
+  // 2. Crear perfil según rol
+  if (dto.role === UserRole.VENDEDOR) {
+    await this.prisma.vendedor.create({
+      data: {
+        authUserId: authUser.id,
+        nombre: dto.nombre,
+        estado: 'pendiente',  // requiere activación del admin
+      },
+    });
+  } else if (dto.role === UserRole.CLIENTE) {
+    // Buscar vendedor por qrToken
+    const qr = await this.prisma.qrCode.findUnique({ where: { codigo: dto.qrToken } });
+    await this.prisma.cliente.create({
+      data: {
+        authUserId: authUser.id,
+        nombre: dto.nombre,
+        vendedorId: qr?.vendedorId,
+      },
+    });
+  }
+
+  // 3. Publicar evento
+  await this.redis.xAdd(RedisStreams.AUTH, '*', {
+    data: JSON.stringify({
+      type: 'UserCreated',
+      userId: authUser.id,
+      email: authUser.email,
+      role: authUser.role,
+    } satisfies UserCreatedEvent),
+  });
+
+  return { user: { id: authUser.id, email: authUser.email, role: authUser.role } };
+}</code></pre>
+
+<h3>5.2 Login</h3>
+<ol>
+  <li>El usuario envía <code>POST /api/auth/login</code> con <code>{ email, password }</code></li>
+  <li>El AuthService busca el <code>AuthUser</code> por email</li>
+  <li>Compara el password con bcrypt</li>
+  <li>Si es válido, genera un JWT con <code>@nestjs/jwt</code> que incluye <code>{ sub: id, email, role }</code></li>
+  <li>Genera un refreshToken (otro JWT con expiración más larga)</li>
+  <li>Devuelve <code>{ token, refreshToken, user }</code></li>
+</ol>
+
+<pre><code>async login(dto: LoginRequest) {
+  const user = await this.prisma.authUser.findUnique({ where: { email: dto.email } });
+  if (!user) throw new UnauthorizedException('Credenciales inválidas');
+
+  const passwordValid = await bcrypt.compare(dto.password, user.password);
+  if (!passwordValid) throw new UnauthorizedException('Credenciales inválidas');
+
+  if (!user.is_active) throw new UnauthorizedException('Cuenta desactivada');
+
+  const payload = { sub: user.id, email: user.email, role: user.role };
+  const token = this.jwtService.sign(payload, { expiresIn: '24h' });
+  const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+
+  return { token, refreshToken, user: { id: user.id, email: user.email, role: user.role } };
+}</code></pre>
+
+<div class="box box-warn">
+  <div class="box-title">🔐 Seguridad</div>
+  <ul>
+    <li>bcrypt usa salt rounds = 10 (recomendado: 10-12)</li>
+    <li>JWT expira en 24h, refreshToken en 7d</li>
+    <li><strong>userId NUNCA viene del body</strong> — se extrae del token JWT</li>
+    <li>Las contraseñas NUNCA se devuelven en respuestas</li>
+  </ul>
+</div>
+
+<h3>5.3 Protección de Rutas con JWT Guard</h3>
+<pre><code>// jwt-auth.guard.ts
+@Injectable()
+export class JwtAuthGuard extends AuthGuard('jwt') {}
+
+// Uso en controller:
+@Controller('users')
+export class UsersController {
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  getProfile(@Req() req) {
+    // req.user viene del token JWT (inyectado por Passport)
+    return this.usersService.getProfile(req.user.sub);
+  }
+}</code></pre>
+
+<!-- ═══════════════ 6. EVENTOS ═══════════════ -->
+<div class="page-break"></div>
+<h2>6. Eventos con Redis Streams</h2>
+
+<p>Los microservicios se comunican de forma <strong>asíncrona</strong> mediante Redis Streams. Cuando pasa algo importante (ej: se crea un usuario), el servicio PUBLICAcute un evento en su stream. Los demás servicios CONSUMEN si les interesa.</p>
+
+<h3>6.1 Streams del Sistema</h3>
+<table>
+  <tr><th>Stream</th><th>Publica</th><th>Eventos</th><th>Consumidores</th></tr>
+  <tr><td><code>auth-stream</code></td><td>usuario-service</td><td>UserCreated</td><td>notifications</td></tr>
+  <tr><td><code>user-stream</code></td><td>usuario-service</td><td>VendedorStatusChanged, CarteraClienteAdded</td><td>notifications</td></tr>
+  <tr><td><code>products-stream</code></td><td>products-service</td><td>ProductUpdated, ProductDeleted</td><td>notifications</td></tr>
+  <tr><td><code>orders-stream</code></td><td>orders-service</td><td>OrderCreated, OrderStatusChanged</td><td>entregas, notifications</td></tr>
+  <tr><td><code>deliveries-stream</code></td><td>entregas-service</td><td>DeliveryStarted, DeliveryCompleted</td><td>notifications</td></tr>
+</table>
+
+<h3>6.2 Definición de Eventos (events.ts)</h3>
+<pre><code>// Base: todos los eventos tienen timestamp ISO 8601
+export interface BaseEvent {
+  timestamp: string;
+}
+
+// Auth Stream
+export interface UserCreatedEvent extends BaseEvent {
+  type: 'UserCreated';
+  userId: string;
+  email: string;
+  role: UserRole;
+  qrToken?: string;
+}
+
+// User Stream
+export interface VendedorStatusChangedEvent extends BaseEvent {
+  type: 'VendedorStatusChanged';
+  vendedorId: string;
+  estadoAnterior: VendedorEstado;
+  estadoNuevo: VendedorEstado;
+}
+
+export interface CarteraClienteAddedEvent extends BaseEvent {
+  type: 'CarteraClienteAdded';
+  vendedorId: string;
+  clienteId: string;
+}
+
+// Uniones por stream (para routing tipado)
+export type AuthEvent = UserCreatedEvent;
+export type UserEvent = VendedorStatusChangedEvent | CarteraClienteAddedEvent;
+
+// Unión global
+export type AguaFressEvent = AuthEvent | UserEvent | ProductEvent | OrderEvent | DeliveryEvent;</code></pre>
+
+<h3>6.3 ¿Por qué Redis Streams y no RabbitMQ?</h3>
+<table>
+  <tr><th></th><th>Redis Streams</th><th>RabbitMQ</th></tr>
+  <tr><td>Complejidad</td><td>Baja (Redis ya está en el stack)</td><td>Alta (servidor nuevo)</td></tr>
+  <tr><td>Persistencia</td><td>✅ Sí (redis streams son persistentes)</td><td>✅ Sí</td></tr>
+  <tr><td>Consumer Groups</td><td>✅ Sí</td><td>✅ Sí</td></tr>
+  <tr><td>Mensajes fallidos</td><td>Se manejan con pending entries</td><td>Dead letter queue dedicada</td></tr>
+  <tr><td>Curva de aprendizaje</td><td>Baja (el equipo ya conoce Redis)</td><td>Media-alta</td></tr>
+</table>
+
+<div class="box box-success">
+  <div class="box-title">✅ Decisión técnica</div>
+  Como Redis ya está en el stack para caché, usar Redis Streams evita agregar otro servicio (RabbitMQ, Kafka). Para el volumen de MVP (cientos de pedidos/día, no millones), es más que suficiente.
+</div>
+
+<!-- ═══════════════ 7. PROBLEMAS ═══════════════ -->
+<div class="page-break"></div>
+<h2>7. Problemas Encontrados y Soluciones</h2>
+
+<div class="problem">
+  <h4>Problema 1: Tabla única USER con 22 columnas nullable</h4>
+  <p class="context"><span class="tag tag-problema">Arquitectura</span> <strong>Síntoma:</strong> muchos campos opcionales que solo aplican a un rol, validación compleja, riesgo de mezclar datos en queries.</p>
+  <p class="solution"><strong>Solución:</strong> Dividir en 4 tablas (AuthUser, Vendedor, Cliente, SuperAdmin). Cada tabla solo tiene los campos que necesita. Las relaciones 1:1 se manejan con <code>@unique</code> en la FK. <a href="#tabla-unica">Ver sección 3.1</a></p>
+  <p><strong>Por qué funciona:</strong> SRP puro. AuthUser solo sabe de login. Vendedor solo sabe de vender. Cliente solo sabe de comprar. Si mañana cambia la lógica de login, no tocamos la tabla de vendedores.</p>
+</div>
+
+<div class="problem">
+  <h4>Problema 2: Direcciones incompletas en Cliente</h4>
+  <p class="context"><span class="tag tag-problema">Modelo de datos</span> <strong>Síntoma:</strong> la documentación requería ciudad, provincia, CP para la dirección de entrega, pero el schema original no los tenía. Tampoco <code>tipoFactura</code>.</p>
+  <p class="solution"><strong>Solución:</strong> Agregar 10 columnas de dirección estructurada a la tabla <code>CLIENTE</code> (calle, número, piso, referencia, barrio, ciudad, provincia, CP, latitud, longitud) más <code>tipo_factura</code> (enum B|C).</p>
+  <p><strong>Alternativa descartada:</strong> guardar dirección como JSON. Se descartó porque no permite consultar por ciudad ni indexar.</p>
+  <p><strong>Alternativa descartada v2:</strong> tabla separada <code>DIRECCION</code>. Se descartó porque en MVP el cliente tiene 1 sola dirección. Si en V2.0 necesita varias, se migra.</p>
+</div>
+
+<div class="problem">
+  <h4>Problema 3: npm → pnpm — migración del monorepo</h4>
+  <p class="context"><span class="tag tag-problema">Tooling</span> <strong>Síntoma:</strong> el proyecto usaba npm workspaces, que es lento, no tiene content-addressable store, y el <code>node_modules</code> pesaba mucho.</p>
+  <p class="solution"><strong>Solución:</strong> Migrar a pnpm 11.5. Crear <code>pnpm-workspace.yaml</code>, cambiar <code>"@agua/contracts": "*"</code> a <code>"workspace:*"</code>, usar <code>pnpm --filter</code> en vez de <code>npm -w</code>.</p>
+  <p><strong>Problema específico:</strong> pnpm bloquea los postinstall scripts por seguridad. Hubo que ejecutar <code>pnpm approve-builds</code> para prisma, bcrypt, nestjs/core.</p>
+  <p><strong>Otro problema:</strong> pnpm ignora el campo <code>"workspaces"</code> de <code>package.json</code>. Requiere <code>pnpm-workspace.yaml</code>.</p>
+</div>
+
+<div class="problem">
+  <h4>Problema 4: Names de relaciones inconsistentes en Prisma</h4>
+  <p class="context"><span class="tag tag-problema">Prisma</span> <strong>Síntoma:</strong> al ejecutar <code>prisma generate</code>, Prisma tiraba error <code>"CarteraVendedor is neither a built-in type, nor refers to another model"</code>.</p>
+  <p class="solution"><strong>Solución:</strong> El modelo <code>Vendedor</code> tenía <code>cartera CarteraVendedor[]</code> sin especificar que <code>CarteraVendedor</code> es el <strong>nombre de la relación</strong> (no un modelo). Se cambió a <code>cartera Cartera[] @relation("CarteraVendedor")</code>.</p>
+  <p><strong>Por qué pasa:</strong> En Prisma, las relaciones tienen dos partes: (1) el modelo destino y (2) el nombre de la relación (opcional, necesario si hay múltiples relaciones entre mismos modelos). Si ponés <code>CarteraVendedor[]</code> sin <code>@relation()</code>, Prisma busca un modelo llamado <code>CarteraVendedor</code> que no existe.</p>
+</div>
+
+<div class="problem">
+  <h4>Problema 5: La migración de Prisma falla sin base de datos local</h4>
+  <p class="context"><span class="tag tag-problema">Entorno</span> <strong>Síntoma:</strong> <code>prisma migrate dev</code> falla con <code>P1001: Can't reach database server at localhost:5433</code>.</p>
+  <p class="solution"><strong>Solución:</strong> La migración se ejecuta cuando el entorno Docker está levantado. Mientras tanto, <code>prisma generate</code> funciona sin base de datos porque solo genera el cliente TypeScript. En desarrollo, el flujo es:</p>
+  <pre><code>docker compose --profile adrian up -d     # levanta PostgreSQL
+pnpm --filter @agua/usuario-service exec prisma migrate dev
+pnpm run dev                                # arranca el servicio</code></pre>
+</div>
+
+<div class="problem">
+  <h4>Problema 6: tsconfig paths para @agua/contracts</h4>
+  <p class="context"><span class="tag tag-problema">TypeScript</span> <strong>Síntoma:</strong> los servicios importan de <code>@agua/contracts</code> pero es un workspace local, no está publicado en npm.</p>
+  <pre><code>// tsconfig.json de usuario-service
+"paths": {
+  "@agua/contracts": ["../../packages/contracts/src"]
+}</code></pre>
+  <p><strong>Solución:</strong> TypeScript resuelve la importación via <code>paths</code> + pnpm linkea el workspace con <code>workspace:*</code>. NestJS build lo resuelve automáticamente.</p>
+</div>
+
+<div class="problem">
+  <h4>Problema 7: ¿Dónde van los logs de auditoría?</h4>
+  <p class="context"><span class="tag tag-problema">Arquitectura</span> <strong>Síntoma:</strong> el notifications-service registra logs de sistema en MongoDB (eventos de dominio), pero no hay trazabilidad para acciones internas como "quién cambió el perfil de un usuario".</p>
+  <p class="solution"><strong>Solución:</strong> Dos niveles de log:</p>
+  <table>
+    <tr><th>Nivel</th><th>Dónde</th><th>Qué registra</th><th>Backend</th></tr>
+    <tr><td><strong>Sistema</strong></td><td>notifications-service</td><td>Eventos de dominio (UserCreated, OrderCreated)</td><td>MongoDB</td></tr>
+    <tr><td><strong>Auditoría</strong></td><td>usuario-service</td><td>Cambios internos (update profile, assign client, login attempts)</td><td>PostgreSQL (tabla AUDIT_LOG)</td></tr>
+  </table>
+  <p>La tabla <code>AUDIT_LOG</code> se creó en PostgreSQL del propio servicio. No necesita MongoDB. Se escribe con <code>this.prisma.auditLog.create(...)</code>.</p>
+</div>
+
+<div class="problem">
+  <h4>Problema 8: Eventos no documentados o inconsistentes</h4>
+  <p class="context"><span class="tag tag-problema">Documentación</span> <strong>Síntoma:</strong> el evento <code>DeliveryStatusChangedEvent</code> existía en <code>events.ts</code> pero no estaba documentado. <code>OrderConfirmed</code> como evento separado no existía (se usa <code>OrderStatusChanged</code> con filtro de estado).</p>
+  <p class="solution"><strong>Solución:</strong> Sincronizar <code>events.ts</code> con la documentación. Usar union types por stream para que cada consumer solo vea los eventos que le interesan (ISP).</p>
+  <pre><code>// Cada servicio importa solo su unión:
+import type { UserEvent } from '@agua/contracts/events';
+// ↑ SOLO ve VendedorStatusChanged y CarteraClienteAdded</code></pre>
+</div>
+
+<!-- ═══════════════ 8. PRESENTACIÓN ═══════════════ -->
+<div class="page-break"></div>
+<h2>8. Puntos Clave para la Presentación</h2>
+
+<div class="box">
+  <div class="box-title">🎯 Argumentos fuertes para defender</div>
+  <ol>
+    <li><strong>SRP en el modelo de datos:</strong> "Dividimos la tabla USER en 4 porque cada rol tiene responsabilidades distintas. Si mañana cambia la lógica de login, no tocamos vendedores ni clientes."</li>
+    <li><strong>Validación en el pipe global:</strong> "Usamos ValidationPipe con whitelist + forbidNonWhitelisted. Esto evita que un atacante mande campos extra en el body."</li>
+    <li><strong>Contratos tipados:</strong> "Todos los microservicios comparten tipos desde @agua/contracts. Si alguien cambia un DTO, TypeScript lo detecta al compilar. No hay sorpresas en runtime."</li>
+    <li><strong>Aislamiento de cartera:</strong> "Cada vendedor solo ve sus clientes. Cada query incluye el filtro por vendedor_id. Es la regla de negocio más importante."</li>
+    <li><strong>Redis Streams vs RabbitMQ:</strong> "Elegimos Streams porque Redis ya estaba en el stack para caché. No necesitamos otro servidor. Para el volumen del MVP alcanza."</li>
+    <li><strong>pnpm:</strong> "Migramos de npm a pnpm. El node_modules se optimiza con content-addressable store, ocupa menos disco y las instalaciones son más rápidas."</li>
+  </ol>
+</div>
+
+<h3>8.1 Preguntas Frecuentes (preparate)</h3>
+<div class="box box-warn">
+  <p><strong>🤔 ¿Por qué no usaste MongoDB para las direcciones?</strong></p>
+  <p>Porque la dirección del cliente necesita consultarse por ciudad (<code>WHERE direccion_ciudad = 'Córdoba'</code>). Con columnas estructuradas podemos indexar. Con JSON dentro de MongoDB, las consultas son más lentas y complejas.</p>
+</div>
+
+<div class="box box-warn">
+  <p><strong>🤔 ¿Por qué separar en tablas si después igual hacés joins?</strong></p>
+  <p>Por SRP. La tabla única tiene 22 columnas, 14 nullable, y cada query tiene que filtrar por <code>role</code> para no mezclar vendedores con clientes. Con tablas separadas, cada consulta va a la tabla correcta directamente. Los joins son ocasionales (cuando necesitamos email + perfil).</p>
+</div>
+
+<div class="box box-warn">
+  <p><strong>🤔 ¿Por qué NestJS y no Express?</strong></p>
+  <p>NestJS provee: inyección de dependencias, módulos, guards para auth, pipes para validación, interceptors. En Express tendríamos que construir todo eso manualmente. Para un proyecto con 6 microservicios, NestJS reduce mucho el boilerplate.</p>
+</div>
+
+<div class="box box-warn">
+  <p><strong>🤔 ¿Qué pasa si expira el JWT?</strong></p>
+  <p>El JWT expira a las 24h. El frontend usa el refreshToken (7 días) para pedir uno nuevo sin que el usuario tenga que loguearse de nuevo. Si también expiró el refreshToken, tiene que hacer login otra vez.</p>
+</div>
+
+<div class="box box-warn">
+  <p><strong>🤔 ¿Cómo manejás errores de base de datos?</strong></p>
+  <p>NestJS tiene Exception Filters globales. Prisma lanza excepciones tipadas (P2002 = unique constraint, P2025 = not found). Los capturamos y devolvemos un <code>ErrorResponse</code> estandarizado con statusCode, message y details.</p>
+</div>
+
+<h3>8.2 Comandos Útiles para la Demo</h3>
+<table>
+  <tr><th>Comando</th><th>Qué hace</th></tr>
+  <tr><td><code>pnpm install</code></td><td>Instala dependencias de todos los servicios</td></tr>
+  <tr><td><code>pnpm --filter @agua/usuario-service exec prisma generate</code></td><td>Genera Prisma Client desde el schema</td></tr>
+  <tr><td><code>pnpm --filter @agua/usuario-service exec prisma migrate dev</code></td><td>Ejecuta migraciones en la DB</td></tr>
+  <tr><td><code>pnpm run dev</code></td><td>Arranca el servicio en modo watch</td></tr>
+  <tr><td><code>pnpm run build</code></td><td>Compila contracts + servicios</td></tr>
+  <tr><td><code>docker compose --profile adrian up -d</code></td><td>Levanta PostgreSQL + Redis</td></tr>
+</table>
+
+<hr style="margin-top:30px;">
+<p style="text-align:center;font-size:8pt;color:#64748b;">
+  AguaFress — Documentación de Estudio · Desarrollo Web 2 · Junio 2026
+</p>
+
+</body>
+</html>
