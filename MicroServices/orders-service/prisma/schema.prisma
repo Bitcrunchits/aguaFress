@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderEstado {
+  pendiente
+  confirmado
+  preparando
+  enviado
+  entregado
+  cancelado
+}
+
+enum MetodoPago {
+  efectivo
+  transferencia
+  mercadopago
+}
+
+model Cart {
+  id        String     @id @default(uuid()) @db.Uuid
+  userId    String     @map("user_id") @db.VarChar(100)
+  activo    Boolean    @default(true)
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+  items     CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(uuid()) @db.Uuid
+  cartId    String   @map("cart_id") @db.Uuid
+  productId String   @map("product_id") @db.VarChar(100)
+  cantidad  Int      @default(1)
+  precioUnitario Decimal @map("precio_unitario") @db.Decimal(10, 2)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  cart Cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  @@map("cart_items")
+}
+
+model Order {
+  id            String      @id @default(uuid()) @db.Uuid
+  userId        String      @map("user_id") @db.VarChar(100)
+  estado        OrderEstado @default(pendiente)
+  total         Decimal     @db.Decimal(10, 2)
+  metodoPago    MetodoPago  @map("metodo_pago")
+  direccion     String      @db.Text
+  notas         String?     @db.Text
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  items         OrderItem[]
+  invoices      Invoice[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String   @id @default(uuid()) @db.Uuid
+  orderId   String   @map("order_id") @db.Uuid
+  productId String   @map("product_id") @db.VarChar(100)
+  nombre    String   @db.VarChar(200)
+  cantidad  Int      @default(1)
+  precioUnitario Decimal @map("precio_unitario") @db.Decimal(10, 2)
+  subtotal  Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+
+model Invoice {
+  id        String   @id @default(uuid()) @db.Uuid
+  orderId   String   @map("order_id") @db.Uuid
+  numero    String   @db.VarChar(50)
+  total     Decimal  @db.Decimal(10, 2)
+  pdfUrl    String?  @map("pdf_url") @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("invoices")
+}

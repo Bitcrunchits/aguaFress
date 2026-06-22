@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DeliveryEstado {
+  pendiente
+  asignado
+  en_curso
+  entregado
+  fallido
+}
+
+model Delivery {
+  id          String        @id @default(uuid()) @db.Uuid
+  orderId     String        @map("order_id") @db.VarChar(100)
+  vendedorId  String?       @map("vendedor_id") @db.VarChar(100)
+  estado      DeliveryEstado @default(pendiente)
+  direccion   String        @db.Text
+  latitud     Decimal?      @db.Decimal(10, 7)
+  longitud    Decimal?      @db.Decimal(10, 7)
+  notas       String?       @db.Text
+  fechaAsignado DateTime?   @map("fecha_asignado")
+  fechaEntregado DateTime?  @map("fecha_entregado")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  @@map("deliveries")
+}

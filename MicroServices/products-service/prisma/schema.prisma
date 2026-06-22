@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  super_admin
+  vendedor
+  cliente
+}
+
+model Category {
+  id        String    @id @default(uuid()) @db.Uuid
+  nombre    String    @db.VarChar(100)
+  descripcion String? @db.Text
+  activo    Boolean   @default(true)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  products  Product[]
+
+  @@map("categories")
+}
+
+model Brand {
+  id        String    @id @default(uuid()) @db.Uuid
+  nombre    String    @db.VarChar(100)
+  descripcion String? @db.Text
+  activo    Boolean   @default(true)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  products  Product[]
+
+  @@map("brands")
+}
+
+model Product {
+  id          String   @id @default(uuid()) @db.Uuid
+  nombre      String   @db.VarChar(200)
+  descripcion String?  @db.Text
+  precio      Decimal  @db.Decimal(10, 2)
+  stock       Int      @default(0)
+  imagen_url  String?  @db.Text
+  activo      Boolean  @default(true)
+  categoryId  String   @map("category_id") @db.Uuid
+  brandId     String?  @map("brand_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  category Category @relation(fields: [categoryId], references: [id])
+  brand    Brand?   @relation(fields: [brandId], references: [id])
+
+  @@map("products")
+}
