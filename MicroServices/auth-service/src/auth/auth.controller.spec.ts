@@ -2,6 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ClientProxy } from '@nestjs/microservices';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { UserRole } from '@agua/contracts';
+import type { RegisterResponse } from '@agua/contracts';
+import { PrismaService } from '../common/prisma/prisma.service';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -13,12 +16,20 @@ describe('AuthController', () => {
     close: jest.fn(),
   };
 
+  const mockPrisma = {
+    user: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+    },
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [
         AuthService,
         { provide: 'USER_SERVICE', useValue: mockUserClient },
+        { provide: PrismaService, useValue: mockPrisma },
       ],
     }).compile();
 
@@ -28,13 +39,21 @@ describe('AuthController', () => {
 
   describe('message patterns', () => {
     it('auth.register delegates to AuthService.register', async () => {
-      const dto = { email: 'test@test.com', password: '123456' };
-      jest.spyOn(service, 'register').mockResolvedValue({ message: 'ok' });
+      const dto = {
+        email: 'test@test.com',
+        password: '123456',
+        nombre: 'Test User',
+        role: UserRole.CLIENTE as UserRole.VENDEDOR | UserRole.CLIENTE,
+      };
+      const expected: RegisterResponse = {
+        user: { id: 'uuid', email: dto.email, role: dto.role },
+      };
+      jest.spyOn(service, 'register').mockResolvedValue(expected);
 
       const result = await controller.register(dto);
 
       expect(service.register).toHaveBeenCalledWith(dto);
-      expect(result).toEqual({ message: 'ok' });
+      expect(result).toEqual(expected);
     });
 
     it('auth.login delegates to AuthService.login', async () => {

@@ -10,6 +10,6 @@ module.exports = {
   coverageDirectory: '../coverage',
   testEnvironment: 'node',
   moduleNameMapper: {
-    '^@agua/contracts$': '<rootDir>/../../packages/contracts/src',
+    '^@agua/contracts$': '<rootDir>/../../../packages/contracts/src',
   },
 };
