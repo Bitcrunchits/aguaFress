@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ENUMS DEL SISTEMA
+// ═══════════════════════════════════════════════════════════════
+
+enum VendedorEstado {
+  pendiente
+  activo
+  inactivo
+  bloqueado
+}
+
+enum TipoFactura {
+  B
+  C
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  user-service (PERFILES, CARTERA, QR, AUDITORÍA)
+//  Sin relaciones Prisma entre tablas — referencias sueltas
+//  porque auth_user_id apunta a DB separada de auth-service
+// ═══════════════════════════════════════════════════════════════
+
+model Vendedor {
+  id             String        @id @default(uuid()) @db.Uuid
+  auth_user_id   String        @unique @db.VarChar(255)
+  nombre         String        @db.VarChar(100)
+  apellido       String?       @db.VarChar(100)
+  telefono       String?       @db.VarChar(20)
+  empresa        String?       @db.VarChar(255)
+  logo           String?       @db.VarChar(500)
+  estado         VendedorEstado
+  ciudad_default String?       @db.VarChar(100)
+  zona_entrega   String?       @db.VarChar(100)
+  qr_token       String?       @unique @db.VarChar(50)
+  created_at     DateTime      @default(now())
+  updated_at     DateTime      @updatedAt
+
+  @@map("VENDEDOR")
+}
+
+model Cliente {
+  id                    String   @id @default(uuid()) @db.Uuid
+  auth_user_id          String   @unique @db.VarChar(255)
+  nombre                String   @db.VarChar(100)
+  apellido              String?  @db.VarChar(100)
+  dni                   String?  @db.VarChar(20)
+  telefono              String?  @db.VarChar(20)
+  tipo_factura          TipoFactura?
+
+  // Dirección de entrega por defecto
+  direccion_calle       String?  @db.VarChar(200)
+  direccion_numero      String?  @db.VarChar(20)
+  direccion_piso        String?  @db.VarChar(20)
+  direccion_referencia  String?  @db.VarChar(200)
+  direccion_barrio      String?  @db.VarChar(100)
+  direccion_ciudad      String?  @db.VarChar(100)
+  direccion_provincia   String?  @db.VarChar(100)
+  direccion_cp          String?  @db.VarChar(20)
+  latitud               Decimal? @db.Decimal(10, 7)
+  longitud              Decimal? @db.Decimal(10, 7)
+
+  vendedor_id String @db.VarChar(255)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("CLIENTE")
+}
+
+model SuperAdmin {
+  id           String   @id @default(uuid()) @db.Uuid
+  auth_user_id String   @unique @db.VarChar(255)
+  nombre       String   @db.VarChar(100)
+  apellido     String?  @db.VarChar(100)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@map("SUPER_ADMIN")
+}
+
+model Cartera {
+  id          String   @id @default(uuid()) @db.Uuid
+  vendedor_id String   @db.VarChar(255)
+  cliente_id  String   @db.VarChar(255)
+  activo      Boolean  @default(true)
+  created_at  DateTime @default(now())
+
+  @@unique([vendedor_id, cliente_id])
+  @@map("RELACION_CARTERA")
+}
+
+model QrCode {
+  id          String   @id @default(uuid()) @db.Uuid
+  vendedor_id String   @db.VarChar(255)
+  codigo      String   @unique @db.VarChar(50)
+  activo      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  expires_at  DateTime
+
+  @@map("QR_CODE")
+}
+
+model LinkInvitacion {
+  id          String   @id @default(uuid()) @db.Uuid
+  vendedor_id String   @db.VarChar(255)
+  token       String   @unique @db.VarChar(50)
+  activo      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  expires_at  DateTime
+
+  @@map("LINK_INVITACION")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  usuario_id String?  @db.VarChar(255)
+  target_id  String?  @db.VarChar(255)
+  accion     String   @db.VarChar(50)
+  detalle    Json?
+  ip         String?  @db.VarChar(45)
+  created_at DateTime @default(now())
+
+  @@map("AUDIT_LOG")
+}

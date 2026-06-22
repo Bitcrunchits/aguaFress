@@ -33,7 +33,7 @@ export interface BaseEvent {
 }
 
 // ════════════════════════════════════════════════
-//  AUTH STREAM (usuario-service, módulo auth)
+//  AUTH STREAM (auth-service)
 // ════════════════════════════════════════════════
 
 export interface UserCreatedEvent extends BaseEvent {
@@ -41,6 +41,8 @@ export interface UserCreatedEvent extends BaseEvent {
   userId: string;
   email: string;
   role: UserRole;
+  /** Nombre completo del usuario (se pasa a user-service para crear perfil) */
+  nombre: string;
   /** Solo si el registro viene de link QR público */
   qrToken?: string;
 }

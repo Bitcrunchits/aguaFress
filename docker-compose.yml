@@ -1,0 +1,303 @@
+# ───────────────────────────────────────────────────────────────
+#  AguaFress — Docker Compose (desarrollo)
+#  ───────────────────────────────────────────────────────────────
+#  Uso por perfil:
+#    docker compose --profile adrian up -d        → Adrián (auth + user)
+#    docker compose --profile emiliano up -d      → Emiliano (products)
+#    docker compose --profile agustin up -d       → Agustín (orders + notifications + gateway)
+#    docker compose --profile milagros up -d      → Milagros (entregas)
+#    docker compose --profile all up -d           → TODO (integración)
+#    docker compose up -d redis mongo             → solo infra compartida
+# ───────────────────────────────────────────────────────────────
+
+services:
+  # ═══════════════════════════════════════════════════════════════
+  #  INFRAESTRUCTURA COMPARTIDA (sin perfil — siempre disponible)
+  # ═══════════════════════════════════════════════════════════════
+
+  redis:
+    image: redis:7-alpine
+    container_name: agua-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - agua-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7
+    container_name: agua-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - agua-mongo-data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ═══════════════════════════════════════════════════════════════
+  #  BASES DE DATOS POR SERVICIO (cada MS con su propio PostgreSQL)
+  # ═══════════════════════════════════════════════════════════════
+
+  postgres-auth:
+    image: postgres:15-alpine
+    container_name: agua-pg-auth
+    profiles: [adrian, all]
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: agua_auth
+    volumes:
+      - pg-auth-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d agua_auth"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  postgres-user:
+    image: postgres:15-alpine
+    container_name: agua-pg-user
+    profiles: [adrian, all]
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: agua_user
+    volumes:
+      - pg-user-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d agua_user"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  postgres-products:
+    image: postgres:15-alpine
+    container_name: agua-pg-products
+    profiles: [emiliano, all]
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: agua_products
+    volumes:
+      - pg-products-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d agua_products"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  postgres-orders:
+    image: postgres:15-alpine
+    container_name: agua-pg-orders
+    profiles: [agustin, all]
+    ports:
+      - "5436:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: agua_orders
+    volumes:
+      - pg-orders-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d agua_orders"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  postgres-entregas:
+    image: postgres:15-alpine
+    container_name: agua-pg-entregas
+    profiles: [milagros, all]
+    ports:
+      - "5437:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: agua_entregas
+    volumes:
+      - pg-entregas-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d agua_entregas"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ═══════════════════════════════════════════════════════════════
+  #  MICROSERVICIOS
+  # ═══════════════════════════════════════════════════════════════
+
+  # ─── Adrián: auth-service ──────────────────────────────────
+  auth-service:
+    profiles: [adrian, all]
+    build:
+      context: .
+      dockerfile: MicroServices/auth-service/Dockerfile
+    container_name: agua-auth-service
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@postgres-auth:5432/agua_auth"
+      JWT_SECRET: "aguafress-dev-secret-no-usar-en-prod"
+      JWT_EXPIRATION: "24h"
+      REDIS_URL: "redis://redis:6379"
+      USER_SERVICE_HOST: "user-service"
+      PORT: 3001
+      NODE_ENV: development
+    depends_on:
+      postgres-auth:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ─── Adrián: user-service ───────────────────────────────────
+  user-service:
+    profiles: [adrian, all]
+    build:
+      context: .
+      dockerfile: MicroServices/user-service/Dockerfile
+    container_name: agua-user-service
+    ports:
+      - "3002:3002"
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@postgres-user:5432/agua_user"
+      REDIS_URL: "redis://redis:6379"
+      PORT: 3002
+      NODE_ENV: development
+    depends_on:
+      postgres-user:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ─── Emiliano: products-service ─────────────────────────────
+  products-service:
+    profiles: [emiliano, all]
+    build:
+      context: .
+      dockerfile: MicroServices/products-service/Dockerfile
+    container_name: agua-products-service
+    ports:
+      - "3003:3003"
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@postgres-products:5432/agua_products"
+      REDIS_URL: "redis://redis:6379"
+      PORT: 3003
+      NODE_ENV: development
+    depends_on:
+      postgres-products:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ─── Agustín: orders-service ────────────────────────────────
+  orders-service:
+    profiles: [agustin, all]
+    build:
+      context: .
+      dockerfile: MicroServices/orders-service/Dockerfile
+    container_name: agua-orders-service
+    ports:
+      - "3004:3004"
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@postgres-orders:5432/agua_orders"
+      REDIS_URL: "redis://redis:6379"
+      PORT: 3004
+      NODE_ENV: development
+    depends_on:
+      postgres-orders:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ─── Milagros: entregas-service ─────────────────────────────
+  entregas-service:
+    profiles: [milagros, all]
+    build:
+      context: .
+      dockerfile: MicroServices/entregas-service/Dockerfile
+    container_name: agua-entregas-service
+    ports:
+      - "3005:3005"
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@postgres-entregas:5432/agua_entregas"
+      REDIS_URL: "redis://redis:6379"
+      PORT: 3005
+      NODE_ENV: development
+    depends_on:
+      postgres-entregas:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ─── Agustín: notifications-service ─────────────────────────
+  notifications-service:
+    profiles: [agustin, all]
+    build:
+      context: .
+      dockerfile: MicroServices/notifications-service/Dockerfile
+    container_name: agua-notifications-service
+    ports:
+      - "3006:3006"
+    environment:
+      MONGODB_URL: "mongodb://mongo:27017/agua_logs"
+      REDIS_URL: "redis://redis:6379"
+      PORT: 3006
+      NODE_ENV: development
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ─── Agustín: gateway ───────────────────────────────────────
+  gateway:
+    profiles: [agustin, all]
+    build:
+      context: .
+      dockerfile: MicroServices/gateway/Dockerfile
+    container_name: agua-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      REDIS_URL: "redis://redis:6379"
+      PORT: 3000
+      NODE_ENV: development
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  agua-redis-data:
+  agua-mongo-data:
+  pg-auth-data:
+  pg-user-data:
+  pg-products-data:
+  pg-orders-data:
+  pg-entregas-data:

@@ -1,9 +1,10 @@
-// ─── usuario-service (módulo auth) ───
-// Puertos: 3001 (mismo MS que users)
-// Base de datos: PostgreSQL (schema: auth)
+// ─── auth-service ───
+// Puerto: 3001
+// Base de datos: PostgreSQL 5433
 //
 // IMPORTANTE: userId NUNCA viene del body. Se extrae del token JWT
 // en el middleware del Gateway o del propio servicio.
+// LoginResponse consulta a user-service via TCP para obtener nombre/apellido.
 
 import { UserRole } from '../enums';
 
