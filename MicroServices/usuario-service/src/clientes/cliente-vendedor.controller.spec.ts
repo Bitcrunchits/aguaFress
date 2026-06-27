@@ -14,11 +14,7 @@ describe('ClienteVendedorController', () => {
   let controller: ClienteVendedorController;
   let service: jest.Mocked<typeof mockClientesService>;
 
-  const mockUser = {
-    id: 'user-1',
-    email: 'vendedor@test.com',
-    role: 'vendedor',
-  };
+  const mockUserId = 'user-1';
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -35,7 +31,7 @@ describe('ClienteVendedorController', () => {
   });
 
   describe('listMios', () => {
-    it('delega a ClientesService.listMios con user.id y filtros', async () => {
+    it('delega a ClientesService.listMios con userId y filtros', async () => {
       const filters: ListClientesDto = {
         page: 1,
         limit: 10,
@@ -49,9 +45,9 @@ describe('ClienteVendedorController', () => {
       };
       mockClientesService.listMios.mockResolvedValue(expected);
 
-      const result = await controller.listMios(mockUser, filters);
+      const result = await controller.listMios(mockUserId, filters);
 
-      expect(service.listMios).toHaveBeenCalledWith(mockUser.id, filters);
+      expect(service.listMios).toHaveBeenCalledWith(mockUserId, filters);
       expect(result).toEqual(expected);
     });
 
@@ -65,15 +61,15 @@ describe('ClienteVendedorController', () => {
       };
       mockClientesService.listMios.mockResolvedValue(expected);
 
-      const result = await controller.listMios(mockUser, filters);
+      const result = await controller.listMios(mockUserId, filters);
 
-      expect(service.listMios).toHaveBeenCalledWith(mockUser.id, filters);
+      expect(service.listMios).toHaveBeenCalledWith(mockUserId, filters);
       expect(result).toEqual(expected);
     });
   });
 
   describe('getByIdMio', () => {
-    it('delega a ClientesService.getByIdMio con id y user.id', async () => {
+    it('delega a ClientesService.getByIdMio con id y userId', async () => {
       const expected = {
         id: 'cliente-1',
         nombre: 'Juan',
@@ -81,15 +77,15 @@ describe('ClienteVendedorController', () => {
       };
       mockClientesService.getByIdMio.mockResolvedValue(expected);
 
-      const result = await controller.getByIdMio('cliente-1', mockUser);
+      const result = await controller.getByIdMio('cliente-1', mockUserId);
 
-      expect(service.getByIdMio).toHaveBeenCalledWith('cliente-1', mockUser.id);
+      expect(service.getByIdMio).toHaveBeenCalledWith('cliente-1', mockUserId);
       expect(result).toEqual(expected);
     });
   });
 
   describe('updateMio', () => {
-    it('delega a ClientesService.updateMio con id, user.id y dto', async () => {
+    it('delega a ClientesService.updateMio con id, userId y dto', async () => {
       const dto: UpdateClienteVendedorDto = {
         nombre: 'Cliente Updated',
         telefono: '11-5555-0199',
@@ -101,9 +97,9 @@ describe('ClienteVendedorController', () => {
       };
       mockClientesService.updateMio.mockResolvedValue(expected);
 
-      const result = await controller.updateMio('cliente-1', mockUser, dto);
+      const result = await controller.updateMio('cliente-1', mockUserId, dto);
 
-      expect(service.updateMio).toHaveBeenCalledWith('cliente-1', mockUser.id, dto);
+      expect(service.updateMio).toHaveBeenCalledWith('cliente-1', mockUserId, dto);
       expect(result).toEqual(expected);
     });
 
@@ -111,9 +107,9 @@ describe('ClienteVendedorController', () => {
       const dto: UpdateClienteVendedorDto = { nombre: 'Solo nombre' };
       mockClientesService.updateMio.mockResolvedValue(dto);
 
-      await controller.updateMio('cliente-1', mockUser, dto);
+      await controller.updateMio('cliente-1', mockUserId, dto);
 
-      expect(service.updateMio).toHaveBeenCalledWith('cliente-1', mockUser.id, { nombre: 'Solo nombre' });
+      expect(service.updateMio).toHaveBeenCalledWith('cliente-1', mockUserId, { nombre: 'Solo nombre' });
     });
   });
 });

@@ -12,26 +12,26 @@ export class ClienteVendedorController {
 
   @Get()
   async listMios(
-    @CurrentUser() user: any,
+    @CurrentUser('userId') userId: string,
     @Query() filters: ListClientesDto,
   ) {
-    return this.clientesService.listMios(user.id, filters);
+    return this.clientesService.listMios(userId, filters);
   }
 
   @Get(':id')
   async getByIdMio(
     @Param('id') id: string,
-    @CurrentUser() user: any,
+    @CurrentUser('userId') userId: string,
   ) {
-    return this.clientesService.getByIdMio(id, user.id);
+    return this.clientesService.getByIdMio(id, userId);
   }
 
   @Patch(':id')
   async updateMio(
     @Param('id') id: string,
-    @CurrentUser() user: any,
+    @CurrentUser('userId') userId: string,
     @Body() dto: UpdateClienteVendedorDto,
   ) {
-    return this.clientesService.updateMio(id, user.id, dto);
+    return this.clientesService.updateMio(id, userId, dto);
   }
 }
