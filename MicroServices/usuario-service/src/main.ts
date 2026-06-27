@@ -3,9 +3,12 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { RpcExceptionFilter } from './common/filters/rpc-exception.filter';
+import { validateEnv } from './common/config/env.config';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
+
+  validateEnv();
 
   const app = await NestFactory.create(AppModule);
 
