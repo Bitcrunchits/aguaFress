@@ -8,7 +8,8 @@ import { VendedorGuard } from './guards/vendedor.guard';
 
 @Module({
   imports: [AuthModule, CommonModule],
-  controllers: [VendedoresController, VendedorProfileController],
+  // Profile controller first so static /vendedores/me wins over /vendedores/:id
+  controllers: [VendedorProfileController, VendedoresController],
   providers: [VendedoresService, VendedorGuard],
   exports: [VendedoresService],
 })
