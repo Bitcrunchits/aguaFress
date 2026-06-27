@@ -4,6 +4,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { VendedoresModule } from './vendedores/vendedores.module';
+import { ClientesModule } from './clientes/clientes.module';
 import { CommonModule } from './common/common.module';
 import jwtConfig from './common/config/env.config';
 
@@ -38,6 +39,7 @@ import jwtConfig from './common/config/env.config';
     AuthModule,
     UsersModule,
     VendedoresModule,
+    ClientesModule,
     CommonModule,
   ],
 })
