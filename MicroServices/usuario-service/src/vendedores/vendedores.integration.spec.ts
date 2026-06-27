@@ -137,8 +137,8 @@ describe('Vendedores Integration', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(getRes.body.nombre).toBe('Juan');
-      expect(getRes.body.auth_user.email).toBe('vendedor@test.com');
+      expect(getRes.body.data.nombre).toBe('Juan');
+      expect(getRes.body.data.auth_user.email).toBe('vendedor@test.com');
 
       // ── UPDATE ──
       const updatedVendedor = { ...MOCK_VENDEDORES.activo, empresa: 'Nueva SA' };
@@ -151,7 +151,7 @@ describe('Vendedores Integration', () => {
         .send({ empresa: 'Nueva SA' })
         .expect(200);
 
-      expect(updateRes.body.empresa).toBe('Nueva SA');
+      expect(updateRes.body.data.empresa).toBe('Nueva SA');
       expect(mockPrisma.vendedor.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'vendedor-1' },
@@ -170,7 +170,7 @@ describe('Vendedores Integration', () => {
         .send({ estado: VendedorEstado.INACTIVO })
         .expect(200);
 
-      expect(estadoRes.body.estado).toBe(VendedorEstado.INACTIVO);
+      expect(estadoRes.body.data.estado).toBe(VendedorEstado.INACTIVO);
       expect(mockPrisma.vendedor.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'vendedor-1' },
@@ -250,9 +250,9 @@ describe('Vendedores Integration', () => {
         .set('Authorization', `Bearer ${vendedorToken}`)
         .expect(200);
 
-      expect(res.body.nombre).toBe('Juan');
-      expect(res.body.estado).toBe('activo');
-      expect(res.body.auth_user.email).toBe('vendedor@test.com');
+      expect(res.body.data.nombre).toBe('Juan');
+      expect(res.body.data.estado).toBe('activo');
+      expect(res.body.data.auth_user.email).toBe('vendedor@test.com');
     });
 
     it('vendedor puede actualizar su perfil via PATCH /vendedores/me', async () => {
@@ -270,8 +270,8 @@ describe('Vendedores Integration', () => {
         .send({ nombre: 'Juan Carlos', telefono: '11-5555-9999' })
         .expect(200);
 
-      expect(res.body.nombre).toBe('Juan Carlos');
-      expect(res.body.telefono).toBe('11-5555-9999');
+      expect(res.body.data.nombre).toBe('Juan Carlos');
+      expect(res.body.data.telefono).toBe('11-5555-9999');
       expect(mockPrisma.vendedor.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { auth_user_id: 'vendor-user-1' },
