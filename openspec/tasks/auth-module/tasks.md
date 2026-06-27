@@ -50,12 +50,12 @@ Chain strategy: pending
 
 ## Phase 6: Users Profile
 
-- [ ] 6.1 Create `src/users/users.service.ts` — getProfile (role-specific data), updateProfile. Test: mock PrismaService.
-- [ ] 6.2 Create `src/users/users.controller.ts`, wire `UsersModule`. Test: mock UsersService.
+- [x] 6.1 Create `src/users/users.service.ts` — getProfile (role-specific data), updateProfile. Test: mock PrismaService.
+- [x] 6.2 Create `src/users/users.controller.ts`, wire `UsersModule`. Test: mock UsersService.
 
 ## Phase 7: Integration
 
-- [ ] 7.1 Integration test: `@nestjs/testing` — register → login → refresh → profile full flow.
+- [x] 7.1 Integration test: `@nestjs/testing` — register → login → refresh → profile full flow.
 
 ## Implementation Notes
 
