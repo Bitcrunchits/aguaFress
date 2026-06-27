@@ -529,4 +529,183 @@ describe('VendedoresService', () => {
       expect(result.logo).toBe('https://img.com/new-logo.png');
     });
   });
+
+  // ═══════════════════════════════════════════════
+  //  GET MY PROFILE
+  // ═══════════════════════════════════════════════
+
+  describe('getMyProfile', () => {
+    const activeVendedor = {
+      id: 'vendedor-1',
+      nombre: 'Juan Pérez',
+      apellido: 'Pérez',
+      telefono: '11-5555-0100',
+      empresa: 'Acme SA',
+      logo: 'https://img.com/logo.png',
+      estado: VendedorEstado.ACTIVO,
+      ciudad_default: 'CABA',
+      zona_entrega: 'Palermo',
+      qr_token: 'qr-abc',
+      created_at: new Date('2024-01-01'),
+      updated_at: new Date('2024-06-01'),
+      auth_user: {
+        id: 'user-1',
+        email: 'juan@test.com',
+        role: 'vendedor',
+        is_active: true,
+      },
+      _count: { clientes: 5 },
+    };
+
+    it('devuelve perfil completo para vendedor activo', async () => {
+      prisma.vendedor.findUnique.mockResolvedValue(activeVendedor);
+
+      const result = await service.getMyProfile('user-1');
+
+      expect(prisma.vendedor.findUnique).toHaveBeenCalledWith({
+        where: { auth_user_id: 'user-1' },
+        include: {
+          auth_user: {
+            select: {
+              id: true,
+              email: true,
+              role: true,
+              is_active: true,
+            },
+          },
+          _count: { select: { clientes: true } },
+        },
+      });
+      expect(result).toBeDefined();
+      expect(result.id).toBe('vendedor-1');
+      expect(result.auth_user.email).toBe('juan@test.com');
+    });
+
+    it('lanza ForbiddenException si el vendedor está inactivo', async () => {
+      prisma.vendedor.findUnique.mockResolvedValue({
+        ...activeVendedor,
+        estado: VendedorEstado.INACTIVO,
+      });
+
+      await expect(service.getMyProfile('user-1')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('lanza ForbiddenException si el vendedor está bloqueado', async () => {
+      prisma.vendedor.findUnique.mockResolvedValue({
+        ...activeVendedor,
+        estado: VendedorEstado.BLOQUEADO,
+      });
+
+      await expect(service.getMyProfile('user-1')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('lanza NotFoundException si no hay vendedor para ese userId', async () => {
+      prisma.vendedor.findUnique.mockResolvedValue(null);
+
+      await expect(service.getMyProfile('user-nonexistent')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  // ═══════════════════════════════════════════════
+  //  UPDATE MY PROFILE
+  // ═══════════════════════════════════════════════
+
+  describe('updateMyProfile', () => {
+    const baseVendedor = {
+      id: 'vendedor-1',
+      nombre: 'Juan',
+      apellido: null,
+      telefono: null,
+      empresa: null,
+      logo: null,
+      estado: VendedorEstado.ACTIVO,
+      ciudad_default: null,
+      zona_entrega: null,
+      auth_user: {
+        id: 'user-1',
+        email: 'juan@test.com',
+        role: 'vendedor',
+        is_active: true,
+      },
+      _count: { clientes: 3 },
+    };
+
+    it('actualiza campos del perfil para vendedor activo', async () => {
+      prisma.vendedor.findUnique.mockResolvedValueOnce(baseVendedor);
+      prisma.vendedor.update.mockResolvedValue({
+        ...baseVendedor,
+        nombre: 'Juan Updated',
+        telefono: '11-5555-0200',
+      });
+
+      const result = await service.updateMyProfile('user-1', {
+        nombre: 'Juan Updated',
+        telefono: '11-5555-0200',
+      });
+
+      expect(prisma.vendedor.update).toHaveBeenCalledWith({
+        where: { auth_user_id: 'user-1' },
+        data: {
+          nombre: 'Juan Updated',
+          telefono: '11-5555-0200',
+        },
+      });
+      expect(result).toBeDefined();
+    });
+
+    it('lanza ForbiddenException si el vendedor está inactivo', async () => {
+      prisma.vendedor.findUnique.mockResolvedValue({
+        ...baseVendedor,
+        estado: VendedorEstado.INACTIVO,
+      });
+
+      await expect(
+        service.updateMyProfile('user-1', { nombre: 'Test' }),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(prisma.vendedor.update).not.toHaveBeenCalled();
+    });
+
+    it('lanza ForbiddenException si el vendedor está bloqueado', async () => {
+      prisma.vendedor.findUnique.mockResolvedValue({
+        ...baseVendedor,
+        estado: VendedorEstado.BLOQUEADO,
+      });
+
+      await expect(
+        service.updateMyProfile('user-1', { nombre: 'Test' }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('actualiza solo los campos provistos (parcial)', async () => {
+      prisma.vendedor.findUnique.mockResolvedValue(baseVendedor);
+      prisma.vendedor.update.mockResolvedValue({
+        ...baseVendedor,
+        empresa: 'Nueva Empresa',
+      });
+
+      await service.updateMyProfile('user-1', {
+        empresa: 'Nueva Empresa',
+      });
+
+      expect(prisma.vendedor.update).toHaveBeenCalledWith({
+        where: { auth_user_id: 'user-1' },
+        data: { empresa: 'Nueva Empresa' },
+      });
+    });
+
+    it('lanza NotFoundException si no hay vendedor para ese userId', async () => {
+      prisma.vendedor.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.updateMyProfile('user-nonexistent', { nombre: 'Test' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
 });
