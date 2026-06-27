@@ -48,17 +48,17 @@ Chain strategy: feature-branch-chain
 
 ## Phase 3: Controllers
 
-- [ ] 3.1 RED: Write ClientesController spec — delegation for list, getById, update, reassign
-- [ ] 3.2 GREEN: Create `src/clientes/clientes.controller.ts` — 4 admin routes with RolesGuard(SUPER_ADMIN)
-- [ ] 3.3 RED: Write ClienteVendedorController spec — delegation for listMios, getByIdMio, updateMio with @CurrentUser
-- [ ] 3.4 GREEN: Create `src/clientes/cliente-vendedor.controller.ts` — 3 vendedor routes with VendedorGuard, path `mios/`
+- [x] 3.1 RED: Write ClientesController spec — delegation for list, getById, update, reassign
+- [x] 3.2 GREEN: Create `src/clientes/clientes.controller.ts` — 4 admin routes with RolesGuard(SUPER_ADMIN)
+- [x] 3.3 RED: Write ClienteVendedorController spec — delegation for listMios, getByIdMio, updateMio with @CurrentUser
+- [x] 3.4 GREEN: Create `src/clientes/cliente-vendedor.controller.ts` — 3 vendedor routes with VendedorGuard, path `mios/`
 
 ## Phase 4: Integration
 
-- [ ] 4.1 RED: Write integration spec — full admin flow: list → getById → update → reassign
-- [ ] 4.2 RED: Write integration spec — auth guard chain: 401 no token, 403 wrong role for admin routes
-- [ ] 4.3 RED: Write integration spec — vendedor scoping: listMios only own cartera, 404 for non-cartera getById
-- [ ] 4.4 GREEN: Run full test suite, confirm all RED tests pass
+- [x] 4.1 RED: Write integration spec — full admin flow: list → getById → update → reassign
+- [x] 4.2 RED: Write integration spec — auth guard chain: 401 no token, 403 wrong role for admin routes
+- [x] 4.3 RED: Write integration spec — vendedor scoping: listMios only own cartera, 404 for non-cartera getById
+- [x] 4.4 GREEN: Run full test suite, confirm all RED tests pass
 
 ## Patterns to Follow (from VendedoresModule)
 
