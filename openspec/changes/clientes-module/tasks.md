@@ -37,14 +37,14 @@ Chain strategy: feature-branch-chain
 
 ## Phase 2: Service Layer
 
-- [ ] 2.1 RED: Write service spec — list with pagination + vendedor_id filter + search (nombre/apellido/dni)
-- [ ] 2.2 RED: Write service spec — getById returns full profile or 404
-- [ ] 2.3 RED: Write service spec — update partial fields with snake_case mapping, 404 on missing
-- [ ] 2.4 RED: Write service spec — reassign validates vendedor exists, upserts cartera via $transaction
-- [ ] 2.5 RED: Write service spec — listMios scoped via `cartera: { some: { vendedor_id, activo: true } }`
-- [ ] 2.6 RED: Write service spec — getByIdMio returns 404 if not in cartera (no existence leak)
-- [ ] 2.7 RED: Write service spec — updateMio scoped to cartera, 404 if not in cartera
-- [ ] 2.8 GREEN: Create `src/clientes/clientes.service.ts` — admin methods + vendedor-scoped methods + reassign $transaction
+- [x] 2.1 RED: Write service spec — list with pagination + vendedor_id filter + search (nombre/apellido/dni)
+- [x] 2.2 RED: Write service spec — getById returns full profile or 404
+- [x] 2.3 RED: Write service spec — update partial fields with snake_case mapping, 404 on missing
+- [x] 2.4 RED: Write service spec — reassign validates vendedor exists, upserts cartera via $transaction
+- [x] 2.5 RED: Write service spec — listMios scoped via `cartera: { some: { vendedor_id, activo: true } }`
+- [x] 2.6 RED: Write service spec — getByIdMio returns 404 if not in cartera (no existence leak)
+- [x] 2.7 RED: Write service spec — updateMio scoped to cartera, 404 if not in cartera
+- [x] 2.8 GREEN: Create `src/clientes/clientes.service.ts` — admin methods + vendedor-scoped methods + reassign $transaction
 
 ## Phase 3: Controllers
 
