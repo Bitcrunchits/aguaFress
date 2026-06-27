@@ -36,17 +36,17 @@ Chain strategy: pending
 ## Phase 3: Auth Core
 
 - [x] 3.1 Create `src/auth/auth.service.ts` — register (`$transaction`), login, validate, refresh, logout. Test: mock PrismaService + TokenService.
-- [ ] 3.2 Create `src/auth/jwt.strategy.ts` — PassportStrategy, validates user is_active. Test: mock PrismaService.
+- [x] 3.2 Create `src/auth/jwt.strategy.ts` — PassportStrategy, validates user is_active. Test: mock PrismaService.
 
 ## Phase 4: Guards & Decorators
 
-- [ ] 4.1 Create `jwt-auth.guard.ts` (global, `@Public` support) + `roles.guard.ts` (Reflector-based). Test: mock Reflector + ExecutionContext.
-- [ ] 4.2 Create `public.decorator.ts`, `roles.decorator.ts`, `current-user.decorator.ts`
+- [x] 4.1 Create `jwt-auth.guard.ts` (global, `@Public` support) + `roles.guard.ts` (Reflector-based). Test: mock Reflector + ExecutionContext.
+- [x] 4.2 Create `public.decorator.ts`, `roles.decorator.ts`, `current-user.decorator.ts`
 
 ## Phase 5: Wiring
 
-- [ ] 5.1 Create `src/auth/auth.controller.ts` — all endpoints (register, login, refresh, validate, logout). Test: mock AuthService.
-- [ ] 5.2 Wire `AuthModule` — PassportModule, JwtModule.registerAsync, APP_GUARD, providers. Register ConfigModule in AppModule.
+- [x] 5.1 Create `src/auth/auth.controller.ts` — all endpoints (register, login, refresh, validate, logout). Test: mock AuthService.
+- [x] 5.2 Wire `AuthModule` — PassportModule, JwtModule.registerAsync, APP_GUARD, providers. Register ConfigModule in AppModule.
 
 ## Phase 6: Users Profile
 
