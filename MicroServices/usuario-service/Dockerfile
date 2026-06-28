@@ -17,12 +17,12 @@ RUN pnpm install --frozen-lockfile
 COPY packages/contracts ./packages/contracts
 COPY MicroServices/usuario-service ./MicroServices/usuario-service
 
+# Generar Prisma client ANTES de compilar TypeScript
+RUN cd MicroServices/usuario-service && npx prisma generate
+
 # Build de paquetes en orden de dependencia
 RUN pnpm --filter @agua/contracts build
 RUN pnpm --filter @agua/usuario-service build
-
-# Generar Prisma client
-RUN cd MicroServices/usuario-service && npx prisma generate
 
 # ─── Run ─────────────────────────────────────────────────────
 FROM node:22-alpine AS run
@@ -47,4 +47,4 @@ COPY --from=build /app/MicroServices/usuario-service/prisma ./MicroServices/usua
 EXPOSE 3001
 
 # db push auto + arranque
-CMD cd MicroServices/usuario-service && npx prisma generate && npx prisma db push && node dist/main
+CMD cd MicroServices/usuario-service && npx prisma generate && npx prisma db push && node dist/MicroServices/usuario-service/src/main.js
