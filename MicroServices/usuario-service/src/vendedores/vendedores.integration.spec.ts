@@ -126,7 +126,7 @@ describe('Vendedores Integration', () => {
         .expect(200);
 
       expect(listRes.body.data).toHaveLength(1);
-      expect(listRes.body.total).toBe(1);
+      expect(listRes.body.pagination.total).toBe(1);
       expect(listRes.body.data[0].nombre).toBe('Juan');
 
       // ── GET BY ID ──

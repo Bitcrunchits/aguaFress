@@ -4,8 +4,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { VendedorEstado } from '@agua/contracts';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { cleanUpdateInput } from '../common/utils/prisma.utils';
 
 interface ListParams {
   page?: number;
@@ -53,10 +55,10 @@ export class VendedoresService {
     const limit = params.limit ?? 10;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Prisma.VendedorWhereInput = {};
 
     if (params.estado) {
-      where.estado = params.estado;
+      where.estado = params.estado as any;
     }
 
     if (params.search) {
@@ -80,7 +82,15 @@ export class VendedoresService {
       this.prisma.vendedor.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async getById(id: string) {
@@ -109,12 +119,7 @@ export class VendedoresService {
       throw new NotFoundException('Vendedor not found');
     }
 
-    const data: any = {};
-    if (dto.empresa !== undefined) data.empresa = dto.empresa;
-    if (dto.telefono !== undefined) data.telefono = dto.telefono;
-    if (dto.logo !== undefined) data.logo = dto.logo;
-    if (dto.ciudadDefault !== undefined) data.ciudad_default = dto.ciudadDefault;
-    if (dto.zonaEntrega !== undefined) data.zona_entrega = dto.zonaEntrega;
+    const data = cleanUpdateInput(dto) as Prisma.VendedorUpdateInput;
 
     return this.prisma.vendedor.update({
       where: { id },
@@ -196,14 +201,7 @@ export class VendedoresService {
       );
     }
 
-    const data: any = {};
-    if (dto.nombre !== undefined) data.nombre = dto.nombre;
-    if (dto.apellido !== undefined) data.apellido = dto.apellido;
-    if (dto.telefono !== undefined) data.telefono = dto.telefono;
-    if (dto.empresa !== undefined) data.empresa = dto.empresa;
-    if (dto.logo !== undefined) data.logo = dto.logo;
-    if (dto.ciudadDefault !== undefined) data.ciudad_default = dto.ciudadDefault;
-    if (dto.zonaEntrega !== undefined) data.zona_entrega = dto.zonaEntrega;
+    const data = cleanUpdateInput(dto) as Prisma.VendedorUpdateInput;
 
     return this.prisma.vendedor.update({
       where: { auth_user_id: userId },

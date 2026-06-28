@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { cleanUpdateInput } from '../common/utils/prisma.utils';
 
 interface ListParams {
   page?: number;
@@ -13,7 +15,7 @@ interface UpdateClienteDto {
   apellido?: string;
   dni?: string;
   telefono?: string;
-  tipoFactura?: any;
+  tipoFactura?: string;
   direccionCalle?: string;
   direccionNumero?: string;
   direccionPiso?: string;
@@ -68,7 +70,7 @@ export class ClientesService {
     const limit = params.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Prisma.ClienteWhereInput = {};
 
     if (params.vendedorId) {
       where.vendedor_id = params.vendedorId;
@@ -93,7 +95,15 @@ export class ClientesService {
       this.prisma.cliente.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async getById(id: string) {
@@ -119,22 +129,7 @@ export class ClientesService {
       throw new NotFoundException('Cliente not found');
     }
 
-    const data: any = {};
-    if (dto.nombre !== undefined) data.nombre = dto.nombre;
-    if (dto.apellido !== undefined) data.apellido = dto.apellido;
-    if (dto.dni !== undefined) data.dni = dto.dni;
-    if (dto.telefono !== undefined) data.telefono = dto.telefono;
-    if (dto.tipoFactura !== undefined) data.tipo_factura = dto.tipoFactura;
-    if (dto.direccionCalle !== undefined) data.direccion_calle = dto.direccionCalle;
-    if (dto.direccionNumero !== undefined) data.direccion_numero = dto.direccionNumero;
-    if (dto.direccionPiso !== undefined) data.direccion_piso = dto.direccionPiso;
-    if (dto.direccionReferencia !== undefined) data.direccion_referencia = dto.direccionReferencia;
-    if (dto.direccionBarrio !== undefined) data.direccion_barrio = dto.direccionBarrio;
-    if (dto.direccionCiudad !== undefined) data.direccion_ciudad = dto.direccionCiudad;
-    if (dto.direccionProvincia !== undefined) data.direccion_provincia = dto.direccionProvincia;
-    if (dto.direccionCp !== undefined) data.direccion_cp = dto.direccionCp;
-    if (dto.latitud !== undefined) data.latitud = dto.latitud;
-    if (dto.longitud !== undefined) data.longitud = dto.longitud;
+    const data = cleanUpdateInput(dto) as Prisma.ClienteUpdateInput;
 
     return this.prisma.cliente.update({
       where: { id },
@@ -153,6 +148,12 @@ export class ClientesService {
       if (!targetVendedor) {
         throw new NotFoundException('Vendedor not found');
       }
+
+      // Deactivate all current active cartera entries first
+      await tx.cartera.updateMany({
+        where: { cliente_id: id, activo: true },
+        data: { activo: false },
+      });
 
       const cliente = await tx.cliente.update({
         where: { id },
@@ -186,7 +187,7 @@ export class ClientesService {
     const limit = params.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: Prisma.ClienteWhereInput = {
       ...CARTERA_FILTER(userId),
     };
 
@@ -208,7 +209,15 @@ export class ClientesService {
       this.prisma.cliente.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async getByIdMio(id: string, userId: string) {
@@ -240,20 +249,7 @@ export class ClientesService {
       throw new NotFoundException('Cliente not found');
     }
 
-    const data: any = {};
-    if (dto.nombre !== undefined) data.nombre = dto.nombre;
-    if (dto.apellido !== undefined) data.apellido = dto.apellido;
-    if (dto.telefono !== undefined) data.telefono = dto.telefono;
-    if (dto.direccionCalle !== undefined) data.direccion_calle = dto.direccionCalle;
-    if (dto.direccionNumero !== undefined) data.direccion_numero = dto.direccionNumero;
-    if (dto.direccionPiso !== undefined) data.direccion_piso = dto.direccionPiso;
-    if (dto.direccionReferencia !== undefined) data.direccion_referencia = dto.direccionReferencia;
-    if (dto.direccionBarrio !== undefined) data.direccion_barrio = dto.direccionBarrio;
-    if (dto.direccionCiudad !== undefined) data.direccion_ciudad = dto.direccionCiudad;
-    if (dto.direccionProvincia !== undefined) data.direccion_provincia = dto.direccionProvincia;
-    if (dto.direccionCp !== undefined) data.direccion_cp = dto.direccionCp;
-    if (dto.latitud !== undefined) data.latitud = dto.latitud;
-    if (dto.longitud !== undefined) data.longitud = dto.longitud;
+    const data = cleanUpdateInput(dto) as Prisma.ClienteUpdateInput;
 
     return this.prisma.cliente.update({
       where: { id },

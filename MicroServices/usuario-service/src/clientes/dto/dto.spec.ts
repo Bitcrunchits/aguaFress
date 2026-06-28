@@ -26,13 +26,13 @@ describe('ListClientesDto', () => {
     expect(dto.limit).toBe(50);
   });
 
-  it('acepta vendedor_id UUID válido', async () => {
+  it('acepta vendedorId UUID válido', async () => {
     const dto = plainToInstance(ListClientesDto, {
-      vendedor_id: '550e8400-e29b-41d4-a716-446655440000',
+      vendedorId: '550e8400-e29b-41d4-a716-446655440000',
     });
     const errors = await validate(dto);
     expect(errors).toHaveLength(0);
-    expect(dto.vendedor_id).toBe('550e8400-e29b-41d4-a716-446655440000');
+    expect(dto.vendedorId).toBe('550e8400-e29b-41d4-a716-446655440000');
   });
 
   it('acepta filtro search', async () => {
@@ -72,13 +72,13 @@ describe('ListClientesDto', () => {
     expect(errors[0].property).toBe('limit');
   });
 
-  it('rechaza vendedor_id con UUID inválido', async () => {
+  it('rechaza vendedorId con UUID inválido', async () => {
     const dto = plainToInstance(ListClientesDto, {
-      vendedor_id: 'not-a-uuid',
+      vendedorId: 'not-a-uuid',
     });
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThanOrEqual(1);
-    expect(errors[0].property).toBe('vendedor_id');
+    expect(errors[0].property).toBe('vendedorId');
   });
 });
 

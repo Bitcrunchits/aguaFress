@@ -1,7 +1,22 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UserRole } from '@prisma/client';
+import { cleanUpdateInput } from '../common/utils/prisma.utils';
+
+const ADDRESS_MAP: Partial<Record<keyof NonNullable<UpdateProfileDto['address']>, string>> = {
+  calle: 'direccion_calle',
+  numero: 'direccion_numero',
+  pisoDepto: 'direccion_piso',
+  referencia: 'direccion_referencia',
+  barrio: 'direccion_barrio',
+  ciudad: 'direccion_ciudad',
+  provincia: 'direccion_provincia',
+  codigoPostal: 'direccion_cp',
+  latitude: 'latitud',
+  longitude: 'longitud',
+};
 
 @Injectable()
 export class UsersService {
@@ -102,32 +117,17 @@ export class UsersService {
     if (!user) throw new NotFoundException('User not found');
 
     if (user.role === UserRole.cliente) {
-      const data: any = {};
-      if (dto.nombre !== undefined) data.nombre = dto.nombre;
-      if (dto.apellido !== undefined) data.apellido = dto.apellido;
-      if (dto.telefono !== undefined) data.telefono = dto.telefono;
-      if (dto.tipoFactura !== undefined) data.tipo_factura = dto.tipoFactura;
-      if (dto.address) {
-        if (dto.address.calle !== undefined) data.direccion_calle = dto.address.calle;
-        if (dto.address.numero !== undefined) data.direccion_numero = dto.address.numero;
-        if (dto.address.pisoDepto !== undefined) data.direccion_piso = dto.address.pisoDepto;
-        if (dto.address.referencia !== undefined) data.direccion_referencia = dto.address.referencia;
-        if (dto.address.barrio !== undefined) data.direccion_barrio = dto.address.barrio;
-        if (dto.address.ciudad !== undefined) data.direccion_ciudad = dto.address.ciudad;
-        if (dto.address.provincia !== undefined) data.direccion_provincia = dto.address.provincia;
-        if (dto.address.codigoPostal !== undefined) data.direccion_cp = dto.address.codigoPostal;
-        if (dto.address.latitude !== undefined) data.latitud = dto.address.latitude;
-        if (dto.address.longitude !== undefined) data.longitud = dto.address.longitude;
+      const { address, ...dtoFields } = dto;
+      const data = cleanUpdateInput(dtoFields) as Prisma.ClienteUpdateInput;
+      if (address) {
+        Object.assign(data, cleanUpdateInput(address, ADDRESS_MAP));
       }
       await this.prisma.cliente.update({
         where: { auth_user_id: userId },
         data,
       });
     } else if (user.role === UserRole.vendedor) {
-      const data: any = {};
-      if (dto.nombre !== undefined) data.nombre = dto.nombre;
-      if (dto.apellido !== undefined) data.apellido = dto.apellido;
-      if (dto.telefono !== undefined) data.telefono = dto.telefono;
+      const data = cleanUpdateInput(dto) as Prisma.VendedorUpdateInput;
       await this.prisma.vendedor.update({
         where: { auth_user_id: userId },
         data,

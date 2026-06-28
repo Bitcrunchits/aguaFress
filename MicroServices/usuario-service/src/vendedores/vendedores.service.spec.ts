@@ -299,9 +299,7 @@ describe('VendedoresService', () => {
       expect(prisma.vendedor.count).toHaveBeenCalledWith({ where: {} });
       expect(result).toEqual({
         data: expect.any(Array),
-        total: 2,
-        page: 1,
-        limit: 10,
+        pagination: { page: 1, limit: 10, total: 2, totalPages: 1 },
       });
       expect(result.data).toHaveLength(2);
     });
@@ -372,8 +370,8 @@ describe('VendedoresService', () => {
           take: 20,
         }),
       );
-      expect(result.page).toBe(3);
-      expect(result.limit).toBe(20);
+      expect(result.pagination.page).toBe(3);
+      expect(result.pagination.limit).toBe(20);
     });
 
     it('incluye _count de clientes en cada vendedor', async () => {

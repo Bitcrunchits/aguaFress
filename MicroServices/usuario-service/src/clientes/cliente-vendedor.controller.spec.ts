@@ -39,9 +39,7 @@ describe('ClienteVendedorController', () => {
       };
       const expected = {
         data: [],
-        total: 0,
-        page: 1,
-        limit: 10,
+        pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
       };
       mockClientesService.listMios.mockResolvedValue(expected);
 
@@ -55,9 +53,7 @@ describe('ClienteVendedorController', () => {
       const filters: ListClientesDto = {};
       const expected = {
         data: [],
-        total: 0,
-        page: 1,
-        limit: 20,
+        pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
       };
       mockClientesService.listMios.mockResolvedValue(expected);
 

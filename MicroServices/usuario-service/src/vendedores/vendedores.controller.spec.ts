@@ -41,9 +41,7 @@ describe('VendedoresController', () => {
       };
       const expected = {
         data: [],
-        total: 0,
-        page: 2,
-        limit: 10,
+        pagination: { page: 2, limit: 10, total: 0, totalPages: 0 },
       };
       mockVendedoresService.list.mockResolvedValue(expected);
 
@@ -57,9 +55,7 @@ describe('VendedoresController', () => {
       const filters: ListVendedoresDto = {};
       const expected = {
         data: [],
-        total: 0,
-        page: 1,
-        limit: 10,
+        pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
       };
       mockVendedoresService.list.mockResolvedValue(expected);
 

@@ -107,7 +107,7 @@ describe('Clientes Integration', () => {
     return {
       vendedor: { findUnique: jest.fn() },
       cliente: { update: jest.fn() },
-      cartera: { upsert: jest.fn() },
+      cartera: { upsert: jest.fn(), updateMany: jest.fn() },
     };
   }
 
@@ -169,7 +169,7 @@ describe('Clientes Integration', () => {
         .expect(200);
 
       expect(listRes.body.data).toHaveLength(1);
-      expect(listRes.body.total).toBe(1);
+      expect(listRes.body.pagination.total).toBe(1);
       expect(listRes.body.data[0].nombre).toBe('Ana');
 
       // ── GET BY ID ──

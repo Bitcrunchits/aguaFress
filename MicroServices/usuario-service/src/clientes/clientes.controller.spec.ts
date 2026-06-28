@@ -35,14 +35,12 @@ describe('ClientesController', () => {
       const filters: ListClientesDto = {
         page: 2,
         limit: 10,
-        vendedor_id: 'abc-123',
+        vendedorId: 'abc-123',
         search: 'Juan',
       };
       const expected = {
         data: [],
-        total: 0,
-        page: 2,
-        limit: 10,
+        pagination: { page: 2, limit: 10, total: 0, totalPages: 0 },
       };
       mockClientesService.list.mockResolvedValue(expected);
 
@@ -56,9 +54,7 @@ describe('ClientesController', () => {
       const filters: ListClientesDto = {};
       const expected = {
         data: [],
-        total: 0,
-        page: 1,
-        limit: 20,
+        pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
       };
       mockClientesService.list.mockResolvedValue(expected);
 

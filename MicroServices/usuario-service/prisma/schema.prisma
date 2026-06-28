@@ -36,7 +36,7 @@ enum TipoFactura {
 model AuthUser {
   id          String    @id @default(uuid()) @db.Uuid
   email       String    @unique @db.VarChar(255)
-  password    String    @db.VarChar(255)
+  password       String    @db.VarChar(255)
   role        UserRole
   is_active   Boolean   @default(true)
   is_verified Boolean   @default(false)

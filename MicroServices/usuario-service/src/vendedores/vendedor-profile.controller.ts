@@ -4,17 +4,17 @@ import { UpdateVendedorProfileDto } from './dto/update-vendedor-profile.dto';
 import { VendedorGuard } from './guards/vendedor.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
-@Controller('vendedores')
+@Controller('vendedores/me')
 @UseGuards(VendedorGuard)
 export class VendedorProfileController {
   constructor(private readonly vendedoresService: VendedoresService) {}
 
-  @Get('me')
+  @Get()
   async getMyProfile(@CurrentUser('userId') userId: string) {
     return this.vendedoresService.getMyProfile(userId);
   }
 
-  @Patch('me')
+  @Patch()
   async updateMyProfile(
     @CurrentUser('userId') userId: string,
     @Body() dto: UpdateVendedorProfileDto,

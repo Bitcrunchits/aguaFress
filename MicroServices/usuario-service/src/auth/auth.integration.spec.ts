@@ -209,7 +209,7 @@ describe('Auth Integration: register → login → refresh → profile', () => {
       });
 
       expect(registerResult.status).toBe('pendiente');
-      expect(registerResult.vendedorId).toBe('vendor-user-1');
+      expect(registerResult.vendedorId).toBe('vendedor-1');
 
       // --- LOGIN ---
       mockPrisma.authUser.findUnique.mockResolvedValue(mockVendedorUser);

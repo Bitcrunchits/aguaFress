@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, BadRequestException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -43,9 +43,10 @@ export class AuthController {
   @Public()
   @Post('validate')
   @HttpCode(HttpStatus.OK)
-  async validate(
-    @Body('token') token: string,
-  ) {
+  async validate(@Body('token') token: unknown) {
+    if (typeof token !== 'string' || token.length === 0) {
+      throw new BadRequestException('Token must be a non-empty string');
+    }
     return this.authService.validate(token);
   }
 

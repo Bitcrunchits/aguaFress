@@ -17,7 +17,7 @@ export class ListClientesDto {
 
   @IsOptional()
   @IsUUID()
-  vendedor_id?: string;
+  vendedorId?: string;
 
   @IsOptional()
   @IsString()

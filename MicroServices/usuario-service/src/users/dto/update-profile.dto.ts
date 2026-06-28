@@ -1,5 +1,7 @@
-import { IsOptional, IsString, IsEnum } from 'class-validator';
+import { IsOptional, IsString, IsEnum, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { TipoFactura } from '@agua/contracts';
+import { AddressDto } from './address.dto';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -20,16 +22,7 @@ export class UpdateProfileDto {
   tipoFactura?: TipoFactura;
 
   @IsOptional()
-  address?: {
-    calle?: string;
-    numero?: string;
-    pisoDepto?: string;
-    referencia?: string;
-    barrio?: string;
-    ciudad?: string;
-    provincia?: string;
-    codigoPostal?: string;
-    latitude?: number;
-    longitude?: number;
-  };
+  @ValidateNested()
+  @Type(() => AddressDto)
+  address?: AddressDto;
 }

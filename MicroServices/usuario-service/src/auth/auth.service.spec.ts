@@ -29,6 +29,7 @@ const mockTokenService = {
   generateTokens: jest.fn(),
   generateAccessToken: jest.fn(),
   verifyToken: jest.fn(),
+  verifyRefreshToken: jest.fn(),
 };
 
 describe('AuthService', () => {
@@ -238,7 +239,7 @@ describe('AuthService', () => {
       });
       expect(result).toEqual({
         status: 'pendiente',
-        vendedorId: 'vendedor-user-1',
+        vendedorId: 'vendedor-1',
       });
     });
 
@@ -344,7 +345,7 @@ describe('AuthService', () => {
 
   describe('refresh', () => {
     it('devuelve nuevo access token desde refresh token válido', async () => {
-      mockTokenService.verifyToken.mockResolvedValue({
+      mockTokenService.verifyRefreshToken.mockResolvedValue({
         sub: 'user-1',
         email: 'user@test.com',
         role: 'cliente',
@@ -353,7 +354,7 @@ describe('AuthService', () => {
 
       const result = await authService.refresh('valid-refresh-token');
 
-      expect(mockTokenService.verifyToken).toHaveBeenCalledWith(
+      expect(mockTokenService.verifyRefreshToken).toHaveBeenCalledWith(
         'valid-refresh-token',
       );
       expect(mockTokenService.generateAccessToken).toHaveBeenCalledWith(

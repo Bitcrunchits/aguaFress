@@ -79,11 +79,11 @@ export class AuthService {
         data: {
           email: dto.email,
           password: hashedPassword,
-          role: UserRole.vendedor as unknown as import('@prisma/client').UserRole,
+          role: UserRole.vendedor,
         },
       });
 
-      await tx.vendedor.create({
+      const vendedor = await tx.vendedor.create({
         data: {
           auth_user_id: user.id,
           nombre: dto.nombre,
@@ -94,7 +94,7 @@ export class AuthService {
         },
       });
 
-      return user;
+      return vendedor;
     });
 
     return {
@@ -105,7 +105,11 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const user = await this.prisma.authUser.findUnique({ where: { email: dto.email } });
-    if (!user) throw new UnauthorizedException('Invalid credentials');
+    if (!user) {
+      // Timing-safe: always do bcrypt work even when user doesn't exist
+      await bcrypt.hash('dummy', this.SALT_ROUNDS);
+      throw new UnauthorizedException('Invalid credentials');
+    }
 
     const isValid = await bcrypt.compare(dto.password, user.password);
     if (!isValid) throw new UnauthorizedException('Invalid credentials');
@@ -134,7 +138,7 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string) {
-    const payload = await this.tokenService.verifyToken(refreshToken);
+    const payload = await this.tokenService.verifyRefreshToken(refreshToken);
     // For MVP, we don't track refresh tokens server-side
     const newToken = await this.tokenService.generateAccessToken(payload.sub, payload.email, payload.role);
     return { token: newToken };

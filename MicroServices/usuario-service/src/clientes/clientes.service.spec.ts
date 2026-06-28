@@ -7,7 +7,7 @@ import { PrismaService } from '../common/prisma/prisma.service';
 const mockTx = {
   vendedor: { findUnique: jest.fn() },
   cliente: { findUnique: jest.fn(), update: jest.fn() },
-  cartera: { upsert: jest.fn() },
+  cartera: { upsert: jest.fn(), updateMany: jest.fn() },
 };
 
 const mockPrisma = {
@@ -130,9 +130,7 @@ describe('ClientesService', () => {
       expect(prisma.cliente.count).toHaveBeenCalledWith({ where: {} });
       expect(result).toEqual({
         data: expect.any(Array),
-        total: 2,
-        page: 1,
-        limit: 20,
+        pagination: { page: 1, limit: 20, total: 2, totalPages: 1 },
       });
       expect(result.data).toHaveLength(2);
     });
@@ -204,8 +202,8 @@ describe('ClientesService', () => {
           take: 10,
         }),
       );
-      expect(result.page).toBe(3);
-      expect(result.limit).toBe(10);
+      expect(result.pagination.page).toBe(3);
+      expect(result.pagination.limit).toBe(10);
     });
 
     it('incluye vendedor info y _count de cartera en cada cliente', async () => {
@@ -515,7 +513,7 @@ describe('ClientesService', () => {
         },
       });
       expect(result.data).toHaveLength(1);
-      expect(result.total).toBe(1);
+      expect(result.pagination.total).toBe(1);
     });
 
     it('aplica search dentro del scope de cartera', async () => {
@@ -548,8 +546,8 @@ describe('ClientesService', () => {
       expect(prisma.cliente.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ skip: 5, take: 5 }),
       );
-      expect(result.page).toBe(2);
-      expect(result.limit).toBe(5);
+      expect(result.pagination.page).toBe(2);
+      expect(result.pagination.limit).toBe(5);
     });
   });
 
