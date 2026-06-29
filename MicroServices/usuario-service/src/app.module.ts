@@ -6,6 +6,7 @@ import { UsersModule } from './users/users.module';
 import { VendedoresModule } from './vendedores/vendedores.module';
 import { ClientesModule } from './clientes/clientes.module';
 import { CommonModule } from './common/common.module';
+import { SuperAdminModule } from './super-admin/super-admin.module';
 import jwtConfig from './common/config/env.config';
 
 //
@@ -41,6 +42,7 @@ import jwtConfig from './common/config/env.config';
     VendedoresModule,
     ClientesModule,
     CommonModule,
+    SuperAdminModule,
   ],
 })
 export class AppModule {}
