@@ -7,3 +7,6 @@ coverage/
 
 # SDD artifacts
 .atl/
+
+# MCP local helpers
+mcp/jira-mcp-server/jira-helper.mjs
