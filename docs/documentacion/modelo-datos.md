@@ -398,8 +398,9 @@ AUTH_USER
 | ORM | Prisma 5 |
 | DB Principal | PostgreSQL 15 |
 | Activity Logs | MongoDB 6 + Mongoose |
-| Cache + Event Bus | Redis 7 |
-| Comunicación | Redis Streams + HTTP REST (Gateway) |
+| Cache | Redis 7 (sesiones JWT, catálogo) |
+| Event Bus | ~~Redis Streams~~ → **Kafka** 🚧 pendiente |
+| Comunicación | ~~HTTP REST (Gateway)~~ → **TCP directo** 🚧 pendiente |
 | Frontend | Por definir (React + posible Next.js) |
 | Contratos Compartidos | `packages/contracts/` (TypeScript) |
 | Monorepo | pnpm workspaces |
