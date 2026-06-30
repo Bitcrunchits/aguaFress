@@ -7,6 +7,7 @@ import { VendedoresModule } from './vendedores/vendedores.module';
 import { ClientesModule } from './clientes/clientes.module';
 import { CommonModule } from './common/common.module';
 import { SuperAdminModule } from './super-admin/super-admin.module';
+import { QrCodesModule } from './qr-codes/qr-codes.module';
 import jwtConfig from './common/config/env.config';
 
 //
@@ -43,6 +44,7 @@ import jwtConfig from './common/config/env.config';
     ClientesModule,
     CommonModule,
     SuperAdminModule,
+    QrCodesModule,
   ],
 })
 export class AppModule {}
