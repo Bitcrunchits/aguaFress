@@ -1,5 +1,5 @@
 import { Test, type TestingModule } from '@nestjs/testing';
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { UserRole } from '@agua/contracts';
 import { TokenService } from './token.service';
 import { AuthService } from './auth.service';
@@ -15,7 +15,7 @@ const mockTx = {
   authUser: { create: jest.fn() },
   cliente: { create: jest.fn() },
   vendedor: { create: jest.fn() },
-  qrCode: { findUnique: jest.fn() },
+  qrCode: { findFirst: jest.fn() },
 };
 
 const mockPrisma = {
@@ -84,7 +84,7 @@ describe('AuthService', () => {
 
     it('crea AuthUser + Cliente cuando role=cliente con qrToken válido', async () => {
       mockPrisma.authUser.findUnique.mockResolvedValue(null);
-      mockTx.qrCode.findUnique.mockResolvedValue({
+      mockTx.qrCode.findFirst.mockResolvedValue({
         codigo: 'qr-abc-123',
         activo: true,
         vendedor_id: 'vendedor-1',
@@ -105,8 +105,12 @@ describe('AuthService', () => {
           role: 'cliente',
         },
       });
-      expect(mockTx.qrCode.findUnique).toHaveBeenCalledWith({
-        where: { codigo: 'qr-abc-123' },
+      expect(mockTx.qrCode.findFirst).toHaveBeenCalledWith({
+        where: {
+          codigo: 'qr-abc-123',
+          activo: true,
+          expires_at: { gt: expect.any(Date) },
+        },
       });
       expect(mockTx.cliente.create).toHaveBeenCalledWith({
         data: {
@@ -174,7 +178,7 @@ describe('AuthService', () => {
 
     it('lanza UnauthorizedException si qrToken es inválido o inactivo', async () => {
       mockPrisma.authUser.findUnique.mockResolvedValue(null);
-      mockTx.qrCode.findUnique.mockResolvedValue(null);
+      mockTx.qrCode.findFirst.mockResolvedValue(null);
 
       await expect(authService.register(registerDto)).rejects.toThrow(
         UnauthorizedException,
@@ -182,6 +186,40 @@ describe('AuthService', () => {
       await expect(authService.register(registerDto)).rejects.toThrow(
         'Invalid or expired QR token',
       );
+    });
+
+    it('lanza UnauthorizedException si qrToken está expirado', async () => {
+      mockPrisma.authUser.findUnique.mockResolvedValue(null);
+      // findFirst con expires_at: { gt: new Date() } filtra en DB,
+      // por lo que devuelve null para QR expirados
+      mockTx.qrCode.findFirst.mockResolvedValue(null);
+
+      await expect(authService.register(registerDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(mockTx.qrCode.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            expires_at: { gt: expect.any(Date) },
+          }),
+        }),
+      );
+    });
+
+    it('lanza ForbiddenException si se intenta registrar como super_admin', async () => {
+      mockPrisma.authUser.findUnique.mockResolvedValue(null);
+
+      const superAdminDto = { ...registerDto, role: UserRole.SUPER_ADMIN, qrToken: undefined };
+
+      await expect(authService.register(superAdminDto)).rejects.toThrow(
+        ForbiddenException,
+      );
+      await expect(authService.register(superAdminDto)).rejects.toThrow(
+        'Cannot register as super admin',
+      );
+      // mapRoleToPrisma throws inside $transaction callback, so user is never created
+      expect(mockTx.authUser.create).not.toHaveBeenCalled();
+      expect(mockTx.cliente.create).not.toHaveBeenCalled();
     });
   });
 

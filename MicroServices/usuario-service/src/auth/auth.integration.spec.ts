@@ -20,7 +20,7 @@ describe('Auth Integration: register → login → refresh → profile', () => {
     authUser: { create: jest.fn() },
     cliente: { create: jest.fn() },
     vendedor: { create: jest.fn() },
-    qrCode: { findUnique: jest.fn() },
+    qrCode: { findFirst: jest.fn() },
   };
 
   const mockPrisma = {
@@ -119,7 +119,7 @@ describe('Auth Integration: register → login → refresh → profile', () => {
       mockPrisma.authUser.findUnique.mockResolvedValue(null);
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-cliente-pw');
       mockTx.authUser.create.mockResolvedValue(mockClienteUser);
-      mockTx.qrCode.findUnique.mockResolvedValue({
+      mockTx.qrCode.findFirst.mockResolvedValue({
         codigo: 'qr-vendedor-1',
         activo: true,
         vendedor_id: 'vendedor-1',
@@ -260,7 +260,40 @@ describe('Auth Integration: register → login → refresh → profile', () => {
     });
   });
 
-  describe('Scenario 3: Error cases — invalid login and unauthorised profile', () => {
+  describe('Scenario 3: QR expirado o inválido en register', () => {
+    it('rechaza register con qrToken expirado', async () => {
+      mockPrisma.authUser.findUnique.mockResolvedValue(null);
+      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-cliente-pw');
+      mockTx.authUser.create.mockResolvedValue({
+        id: 'cliente-user-2',
+        email: 'expirado@test.com',
+        password: 'hashed',
+        role: 'cliente',
+      } as any);
+      // findFirst con expires_at: { gt: new Date() } filtra en DB — devuelve null para expirados
+      mockTx.qrCode.findFirst.mockResolvedValue(null);
+
+      await expect(
+        authService.register({
+          email: 'expirado@test.com',
+          password: 'SecurePass1',
+          nombre: 'Test',
+          role: 'cliente' as any,
+          qrToken: 'qr-expirado',
+        }),
+      ).rejects.toThrow('Invalid or expired QR token');
+
+      expect(mockTx.qrCode.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            expires_at: { gt: expect.any(Date) },
+          }),
+        }),
+      );
+    });
+  });
+
+  describe('Scenario 4: Error cases — invalid login and unauthorised profile', () => {
     it('rechaza login con credenciales inválidas', async () => {
       mockPrisma.authUser.findUnique.mockResolvedValue(null);
 

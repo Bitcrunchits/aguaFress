@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { TokenService } from './token.service';
 import * as bcrypt from 'bcrypt';
@@ -16,6 +16,18 @@ export class AuthService {
     private readonly tokenService: TokenService,
   ) {}
 
+  private mapRoleToPrisma(role: string): 'cliente' | 'vendedor' {
+    if (role === UserRole.super_admin) throw new ForbiddenException('Cannot register as super admin');
+    switch (role) {
+      case UserRole.cliente:
+        return 'cliente';
+      case UserRole.vendedor:
+        return 'vendedor';
+      default:
+        throw new BadRequestException('Invalid role');
+    }
+  }
+
   async register(dto: RegisterDto) {
     const existing = await this.prisma.authUser.findUnique({ where: { email: dto.email } });
     if (existing) throw new ConflictException('Email already registered');
@@ -27,7 +39,7 @@ export class AuthService {
         data: {
           email: dto.email,
           password: hashedPassword,
-          role: dto.role as unknown as import('@prisma/client').UserRole,
+          role: this.mapRoleToPrisma(dto.role),
         },
       });
 
@@ -35,8 +47,8 @@ export class AuthService {
         // If qrToken, look up the vendedor
         let vendedorId: string | undefined;
         if (dto.qrToken) {
-          const qr = await tx.qrCode.findUnique({ where: { codigo: dto.qrToken } });
-          if (qr?.activo) vendedorId = qr.vendedor_id;
+          const qr = await tx.qrCode.findFirst({ where: { codigo: dto.qrToken, activo: true, expires_at: { gt: new Date() } } });
+          if (qr) vendedorId = qr.vendedor_id;
         }
         if (!vendedorId) throw new UnauthorizedException('Invalid or expired QR token');
 
