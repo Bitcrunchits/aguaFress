@@ -14,7 +14,8 @@ Authentication and profile management for `usuario-service`. Two domains: **user
 
 MUST create AuthUser + role record atomically via Prisma `$transaction`.
 
-- **Cliente register**: GIVEN valid RegisterDTO with CLIENTE role + qrToken, WHEN POST /api/auth/register, THEN 201 + `RegisterResponse { id, email, role }` + AuthUser+Cliente persisted, password bcrypt-hashed.
+- **Cliente register**: GIVEN valid RegisterDTO with CLIENTE role + qrToken, WHEN POST /api/auth/register, THEN 201 + `RegisterResponse { id, email, role }` + AuthUser+Cliente persisted, password bcrypt-hashed. QR SHALL validate `activo=true AND expires_at > now()`.
+- **Expired qrToken**: GIVEN valid RegisterDTO with CLIENTE role + qrToken where linked QrCode.expires_at < now(), WHEN POST /api/auth/register, THEN 401 with `{ message: "QR code expirado" }`.
 - **Vendedor register**: GIVEN valid RegisterVendedorDTO, WHEN POST /api/auth/register/vendedor, THEN 201 + `{ status: "pendiente", vendedorId }`.
 - **Duplicate email**: GIVEN existing AuthUser, WHEN POST /api/auth/register with same email, THEN 409.
 
@@ -81,7 +82,8 @@ MUST allow partial profile updates.
 1. Email MUST be unique (409 on conflict).
 2. Password MUST be bcrypt-hashed (min 8 chars), never returned.
 3. Register SHALL use `$transaction` — AuthUser + role record atomically.
-4. Vendedor: `estado: pendiente`. Cliente: requires `vendedor_id` (qrToken or body).
+4. Vendedor: `estado: pendiente`. Cliente: requires `vendedor_id` (qrToken or body). QR lookup SHALL validate `activo=true AND expires_at > now()`.
+   - **Code path**: In `auth.service.ts` register method, add `expires_at > new Date()` condition to the `findUnique` where clause alongside `activo: true`. Return 401 if matching QrCode has expired or is inactive.
 5. Access JWT payload: `{ sub: userId, email, role }`. Expiry: env `JWT_EXPIRES_IN` (default `1d`).
 6. Refresh JWT expiry: hardcoded `7d` (MVP, no DB/Redis).
 7. JwtStrategy.validate() MUST confirm user `is_active` in DB.
