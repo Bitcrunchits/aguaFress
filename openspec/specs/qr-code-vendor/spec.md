@@ -74,6 +74,25 @@ MUST set `activo = false` on own QrCode. SHALL return 404 if not found or not ow
 - WHEN PATCH /api/qr-codes/:id/deactivate
 - THEN 400 with `{ message: "QR code is already inactive" }`
 
+### R4 (ADDED): Resolve Vendedor ID
+
+MUST resolve `Vendedor.id` from the authenticated `AuthUser.id` before any data access. If no `Vendedor` record exists for the given `AuthUser`, SHALL throw 404.
+
+#### Scenario: Vendedor found
+
+- GIVEN authenticated VENDEDOR with valid JWT (`userId` = AuthUser.id)
+- AND a Vendedor record exists with `auth_user_id == AuthUser.id`
+- WHEN POST /api/qr-codes
+- THEN service resolves `Vendedor.id` via `prisma.vendedor.findUnique({ where: { auth_user_id } })`
+- AND uses the resolved `Vendedor.id` as `vendedor_id` for persistence
+
+#### Scenario: Vendedor not found
+
+- GIVEN authenticated VENDEDOR with valid JWT
+- AND NO Vendedor record exists with `auth_user_id == AuthUser.id`
+- WHEN any vendor endpoint is called
+- THEN 404 with message `"Vendedor profile not found"`
+
 ## Validation Rules
 
 | DTO | Fields | Rules |
@@ -85,9 +104,10 @@ MUST set `activo = false` on own QrCode. SHALL return 404 if not found or not ow
 1. `codigo` SHALL be 8-char alphanumeric via `crypto.randomUUID().slice(0, 8)`. On `UniqueConstraintError`, retry up to 3 attempts.
 2. `expires_at` SHALL default to `now() + 7 days` (ISO 8601 in responses).
 3. `activo` SHALL default `true`; set to `false` on deactivation (no reactivation).
-4. All operations SHALL scope to `vendedor_id` matching the authenticated user's vendedor record.
+4. All operations SHALL resolve `Vendedor.id` from the authenticated `AuthUser.id` **before** any data access, using a `VendedorResolver` injectable service that queries `prisma.vendedor.findUnique({ where: { auth_user_id: authUserId } })`. The resolved `Vendedor.id` SHALL be used as `vendedor_id` for all persistence and query scoping. This is a two-step resolution: `AuthUser.id` → `Vendedor.id` (via `auth_user_id` FK) → data access.
 5. Vendedor profile's `qrCode` field — NOT wired in this change. (TODO: future change should return active QrCode codigo/url.)
 6. `GenerarQRResponse.qrCode` — MVP returns `codigo` string. TODO: future change should return Base64 PNG image; update contracts type accordingly.
+7. `VendedorResolver` SHALL throw `NotFoundException('Vendedor profile not found')` if no Vendedor record matches the given `authUserId`. Implemented as an injectable service in `common/prisma/vendedor-resolver.service.ts` so both `QrCodesModule` and `LinkInvitacionModule` can use it.
 
 ## Roles Matrix
 
@@ -105,3 +125,4 @@ MUST set `activo = false` on own QrCode. SHALL return 404 if not found or not ow
 | 401 | Missing or invalid JWT |
 | 403 | Not a VENDEDOR (VendedorGuard) |
 | 404 | QrCode not found or not owned |
+| 404 | Vendedor profile not found — when `VendedorResolver` finds no Vendedor record for the authenticated user |
