@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { QrCodesService } from './qr-codes.service';
+import { VendedorResolver } from '../common/prisma/vendedor-resolver.service';
 import { VendedorGuard } from '../vendedores/guards/vendedor.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ListQrCodesDto } from './dto/list-qr-codes.dto';
@@ -16,11 +17,15 @@ import { ListQrCodesDto } from './dto/list-qr-codes.dto';
 @Controller('qr-codes')
 @UseGuards(AuthGuard('jwt'), VendedorGuard)
 export class QrCodesVendorController {
-  constructor(private readonly qrCodesService: QrCodesService) {}
+  constructor(
+    private readonly qrCodesService: QrCodesService,
+    private readonly resolver: VendedorResolver,
+  ) {}
 
   @Post()
   async create(@CurrentUser('userId') userId: string) {
-    const qr = await this.qrCodesService.create(userId);
+    const vendedorId = await this.resolver.resolve(userId);
+    const qr = await this.qrCodesService.create(vendedorId);
     return {
       qrCode: qr.codigo,
       url: `https://agua.app/invitar/${qr.codigo}`,
@@ -33,7 +38,8 @@ export class QrCodesVendorController {
     @CurrentUser('userId') userId: string,
     @Query() dto: ListQrCodesDto,
   ) {
-    return this.qrCodesService.list(userId, dto);
+    const vendedorId = await this.resolver.resolve(userId);
+    return this.qrCodesService.list(vendedorId, dto);
   }
 
   @Patch(':id/deactivate')
@@ -41,6 +47,7 @@ export class QrCodesVendorController {
     @Param('id') id: string,
     @CurrentUser('userId') userId: string,
   ) {
-    return this.qrCodesService.deactivate(id, userId);
+    const vendedorId = await this.resolver.resolve(userId);
+    return this.qrCodesService.deactivate(id, vendedorId);
   }
 }

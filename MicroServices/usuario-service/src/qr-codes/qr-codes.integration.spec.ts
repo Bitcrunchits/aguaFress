@@ -94,6 +94,7 @@ describe('QrCodes Integration', () => {
     beforeEach(() => {
       vendedorToken = signToken('vendor-user-1', 'vendedor', 'vendedor@test.com');
       mockPrisma.authUser.findUnique.mockResolvedValue(MOCK_USERS.vendedor);
+      mockPrisma.vendedor.findUnique.mockResolvedValue(MOCK_VENDEDOR);
     });
 
     it('completa ciclo: create QR → list QR → deactivate QR', async () => {
@@ -292,6 +293,7 @@ describe('QrCodes Integration', () => {
     beforeEach(() => {
       vendedorToken = signToken('vendor-user-1', 'vendedor', 'vendedor@test.com');
       mockPrisma.authUser.findUnique.mockResolvedValue(MOCK_USERS.vendedor);
+      mockPrisma.vendedor.findUnique.mockResolvedValue(MOCK_VENDEDOR);
     });
 
     it('lanza 404 al desactivar QR que no existe', async () => {
