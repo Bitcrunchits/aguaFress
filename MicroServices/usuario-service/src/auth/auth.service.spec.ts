@@ -4,6 +4,7 @@ import { UserRole } from '@agua/contracts';
 import { TokenService } from './token.service';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
 import * as bcrypt from 'bcrypt';
 
 jest.mock('bcrypt', () => ({
@@ -32,6 +33,10 @@ const mockTokenService = {
   verifyRefreshToken: jest.fn(),
 };
 
+const mockAuditLogService = {
+  record: jest.fn(),
+};
+
 describe('AuthService', () => {
   let authService: AuthService;
 
@@ -47,6 +52,7 @@ describe('AuthService', () => {
         AuthService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: TokenService, useValue: mockTokenService },
+        { provide: AuditLogService, useValue: mockAuditLogService },
       ],
     }).compile();
 

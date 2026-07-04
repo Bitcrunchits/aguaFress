@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { AuditAction } from '@agua/contracts';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { cleanUpdateInput } from '../common/utils/prisma.utils';
+import { AuditLogService } from '../audit-log/audit-log.service';
 
 interface ListParams {
   page?: number;
@@ -61,7 +63,10 @@ const CARTERA_FILTER = (userId: string) => ({
 
 @Injectable()
 export class ClientesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   // ─── ADMIN METHODS ─────────────────────────────────────────────
 
@@ -122,7 +127,7 @@ export class ClientesService {
   async update(id: string, dto: UpdateClienteDto) {
     const existing = await this.prisma.cliente.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, auth_user_id: true },
     });
 
     if (!existing) {
@@ -131,15 +136,32 @@ export class ClientesService {
 
     const data = cleanUpdateInput(dto) as Prisma.ClienteUpdateInput;
 
-    return this.prisma.cliente.update({
+    const result = await this.prisma.cliente.update({
       where: { id },
       data,
       include: CLIENTE_INCLUDE,
     });
+
+    await this.auditLogService.record(AuditAction.CLIENTE_UPDATED, existing.auth_user_id, {
+      targetId: id,
+    });
+
+    return result;
   }
 
   async reassign(id: string, dto: ReasignarVendedorDto) {
-    return this.prisma.$transaction(async (tx) => {
+    const current = await this.prisma.cliente.findUnique({
+      where: { id },
+      select: { vendedor_id: true, auth_user_id: true },
+    });
+
+    if (!current) {
+      throw new NotFoundException('Cliente not found');
+    }
+
+    const vendedorAnteriorId = current.vendedor_id;
+
+    const cliente = await this.prisma.$transaction(async (tx) => {
       const targetVendedor = await tx.vendedor.findUnique({
         where: { id: dto.vendedorId },
         select: { id: true },
@@ -155,7 +177,7 @@ export class ClientesService {
         data: { activo: false },
       });
 
-      const cliente = await tx.cliente.update({
+      const updated = await tx.cliente.update({
         where: { id },
         data: { vendedor_id: dto.vendedorId },
         include: CLIENTE_INCLUDE,
@@ -176,8 +198,15 @@ export class ClientesService {
         update: { activo: true },
       });
 
-      return cliente;
+      return updated;
     });
+
+    await this.auditLogService.record(AuditAction.CLIENTE_REASSIGNED, current.auth_user_id, {
+      targetId: id,
+      detail: { vendedorAnteriorId, vendedorNuevoId: dto.vendedorId },
+    });
+
+    return cliente;
   }
 
   // ─── VENDEDOR-SCOPED METHODS (cartera) ─────────────────────────

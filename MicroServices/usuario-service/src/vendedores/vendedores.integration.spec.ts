@@ -4,6 +4,8 @@ import { ConfigModule } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as request from 'supertest';
 import { VendedoresModule } from './vendedores.module';
+import { AuditLogModule } from '../audit-log/audit-log.module';
+import { AuditLogService } from '../audit-log/audit-log.service';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { VendedorEstado } from '@agua/contracts';
 import jwtConfig from '../common/config/env.config';
@@ -87,11 +89,14 @@ describe('Vendedores Integration', () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [
         VendedoresModule,
+        AuditLogModule,
         ConfigModule.forRoot({ isGlobal: true, load: [jwtConfig] }),
       ],
     })
       .overrideProvider(PrismaService)
       .useValue(mockPrisma)
+      .overrideProvider(AuditLogService)
+      .useValue({ record: jest.fn().mockResolvedValue(undefined) })
       .compile();
 
     app = module.createNestApplication();

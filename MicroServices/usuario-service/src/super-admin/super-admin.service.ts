@@ -1,11 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { AuditAction } from '@agua/contracts';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { UpdateSuperAdminProfileDto } from './dto/update-super-admin.dto';
 import { cleanUpdateInput } from '../common/utils/prisma.utils';
+import { AuditLogService } from '../audit-log/audit-log.service';
 
 @Injectable()
 export class SuperAdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   async getProfile(userId: string) {
     const admin = await this.prisma.superAdmin.findUnique({
@@ -48,7 +53,7 @@ export class SuperAdminService {
       return existing;
     }
 
-    return this.prisma.superAdmin.update({
+    const result = await this.prisma.superAdmin.update({
       where: { auth_user_id: userId },
       data,
       select: {
@@ -59,6 +64,12 @@ export class SuperAdminService {
         updated_at: true,
       },
     });
+
+    await this.auditLogService.record(AuditAction.SUPER_ADMIN_UPDATED, userId, {
+      targetId: result.id,
+    });
+
+    return result;
   }
 
   async getDashboard(userId: string) {

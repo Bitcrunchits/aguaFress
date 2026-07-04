@@ -172,6 +172,8 @@ model AuditLog {
   actor  AuthUser? @relation("AuditLogActor", fields: [usuario_id], references: [id])
   target AuthUser? @relation("AuditLogTarget", fields: [target_id], references: [id])
 
+  @@index([usuario_id])
+  @@index([created_at])
   @@map("AUDIT_LOG")
 }
 

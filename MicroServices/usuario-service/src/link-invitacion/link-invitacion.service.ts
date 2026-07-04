@@ -6,12 +6,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { AuditAction } from '@agua/contracts';
 import { PrismaService } from '../common/prisma/prisma.service';
 import type { ListLinkInvitacionDto } from './dto/list-link-invitacion.dto';
+import { AuditLogService } from '../audit-log/audit-log.service';
 
 @Injectable()
 export class LinkInvitacionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   private generateToken(): string {
     return crypto.randomUUID().slice(0, 8);
@@ -20,13 +25,19 @@ export class LinkInvitacionService {
   async create(vendedorId: string) {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        return await this.prisma.linkInvitacion.create({
+        const link = await this.prisma.linkInvitacion.create({
           data: {
             vendedor_id: vendedorId,
             token: this.generateToken(),
             expires_at: new Date(Date.now() + 48 * 60 * 60 * 1000),
           },
         });
+
+        await this.auditLogService.record(AuditAction.LINK_CREATED, link.vendedor_id, {
+          targetId: link.id,
+        });
+
+        return link;
       } catch (error) {
         if (
           error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -120,5 +131,9 @@ export class LinkInvitacionService {
       if (!exists) throw new NotFoundException('LinkInvitacion not found');
       throw new BadRequestException('LinkInvitacion is already inactive');
     }
+
+    await this.auditLogService.record(AuditAction.LINK_DEACTIVATED, vendedorId ?? 'system', {
+      targetId: id,
+    });
   }
 }

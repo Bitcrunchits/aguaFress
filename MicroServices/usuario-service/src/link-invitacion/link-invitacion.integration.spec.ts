@@ -4,6 +4,8 @@ import { ConfigModule } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as request from 'supertest';
 import { LinkInvitacionModule } from './link-invitacion.module';
+import { AuditLogModule } from '../audit-log/audit-log.module';
+import { AuditLogService } from '../audit-log/audit-log.service';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { VendedorResolver } from '../common/prisma/vendedor-resolver.service';
 import { UserRole, VendedorEstado } from '@agua/contracts';
@@ -69,6 +71,7 @@ describe('LinkInvitacion Integration', () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [
         LinkInvitacionModule,
+        AuditLogModule,
         ConfigModule.forRoot({ isGlobal: true, load: [jwtConfig] }),
       ],
     })
@@ -76,6 +79,8 @@ describe('LinkInvitacion Integration', () => {
       .useValue(mockPrisma)
       .overrideProvider(VendedorResolver)
       .useValue({ resolve: jest.fn().mockResolvedValue('vendor-user-1') })
+      .overrideProvider(AuditLogService)
+      .useValue({ record: jest.fn().mockResolvedValue(undefined) })
       .compile();
 
     app = module.createNestApplication();

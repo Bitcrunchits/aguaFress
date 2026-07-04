@@ -7,6 +7,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { LinkInvitacionService } from './link-invitacion.service';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
 
 const mockPrisma = {
   linkInvitacion: {
@@ -31,6 +32,7 @@ describe('LinkInvitacionService', () => {
       providers: [
         LinkInvitacionService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: AuditLogService, useValue: { record: jest.fn() } },
       ],
     }).compile();
 

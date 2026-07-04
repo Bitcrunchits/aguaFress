@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 import { TokenService } from './token.service';
 import { UsersService } from '../users/users.service';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
 import * as bcrypt from 'bcrypt';
 
 jest.mock('bcrypt', () => ({
@@ -57,6 +58,7 @@ describe('Auth Integration: register → login → refresh → profile', () => {
         TokenService,
         UsersService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: AuditLogService, useValue: { record: jest.fn() } },
         {
           provide: ConfigService,
           useValue: {

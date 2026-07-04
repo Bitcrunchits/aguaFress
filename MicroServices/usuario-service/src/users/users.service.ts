@@ -1,9 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { AuditAction } from '@agua/contracts';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UserRole } from '@prisma/client';
 import { cleanUpdateInput } from '../common/utils/prisma.utils';
+import { AuditLogService } from '../audit-log/audit-log.service';
 
 const ADDRESS_MAP: Partial<Record<keyof NonNullable<UpdateProfileDto['address']>, string>> = {
   calle: 'direccion_calle',
@@ -20,7 +22,10 @@ const ADDRESS_MAP: Partial<Record<keyof NonNullable<UpdateProfileDto['address']>
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   async getProfile(userId: string) {
     const user = await this.prisma.authUser.findUnique({
@@ -133,6 +138,8 @@ export class UsersService {
         data,
       });
     }
+
+    await this.auditLogService.record(AuditAction.PROFILE_UPDATED, userId);
 
     return this.getProfile(userId);
   }

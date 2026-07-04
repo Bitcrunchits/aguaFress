@@ -42,6 +42,22 @@ export enum TipoFactura {
   C = 'C',
 }
 
+// ─── Acciones de auditoría ───
+export enum AuditAction {
+  USER_REGISTERED = 'USER_REGISTERED',
+  USER_LOGIN = 'USER_LOGIN',
+  VENDEDOR_UPDATED = 'VENDEDOR_UPDATED',
+  VENDEDOR_STATUS_CHANGED = 'VENDEDOR_STATUS_CHANGED',
+  CLIENTE_UPDATED = 'CLIENTE_UPDATED',
+  CLIENTE_REASSIGNED = 'CLIENTE_REASSIGNED',
+  QR_CREATED = 'QR_CREATED',
+  QR_DEACTIVATED = 'QR_DEACTIVATED',
+  LINK_CREATED = 'LINK_CREATED',
+  LINK_DEACTIVATED = 'LINK_DEACTIVATED',
+  SUPER_ADMIN_UPDATED = 'SUPER_ADMIN_UPDATED',
+  PROFILE_UPDATED = 'PROFILE_UPDATED',
+}
+
 // ─── Nombres de streams Redis ───
 // Cada servicio PUBLICA en su stream y los demás CONSUMEN.
 // Notifications solo consume (activity_log), no publica.

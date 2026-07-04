@@ -5,9 +5,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { VendedorEstado } from '@agua/contracts';
+import { VendedorEstado, AuditAction } from '@agua/contracts';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { cleanUpdateInput } from '../common/utils/prisma.utils';
+import { AuditLogService } from '../audit-log/audit-log.service';
 
 interface ListParams {
   page?: number;
@@ -48,7 +49,10 @@ const VALID_TRANSITIONS: Record<VendedorEstado, VendedorEstado[]> = {
 
 @Injectable()
 export class VendedoresService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   async list(params: ListParams = {}) {
     const page = params.page ?? 1;
@@ -112,7 +116,7 @@ export class VendedoresService {
   async update(id: string, dto: UpdateVendedorDto) {
     const existing = await this.prisma.vendedor.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, auth_user_id: true },
     });
 
     if (!existing) {
@@ -121,16 +125,22 @@ export class VendedoresService {
 
     const data = cleanUpdateInput(dto) as Prisma.VendedorUpdateInput;
 
-    return this.prisma.vendedor.update({
+    const result = await this.prisma.vendedor.update({
       where: { id },
       data,
     });
+
+    await this.auditLogService.record(AuditAction.VENDEDOR_UPDATED, existing.auth_user_id, {
+      targetId: id,
+    });
+
+    return result;
   }
 
   async changeEstado(id: string, dto: ChangeEstadoDto) {
     const vendedor = await this.prisma.vendedor.findUnique({
       where: { id },
-      select: { id: true, estado: true },
+      select: { id: true, estado: true, auth_user_id: true },
     });
 
     if (!vendedor) {
@@ -148,10 +158,17 @@ export class VendedoresService {
       );
     }
 
-    return this.prisma.vendedor.update({
+    const result = await this.prisma.vendedor.update({
       where: { id },
       data: { estado: targetEstado as any },
     });
+
+    await this.auditLogService.record(AuditAction.VENDEDOR_STATUS_CHANGED, vendedor.auth_user_id, {
+      targetId: id,
+      detail: { estadoAnterior: currentEstado, estadoNuevo: targetEstado },
+    });
+
+    return result;
   }
 
   async getMyProfile(userId: string) {

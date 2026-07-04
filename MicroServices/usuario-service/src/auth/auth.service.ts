@@ -6,6 +6,8 @@ import { UserRole, VendedorEstado } from '@prisma/client';
 import { RegisterDto } from './dto/register.dto';
 import { RegisterVendedorDto } from './dto/register-vendedor.dto';
 import { LoginDto } from './dto/login.dto';
+import { AuditAction } from '@agua/contracts';
+import { AuditLogService } from '../audit-log/audit-log.service';
 
 @Injectable()
 export class AuthService {
@@ -14,6 +16,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tokenService: TokenService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   private mapRoleToPrisma(role: string): 'cliente' | 'vendedor' {
@@ -74,6 +77,8 @@ export class AuthService {
 
     const tokens = await this.tokenService.generateTokens(result.id, result.email, result.role);
 
+    await this.auditLogService.record(AuditAction.USER_REGISTERED, result.id);
+
     return {
       user: { id: result.id, email: result.email, role: result.role },
       ...tokens,
@@ -109,6 +114,8 @@ export class AuthService {
       return vendedor;
     });
 
+    await this.auditLogService.record(AuditAction.USER_REGISTERED, result.auth_user_id);
+
     return {
       status: 'pendiente' as const,
       vendedorId: result.id,
@@ -142,6 +149,8 @@ export class AuthService {
       nombre = profile?.nombre;
       apellido = profile?.apellido || undefined;
     }
+
+    await this.auditLogService.record(AuditAction.USER_LOGIN, user.id);
 
     return {
       ...tokens,

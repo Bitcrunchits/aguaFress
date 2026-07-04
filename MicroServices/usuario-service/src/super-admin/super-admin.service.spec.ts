@@ -2,6 +2,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { SuperAdminService } from './super-admin.service';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
 
 const mockPrisma = {
   superAdmin: {
@@ -31,6 +32,7 @@ describe('SuperAdminService', () => {
       providers: [
         SuperAdminService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: AuditLogService, useValue: { record: jest.fn() } },
       ],
     }).compile();
 

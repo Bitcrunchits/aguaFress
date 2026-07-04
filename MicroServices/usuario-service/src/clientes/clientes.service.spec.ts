@@ -3,6 +3,7 @@ import { NotFoundException } from '@nestjs/common';
 import { TipoFactura } from '@agua/contracts';
 import { ClientesService } from './clientes.service';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
 
 const mockTx = {
   vendedor: { findUnique: jest.fn() },
@@ -42,6 +43,7 @@ describe('ClientesService', () => {
       providers: [
         ClientesService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: AuditLogService, useValue: { record: jest.fn() } },
       ],
     }).compile();
 

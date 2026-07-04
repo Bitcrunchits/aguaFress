@@ -4,6 +4,8 @@ import { ConfigModule } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as request from 'supertest';
 import { SuperAdminModule } from './super-admin.module';
+import { AuditLogModule } from '../audit-log/audit-log.module';
+import { AuditLogService } from '../audit-log/audit-log.service';
 import { PrismaService } from '../common/prisma/prisma.service';
 import jwtConfig from '../common/config/env.config';
 
@@ -66,11 +68,14 @@ describe('SuperAdmin Integration', () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [
         SuperAdminModule,
+        AuditLogModule,
         ConfigModule.forRoot({ isGlobal: true, load: [jwtConfig] }),
       ],
     })
       .overrideProvider(PrismaService)
       .useValue(mockPrisma)
+      .overrideProvider(AuditLogService)
+      .useValue({ record: jest.fn().mockResolvedValue(undefined) })
       .compile();
 
     app = module.createNestApplication();

@@ -6,12 +6,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { AuditAction } from '@agua/contracts';
 import { PrismaService } from '../common/prisma/prisma.service';
 import type { ListQrCodesDto } from './dto/list-qr-codes.dto';
+import { AuditLogService } from '../audit-log/audit-log.service';
 
 @Injectable()
 export class QrCodesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   private generateCodigo(): string {
     return crypto.randomUUID().slice(0, 8);
@@ -20,13 +25,19 @@ export class QrCodesService {
   async create(vendedorId: string) {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        return await this.prisma.qrCode.create({
+        const qr = await this.prisma.qrCode.create({
           data: {
             vendedor_id: vendedorId,
             codigo: this.generateCodigo(),
             expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           },
         });
+
+        await this.auditLogService.record(AuditAction.QR_CREATED, qr.vendedor_id, {
+          targetId: qr.id,
+        });
+
+        return qr;
       } catch (error) {
         if (
           error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -105,5 +116,9 @@ export class QrCodesService {
       if (!exists) throw new NotFoundException('QR code not found');
       throw new BadRequestException('QR code is already inactive');
     }
+
+    await this.auditLogService.record(AuditAction.QR_DEACTIVATED, vendedorId ?? 'system', {
+      targetId: id,
+    });
   }
 }

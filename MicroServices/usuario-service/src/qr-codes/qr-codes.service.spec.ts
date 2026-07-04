@@ -7,6 +7,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { QrCodesService } from './qr-codes.service';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
 
 const mockPrisma = {
   qrCode: {
@@ -31,6 +32,7 @@ describe('QrCodesService', () => {
       providers: [
         QrCodesService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: AuditLogService, useValue: { record: jest.fn() } },
       ],
     }).compile();
 

@@ -3,6 +3,7 @@ import { NotFoundException } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { UsersService } from './users.service';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
 const mockPrisma = {
@@ -22,6 +23,7 @@ describe('UsersService', () => {
       providers: [
         UsersService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: AuditLogService, useValue: { record: jest.fn() } },
       ],
     }).compile();
 

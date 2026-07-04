@@ -7,6 +7,7 @@ import {
 import { VendedorEstado } from '@agua/contracts';
 import { VendedoresService } from './vendedores.service';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
 
 const mockPrisma = {
   vendedor: {
@@ -31,6 +32,7 @@ describe('VendedoresService', () => {
       providers: [
         VendedoresService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: AuditLogService, useValue: { record: jest.fn() } },
       ],
     }).compile();
 
