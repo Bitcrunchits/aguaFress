@@ -8,28 +8,28 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 
 export interface VendedorProfile {
   nombre: string;
-  apellido: string | null;
+  apellido: string;
   empresa: string | null;
   logo: string | null;
   estado: string;
-  ciudadDefault: string | null;
+  ciudadDefault: string;
   zonaEntrega: string | null;
 }
 
 export interface ClienteProfile {
   nombre: string;
-  apellido: string | null;
-  telefono: string | null;
-  dni: string | null;
-  tipoFactura: string | null;
+  apellido: string;
+  telefono: string;
+  dni: string;
+  tipoFactura: string;
   direccionEntrega: {
-    calle: string | null;
-    numero: string | null;
+    calle: string;
+    numero: string;
     pisoDepto: string | null;
     referencia: string | null;
     barrio: string | null;
-    ciudad: string | null;
-    provincia: string | null;
+    ciudad: string;
+    provincia: string;
     codigoPostal: string | null;
   };
 }
