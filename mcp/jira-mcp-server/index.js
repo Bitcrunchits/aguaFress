@@ -33,7 +33,7 @@ server.registerTool(
   },
   async ({ jql, maxResults = 50 }) => {
     console.error(`Running JQL: ${jql}`);
-    const response = await jira.issueSearch.searchForIssuesUsingJql({ jql, maxResults });
+    const response = await jira.issueSearch.searchForIssuesUsingJqlEnhancedSearch({ jql, maxResults, fields: ['key', 'summary', 'status', 'assignee', 'issuetype'] });
     console.error(`Found ${response.issues?.length || 0} issues`);
     return {
       content: [{ type: 'text', text: JSON.stringify(response.issues, null, 2) }],
@@ -178,7 +178,7 @@ server.registerTool(
   },
   async ({ jql }) => {
     console.error(`Searching: ${jql}`);
-    const response = await jira.issueSearch.searchForIssuesUsingJql({ jql });
+    const response = await jira.issueSearch.searchForIssuesUsingJqlEnhancedSearch({ jql, fields: ['key', 'summary', 'status', 'assignee', 'issuetype'] });
     return {
       content: [{ type: 'text', text: JSON.stringify(response.issues, null, 2) }],
     };

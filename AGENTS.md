@@ -91,6 +91,11 @@ docker compose exec postgres psql -U postgres -d agua  # consola SQL
 docker compose down -v                  # destruir todo + volúmenes
 ```
 
+### 🔥 REGLAS ABSOLUTAS (NO NEGOCIABLES)
+
+- **NUNCA mergear a `develop` sin orden explícita del usuario.** Punto. No preguntar, no sugerir, no asumir.
+- Solo mergear a feature/tracker branches a menos que se indique lo contrario.
+
 ### Pendiente para próxima sesión
 - Revisar Jira
 - Implementar AuthModule y UsersModule (controllers + servicios)
