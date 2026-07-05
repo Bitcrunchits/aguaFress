@@ -14,7 +14,7 @@ import { map } from 'rxjs/operators';
  * NO transforma respuestas que ya sean:
  *   - Streams (archivos, PDFs)
  *   - null / undefined (vacíos)
- *   - Objetos con propiedad `data` (evita doble wrap)
+ *   - Objetos paginados (contienen `data` + `pagination` → evita doble wrap)
  *
  * Registrado como APP_INTERCEPTOR en CommonModule.
  */
@@ -27,7 +27,15 @@ export class TransformInterceptor implements NestInterceptor {
       map((data) => {
         // Si ya está transformado o es respuesta especial, pasar limpio
         if (data === null || data === undefined) return data;
-        if (typeof data === 'object' && 'data' in data) return data;
+
+        // Paginated response — already has the shape we wrap with
+        if (
+          typeof data === 'object' &&
+          'data' in data &&
+          'pagination' in data
+        ) {
+          return data;
+        }
 
         return {
           data,

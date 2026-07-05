@@ -178,7 +178,8 @@ describe('Auth Integration: register → login → refresh → profile', () => {
       expect(profileResult.role).toBe('cliente');
       expect(profileResult.profile).toBeDefined();
       expect(profileResult.profile!.nombre).toBe('Ana');
-      expect(profileResult.profile!.direccionEntrega.calle).toBe('Calle Falsa');
+      const clienteProfile = profileResult.profile as { direccionEntrega: { calle: string } };
+      expect(clienteProfile.direccionEntrega.calle).toBe('Calle Falsa');
     });
   });
 

@@ -1,12 +1,8 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-
-export interface JwtPayload {
-  sub: string;
-  email: string;
-  role: string;
-}
+import { randomUUID } from 'node:crypto';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 @Injectable()
 export class TokenService {
@@ -16,7 +12,8 @@ export class TokenService {
   ) {}
 
   async generateTokens(userId: string, email: string, role: string) {
-    const payload: JwtPayload = { sub: userId, email, role };
+    const jti = randomUUID();
+    const payload: JwtPayload = { sub: userId, email, role, jti };
     const [token, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload),
       this.jwtService.signAsync(payload, {
@@ -28,7 +25,7 @@ export class TokenService {
   }
 
   async generateAccessToken(userId: string, email: string, role: string) {
-    const payload: JwtPayload = { sub: userId, email, role };
+    const payload: JwtPayload = { sub: userId, email, role, jti: randomUUID() };
     return this.jwtService.signAsync(payload);
   }
 

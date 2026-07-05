@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsEnum, IsNumber, MaxLength } from 'class-validator';
+import { IsOptional, IsString, IsBoolean, IsEnum, IsNumber, MaxLength, Length } from 'class-validator';
 import { TipoFactura } from '@agua/contracts';
 
 export class UpdateClienteDto {
@@ -14,7 +14,7 @@ export class UpdateClienteDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(20)
+  @Length(8, 20)
   dni?: string;
 
   @IsOptional()
@@ -28,7 +28,7 @@ export class UpdateClienteDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(255)
+  @MaxLength(200)
   direccionCalle?: string;
 
   @IsOptional()
@@ -65,6 +65,50 @@ export class UpdateClienteDto {
   @IsString()
   @MaxLength(20)
   direccionCp?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  mismaDireccionEntrega?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  entregaCalle?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  entregaNumero?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  entregaPiso?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  entregaReferencia?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  entregaBarrio?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  entregaCiudad?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  entregaProvincia?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  entregaCp?: string;
 
   @IsOptional()
   @IsNumber()

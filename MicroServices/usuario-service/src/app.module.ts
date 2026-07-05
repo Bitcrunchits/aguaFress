@@ -12,29 +12,7 @@ import { LinkInvitacionModule } from './link-invitacion/link-invitacion.module';
 import { AuditLogModule } from './audit-log/audit-log.module';
 import jwtConfig from './common/config/env.config';
 
-//
-// ╔══════════════════════════════════════════════════════════════════════════════╗
-// ║                                                                              ║
-// ║   ⚠️  ATENCIÓN — PRÓXIMO PASO IMPORTANTE  ⚠️                                  ║
-// ║                                                                              ║
-// ║   @nestjs/event-emitter YA ESTÁ INSTALADO y EventEmitterModule.forRoot()     ║
-// ║   ya está importado abajo. Lo que FALTA es:                                  ║
-// ║                                                                              ║
-// ║   1. Crear eventos de dominio (ej: VendedorActivadoEvent)                    ║
-// ║   2. Dispararlos con eventEmitter.emit() en los services                     ║
-// ║   3. Escucharlos con @OnEvent() en listeners                                 ║
-// ║                                                                              ║
-// ║   ⛔  NO USAR event-emitter para comunicación entre microservicios.           ║
-// ║       Eso va por KAFKA (TCP + Kafka, decidido en la arquitectura).           ║
-// ║                                                                              ║
-// ║   🔜  CUANDO SE CONECTE KAFKA:                                               ║
-// ║       - Los listeners @OnEvent() actuales se reemplazan por un                ║
-// ║         Kafka Producer que publica los eventos al bus                         ║
-// ║       - O los listeners actuales llaman al producer internamente              ║
-// ║       - Ver diseño en openspec/changes/vendedores-module/ para contexto       ║
-// ║                                                                              ║
-// ╚══════════════════════════════════════════════════════════════════════════════╝
-//
+// TODO: implement Kafka producer when ready
 
 @Module({
   imports: [

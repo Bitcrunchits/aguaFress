@@ -85,9 +85,9 @@ describe('SuperAdminController', () => {
       };
       mockSuperAdminService.getDashboard.mockResolvedValue(expected);
 
-      const result = await controller.getDashboard('user-1');
+      const result = await controller.getDashboard();
 
-      expect(service.getDashboard).toHaveBeenCalledWith('user-1');
+      expect(service.getDashboard).toHaveBeenCalledWith('system');
       expect(result).toEqual(expected);
     });
   });

@@ -1,4 +1,4 @@
-import { IsEmail, IsString, IsOptional, MinLength } from 'class-validator';
+import { IsEmail, IsString, IsOptional, MinLength, MaxLength, Length } from 'class-validator';
 
 export class RegisterVendedorDto {
   @IsEmail()
@@ -13,11 +13,30 @@ export class RegisterVendedorDto {
   nombre: string;
 
   @IsString()
-  telefono: string;
+  @MinLength(2)
+  @MaxLength(100)
+  apellido: string;
+
+  @IsString()
+  @Length(8, 8)
+  dni: string;
 
   @IsOptional()
   @IsString()
-  ciudad?: string;
+  @MaxLength(15)
+  cuil?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(15)
+  cuit?: string;
+
+  @IsString()
+  telefono: string;
+
+  @IsString()
+  @MinLength(2)
+  ciudad: string;
 
   @IsOptional()
   @IsString()

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { AuditAction } from '@agua/contracts';
+import { AuditAction, VendedorEstado } from '@agua/contracts';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { UpdateSuperAdminProfileDto } from './dto/update-super-admin.dto';
 import { cleanUpdateInput } from '../common/utils/prisma.utils';
@@ -72,7 +72,7 @@ export class SuperAdminService {
     return result;
   }
 
-  async getDashboard(userId: string) {
+  async getDashboard() {
     const [
       totalVendedores,
       totalClientes,
@@ -83,8 +83,8 @@ export class SuperAdminService {
     ] = await Promise.all([
       this.prisma.vendedor.count(),
       this.prisma.cliente.count(),
-      this.prisma.vendedor.count({ where: { estado: 'activo' } }),
-      this.prisma.vendedor.count({ where: { estado: 'pendiente' } }),
+      this.prisma.vendedor.count({ where: { estado: VendedorEstado.ACTIVO } }),
+      this.prisma.vendedor.count({ where: { estado: VendedorEstado.PENDIENTE } }),
       this.prisma.cartera.count({ where: { activo: true } }),
       this.prisma.superAdmin.count(),
     ]);

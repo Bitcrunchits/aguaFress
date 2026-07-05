@@ -113,7 +113,7 @@ describe('ClientesService', () => {
       },
     ];
 
-    it('devuelve lista paginada con valores por defecto', async () => {
+    it('returns paginated list with default values', async () => {
       prisma.cliente.findMany.mockResolvedValue(mockClientes);
       prisma.cliente.count.mockResolvedValue(2);
 
@@ -466,7 +466,7 @@ describe('ClientesService', () => {
   //  LIST MIOS — vendedor-scoped (cartera)
   // ═══════════════════════════════════════════════
 
-  describe('listMios', () => {
+  describe('listOwn', () => {
     const mockClientesCartera = [
       {
         id: 'cliente-1',
@@ -491,7 +491,7 @@ describe('ClientesService', () => {
       prisma.cliente.findMany.mockResolvedValue(mockClientesCartera);
       prisma.cliente.count.mockResolvedValue(1);
 
-      const result = await service.listMios('user-vendedor-1', {});
+      const result = await service.listOwn('user-vendedor-1', {});
 
       expect(prisma.cliente.findMany).toHaveBeenCalledWith({
         skip: 0,
@@ -522,7 +522,7 @@ describe('ClientesService', () => {
       prisma.cliente.findMany.mockResolvedValue([]);
       prisma.cliente.count.mockResolvedValue(0);
 
-      await service.listMios('user-vendedor-1', { search: 'Pérez' });
+      await service.listOwn('user-vendedor-1', { search: 'Pérez' });
 
       expect(prisma.cliente.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -539,11 +539,11 @@ describe('ClientesService', () => {
       );
     });
 
-    it('pagina correctamente en listMios', async () => {
+    it('pagina correctamente en listOwn', async () => {
       prisma.cliente.findMany.mockResolvedValue([]);
       prisma.cliente.count.mockResolvedValue(0);
 
-      const result = await service.listMios('user-vendedor-1', { page: 2, limit: 5 });
+      const result = await service.listOwn('user-vendedor-1', { page: 2, limit: 5 });
 
       expect(prisma.cliente.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ skip: 5, take: 5 }),
@@ -557,7 +557,7 @@ describe('ClientesService', () => {
   //  GET BY ID MIO — vendedor-scoped
   // ═══════════════════════════════════════════════
 
-  describe('getByIdMio', () => {
+  describe('getOwnById', () => {
     const clienteEnCartera = {
       id: 'cliente-1',
       nombre: 'Juan',
@@ -589,7 +589,7 @@ describe('ClientesService', () => {
     it('devuelve cliente si está en la cartera del vendedor', async () => {
       prisma.cliente.findFirst.mockResolvedValue(clienteEnCartera);
 
-      const result = await service.getByIdMio('cliente-1', 'user-vendedor-1');
+      const result = await service.getOwnById('cliente-1', 'user-vendedor-1');
 
       expect(prisma.cliente.findFirst).toHaveBeenCalledWith({
         where: {
@@ -610,7 +610,7 @@ describe('ClientesService', () => {
       prisma.cliente.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.getByIdMio('cliente-no-en-cartera', 'user-vendedor-1'),
+        service.getOwnById('cliente-no-en-cartera', 'user-vendedor-1'),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -618,7 +618,7 @@ describe('ClientesService', () => {
       prisma.cliente.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.getByIdMio('fake-id', 'user-vendedor-1'),
+        service.getOwnById('fake-id', 'user-vendedor-1'),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -627,7 +627,7 @@ describe('ClientesService', () => {
   //  UPDATE MIO — vendedor-scoped
   // ═══════════════════════════════════════════════
 
-  describe('updateMio', () => {
+  describe('updateOwn', () => {
     const clienteEnCartera = {
       id: 'cliente-1',
       nombre: 'Juan',
@@ -641,7 +641,7 @@ describe('ClientesService', () => {
         telefono: '11-5555-0199',
       });
 
-      const result = await service.updateMio('cliente-1', 'user-vendedor-1', {
+      const result = await service.updateOwn('cliente-1', 'user-vendedor-1', {
         telefono: '11-5555-0199',
       });
 
@@ -669,7 +669,7 @@ describe('ClientesService', () => {
       prisma.cliente.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.updateMio('cliente-no-en-cartera', 'user-vendedor-1', {
+        service.updateOwn('cliente-no-en-cartera', 'user-vendedor-1', {
           nombre: 'Test',
         }),
       ).rejects.toThrow(NotFoundException);
@@ -684,7 +684,7 @@ describe('ClientesService', () => {
         direccion_provincia: 'Córdoba',
       });
 
-      await service.updateMio('cliente-1', 'user-vendedor-1', {
+      await service.updateOwn('cliente-1', 'user-vendedor-1', {
         direccionCiudad: 'Córdoba',
         direccionProvincia: 'Córdoba',
       });
@@ -706,7 +706,7 @@ describe('ClientesService', () => {
         nombre: 'Juan Updated',
       });
 
-      await service.updateMio('cliente-1', 'user-vendedor-1', {
+      await service.updateOwn('cliente-1', 'user-vendedor-1', {
         nombre: 'Juan Updated',
       });
 
@@ -721,7 +721,7 @@ describe('ClientesService', () => {
       prisma.cliente.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.updateMio('fake-id', 'user-vendedor-1', {
+        service.updateOwn('fake-id', 'user-vendedor-1', {
           nombre: 'Test',
         }),
       ).rejects.toThrow(NotFoundException);

@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsOptional, IsString, MaxLength, Length } from 'class-validator';
 
 export class UpdateVendedorDto {
   @IsOptional()
@@ -10,6 +10,21 @@ export class UpdateVendedorDto {
   @IsString()
   @MaxLength(20)
   telefono?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(8, 8)
+  dni?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(15)
+  cuil?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(15)
+  cuit?: string;
 
   @IsOptional()
   @IsString()

@@ -3,7 +3,10 @@
  * "tipoFactura" → "tipo_factura", "direccionCp" → "direccion_cp"
  */
 export function camelToSnake(str: string): string {
-  return str.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
+  return str
+    .replace(/([a-z\d])([A-Z])/g, '$1_$2')
+    .replace(/([A-Z]+)([A-Z][a-z\d])/g, '$1_$2')
+    .toLowerCase();
 }
 
 /**

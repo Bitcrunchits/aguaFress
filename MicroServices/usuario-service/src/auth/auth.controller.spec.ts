@@ -119,7 +119,7 @@ describe('AuthController', () => {
       };
       mockAuthService.validate.mockResolvedValue(expected);
 
-      const result = await controller.validate('valid-token');
+      const result = await controller.validate({ token: 'valid-token' });
 
       expect(authService.validate).toHaveBeenCalledWith('valid-token');
       expect(result).toEqual(expected);
@@ -127,13 +127,13 @@ describe('AuthController', () => {
   });
 
   describe('logout', () => {
-    it('delega a AuthService.logout', async () => {
+    it('delega a AuthService.logout con userId', async () => {
       const expected = { message: 'Logged out successfully' };
-      mockAuthService.logout.mockReturnValue(expected);
+      mockAuthService.logout.mockResolvedValue(expected);
 
-      const result = controller.logout();
+      const result = await controller.logout('user-1');
 
-      expect(authService.logout).toHaveBeenCalled();
+      expect(authService.logout).toHaveBeenCalledWith('user-1');
       expect(result).toEqual(expected);
     });
   });

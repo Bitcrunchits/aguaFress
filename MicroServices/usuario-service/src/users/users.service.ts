@@ -1,11 +1,38 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { AuditAction } from '@agua/contracts';
+import { AuditAction, UserRole } from '@agua/contracts';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { UserRole } from '@prisma/client';
 import { cleanUpdateInput } from '../common/utils/prisma.utils';
 import { AuditLogService } from '../audit-log/audit-log.service';
+
+export interface VendedorProfile {
+  nombre: string;
+  apellido: string | null;
+  empresa: string | null;
+  logo: string | null;
+  estado: string;
+  ciudadDefault: string | null;
+  zonaEntrega: string | null;
+}
+
+export interface ClienteProfile {
+  nombre: string;
+  apellido: string | null;
+  telefono: string | null;
+  dni: string | null;
+  tipoFactura: string | null;
+  direccionEntrega: {
+    calle: string | null;
+    numero: string | null;
+    pisoDepto: string | null;
+    referencia: string | null;
+    barrio: string | null;
+    ciudad: string | null;
+    provincia: string | null;
+    codigoPostal: string | null;
+  };
+}
 
 const ADDRESS_MAP: Partial<Record<keyof NonNullable<UpdateProfileDto['address']>, string>> = {
   calle: 'direccion_calle',
@@ -69,7 +96,7 @@ export class UsersService {
 
     if (!user) throw new NotFoundException('User not found');
 
-    let profile: Record<string, any> | undefined;
+    let profile: VendedorProfile | ClienteProfile | undefined;
 
     if (user.vendedor) {
       profile = {
@@ -108,7 +135,7 @@ export class UsersService {
       isActive: user.is_active,
       nombre: profile?.nombre,
       apellido: profile?.apellido,
-      telefono: profile?.telefono,
+      telefono: profile && 'telefono' in profile ? profile.telefono : undefined,
       profile,
     };
   }
@@ -121,7 +148,7 @@ export class UsersService {
 
     if (!user) throw new NotFoundException('User not found');
 
-    if (user.role === UserRole.cliente) {
+    if (user.role === UserRole.CLIENTE) {
       const { address, ...dtoFields } = dto;
       const data = cleanUpdateInput(dtoFields) as Prisma.ClienteUpdateInput;
       if (address) {
@@ -131,7 +158,7 @@ export class UsersService {
         where: { auth_user_id: userId },
         data,
       });
-    } else if (user.role === UserRole.vendedor) {
+    } else if (user.role === UserRole.VENDEDOR) {
       const data = cleanUpdateInput(dto) as Prisma.VendedorUpdateInput;
       await this.prisma.vendedor.update({
         where: { auth_user_id: userId },

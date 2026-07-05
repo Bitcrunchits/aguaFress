@@ -4,41 +4,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, $Enums } from '@prisma/client';
 import { VendedorEstado, AuditAction } from '@agua/contracts';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { cleanUpdateInput } from '../common/utils/prisma.utils';
 import { AuditLogService } from '../audit-log/audit-log.service';
-
-interface ListParams {
-  page?: number;
-  limit?: number;
-  estado?: VendedorEstado;
-  search?: string;
-}
-
-interface ChangeEstadoDto {
-  estado: VendedorEstado;
-  motivo?: string;
-}
-
-interface UpdateVendedorDto {
-  empresa?: string;
-  telefono?: string;
-  logo?: string;
-  ciudadDefault?: string;
-  zonaEntrega?: string;
-}
-
-interface UpdateVendedorProfileDto {
-  nombre?: string;
-  apellido?: string;
-  telefono?: string;
-  empresa?: string;
-  logo?: string;
-  ciudadDefault?: string;
-  zonaEntrega?: string;
-}
+import { ChangeEstadoDto } from './dto/change-estado.dto';
+import { UpdateVendedorDto } from './dto/update-vendedor.dto';
+import { UpdateVendedorProfileDto } from './dto/update-vendedor-profile.dto';
+import { ListVendedoresDto } from './dto/list-vendedores.dto';
 
 const VALID_TRANSITIONS: Record<VendedorEstado, VendedorEstado[]> = {
   [VendedorEstado.PENDIENTE]: [VendedorEstado.ACTIVO],
@@ -49,12 +23,20 @@ const VALID_TRANSITIONS: Record<VendedorEstado, VendedorEstado[]> = {
 
 @Injectable()
 export class VendedoresService {
+  private mapEstado(state: VendedorEstado): $Enums.VendedorEstado {
+    return state as unknown as $Enums.VendedorEstado;
+  }
+
+  private mapPrismaEstado(state: $Enums.VendedorEstado): VendedorEstado {
+    return state as unknown as VendedorEstado;
+  }
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditLogService: AuditLogService,
   ) {}
 
-  async list(params: ListParams = {}) {
+  async list(params: ListVendedoresDto = {}) {
     const page = params.page ?? 1;
     const limit = params.limit ?? 10;
     const skip = (page - 1) * limit;
@@ -62,7 +44,7 @@ export class VendedoresService {
     const where: Prisma.VendedorWhereInput = {};
 
     if (params.estado) {
-      where.estado = params.estado as any;
+      where.estado = this.mapEstado(params.estado);
     }
 
     if (params.search) {
@@ -147,7 +129,7 @@ export class VendedoresService {
       throw new NotFoundException('Vendedor not found');
     }
 
-    const currentEstado = vendedor.estado as unknown as VendedorEstado;
+    const currentEstado = this.mapPrismaEstado(vendedor.estado);
     const targetEstado = dto.estado;
     const allowed = VALID_TRANSITIONS[currentEstado];
 
@@ -160,7 +142,7 @@ export class VendedoresService {
 
     const result = await this.prisma.vendedor.update({
       where: { id },
-      data: { estado: targetEstado as any },
+      data: { estado: this.mapEstado(targetEstado) },
     });
 
     await this.auditLogService.record(AuditAction.VENDEDOR_STATUS_CHANGED, vendedor.auth_user_id, {
@@ -191,7 +173,7 @@ export class VendedoresService {
       throw new NotFoundException('Vendedor not found');
     }
 
-    const estado = vendedor.estado as unknown as VendedorEstado;
+    const estado = this.mapPrismaEstado(vendedor.estado);
     if (estado === VendedorEstado.INACTIVO || estado === VendedorEstado.BLOQUEADO) {
       throw new ForbiddenException(
         `Vendedor is ${estado}. Access denied.`,
@@ -211,7 +193,7 @@ export class VendedoresService {
       throw new NotFoundException('Vendedor not found');
     }
 
-    const estado = vendedor.estado as unknown as VendedorEstado;
+    const estado = this.mapPrismaEstado(vendedor.estado);
     if (estado === VendedorEstado.INACTIVO || estado === VendedorEstado.BLOQUEADO) {
       throw new ForbiddenException(
         `Vendedor is ${estado}. Access denied.`,

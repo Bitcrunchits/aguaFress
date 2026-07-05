@@ -38,6 +38,7 @@ export enum MetodoPago {
 
 // ─── Tipo de factura (Argentina AFIP) ───
 export enum TipoFactura {
+  A = 'A',
   B = 'B',
   C = 'C',
 }

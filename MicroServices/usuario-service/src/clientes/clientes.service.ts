@@ -4,51 +4,10 @@ import { AuditAction } from '@agua/contracts';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { cleanUpdateInput } from '../common/utils/prisma.utils';
 import { AuditLogService } from '../audit-log/audit-log.service';
-
-interface ListParams {
-  page?: number;
-  limit?: number;
-  vendedorId?: string;
-  search?: string;
-}
-
-interface UpdateClienteDto {
-  nombre?: string;
-  apellido?: string;
-  dni?: string;
-  telefono?: string;
-  tipoFactura?: string;
-  direccionCalle?: string;
-  direccionNumero?: string;
-  direccionPiso?: string;
-  direccionReferencia?: string;
-  direccionBarrio?: string;
-  direccionCiudad?: string;
-  direccionProvincia?: string;
-  direccionCp?: string;
-  latitud?: number;
-  longitud?: number;
-}
-
-interface ReasignarVendedorDto {
-  vendedorId: string;
-}
-
-interface UpdateClienteVendedorDto {
-  nombre?: string;
-  apellido?: string;
-  telefono?: string;
-  direccionCalle?: string;
-  direccionNumero?: string;
-  direccionPiso?: string;
-  direccionReferencia?: string;
-  direccionBarrio?: string;
-  direccionCiudad?: string;
-  direccionProvincia?: string;
-  direccionCp?: string;
-  latitud?: number;
-  longitud?: number;
-}
+import { UpdateClienteDto } from './dto/update-cliente.dto';
+import { ReasignarVendedorDto } from './dto/reasignar-vendedor.dto';
+import { UpdateClienteVendedorDto } from './dto/update-cliente-vendedor.dto';
+import { ListClientesDto } from './dto/list-clientes.dto';
 
 const CLIENTE_INCLUDE = {
   vendedor: {
@@ -57,8 +16,8 @@ const CLIENTE_INCLUDE = {
   _count: { select: { cartera: true } },
 };
 
-const CARTERA_FILTER = (userId: string) => ({
-  cartera: { some: { vendedor_id: userId, activo: true } },
+const CARTERA_FILTER = (vendedorId: string) => ({
+  vendedor_id: vendedorId,
 });
 
 @Injectable()
@@ -70,7 +29,7 @@ export class ClientesService {
 
   // ─── ADMIN METHODS ─────────────────────────────────────────────
 
-  async list(params: ListParams = {}) {
+  async list(params: ListClientesDto = {}) {
     const page = params.page ?? 1;
     const limit = params.limit ?? 20;
     const skip = (page - 1) * limit;
@@ -211,7 +170,7 @@ export class ClientesService {
 
   // ─── VENDEDOR-SCOPED METHODS (cartera) ─────────────────────────
 
-  async listMios(userId: string, params: ListParams = {}) {
+  async listOwn(userId: string, params: ListClientesDto = {}) {
     const page = params.page ?? 1;
     const limit = params.limit ?? 20;
     const skip = (page - 1) * limit;
@@ -249,7 +208,7 @@ export class ClientesService {
     };
   }
 
-  async getByIdMio(id: string, userId: string) {
+  async getOwnById(id: string, userId: string) {
     const cliente = await this.prisma.cliente.findFirst({
       where: {
         id,
@@ -265,7 +224,7 @@ export class ClientesService {
     return cliente;
   }
 
-  async updateMio(id: string, userId: string, dto: UpdateClienteVendedorDto) {
+  async updateOwn(id: string, userId: string, dto: UpdateClienteVendedorDto) {
     const existing = await this.prisma.cliente.findFirst({
       where: {
         id,

@@ -1,14 +1,13 @@
 import { Controller, Get, Patch, Body, UseGuards } from '@nestjs/common';
 import { SuperAdminService } from './super-admin.service';
 import { UpdateSuperAdminProfileDto } from './dto/update-super-admin.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UserRole } from '@agua/contracts';
 
 @Controller('super-admin')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(RolesGuard)
 @Roles(UserRole.SUPER_ADMIN)
 export class SuperAdminController {
   constructor(private readonly superAdminService: SuperAdminService) {}
@@ -27,7 +26,7 @@ export class SuperAdminController {
   }
 
   @Get('dashboard')
-  async getDashboard(@CurrentUser('userId') userId: string) {
-    return this.superAdminService.getDashboard(userId);
+  async getDashboard() {
+    return this.superAdminService.getDashboard();
   }
 }

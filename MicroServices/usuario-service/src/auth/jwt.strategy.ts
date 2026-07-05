@@ -3,12 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../common/prisma/prisma.service';
-
-export interface JwtPayload {
-  sub: string;
-  email: string;
-  role: string;
-}
+import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -24,6 +19,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
+    // TODO: Add caching here to avoid DB query on every request
+    // e.g., short-lived cache (30s TTL) for user status
     const user = await this.prisma.authUser.findUnique({
       where: { id: payload.sub },
       select: { id: true, email: true, role: true, is_active: true },

@@ -46,7 +46,7 @@ export class AuditLogInterceptor implements NestInterceptor {
               ip: ip ?? undefined,
             })
             .catch((err: Error) => {
-              Logger.warn(`Audit log failed for ${action}: ${err.message}`, 'AuditLogInterceptor');
+              Logger.error(`Audit log failed for ${action}: ${err.message}`, undefined, 'AuditLogInterceptor');
             });
         },
         error: () => {

@@ -301,7 +301,7 @@ describe('Clientes Integration', () => {
   });
 
   // ────────────────────────────────────────────────────────────────────────
-  // 4.3 — Vendedor scoping: listMios only own cartera, 404 for non-cartera
+  // 4.3 — Vendedor scoping: listOwn only own cartera, 404 for non-cartera
   // ────────────────────────────────────────────────────────────────────────
   describe('4.3 Vendedor scoping', () => {
     let vendedorToken: string;

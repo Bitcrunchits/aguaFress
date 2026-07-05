@@ -2,11 +2,12 @@ import * as crypto from 'crypto';
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { AuditAction } from '@agua/contracts';
+import { AuditAction, VendedorEstado } from '@agua/contracts';
 import { PrismaService } from '../common/prisma/prisma.service';
 import type { ListLinkInvitacionDto } from './dto/list-link-invitacion.dto';
 import { AuditLogService } from '../audit-log/audit-log.service';
@@ -22,7 +23,20 @@ export class LinkInvitacionService {
     return crypto.randomUUID().slice(0, 8);
   }
 
-  async create(vendedorId: string) {
+  async create(vendedorId: string, userId?: string) {
+    const vendedor = await this.prisma.vendedor.findUnique({
+      where: { id: vendedorId },
+      select: { estado: true },
+    });
+
+    if (!vendedor) {
+      throw new NotFoundException('Vendedor not found');
+    }
+
+    if (vendedor.estado === VendedorEstado.INACTIVO || vendedor.estado === VendedorEstado.BLOQUEADO) {
+      throw new ForbiddenException('Cannot create invitation links: vendedor is not active');
+    }
+
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         const link = await this.prisma.linkInvitacion.create({
@@ -33,7 +47,7 @@ export class LinkInvitacionService {
           },
         });
 
-        await this.auditLogService.record(AuditAction.LINK_CREATED, link.vendedor_id, {
+        await this.auditLogService.record(AuditAction.LINK_CREATED, userId ?? link.vendedor_id, {
           targetId: link.id,
         });
 

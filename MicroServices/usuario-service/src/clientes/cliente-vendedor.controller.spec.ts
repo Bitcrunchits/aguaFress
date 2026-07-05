@@ -5,9 +5,9 @@ import { ListClientesDto } from './dto/list-clientes.dto';
 import { UpdateClienteVendedorDto } from './dto/update-cliente-vendedor.dto';
 
 const mockClientesService = {
-  listMios: jest.fn(),
-  getByIdMio: jest.fn(),
-  updateMio: jest.fn(),
+  listOwn: jest.fn(),
+  getOwnById: jest.fn(),
+  updateOwn: jest.fn(),
 };
 
 describe('ClienteVendedorController', () => {
@@ -30,8 +30,8 @@ describe('ClienteVendedorController', () => {
     service = module.get(ClientesService);
   });
 
-  describe('listMios', () => {
-    it('delega a ClientesService.listMios con userId y filtros', async () => {
+  describe('listOwn', () => {
+    it('delega a ClientesService.listOwn con userId y filtros', async () => {
       const filters: ListClientesDto = {
         page: 1,
         limit: 10,
@@ -41,11 +41,11 @@ describe('ClienteVendedorController', () => {
         data: [],
         pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
       };
-      mockClientesService.listMios.mockResolvedValue(expected);
+      mockClientesService.listOwn.mockResolvedValue(expected);
 
-      const result = await controller.listMios(mockUserId, filters);
+      const result = await controller.listOwn(mockUserId, filters);
 
-      expect(service.listMios).toHaveBeenCalledWith(mockUserId, filters);
+      expect(service.listOwn).toHaveBeenCalledWith(mockUserId, filters);
       expect(result).toEqual(expected);
     });
 
@@ -55,33 +55,33 @@ describe('ClienteVendedorController', () => {
         data: [],
         pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
       };
-      mockClientesService.listMios.mockResolvedValue(expected);
+      mockClientesService.listOwn.mockResolvedValue(expected);
 
-      const result = await controller.listMios(mockUserId, filters);
+      const result = await controller.listOwn(mockUserId, filters);
 
-      expect(service.listMios).toHaveBeenCalledWith(mockUserId, filters);
+      expect(service.listOwn).toHaveBeenCalledWith(mockUserId, filters);
       expect(result).toEqual(expected);
     });
   });
 
-  describe('getByIdMio', () => {
-    it('delega a ClientesService.getByIdMio con id y userId', async () => {
+  describe('getOwnById', () => {
+    it('delega a ClientesService.getOwnById con id y userId', async () => {
       const expected = {
         id: 'cliente-1',
         nombre: 'Juan',
         apellido: 'Pérez',
       };
-      mockClientesService.getByIdMio.mockResolvedValue(expected);
+      mockClientesService.getOwnById.mockResolvedValue(expected);
 
-      const result = await controller.getByIdMio('cliente-1', mockUserId);
+      const result = await controller.getOwnById('cliente-1', mockUserId);
 
-      expect(service.getByIdMio).toHaveBeenCalledWith('cliente-1', mockUserId);
+      expect(service.getOwnById).toHaveBeenCalledWith('cliente-1', mockUserId);
       expect(result).toEqual(expected);
     });
   });
 
-  describe('updateMio', () => {
-    it('delega a ClientesService.updateMio con id, userId y dto', async () => {
+  describe('updateOwn', () => {
+    it('delega a ClientesService.updateOwn con id, userId y dto', async () => {
       const dto: UpdateClienteVendedorDto = {
         nombre: 'Cliente Updated',
         telefono: '11-5555-0199',
@@ -91,21 +91,21 @@ describe('ClienteVendedorController', () => {
         nombre: 'Cliente Updated',
         telefono: '11-5555-0199',
       };
-      mockClientesService.updateMio.mockResolvedValue(expected);
+      mockClientesService.updateOwn.mockResolvedValue(expected);
 
-      const result = await controller.updateMio('cliente-1', mockUserId, dto);
+      const result = await controller.updateOwn('cliente-1', mockUserId, dto);
 
-      expect(service.updateMio).toHaveBeenCalledWith('cliente-1', mockUserId, dto);
+      expect(service.updateOwn).toHaveBeenCalledWith('cliente-1', mockUserId, dto);
       expect(result).toEqual(expected);
     });
 
     it('delega con dto parcial (un solo campo)', async () => {
       const dto: UpdateClienteVendedorDto = { nombre: 'Solo nombre' };
-      mockClientesService.updateMio.mockResolvedValue(dto);
+      mockClientesService.updateOwn.mockResolvedValue(dto);
 
-      await controller.updateMio('cliente-1', mockUserId, dto);
+      await controller.updateOwn('cliente-1', mockUserId, dto);
 
-      expect(service.updateMio).toHaveBeenCalledWith('cliente-1', mockUserId, { nombre: 'Solo nombre' });
+      expect(service.updateOwn).toHaveBeenCalledWith('cliente-1', mockUserId, { nombre: 'Solo nombre' });
     });
   });
 });

@@ -4,6 +4,8 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RegisterVendedorDto } from './dto/register-vendedor.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { ValidateTokenDto } from './dto/validate-token.dto';
+import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
 
 @Controller('auth')
@@ -43,16 +45,13 @@ export class AuthController {
   @Public()
   @Post('validate')
   @HttpCode(HttpStatus.OK)
-  async validate(@Body('token') token: unknown) {
-    if (typeof token !== 'string' || token.length === 0) {
-      throw new BadRequestException('Token must be a non-empty string');
-    }
-    return this.authService.validate(token);
+  async validate(@Body() dto: ValidateTokenDto) {
+    return this.authService.validate(dto.token);
   }
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  logout() {
-    return this.authService.logout();
+  async logout(@CurrentUser('userId') userId: string) {
+    return this.authService.logout(userId);
   }
 }

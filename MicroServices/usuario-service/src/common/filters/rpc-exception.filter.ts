@@ -46,6 +46,7 @@ export class RpcExceptionFilter implements ExceptionFilter {
   }
 
   // ── RPC ───────────────────────────────────────────────────
+  // Planned for Kafka microservice integration
   private handleRpcError(exception: unknown): Observable<never> {
     // RPC: NestJS traga el error del lado del consumidor.
     // Logueamos antes de responder para no perder el rastro.
@@ -127,7 +128,7 @@ export class RpcExceptionFilter implements ExceptionFilter {
   // ── Helpers ───────────────────────────────────────────────
 
   /** Extrae el body de la excepción preservando la estructura original. */
-  private extractErrorPayload(exception: HttpException): Record<string, any> {
+  private extractErrorPayload(exception: HttpException): Record<string, unknown> {
     const response = exception.getResponse();
 
     if (typeof response === 'string') {
@@ -142,7 +143,7 @@ export class RpcExceptionFilter implements ExceptionFilter {
   }
 
   /** Convierte el body a un string plano para logging (maneja arrays de validación). */
-  private serializeForLog(body: Record<string, any>): string {
+  private serializeForLog(body: Record<string, unknown>): string {
     const msg = body.message;
 
     if (Array.isArray(msg)) {

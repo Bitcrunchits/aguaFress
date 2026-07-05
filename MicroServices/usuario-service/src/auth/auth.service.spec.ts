@@ -462,8 +462,8 @@ describe('AuthService', () => {
   });
 
   describe('logout', () => {
-    it('devuelve mensaje de éxito (no-op MVP)', () => {
-      const result = authService.logout();
+    it('devuelve mensaje de éxito (no-op MVP)', async () => {
+      const result = await authService.logout();
       expect(result).toEqual({ message: 'Logged out successfully' });
     });
   });

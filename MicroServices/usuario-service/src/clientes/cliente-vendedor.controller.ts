@@ -3,35 +3,42 @@ import { ClientesService } from './clientes.service';
 import { ListClientesDto } from './dto/list-clientes.dto';
 import { UpdateClienteVendedorDto } from './dto/update-cliente-vendedor.dto';
 import { VendedorGuard } from '../vendedores/guards/vendedor.guard';
+import { VendedorResolver } from '../common/prisma/vendedor-resolver.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('clientes/mios')
 @UseGuards(VendedorGuard)
 export class ClienteVendedorController {
-  constructor(private readonly clientesService: ClientesService) {}
+  constructor(
+    private readonly clientesService: ClientesService,
+    private readonly resolver: VendedorResolver,
+  ) {}
 
   @Get()
-  async listMios(
+  async listOwn(
     @CurrentUser('userId') userId: string,
     @Query() filters: ListClientesDto,
   ) {
-    return this.clientesService.listMios(userId, filters);
+    const vendedorId = await this.resolver.resolve(userId);
+    return this.clientesService.listOwn(vendedorId, filters);
   }
 
   @Get(':id')
-  async getByIdMio(
+  async getOwnById(
     @Param('id') id: string,
     @CurrentUser('userId') userId: string,
   ) {
-    return this.clientesService.getByIdMio(id, userId);
+    const vendedorId = await this.resolver.resolve(userId);
+    return this.clientesService.getOwnById(id, vendedorId);
   }
 
   @Patch(':id')
-  async updateMio(
+  async updateOwn(
     @Param('id') id: string,
     @CurrentUser('userId') userId: string,
     @Body() dto: UpdateClienteVendedorDto,
   ) {
-    return this.clientesService.updateMio(id, userId, dto);
+    const vendedorId = await this.resolver.resolve(userId);
+    return this.clientesService.updateOwn(id, vendedorId, dto);
   }
 }

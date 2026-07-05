@@ -197,7 +197,7 @@ describe('SuperAdminService', () => {
       prisma.cartera.count.mockResolvedValue(40);
       prisma.superAdmin.count.mockResolvedValue(2);
 
-      const result = await service.getDashboard('user-1');
+      const result = await service.getDashboard();
 
       expect(result).toEqual({
         totalVendedores: 10,
@@ -218,7 +218,7 @@ describe('SuperAdminService', () => {
       prisma.cartera.count.mockResolvedValue(0);
       prisma.superAdmin.count.mockResolvedValue(1);
 
-      const result = await service.getDashboard('user-2');
+      const result = await service.getDashboard();
 
       expect(result).toEqual({
         totalVendedores: 0,
@@ -240,7 +240,7 @@ describe('SuperAdminService', () => {
       prisma.cartera.count.mockResolvedValue(0);
       prisma.superAdmin.count.mockResolvedValue(1);
 
-      await service.getDashboard('user-1');
+      await service.getDashboard();
 
       // Solo debe llamar a los 3 count() de vendedor, 1 de cliente, 1 cartera, 1 superAdmin
       expect(prisma.vendedor.count).toHaveBeenCalledTimes(3);

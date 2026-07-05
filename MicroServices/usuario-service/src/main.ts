@@ -36,7 +36,7 @@ async function bootstrap() {
   const httpAdapterHost = app.get(HttpAdapterHost);
   app.useGlobalFilters(new RpcExceptionFilter(httpAdapterHost));
 
-  const port = process.env.PORT || 3001;
+  const port = parseInt(process.env.PORT ?? '', 10) || 3001;
   await app.listen(port);
   logger.log(`usuario-service running on port ${port}`);
 }
