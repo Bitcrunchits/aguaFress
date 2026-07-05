@@ -17,6 +17,11 @@
 > ⚠️ **Este SPEC refleja la arquitectura V1.0 MVP actual.**  
 > Todo el código nuevo debe cumplir **SOLID + Clean Code** (ver sección 9).
 
+> ✅ **Fuente de verdad activa para api-gateway (AG-90 / AG-100 / AG-101)**
+> El gateway se define como fachada HTTP versionada para el frontend en `GET|POST|PATCH|DELETE /api/v1/{service}/{action}` y despacha hacia los microservicios exclusivamente por **TCP action routing** mediante mappings explícitos/message patterns.
+> **NO** debe implementarse como proxy HTTP crudo de rutas `/api/*`.
+> La especificación detallada viva está en `openspec/changes/api-gateway/specs/api-gateway/spec.md`; este `SPEC.md` raíz mantiene la verdad global del proyecto.
+
 ---
 
 ## 1. Visión del Proyecto
@@ -132,6 +137,75 @@ aguaFress/
 
 > ⚠️ **Decisión tomada 27/06/2026**: Reemplazar Redis Streams con Kafka, y HTTP REST vía Gateway con TCP directo entre MS. Ver banner al inicio del documento.
 
+### 4.4 API Gateway — Fuente de Verdad AG-90 / AG-100 / AG-101
+
+El `api-gateway` es el único ingreso HTTP público en el puerto `3000`. Su contrato público versionado es:
+
+```txt
+/api/v1/{service}/{action}
+```
+
+Ejemplo canónico:
+
+```txt
+POST /api/v1/auth/login
+```
+
+#### Decisiones obligatorias
+
+| Tema | Decisión |
+|------|----------|
+| Fuente Jira | `AG-90` crea el gateway; `AG-101` define ruteo TCP versionado; `AG-100` define seguridad anti-abuso/anti-DDoS mínima. |
+| Frontera externa | Frontend → Gateway usa HTTP/JSON versionado bajo `/api/v1/{service}/{action}`. |
+| Frontera interna | Gateway → Microservicios usa TCP exclusivamente; no HTTP entre gateway y microservicios. |
+| Contrato público | Las acciones públicas viven bajo `/api/v1/{service}/{action}`. |
+| Ruteo interno | El gateway traduce `{service, action}` a mappings TCP explícitos/message patterns. |
+| Proxy HTTP crudo | Prohibido como arquitectura base. El gateway **NO** preserva rutas downstream arbitrarias `/api/*`. |
+| Rutas legacy | `/auth/*`, `/api/auth/*` y proxy genérico `/api/*` no son rutas canónicas del gateway. |
+| Contratos | `contratosDTOs/api-gateway.json` debe alinearse con `/api/v1/{service}/{action}`. |
+
+#### Seguridad mínima del gateway
+
+El gateway debe aplicar controles anti-abuso en la capa HTTP que recibe del frontend antes de despachar cualquier comando TCP a microservicios:
+
+- headers de seguridad tipo `helmet`;
+- throttling/rate limiting por acción sensible;
+- límites de tamaño de payload/body;
+- timeouts para llamadas TCP downstream;
+- rechazo controlado sin crear trabajo downstream ilimitado.
+
+Acciones sensibles con política más estricta:
+
+- `auth.login`
+- `auth.register`
+- `auth.refresh`
+- `auth.validate`
+- creación de QR
+- creación de link de invitación
+
+#### Autenticación y autorización
+
+- Las acciones públicas solo pueden omitir auth si están declaradas explícitamente como públicas.
+- Las acciones protegidas deben validar JWT y roles antes del dispatch TCP.
+- La validación HTTP ocurre en el gateway; los microservicios reciben comandos TCP ya normalizados con contexto de identidad cuando corresponde.
+- El payload JWT debe ser compatible con:
+
+```typescript
+{ sub: string; email: string; role: UserRole; jti?: string }
+```
+
+#### Health
+
+El gateway debe exponer `GET /api/health` como endpoint público y seguro. Puede incluir readiness sanitizada de servicios, pero nunca secretos, tokens, credenciales ni connection strings.
+
+#### Documento de detalle
+
+La especificación de detalle para implementación y validación vive en:
+
+```txt
+openspec/changes/api-gateway/specs/api-gateway/spec.md
+```
+
 ---
 
 ## 5. Estado Actual del Código
@@ -156,6 +230,10 @@ aguaFress/
 
 - Directorio `src/` con archivos de rutas vacíos
 - Sin controllers ni servicios reales
+- Debe implementarse según AG-101 como fachada HTTP versionada `/api/v1/{service}/{action}` con dispatch interno TCP.
+- El frontend consume el gateway por HTTP/JSON; el gateway se comunica con microservicios únicamente por TCP.
+- Debe incluir seguridad AG-100: helmet, throttling/rate limiting, payload limits y timeouts TCP.
+- No debe implementarse como proxy HTTP crudo de `/api/*`.
 
 ### 5.3 products-service, orders-service, entregas-service, notifications-service (stubs)
 

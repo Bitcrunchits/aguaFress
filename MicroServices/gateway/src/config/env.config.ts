@@ -1,0 +1,132 @@
+export const GATEWAY_ENV_DEFAULTS = {
+  PORT: 3000,
+  TCP_TIMEOUT_MS: 5000,
+  RATE_LIMIT_TTL_MS: 60000,
+  RATE_LIMIT_MAX: 100,
+  PAYLOAD_LIMIT: '1mb',
+} as const;
+
+const REQUIRED_ENV_KEYS = {
+  JWT_SECRET: 'JWT_SECRET',
+  USUARIO_SERVICE_HOST: 'USUARIO_SERVICE_HOST',
+  USUARIO_SERVICE_TCP_PORT: 'USUARIO_SERVICE_TCP_PORT',
+} as const;
+
+type RequiredEnvKey = (typeof REQUIRED_ENV_KEYS)[keyof typeof REQUIRED_ENV_KEYS];
+
+export class GatewayEnvError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'GatewayEnvError';
+  }
+}
+
+export interface GatewayEnv {
+  readonly port: number;
+  readonly jwtSecret: string;
+  readonly usuarioServiceHost: string;
+  readonly usuarioServiceTcpPort: number;
+  readonly tcpTimeoutMs: number;
+  readonly rateLimitTtlMs: number;
+  readonly rateLimitMax: number;
+  readonly payloadLimit: string;
+}
+
+type GatewayEnvInput = Record<string, string | undefined>;
+
+export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
+  assertRequiredEnv(envInput);
+
+  const port = readOptionalPositiveInteger(envInput.PORT, GATEWAY_ENV_DEFAULTS.PORT, 'PORT');
+  const usuarioServiceTcpPort = readRequiredPort(
+    envInput.USUARIO_SERVICE_TCP_PORT,
+    'USUARIO_SERVICE_TCP_PORT',
+  );
+  const tcpTimeoutMs = readOptionalPositiveInteger(
+    envInput.TCP_TIMEOUT_MS,
+    GATEWAY_ENV_DEFAULTS.TCP_TIMEOUT_MS,
+    'TCP_TIMEOUT_MS',
+  );
+  const rateLimitTtlMs = readOptionalPositiveInteger(
+    envInput.RATE_LIMIT_TTL_MS,
+    GATEWAY_ENV_DEFAULTS.RATE_LIMIT_TTL_MS,
+    'RATE_LIMIT_TTL_MS',
+  );
+  const rateLimitMax = readOptionalPositiveInteger(
+    envInput.RATE_LIMIT_MAX,
+    GATEWAY_ENV_DEFAULTS.RATE_LIMIT_MAX,
+    'RATE_LIMIT_MAX',
+  );
+
+  const invalidMessages = [
+    port.error,
+    usuarioServiceTcpPort.error,
+    tcpTimeoutMs.error,
+    rateLimitTtlMs.error,
+    rateLimitMax.error,
+  ].filter(isString);
+
+  if (invalidMessages.length > 0) {
+    throw new GatewayEnvError(`Invalid gateway env: ${invalidMessages.join('; ')}`);
+  }
+
+  return {
+    port: port.value,
+    jwtSecret: envInput.JWT_SECRET as string,
+    usuarioServiceHost: envInput.USUARIO_SERVICE_HOST as string,
+    usuarioServiceTcpPort: usuarioServiceTcpPort.value,
+    tcpTimeoutMs: tcpTimeoutMs.value,
+    rateLimitTtlMs: rateLimitTtlMs.value,
+    rateLimitMax: rateLimitMax.value,
+    payloadLimit: envInput.PAYLOAD_LIMIT ?? GATEWAY_ENV_DEFAULTS.PAYLOAD_LIMIT,
+  };
+}
+
+interface NumberReadResult {
+  readonly value: number;
+  readonly error: string | null;
+}
+
+function assertRequiredEnv(envInput: GatewayEnvInput): void {
+  const missingKeys = Object.values(REQUIRED_ENV_KEYS).filter((key) => !hasValue(envInput[key]));
+
+  if (missingKeys.length > 0) {
+    throw new GatewayEnvError(`Missing required gateway env: ${missingKeys.join(', ')}`);
+  }
+}
+
+function readOptionalPositiveInteger(
+  rawValue: string | undefined,
+  fallbackValue: number,
+  envKey: string,
+): NumberReadResult {
+  if (!hasValue(rawValue)) {
+    return { value: fallbackValue, error: null };
+  }
+
+  const parsedValue = Number(rawValue);
+
+  if (!Number.isInteger(parsedValue) || parsedValue <= 0) {
+    return { value: fallbackValue, error: `${envKey} must be a positive integer` };
+  }
+
+  return { value: parsedValue, error: null };
+}
+
+function readRequiredPort(rawValue: string | undefined, envKey: RequiredEnvKey): NumberReadResult {
+  const parsedValue = Number(rawValue);
+
+  if (!Number.isInteger(parsedValue) || parsedValue < 1 || parsedValue > 65535) {
+    return { value: 0, error: `${envKey} must be a number between 1 and 65535` };
+  }
+
+  return { value: parsedValue, error: null };
+}
+
+function hasValue(value: string | undefined): value is string {
+  return value !== undefined && value.trim().length > 0;
+}
+
+function isString(value: string | null): value is string {
+  return value !== null;
+}
