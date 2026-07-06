@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
@@ -10,68 +11,108 @@ import {
   Patch,
   Post,
   Put,
+  Query,
+  Req,
 } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import type { Request } from 'express';
+import { ActionResolverService } from './actions/action-resolver.service';
+import { TcpDispatcherService, type TcpCommandPayload } from './tcp/tcp-dispatcher.service';
 
-export const GATEWAY_ROUTE_STATUS = {
-  ROUTING_NOT_IMPLEMENTED: 'routing-not-implemented',
-} as const;
-
-export type GatewayRouteStatus =
-  (typeof GATEWAY_ROUTE_STATUS)[keyof typeof GATEWAY_ROUTE_STATUS];
-
-export interface GatewayRouteResponse {
-  readonly service: string;
-  readonly action: string;
-  readonly status: GatewayRouteStatus;
-}
-
-@Controller('v1/:service/:action')
+@Controller('v1/:service')
 export class GatewayController {
+  constructor(
+    private readonly resolver: ActionResolverService,
+    private readonly dispatcher: TcpDispatcherService,
+  ) {}
+
   @Head()
-  rejectHeadMethod(): never {
+  rejectHeadWithoutAction(): never {
     return this.rejectUnsupportedMethod();
   }
 
-  @Get()
-  handleGetAction(@Param('service') service: string, @Param('action') action: string): GatewayRouteResponse {
-    return this.createFoundationResponse(service, action);
+  @Head(':action(*)')
+  rejectHeadWithAction(): never {
+    return this.rejectUnsupportedMethod();
   }
 
-  @Post()
+  @Get(':action(*)')
+  async handleGetAction(
+    @Param('service') service: string,
+    @Param('action') action: string,
+    @Query() query: Record<string, string>,
+    @Req() req: Request,
+  ): Promise<unknown> {
+    const mapping = this.resolver.resolve(service, action);
+    const payload = this.buildPayload(req, query, { service, action });
+    return this.dispatcher.dispatch(service, payload, mapping);
+  }
+
+  @Post(':action(*)')
   @HttpCode(200)
-  handlePostAction(@Param('service') service: string, @Param('action') action: string): GatewayRouteResponse {
-    return this.createFoundationResponse(service, action);
+  async handlePostAction(
+    @Param('service') service: string,
+    @Param('action') action: string,
+    @Body() body: unknown,
+    @Query() query: Record<string, string>,
+    @Req() req: Request,
+  ): Promise<unknown> {
+    const mapping = this.resolver.resolve(service, action);
+    const payload = this.buildPayload(req, query, { service, action }, body);
+    return this.dispatcher.dispatch(service, payload, mapping);
   }
 
-  @Patch()
-  handlePatchAction(@Param('service') service: string, @Param('action') action: string): GatewayRouteResponse {
-    return this.createFoundationResponse(service, action);
+  @Patch(':action(*)')
+  async handlePatchAction(
+    @Param('service') service: string,
+    @Param('action') action: string,
+    @Body() body: unknown,
+    @Query() query: Record<string, string>,
+    @Req() req: Request,
+  ): Promise<unknown> {
+    const mapping = this.resolver.resolve(service, action);
+    const payload = this.buildPayload(req, query, { service, action }, body);
+    return this.dispatcher.dispatch(service, payload, mapping);
   }
 
-  @Delete()
-  handleDeleteAction(@Param('service') service: string, @Param('action') action: string): GatewayRouteResponse {
-    return this.createFoundationResponse(service, action);
+  @Delete(':action(*)')
+  async handleDeleteAction(
+    @Param('service') service: string,
+    @Param('action') action: string,
+    @Query() query: Record<string, string>,
+    @Req() req: Request,
+  ): Promise<unknown> {
+    const mapping = this.resolver.resolve(service, action);
+    const payload = this.buildPayload(req, query, { service, action });
+    return this.dispatcher.dispatch(service, payload, mapping);
   }
 
-  @Put()
+  @Put(':action(*)')
   rejectPutMethod(): never {
     return this.rejectUnsupportedMethod();
   }
 
-  @Options()
+  @Options(':action(*)')
   rejectOptionsMethod(): never {
     return this.rejectUnsupportedMethod();
   }
 
-  handleAction(service: string, action: string): GatewayRouteResponse {
-    return this.createFoundationResponse(service, action);
-  }
+  private buildPayload(
+    req: Request,
+    query: Record<string, string>,
+    params: Record<string, string>,
+    body?: unknown,
+  ): TcpCommandPayload {
+    const user = (req as unknown as Record<string, unknown>).user as
+      | { sub: string; email: string; role: string }
+      | undefined;
 
-  private createFoundationResponse(service: string, action: string): GatewayRouteResponse {
     return {
-      service,
-      action,
-      status: GATEWAY_ROUTE_STATUS.ROUTING_NOT_IMPLEMENTED,
+      body,
+      query,
+      params,
+      user,
+      requestId: (req.headers['x-request-id'] as string) ?? randomUUID(),
     };
   }
 
