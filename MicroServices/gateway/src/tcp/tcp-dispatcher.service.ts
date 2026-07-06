@@ -3,7 +3,7 @@ import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { catchError, firstValueFrom, throwError, timeout, type Observable } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
 import { USUARIO_CLIENT } from './tcp-clients.module';
-import type { ActionMapping, TcpTransport } from '../actions/action-registry';
+import type { ActionMapping } from '../actions/action-registry';
 
 export interface TcpCommandPayload {
   readonly body?: unknown;
@@ -75,14 +75,13 @@ export class TcpDispatcherService {
       return { queued: true, pattern: mapping.tcpPattern };
     }
 
-    return this.sendWithRetry(client, mapping.tcpPattern, payload, mapping.transport);
+    return this.sendWithRetry(client, mapping.tcpPattern, payload);
   }
 
   private async sendWithRetry(
     client: ClientProxy,
     pattern: string,
     payload: TcpCommandPayload,
-    transport: TcpTransport,
   ): Promise<unknown> {
     const maxAttempts = 2;
 
