@@ -1,6 +1,7 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { json, urlencoded } from 'express';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { createGatewayEnv } from './config/env.config';
 
@@ -10,7 +11,11 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix('api');
-  app.enableCors();
+  app.use(helmet());
+  app.enableCors({
+    origin: true,
+    credentials: true,
+  });
   app.use(json({ limit: gatewayEnv.payloadLimit }));
   app.use(urlencoded({ extended: true, limit: gatewayEnv.payloadLimit }));
   app.useGlobalPipes(
