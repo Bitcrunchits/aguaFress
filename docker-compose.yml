@@ -60,6 +60,21 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # ─── api-gateway ────────────────────────────────────────────
+  gateway:
+    build:
+      context: .
+      dockerfile: MicroServices/gateway/Dockerfile
+    container_name: agua-gateway
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      usuario-service:
+        condition: service_started
+    restart: unless-stopped
+
 volumes:
   agua-postgres-data:
   agua-redis-data:

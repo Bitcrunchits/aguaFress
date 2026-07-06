@@ -1,6 +1,7 @@
 import { type INestApplication, ValidationPipe } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
+import { json } from 'express';
 import request from 'supertest';
 import type { UserRole } from '@agua/contracts';
 import { TcpDispatcherService } from '../src/tcp/tcp-dispatcher.service';
@@ -28,6 +29,7 @@ describe('Gateway HTTP routing', () => {
 
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('api');
+    app.use(json({ limit: '1mb' }));
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -141,5 +143,43 @@ describe('Gateway HTTP routing', () => {
       .post('/api/v1/foobar/test')
       .set('Authorization', `Bearer ${authToken}`)
       .expect(404);
+  });
+
+  it('rejects legacy paths without /v1/ prefix', async () => {
+    const authHeader = { Authorization: `Bearer ${authToken}` };
+
+    // Old-style /api/auth/login (no version prefix) should not route
+    await request(app.getHttpServer()).post('/api/auth/login').set(authHeader).expect(404);
+    await request(app.getHttpServer()).get('/api/users/profile').set(authHeader).expect(404);
+  });
+
+  it('resolves nested action paths like register/vendedor', async () => {
+    mockDispatch.mockResolvedValue({ ok: true });
+
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/auth/register/vendedor')
+      .send({ email: 'vendedor@test.com', password: 'secret' })
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(200);
+
+    expect(response.body).toEqual({ ok: true });
+    expect(mockDispatch).toHaveBeenCalledWith(
+      'auth',
+      expect.objectContaining({
+        body: { email: 'vendedor@test.com', password: 'secret' },
+        params: { service: 'auth', action: 'register/vendedor' },
+      }),
+      expect.objectContaining({ tcpPattern: 'auth.register_vendedor' }),
+    );
+  });
+
+  it('rejects oversized payload beyond the limit', async () => {
+    const oversizedBody = { data: 'x'.repeat(2 * 1024 * 1024) }; // ~2mb
+
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send(oversizedBody)
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(413);
   });
 });
