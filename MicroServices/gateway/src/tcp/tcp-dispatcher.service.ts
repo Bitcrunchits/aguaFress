@@ -1,6 +1,6 @@
 import { Injectable, Inject, GatewayTimeoutException, Logger } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
-import { catchError, firstValueFrom, throwError, timeout, type Observable } from 'rxjs';
+import { catchError, firstValueFrom, throwError, timeout, TimeoutError, type Observable } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
 import { USUARIO_CLIENT } from './tcp-clients.module';
 import type { ActionMapping } from '../actions/action-registry';
@@ -48,7 +48,6 @@ export class TcpDispatcherService {
       throw new Error(`No TCP client configured for service family "${service}"`);
     }
 
-    // Only usuario-service is available; others throw
     if (clientName !== USUARIO_CLIENT) {
       throw new Error(`TCP client "${clientName}" is not yet available`);
     }
@@ -61,7 +60,7 @@ export class TcpDispatcherService {
    *
    * - Uses request/response via `send()` for `'send'` transport
    * - Uses fire-and-forget via `emit()` for `'publish'` transport
-   * - Applies timeout and bounded retry (1 retry on failure)
+   * - Applies timeout and bounded retry (1 retry on timeout only)
    */
   async dispatch(
     service: string,
@@ -90,31 +89,38 @@ export class TcpDispatcherService {
         const result$ = client.send<unknown>(pattern, payload).pipe(
           timeout(this.tcpTimeoutMs),
           catchError((err: unknown) => {
-            const rpcError = err instanceof RpcException ? err.getError() : err;
-            return throwError(() => rpcError);
+            // Normalize RpcException to its payload; pass everything else as-is
+            const normalized = err instanceof RpcException ? err.getError() : err;
+            return throwError(() => normalized);
           }),
         );
 
         return await firstValueFrom(result$);
       } catch (error: unknown) {
+        const isTimeout = error instanceof TimeoutError;
         const isLastAttempt = attempt === maxAttempts;
 
         if (isLastAttempt) {
-          this.logger.warn(
-            `TCP dispatch failed after ${maxAttempts} attempts for pattern "${pattern}": ${String(error)}`,
-          );
-
-          if (error instanceof GatewayTimeoutException) {
-            throw error;
+          if (isTimeout) {
+            this.logger.warn(
+              `TCP dispatch timed out after ${maxAttempts} attempts for pattern "${pattern}"`,
+            );
+            throw new GatewayTimeoutException(
+              `Service did not respond in time for action "${pattern}". Please try again.`,
+            );
           }
 
-          throw new GatewayTimeoutException(
-            `Service did not respond in time for action "${pattern}". Please try again.`,
-          );
+          // Business logic / validation errors from the microservice — rethrow as-is
+          throw error;
+        }
+
+        // Only retry on timeouts
+        if (!isTimeout) {
+          throw error;
         }
 
         this.logger.warn(
-          `TCP dispatch attempt ${attempt} failed for pattern "${pattern}", retrying...`,
+          `TCP dispatch attempt ${attempt} timed out for pattern "${pattern}", retrying...`,
         );
       }
     }

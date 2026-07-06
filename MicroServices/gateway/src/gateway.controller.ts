@@ -3,7 +3,6 @@ import {
   Controller,
   Delete,
   Get,
-  Head,
   HttpCode,
   MethodNotAllowedException,
   Options,
@@ -14,11 +13,14 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { randomUUID } from 'node:crypto';
 import type { Request } from 'express';
 import { ActionResolverService } from './actions/action-resolver.service';
 import { TcpDispatcherService, type TcpCommandPayload } from './tcp/tcp-dispatcher.service';
 
+@ApiTags('Gateway Actions')
+@ApiBearerAuth()
 @Controller('v1/:service')
 export class GatewayController {
   constructor(
@@ -26,17 +28,17 @@ export class GatewayController {
     private readonly dispatcher: TcpDispatcherService,
   ) {}
 
-  @Head()
-  rejectHeadWithoutAction(): never {
-    return this.rejectUnsupportedMethod();
-  }
-
-  @Head(':action(*)')
-  rejectHeadWithAction(): never {
-    return this.rejectUnsupportedMethod();
-  }
-
   @Get(':action(*)')
+  @ApiOperation({ summary: 'Execute a GET action', description: 'Dispatches a read-only action to the target microservice via TCP.' })
+  @ApiParam({ name: 'service', description: 'Service family (auth, users, vendedores, clientes, etc.)' })
+  @ApiParam({ name: 'action', description: 'Action to execute within the service family' })
+  @ApiQuery({ name: 'query', required: false, description: 'Query parameters forwarded to the microservice' })
+  @ApiResponse({ status: 200, description: 'Action executed successfully' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid JWT' })
+  @ApiResponse({ status: 403, description: 'Insufficient role' })
+  @ApiResponse({ status: 404, description: 'Action or service not found' })
+  @ApiResponse({ status: 503, description: 'Service family not deployed' })
+  @ApiResponse({ status: 504, description: 'Microservice did not respond in time' })
   async handleGetAction(
     @Param('service') service: string,
     @Param('action') action: string,
@@ -50,6 +52,14 @@ export class GatewayController {
 
   @Post(':action(*)')
   @HttpCode(200)
+  @ApiOperation({ summary: 'Execute a POST action', description: 'Dispatches a mutating action to the target microservice via TCP.' })
+  @ApiParam({ name: 'service', description: 'Service family' })
+  @ApiParam({ name: 'action', description: 'Action to execute' })
+  @ApiResponse({ status: 200, description: 'Action executed successfully' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid JWT' })
+  @ApiResponse({ status: 403, description: 'Insufficient role' })
+  @ApiResponse({ status: 404, description: 'Action or service not found' })
+  @ApiResponse({ status: 504, description: 'Microservice did not respond in time' })
   async handlePostAction(
     @Param('service') service: string,
     @Param('action') action: string,
@@ -63,6 +73,14 @@ export class GatewayController {
   }
 
   @Patch(':action(*)')
+  @ApiOperation({ summary: 'Execute a PATCH action', description: 'Dispatches a partial update action to the target microservice via TCP.' })
+  @ApiParam({ name: 'service', description: 'Service family' })
+  @ApiParam({ name: 'action', description: 'Action to execute' })
+  @ApiResponse({ status: 200, description: 'Action executed successfully' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid JWT' })
+  @ApiResponse({ status: 403, description: 'Insufficient role' })
+  @ApiResponse({ status: 404, description: 'Action or service not found' })
+  @ApiResponse({ status: 504, description: 'Microservice did not respond in time' })
   async handlePatchAction(
     @Param('service') service: string,
     @Param('action') action: string,
@@ -76,6 +94,14 @@ export class GatewayController {
   }
 
   @Delete(':action(*)')
+  @ApiOperation({ summary: 'Execute a DELETE action', description: 'Dispatches a delete action to the target microservice via TCP.' })
+  @ApiParam({ name: 'service', description: 'Service family' })
+  @ApiParam({ name: 'action', description: 'Action to execute' })
+  @ApiResponse({ status: 200, description: 'Action executed successfully' })
+  @ApiResponse({ status: 401, description: 'Missing or invalid JWT' })
+  @ApiResponse({ status: 403, description: 'Insufficient role' })
+  @ApiResponse({ status: 404, description: 'Action or service not found' })
+  @ApiResponse({ status: 504, description: 'Microservice did not respond in time' })
   async handleDeleteAction(
     @Param('service') service: string,
     @Param('action') action: string,
@@ -88,11 +114,15 @@ export class GatewayController {
   }
 
   @Put(':action(*)')
+  @ApiOperation({ summary: 'Reject PUT', description: 'PUT is not supported by the gateway action router.' })
+  @ApiResponse({ status: 405, description: 'Method not allowed' })
   rejectPutMethod(): never {
     return this.rejectUnsupportedMethod();
   }
 
   @Options(':action(*)')
+  @ApiOperation({ summary: 'Reject OPTIONS', description: 'OPTIONS is not supported by the gateway action router.' })
+  @ApiResponse({ status: 405, description: 'Method not allowed' })
   rejectOptionsMethod(): never {
     return this.rejectUnsupportedMethod();
   }

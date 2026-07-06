@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
 import { type Observable } from 'rxjs';
 import type { UserRole } from '@agua/contracts';
+import { ACTION_REGISTRY } from '../actions/action-registry';
 
 export const IS_PUBLIC_KEY = 'isPublic';
 
@@ -28,7 +29,14 @@ export class JwtAuthGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<Request>();
+    const actionMapping = this.resolveActionMapping(request);
+
+    // Allow actions explicitly marked as public in the registry (no JWT needed)
+    if (actionMapping && !actionMapping.authRequired) {
+      return true;
+    }
+
     const token = this.extractTokenFromHeader(request);
 
     if (!token) {
@@ -37,7 +45,7 @@ export class JwtAuthGuard implements CanActivate {
 
     try {
       const payload = this.jwtService.verify<JwtPayload>(token);
-      request.user = payload;
+      (request as unknown as Record<string, unknown>).user = payload;
     } catch {
       throw new UnauthorizedException('Invalid token');
     }
@@ -45,12 +53,31 @@ export class JwtAuthGuard implements CanActivate {
     return true;
   }
 
+  private resolveActionMapping(request: Request) {
+    const service = request.params?.service as string | undefined;
+    const action = request.params?.action as string | undefined;
+
+    if (!service || !action) {
+      return undefined;
+    }
+
+    const family = ACTION_REGISTRY[service];
+    if (!family || family.status === 'unavailable') {
+      return undefined;
+    }
+
+    return family.actions[action];
+  }
+
   private extractTokenFromHeader(request: Request): string | undefined {
     const authorization = request.headers.authorization;
     if (!authorization || typeof authorization !== 'string') {
       return undefined;
     }
-    const [, token] = authorization.split(' ');
+    const [scheme, token] = authorization.split(' ');
+    if (scheme !== 'Bearer' || !token) {
+      return undefined;
+    }
     return token;
   }
 }

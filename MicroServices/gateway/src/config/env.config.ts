@@ -22,14 +22,14 @@ export class GatewayEnvError extends Error {
 }
 
 export interface GatewayEnv {
-  readonly port: number;
-  readonly jwtSecret: string;
-  readonly usuarioServiceHost: string;
-  readonly usuarioServiceTcpPort: number;
-  readonly tcpTimeoutMs: number;
-  readonly rateLimitTtlMs: number;
-  readonly rateLimitMax: number;
-  readonly payloadLimit: string;
+  readonly PORT: number;
+  readonly JWT_SECRET: string;
+  readonly USUARIO_SERVICE_HOST: string;
+  readonly USUARIO_SERVICE_TCP_PORT: number;
+  readonly TCP_TIMEOUT_MS: number;
+  readonly RATE_LIMIT_TTL_MS: number;
+  readonly RATE_LIMIT_MAX: number;
+  readonly PAYLOAD_LIMIT: string;
 }
 
 type GatewayEnvInput = Record<string, string | undefined>;
@@ -71,14 +71,14 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
   }
 
   return {
-    port: port.value,
-    jwtSecret: envInput.JWT_SECRET as string,
-    usuarioServiceHost: envInput.USUARIO_SERVICE_HOST as string,
-    usuarioServiceTcpPort: usuarioServiceTcpPort.value,
-    tcpTimeoutMs: tcpTimeoutMs.value,
-    rateLimitTtlMs: rateLimitTtlMs.value,
-    rateLimitMax: rateLimitMax.value,
-    payloadLimit: envInput.PAYLOAD_LIMIT ?? GATEWAY_ENV_DEFAULTS.PAYLOAD_LIMIT,
+    PORT: port.value,
+    JWT_SECRET: envInput.JWT_SECRET as string,
+    USUARIO_SERVICE_HOST: envInput.USUARIO_SERVICE_HOST as string,
+    USUARIO_SERVICE_TCP_PORT: usuarioServiceTcpPort.value,
+    TCP_TIMEOUT_MS: tcpTimeoutMs.value,
+    RATE_LIMIT_TTL_MS: rateLimitTtlMs.value,
+    RATE_LIMIT_MAX: rateLimitMax.value,
+    PAYLOAD_LIMIT: envInput.PAYLOAD_LIMIT ?? GATEWAY_ENV_DEFAULTS.PAYLOAD_LIMIT,
   };
 }
 
