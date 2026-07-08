@@ -13,14 +13,14 @@ describe('createGatewayEnv', () => {
     });
 
     expect(gatewayEnv).toEqual({
-      port: GATEWAY_ENV_DEFAULTS.PORT,
-      jwtSecret: 'test-secret',
-      usuarioServiceHost: 'usuario-service',
-      usuarioServiceTcpPort: 3001,
-      tcpTimeoutMs: GATEWAY_ENV_DEFAULTS.TCP_TIMEOUT_MS,
-      rateLimitTtlMs: GATEWAY_ENV_DEFAULTS.RATE_LIMIT_TTL_MS,
-      rateLimitMax: GATEWAY_ENV_DEFAULTS.RATE_LIMIT_MAX,
-      payloadLimit: GATEWAY_ENV_DEFAULTS.PAYLOAD_LIMIT,
+      PORT: GATEWAY_ENV_DEFAULTS.PORT,
+      JWT_SECRET: 'test-secret',
+      USUARIO_SERVICE_HOST: 'usuario-service',
+      USUARIO_SERVICE_TCP_PORT: 3001,
+      TCP_TIMEOUT_MS: GATEWAY_ENV_DEFAULTS.TCP_TIMEOUT_MS,
+      RATE_LIMIT_TTL_MS: GATEWAY_ENV_DEFAULTS.RATE_LIMIT_TTL_MS,
+      RATE_LIMIT_MAX: GATEWAY_ENV_DEFAULTS.RATE_LIMIT_MAX,
+      PAYLOAD_LIMIT: GATEWAY_ENV_DEFAULTS.PAYLOAD_LIMIT,
     });
   });
 

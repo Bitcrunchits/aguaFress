@@ -139,13 +139,12 @@ describe('GatewayController', () => {
       expect(() => controller.rejectPutMethod()).toThrow(MethodNotAllowedException);
     });
 
-    it('rejects HEAD with 405', () => {
-      expect(() => controller.rejectHeadWithoutAction()).toThrow(MethodNotAllowedException);
-      expect(() => controller.rejectHeadWithAction()).toThrow(MethodNotAllowedException);
-    });
-
     it('rejects OPTIONS with 405', () => {
       expect(() => controller.rejectOptionsMethod()).toThrow(MethodNotAllowedException);
+    });
+
+    it('rejects HEAD with 405', () => {
+      expect(() => controller.rejectHeadMethod()).toThrow(MethodNotAllowedException);
     });
   });
 });

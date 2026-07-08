@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Head,
   HttpCode,
   MethodNotAllowedException,
   Options,
@@ -27,6 +28,13 @@ export class GatewayController {
     private readonly resolver: ActionResolverService,
     private readonly dispatcher: TcpDispatcherService,
   ) {}
+
+  @Head(':action(*)')
+  @ApiOperation({ summary: 'Reject HEAD', description: 'HEAD is not supported by the gateway action router.' })
+  @ApiResponse({ status: 405, description: 'Method not allowed' })
+  rejectHeadMethod(): never {
+    return this.rejectUnsupportedMethod();
+  }
 
   @Get(':action(*)')
   @ApiOperation({ summary: 'Execute a GET action', description: 'Dispatches a read-only action to the target microservice via TCP.' })

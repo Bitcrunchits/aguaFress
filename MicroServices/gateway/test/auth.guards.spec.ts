@@ -5,6 +5,22 @@ import type { ExecutionContext } from '@nestjs/common';
 import { JwtAuthGuard, IS_PUBLIC_KEY } from '../src/auth/jwt-auth.guard';
 import { ROLES_KEY, RolesGuard } from '../src/auth/roles.guard';
 
+interface MockRequest {
+  headers: Record<string, string>;
+  params?: Record<string, string>;
+  user?: unknown;
+}
+
+function createExecutionContext(request: MockRequest): ExecutionContext {
+  return {
+    switchToHttp: () => ({
+      getRequest: () => request,
+    }),
+    getHandler: () => jest.fn(),
+    getClass: () => jest.fn(),
+  } as unknown as ExecutionContext;
+}
+
 describe('JwtAuthGuard', () => {
   let guard: JwtAuthGuard;
   let mockJwtService: jest.Mocked<JwtService>;
@@ -25,24 +41,12 @@ describe('JwtAuthGuard', () => {
     guard = new JwtAuthGuard(mockJwtService, mockReflector);
   });
 
-  interface MockRequest {
-    headers: Record<string, string>;
-    user?: unknown;
-  }
-
-  function createMockContext(headers: Record<string, string>): {
+  function createMockContext(headers: Record<string, string>, params?: Record<string, string>): {
     ctx: ExecutionContext;
     request: MockRequest;
   } {
-    const request: MockRequest = { headers };
-
-    const ctx = {
-      switchToHttp: () => ({
-        getRequest: () => request,
-      }),
-      getHandler: () => jest.fn(),
-      getClass: () => jest.fn(),
-    } as unknown as ExecutionContext;
+    const request: MockRequest = { headers, params };
+    const ctx = createExecutionContext(request);
 
     return { ctx, request };
   }
@@ -63,21 +67,39 @@ describe('JwtAuthGuard', () => {
 
   it('throws UnauthorizedException when no bearer token is present', () => {
     mockReflector.getAllAndOverride.mockReturnValue(false);
-    const { ctx } = createMockContext({});
+    const { ctx } = createMockContext({}, { service: 'users', action: 'profile' });
 
     expect(() => guard.canActivate(ctx)).toThrow(UnauthorizedException);
   });
 
+  it('allows public registry actions without decoding an optional token', () => {
+    mockReflector.getAllAndOverride.mockReturnValue(false);
+    const { ctx, request } = createMockContext(
+      { authorization: 'Bearer invalid-token' },
+      { service: 'auth', action: 'login' },
+    );
+
+    expect(guard.canActivate(ctx)).toBe(true);
+    expect(mockJwtService.verify).not.toHaveBeenCalled();
+    expect(request.user).toBeUndefined();
+  });
+
   it('throws UnauthorizedException when authorization header is malformed (no space)', () => {
     mockReflector.getAllAndOverride.mockReturnValue(false);
-    const { ctx } = createMockContext({ authorization: 'NotBearer' });
+    const { ctx } = createMockContext(
+      { authorization: 'NotBearer' },
+      { service: 'users', action: 'profile' },
+    );
 
     expect(() => guard.canActivate(ctx)).toThrow(UnauthorizedException);
   });
 
   it('throws UnauthorizedException when token is invalid', () => {
     mockReflector.getAllAndOverride.mockReturnValue(false);
-    const { ctx } = createMockContext({ authorization: 'Bearer invalid-token' });
+    const { ctx } = createMockContext(
+      { authorization: 'Bearer invalid-token' },
+      { service: 'users', action: 'profile' },
+    );
 
     expect(() => guard.canActivate(ctx)).toThrow(UnauthorizedException);
   });
@@ -87,7 +109,10 @@ describe('JwtAuthGuard', () => {
     const mockPayload = { sub: 'user-1', email: 'test@agua.com', role: 'vendedor', jti: 'abc' };
     mockJwtService.verify.mockReturnValue(mockPayload);
 
-    const { ctx, request } = createMockContext({ authorization: 'Bearer valid-token' });
+    const { ctx, request } = createMockContext(
+      { authorization: 'Bearer valid-token' },
+      { service: 'users', action: 'profile' },
+    );
     const result = guard.canActivate(ctx) as boolean;
 
     expect(result).toBe(true);
@@ -99,7 +124,10 @@ describe('JwtAuthGuard', () => {
     const mockPayload = { sub: 'user-1', email: 'test@agua.com', role: 'cliente' };
     mockJwtService.verify.mockReturnValue(mockPayload);
 
-    const { ctx, request } = createMockContext({ authorization: 'Bearer valid-token' });
+    const { ctx, request } = createMockContext(
+      { authorization: 'Bearer valid-token' },
+      { service: 'users', action: 'profile' },
+    );
     const result = guard.canActivate(ctx) as boolean;
 
     expect(result).toBe(true);
@@ -116,19 +144,16 @@ describe('RolesGuard', () => {
     } as unknown as jest.Mocked<Reflector>;
   });
 
-  function createContextWithUser(userRole: string | undefined): ExecutionContext {
-    const request: Record<string, unknown> = {};
+  function createContextWithUser(
+    userRole: string | undefined,
+    params?: Record<string, string>,
+  ): ExecutionContext {
+    const request: MockRequest = { headers: {}, params };
     if (userRole !== undefined) {
       request.user = { sub: 'user-1', email: 'test@agua.com', role: userRole };
     }
 
-    return {
-      switchToHttp: () => ({
-        getRequest: () => request,
-      }),
-      getHandler: () => jest.fn(),
-      getClass: () => jest.fn(),
-    } as unknown as ExecutionContext;
+    return createExecutionContext(request);
   }
 
   it('allows access when no roles are required', () => {
@@ -159,5 +184,21 @@ describe('RolesGuard', () => {
     const guard = new RolesGuard(mockReflector);
 
     expect(() => guard.canActivate(createContextWithUser(undefined))).toThrow(ForbiddenException);
+  });
+
+  it('uses registry roles when no static roles metadata exists', () => {
+    mockReflector.getAllAndOverride.mockReturnValue(undefined);
+    const guard = new RolesGuard(mockReflector);
+    const context = createContextWithUser('super_admin', { service: 'vendedores', action: 'list' });
+
+    expect(guard.canActivate(context)).toBe(true);
+  });
+
+  it('rejects registry role mismatches before dispatch', () => {
+    mockReflector.getAllAndOverride.mockReturnValue(undefined);
+    const guard = new RolesGuard(mockReflector);
+    const context = createContextWithUser('vendedor', { service: 'vendedores', action: 'list' });
+
+    expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
   });
 });

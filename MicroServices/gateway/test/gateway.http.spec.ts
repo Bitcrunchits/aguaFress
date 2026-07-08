@@ -3,12 +3,13 @@ import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import { json } from 'express';
 import request from 'supertest';
-import type { UserRole } from '@agua/contracts';
+import { UserRole } from '@agua/contracts';
 import { TcpDispatcherService } from '../src/tcp/tcp-dispatcher.service';
 
 describe('Gateway HTTP routing', () => {
   let app: INestApplication;
-  let authToken: string;
+  let vendedorToken: string;
+  let superAdminToken: string;
   let mockDispatch: jest.Mock;
 
   beforeAll(async () => {
@@ -40,10 +41,15 @@ describe('Gateway HTTP routing', () => {
     await app.init();
 
     const jwtService = moduleRef.get(JwtService);
-    authToken = jwtService.sign({
+    vendedorToken = jwtService.sign({
       sub: 'test-user-id',
       email: 'test@agua.com',
-      role: 'vendedor' as UserRole,
+      role: UserRole.VENDEDOR,
+    });
+    superAdminToken = jwtService.sign({
+      sub: 'admin-user-id',
+      email: 'admin@agua.com',
+      role: UserRole.SUPER_ADMIN,
     });
   });
 
@@ -66,24 +72,12 @@ describe('Gateway HTTP routing', () => {
     });
   });
 
-  it('rejects unauthenticated requests to protected routes with 401', async () => {
-    await request(app.getHttpServer()).post('/api/v1/auth/login').expect(401);
-  });
-
-  it('rejects invalid JWT with 401', async () => {
-    await request(app.getHttpServer())
-      .post('/api/v1/auth/login')
-      .set('Authorization', 'Bearer invalid-token')
-      .expect(401);
-  });
-
-  it('resolves mapped actions and dispatches via TCP', async () => {
+  it('dispatches public auth/login without requiring a token', async () => {
     mockDispatch.mockResolvedValue({ token: 'jwt-token', user: { id: 'u1' } });
 
     const response = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email: 'test@agua.com', password: 'secret' })
-      .set('Authorization', `Bearer ${authToken}`)
       .expect(200);
 
     expect(response.body).toEqual({ token: 'jwt-token', user: { id: 'u1' } });
@@ -92,29 +86,80 @@ describe('Gateway HTTP routing', () => {
       expect.objectContaining({
         body: { email: 'test@agua.com', password: 'secret' },
         params: { service: 'auth', action: 'login' },
-        user: expect.objectContaining({ sub: 'test-user-id', email: 'test@agua.com', role: 'vendedor' }),
+        user: undefined,
       }),
       expect.objectContaining({ tcpPattern: 'auth.login' }),
     );
+  });
+
+  it('rejects unauthenticated requests to protected routes with 401', async () => {
+    await request(app.getHttpServer()).get('/api/v1/users/profile').expect(401);
+    expect(mockDispatch).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid JWT with 401', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/users/profile')
+      .set('Authorization', 'Bearer invalid-token')
+      .expect(401);
+    expect(mockDispatch).not.toHaveBeenCalled();
+  });
+
+  it('dispatches protected actions with the decoded user context', async () => {
+    mockDispatch.mockResolvedValue({ id: 'test-user-id', email: 'test@agua.com' });
+
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/users/profile')
+      .set('Authorization', `Bearer ${vendedorToken}`)
+      .expect(200);
+
+    expect(response.body).toEqual({ id: 'test-user-id', email: 'test@agua.com' });
+    expect(mockDispatch).toHaveBeenCalledWith(
+      'users',
+      expect.objectContaining({
+        body: undefined,
+        params: { service: 'users', action: 'profile' },
+        user: expect.objectContaining({ sub: 'test-user-id', email: 'test@agua.com', role: 'vendedor' }),
+      }),
+      expect.objectContaining({ tcpPattern: 'users.profile' }),
+    );
+  });
+
+  it('enforces roles from the action registry', async () => {
+    mockDispatch.mockResolvedValue({ vendedores: [] });
+
+    await request(app.getHttpServer())
+      .get('/api/v1/vendedores/list')
+      .set('Authorization', `Bearer ${vendedorToken}`)
+      .expect(403);
+    expect(mockDispatch).not.toHaveBeenCalled();
+
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/vendedores/list')
+      .set('Authorization', `Bearer ${superAdminToken}`)
+      .expect(200);
+
+    expect(response.body).toEqual({ vendedores: [] });
+    expect(mockDispatch).toHaveBeenCalledTimes(1);
   });
 
   it('accepts canonical GET, POST, PATCH, DELETE with auth', async () => {
     mockDispatch.mockResolvedValue({ ok: true });
 
     const server = app.getHttpServer();
-    const authHeader = { Authorization: `Bearer ${authToken}` };
+    const authHeader = { Authorization: `Bearer ${vendedorToken}` };
 
     await request(server).get('/api/v1/users/profile').set(authHeader).expect(200);
-    await request(server).post('/api/v1/auth/login').set(authHeader).send({}).expect(200);
+    await request(server).post('/api/v1/auth/login').send({}).expect(200);
     await request(server).patch('/api/v1/users/profile/update').set(authHeader).send({}).expect(200);
     await request(server).delete('/api/v1/auth/logout').set(authHeader).expect(200);
 
     expect(mockDispatch).toHaveBeenCalledTimes(4);
   });
 
-  it('returns 405 for PUT, HEAD, OPTIONS even with valid auth', async () => {
+  it('returns 405 for unsupported PUT, HEAD, and OPTIONS methods even with valid auth', async () => {
     const server = app.getHttpServer();
-    const authHeader = { Authorization: `Bearer ${authToken}` };
+    const authHeader = { Authorization: `Bearer ${vendedorToken}` };
 
     await request(server).put('/api/v1/auth/login').set(authHeader).expect(405);
     await request(server).head('/api/v1/auth/login').set(authHeader).expect(405);
@@ -127,26 +172,26 @@ describe('Gateway HTTP routing', () => {
   it('returns 404 for unknown actions', async () => {
     await request(app.getHttpServer())
       .post('/api/v1/auth/nonexistent')
-      .set('Authorization', `Bearer ${authToken}`)
+      .set('Authorization', `Bearer ${vendedorToken}`)
       .expect(404);
   });
 
   it('returns 503 for unavailable service families', async () => {
     await request(app.getHttpServer())
       .post('/api/v1/products/list')
-      .set('Authorization', `Bearer ${authToken}`)
+      .set('Authorization', `Bearer ${vendedorToken}`)
       .expect(503);
   });
 
   it('returns 404 for unknown service families', async () => {
     await request(app.getHttpServer())
       .post('/api/v1/foobar/test')
-      .set('Authorization', `Bearer ${authToken}`)
+      .set('Authorization', `Bearer ${vendedorToken}`)
       .expect(404);
   });
 
   it('rejects legacy paths without /v1/ prefix', async () => {
-    const authHeader = { Authorization: `Bearer ${authToken}` };
+    const authHeader = { Authorization: `Bearer ${vendedorToken}` };
 
     // Old-style /api/auth/login (no version prefix) should not route
     await request(app.getHttpServer()).post('/api/auth/login').set(authHeader).expect(404);
@@ -159,7 +204,6 @@ describe('Gateway HTTP routing', () => {
     const response = await request(app.getHttpServer())
       .post('/api/v1/auth/register/vendedor')
       .send({ email: 'vendedor@test.com', password: 'secret' })
-      .set('Authorization', `Bearer ${authToken}`)
       .expect(200);
 
     expect(response.body).toEqual({ ok: true });
@@ -168,9 +212,49 @@ describe('Gateway HTTP routing', () => {
       expect.objectContaining({
         body: { email: 'vendedor@test.com', password: 'secret' },
         params: { service: 'auth', action: 'register/vendedor' },
+        user: undefined,
       }),
       expect.objectContaining({ tcpPattern: 'auth.register_vendedor' }),
     );
+  });
+
+  it('forwards query params and x-request-id', async () => {
+    mockDispatch.mockResolvedValue({ ok: true });
+
+    await request(app.getHttpServer())
+      .get('/api/v1/users/profile?include=qr&expand=cliente')
+      .set('x-request-id', 'request-123')
+      .set('Authorization', `Bearer ${vendedorToken}`)
+      .expect(200);
+
+    expect(mockDispatch).toHaveBeenCalledWith(
+      'users',
+      expect.objectContaining({
+        query: { include: 'qr', expand: 'cliente' },
+        requestId: 'request-123',
+      }),
+      expect.objectContaining({ tcpPattern: 'users.profile' }),
+    );
+  });
+
+  it('forwards POST/PATCH bodies but leaves GET/DELETE body undefined', async () => {
+    mockDispatch.mockResolvedValue({ ok: true });
+    const server = app.getHttpServer();
+    const authHeader = { Authorization: `Bearer ${vendedorToken}` };
+
+    await request(server).post('/api/v1/auth/login').send({ email: 'a@b.com' }).expect(200);
+    await request(server)
+      .patch('/api/v1/users/profile/update')
+      .set(authHeader)
+      .send({ name: 'New Name' })
+      .expect(200);
+    await request(server).get('/api/v1/users/profile').set(authHeader).expect(200);
+    await request(server).delete('/api/v1/auth/logout').set(authHeader).expect(200);
+
+    expect(mockDispatch.mock.calls[0]?.[1]).toEqual(expect.objectContaining({ body: { email: 'a@b.com' } }));
+    expect(mockDispatch.mock.calls[1]?.[1]).toEqual(expect.objectContaining({ body: { name: 'New Name' } }));
+    expect(mockDispatch.mock.calls[2]?.[1]).toEqual(expect.objectContaining({ body: undefined }));
+    expect(mockDispatch.mock.calls[3]?.[1]).toEqual(expect.objectContaining({ body: undefined }));
   });
 
   it('rejects oversized payload beyond the limit', async () => {
@@ -179,7 +263,6 @@ describe('Gateway HTTP routing', () => {
     await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send(oversizedBody)
-      .set('Authorization', `Bearer ${authToken}`)
       .expect(413);
   });
 });
