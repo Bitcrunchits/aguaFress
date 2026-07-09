@@ -40,4 +40,5 @@ COPY --from=build /app/MicroServices/gateway/dist ./MicroServices/gateway/dist
 
 EXPOSE 3000
 
-CMD node dist/MicroServices/gateway/src/main.js
+WORKDIR /app/MicroServices/gateway
+CMD ["node", "dist/main.js"]

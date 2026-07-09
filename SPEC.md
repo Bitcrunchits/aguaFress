@@ -1,17 +1,17 @@
 # AguaFress - Specification Document
 
-**Versión:** 1.2  
-**Fecha:** Junio 2026  
-**Estado:** En Desarrollo  
-**Proyecto:** AguaFress - Plataforma de Pedidos y Gestión para Distribuidores de Agua y Soda  
-**Equipo:** AguaFress Development (5 personas)  
+**Versión:** 1.2
+**Fecha:** Junio 2026
+**Estado:** En Desarrollo
+**Proyecto:** AguaFress - Plataforma de Pedidos y Gestión para Distribuidores de Agua y Soda
+**Equipo:** AguaFress Development (5 personas)
 **Carrera:** Desarrollo Full Stack
 
-> ⚠️ **⚠️⚠️ ATENCIÓN — CAMBIO DE ARQUITECTURA PENDIENTE ⚠️⚠️⚠️**  
-> **La comunicación entre microservicios ya NO será Redis Streams + HTTP REST.**  
-> Decisión tomada (27/06/2026): **TCP para comunicación sincrónica** + **Kafka para eventos asíncronos**.  
-> Redis Streams queda **descartado**. Este SPEC necesita actualizarse en las secciones 3, 4.3 y 7 cuando se implemente.  
-> Mientras tanto, **todo el código nuevo debe asumir Kafka + TCP**, no Redis Streams.  
+> ⚠️ **⚠️⚠️ ATENCIÓN — CAMBIO DE ARQUITECTURA PENDIENTE ⚠️⚠️⚠️**
+> **La comunicación entre microservicios ya NO será Redis Streams + HTTP REST.**
+> Decisión tomada (27/06/2026): **TCP para comunicación sincrónica** + **Kafka para eventos asíncronos**.
+> Redis Streams queda **descartado**. Este SPEC necesita actualizarse en las secciones 3, 4.3 y 7 cuando se implemente.
+> Mientras tanto, **todo el código nuevo debe asumir Kafka + TCP**, no Redis Streams.
 > ⚠️ **⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️**
 
 > ⚠️ **Este SPEC refleja la arquitectura V1.0 MVP actual.**  

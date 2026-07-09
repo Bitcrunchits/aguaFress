@@ -70,6 +70,10 @@ services:
       - "3000:3000"
     env_file:
       - .env
+    environment:
+      PORT: "3000"
+      USUARIO_SERVICE_HOST: usuario-service
+      USUARIO_SERVICE_TCP_PORT: "3001"
     depends_on:
       usuario-service:
         condition: service_started
