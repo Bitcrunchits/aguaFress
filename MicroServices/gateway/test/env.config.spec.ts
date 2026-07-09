@@ -20,6 +20,10 @@ describe('createGatewayEnv', () => {
       TCP_TIMEOUT_MS: GATEWAY_ENV_DEFAULTS.TCP_TIMEOUT_MS,
       RATE_LIMIT_TTL_MS: GATEWAY_ENV_DEFAULTS.RATE_LIMIT_TTL_MS,
       RATE_LIMIT_MAX: GATEWAY_ENV_DEFAULTS.RATE_LIMIT_MAX,
+      RATE_LIMIT_AUTH_SENSITIVE_TTL_MS: GATEWAY_ENV_DEFAULTS.RATE_LIMIT_AUTH_SENSITIVE_TTL_MS,
+      RATE_LIMIT_AUTH_SENSITIVE_MAX: GATEWAY_ENV_DEFAULTS.RATE_LIMIT_AUTH_SENSITIVE_MAX,
+      RATE_LIMIT_PUBLIC_TTL_MS: GATEWAY_ENV_DEFAULTS.RATE_LIMIT_PUBLIC_TTL_MS,
+      RATE_LIMIT_PUBLIC_MAX: GATEWAY_ENV_DEFAULTS.RATE_LIMIT_PUBLIC_MAX,
       PAYLOAD_LIMIT: GATEWAY_ENV_DEFAULTS.PAYLOAD_LIMIT,
     });
   });
@@ -39,9 +43,10 @@ describe('createGatewayEnv', () => {
         USUARIO_SERVICE_TCP_PORT: 'not-a-port',
         TCP_TIMEOUT_MS: '0',
         RATE_LIMIT_MAX: '-1',
+        RATE_LIMIT_AUTH_SENSITIVE_MAX: 'none',
       }),
     ).toThrow(
-      'Invalid gateway env: USUARIO_SERVICE_TCP_PORT must be a number between 1 and 65535; TCP_TIMEOUT_MS must be a positive integer; RATE_LIMIT_MAX must be a positive integer',
+      'Invalid gateway env: USUARIO_SERVICE_TCP_PORT must be a number between 1 and 65535; TCP_TIMEOUT_MS must be a positive integer; RATE_LIMIT_MAX must be a positive integer; RATE_LIMIT_AUTH_SENSITIVE_MAX must be a positive integer',
     );
   });
 });
