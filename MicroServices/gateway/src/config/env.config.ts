@@ -3,6 +3,10 @@ export const GATEWAY_ENV_DEFAULTS = {
   TCP_TIMEOUT_MS: 5000,
   RATE_LIMIT_TTL_MS: 60000,
   RATE_LIMIT_MAX: 100,
+  RATE_LIMIT_AUTH_SENSITIVE_TTL_MS: 60000,
+  RATE_LIMIT_AUTH_SENSITIVE_MAX: 10,
+  RATE_LIMIT_PUBLIC_TTL_MS: 60000,
+  RATE_LIMIT_PUBLIC_MAX: 300,
   PAYLOAD_LIMIT: '1mb',
 } as const;
 
@@ -29,6 +33,10 @@ export interface GatewayEnv {
   readonly TCP_TIMEOUT_MS: number;
   readonly RATE_LIMIT_TTL_MS: number;
   readonly RATE_LIMIT_MAX: number;
+  readonly RATE_LIMIT_AUTH_SENSITIVE_TTL_MS: number;
+  readonly RATE_LIMIT_AUTH_SENSITIVE_MAX: number;
+  readonly RATE_LIMIT_PUBLIC_TTL_MS: number;
+  readonly RATE_LIMIT_PUBLIC_MAX: number;
   readonly PAYLOAD_LIMIT: string;
 }
 
@@ -57,6 +65,26 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
     GATEWAY_ENV_DEFAULTS.RATE_LIMIT_MAX,
     'RATE_LIMIT_MAX',
   );
+  const rateLimitAuthSensitiveTtlMs = readOptionalPositiveInteger(
+    envInput.RATE_LIMIT_AUTH_SENSITIVE_TTL_MS,
+    GATEWAY_ENV_DEFAULTS.RATE_LIMIT_AUTH_SENSITIVE_TTL_MS,
+    'RATE_LIMIT_AUTH_SENSITIVE_TTL_MS',
+  );
+  const rateLimitAuthSensitiveMax = readOptionalPositiveInteger(
+    envInput.RATE_LIMIT_AUTH_SENSITIVE_MAX,
+    GATEWAY_ENV_DEFAULTS.RATE_LIMIT_AUTH_SENSITIVE_MAX,
+    'RATE_LIMIT_AUTH_SENSITIVE_MAX',
+  );
+  const rateLimitPublicTtlMs = readOptionalPositiveInteger(
+    envInput.RATE_LIMIT_PUBLIC_TTL_MS,
+    GATEWAY_ENV_DEFAULTS.RATE_LIMIT_PUBLIC_TTL_MS,
+    'RATE_LIMIT_PUBLIC_TTL_MS',
+  );
+  const rateLimitPublicMax = readOptionalPositiveInteger(
+    envInput.RATE_LIMIT_PUBLIC_MAX,
+    GATEWAY_ENV_DEFAULTS.RATE_LIMIT_PUBLIC_MAX,
+    'RATE_LIMIT_PUBLIC_MAX',
+  );
 
   const invalidMessages = [
     port.error,
@@ -64,6 +92,10 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
     tcpTimeoutMs.error,
     rateLimitTtlMs.error,
     rateLimitMax.error,
+    rateLimitAuthSensitiveTtlMs.error,
+    rateLimitAuthSensitiveMax.error,
+    rateLimitPublicTtlMs.error,
+    rateLimitPublicMax.error,
   ].filter(isString);
 
   if (invalidMessages.length > 0) {
@@ -78,6 +110,10 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
     TCP_TIMEOUT_MS: tcpTimeoutMs.value,
     RATE_LIMIT_TTL_MS: rateLimitTtlMs.value,
     RATE_LIMIT_MAX: rateLimitMax.value,
+    RATE_LIMIT_AUTH_SENSITIVE_TTL_MS: rateLimitAuthSensitiveTtlMs.value,
+    RATE_LIMIT_AUTH_SENSITIVE_MAX: rateLimitAuthSensitiveMax.value,
+    RATE_LIMIT_PUBLIC_TTL_MS: rateLimitPublicTtlMs.value,
+    RATE_LIMIT_PUBLIC_MAX: rateLimitPublicMax.value,
     PAYLOAD_LIMIT: envInput.PAYLOAD_LIMIT ?? GATEWAY_ENV_DEFAULTS.PAYLOAD_LIMIT,
   };
 }
