@@ -4,6 +4,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { ACTION_REGISTRY } from '../actions/action-registry';
 import { type GatewayEnv } from '../config/env.config';
 import { GatewayRateLimitGuard } from './gateway-rate-limit.guard';
+import { ProtectedRouteRateLimitGuard } from './protected-route-rate-limit.guard';
 
 const RATE_LIMIT_BUCKET = {
   AUTH_SENSITIVE: 'auth-sensitive',
@@ -60,8 +61,8 @@ interface RateLimitRequest {
       }),
     }),
   ],
-  providers: [GatewayRateLimitGuard],
-  exports: [GatewayRateLimitGuard],
+  providers: [GatewayRateLimitGuard, ProtectedRouteRateLimitGuard],
+  exports: [GatewayRateLimitGuard, ProtectedRouteRateLimitGuard],
 })
 export class RateLimitModule {}
 

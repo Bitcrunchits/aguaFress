@@ -9,6 +9,7 @@ import { RolesGuard } from './auth/roles.guard';
 import { createGatewayEnv } from './config/env.config';
 import { HealthModule } from './health/health.module';
 import { GatewayRateLimitGuard } from './rate-limit/gateway-rate-limit.guard';
+import { ProtectedRouteRateLimitGuard } from './rate-limit/protected-route-rate-limit.guard';
 import { RateLimitModule } from './rate-limit/rate-limit.module';
 import { TcpModule } from './tcp/tcp.module';
 
@@ -26,6 +27,10 @@ import { TcpModule } from './tcp/tcp.module';
   ],
   controllers: [GatewayController],
   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ProtectedRouteRateLimitGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

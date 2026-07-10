@@ -123,6 +123,24 @@ describe('Gateway rate limiting', () => {
     await request(server).delete('/api/v1/auth/logout').set(authHeader).expect(200);
   });
 
+  it('limits repeated protected-route requests with a missing bearer token', async () => {
+    const server = app.getHttpServer();
+
+    await request(server).get('/api/v1/users/profile').expect(401);
+    await request(server).get('/api/v1/users/profile').expect(401);
+    await request(server).get('/api/v1/users/profile').expect(401);
+    await request(server).get('/api/v1/users/profile').expect(429);
+  });
+
+  it('limits repeated protected-route requests with an invalid bearer token', async () => {
+    const server = app.getHttpServer();
+
+    await request(server).get('/api/v1/users/profile').set('Authorization', 'Bearer invalid-token').expect(401);
+    await request(server).get('/api/v1/users/profile').set('Authorization', 'Bearer invalid-token').expect(401);
+    await request(server).get('/api/v1/users/profile').set('Authorization', 'Bearer invalid-token').expect(401);
+    await request(server).get('/api/v1/users/profile').set('Authorization', 'Bearer invalid-token').expect(429);
+  });
+
   it('prefers decoded user identity over IP for protected action keys', async () => {
     const server = app.getHttpServer();
     const sharedIp = '203.0.113.20';
