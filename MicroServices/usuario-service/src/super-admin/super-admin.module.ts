@@ -8,5 +8,6 @@ import { SuperAdminService } from './super-admin.service';
   imports: [AuthModule, CommonModule],
   controllers: [SuperAdminController],
   providers: [SuperAdminService],
+  exports: [SuperAdminService],
 })
 export class SuperAdminModule {}

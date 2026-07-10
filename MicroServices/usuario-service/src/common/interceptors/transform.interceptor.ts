@@ -7,6 +7,13 @@ import {
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
+interface TransformResult {
+  readonly data?: unknown;
+  readonly timestamp?: string;
+  readonly path?: string;
+  readonly [key: string]: unknown;
+}
+
 /**
  * Interceptor global que envuelve TODAS las respuestas exitosas
  * en un objeto estandarizado: { data, timestamp, path }.
@@ -20,13 +27,27 @@ import { map } from 'rxjs/operators';
  */
 @Injectable()
 export class TransformInterceptor implements NestInterceptor {
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<TransformResult> {
+    const contextType = typeof context.getType === 'function' ? context.getType() : 'http';
+
+    if (contextType !== 'http') {
+      return next.handle();
+    }
+
     const request = context.switchToHttp().getRequest();
 
     return next.handle().pipe(
-      map((data) => {
+      map((data: unknown): TransformResult => {
         // Si ya está transformado o es respuesta especial, pasar limpio
-        if (data === null || data === undefined) return data;
+        if (data === null || data === undefined) return data as unknown as TransformResult;
+
+        if (
+          typeof data === 'object' &&
+          'data' in data &&
+          'timestamp' in data
+        ) {
+          return data as TransformResult;
+        }
 
         // Paginated response — already has the shape we wrap with
         if (
@@ -34,7 +55,7 @@ export class TransformInterceptor implements NestInterceptor {
           'data' in data &&
           'pagination' in data
         ) {
-          return data;
+          return data as TransformResult;
         }
 
         return {

@@ -20,6 +20,12 @@ export class AuditLogInterceptor implements NestInterceptor {
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    const contextType = typeof context.getType === 'function' ? context.getType() : 'http';
+
+    if (contextType !== 'http') {
+      return next.handle();
+    }
+
     const action = this.reflector.getAllAndOverride<AuditAction>(AUDIT_LOG_KEY, [
       context.getHandler(),
       context.getClass(),

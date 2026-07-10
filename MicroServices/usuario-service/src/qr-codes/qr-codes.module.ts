@@ -11,5 +11,6 @@ import { VendedorGuard } from '../vendedores/guards/vendedor.guard';
   // Vendor controller first so POST/GET /qr-codes win before /:id routes
   controllers: [QrCodesVendorController, QrCodesAdminController],
   providers: [QrCodesService, VendedorGuard],
+  exports: [QrCodesService],
 })
 export class QrCodesModule {}

@@ -9,14 +9,14 @@ describe('createGatewayEnv', () => {
     const gatewayEnv = createGatewayEnv({
       JWT_SECRET: 'test-secret',
       USUARIO_SERVICE_HOST: 'usuario-service',
-      USUARIO_SERVICE_TCP_PORT: '3001',
+      USUARIO_SERVICE_TCP_PORT: '3011',
     });
 
     expect(gatewayEnv).toEqual({
       PORT: GATEWAY_ENV_DEFAULTS.PORT,
       JWT_SECRET: 'test-secret',
       USUARIO_SERVICE_HOST: 'usuario-service',
-      USUARIO_SERVICE_TCP_PORT: 3001,
+      USUARIO_SERVICE_TCP_PORT: 3011,
       TCP_TIMEOUT_MS: GATEWAY_ENV_DEFAULTS.TCP_TIMEOUT_MS,
       RATE_LIMIT_TTL_MS: GATEWAY_ENV_DEFAULTS.RATE_LIMIT_TTL_MS,
       RATE_LIMIT_MAX: GATEWAY_ENV_DEFAULTS.RATE_LIMIT_MAX,

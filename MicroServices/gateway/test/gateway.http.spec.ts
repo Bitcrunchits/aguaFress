@@ -15,7 +15,7 @@ describe('Gateway HTTP routing', () => {
   beforeAll(async () => {
     process.env.JWT_SECRET = 'test-secret';
     process.env.USUARIO_SERVICE_HOST = 'usuario-service';
-    process.env.USUARIO_SERVICE_TCP_PORT = '3001';
+    process.env.USUARIO_SERVICE_TCP_PORT = '3011';
 
     mockDispatch = jest.fn();
 
