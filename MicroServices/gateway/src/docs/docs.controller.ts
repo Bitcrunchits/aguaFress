@@ -1,20 +1,22 @@
 import { Controller, Get, Header, Res } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
 import type { Response } from 'express';
+import { Public } from '../auth/public.decorator';
 import { OpenApiSpecService } from './openapi-spec.service';
 
 @ApiExcludeController()
+@Public()
 @Controller()
 export class DocsController {
   constructor(private readonly specService: OpenApiSpecService) {}
 
-  @Get('api/openapi.json')
+  @Get('openapi.json')
   @Header('Content-Type', 'application/json')
   getSpec(): Record<string, unknown> {
     return this.specService.generateSpec();
   }
 
-  @Get('api/docs')
+  @Get('docs')
   @Header('Content-Type', 'text/html')
   getDocs(@Res() res: Response): void {
     const html = `<!DOCTYPE html>
