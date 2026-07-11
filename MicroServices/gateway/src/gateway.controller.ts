@@ -14,12 +14,13 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiExcludeController, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { randomUUID } from 'node:crypto';
 import type { Request } from 'express';
 import { ActionResolverService } from './actions/action-resolver.service';
 import { TcpDispatcherService, type TcpCommandPayload } from './tcp/tcp-dispatcher.service';
 
+@ApiExcludeController()
 @ApiTags('Gateway Actions')
 @ApiBearerAuth()
 @Controller('v1/:service')
@@ -29,14 +30,14 @@ export class GatewayController {
     private readonly dispatcher: TcpDispatcherService,
   ) {}
 
-  @Head(':action(*)')
+  @Head(':action(.*)')
   @ApiOperation({ summary: 'Reject HEAD', description: 'HEAD is not supported by the gateway action router.' })
   @ApiResponse({ status: 405, description: 'Method not allowed' })
   rejectHeadMethod(): never {
     return this.rejectUnsupportedMethod();
   }
 
-  @Get(':action(*)')
+  @Get(':action(.*)')
   @ApiOperation({ summary: 'Execute a GET action', description: 'Dispatches a read-only action to the target microservice via TCP.' })
   @ApiParam({ name: 'service', description: 'Service family (auth, users, vendedores, clientes, etc.)' })
   @ApiParam({ name: 'action', description: 'Action to execute within the service family' })
@@ -58,7 +59,7 @@ export class GatewayController {
     return this.dispatcher.dispatch(service, payload, mapping);
   }
 
-  @Post(':action(*)')
+  @Post(':action(.*)')
   @HttpCode(200)
   @ApiOperation({ summary: 'Execute a POST action', description: 'Dispatches a mutating action to the target microservice via TCP.' })
   @ApiParam({ name: 'service', description: 'Service family' })
@@ -80,7 +81,7 @@ export class GatewayController {
     return this.dispatcher.dispatch(service, payload, mapping);
   }
 
-  @Patch(':action(*)')
+  @Patch(':action(.*)')
   @ApiOperation({ summary: 'Execute a PATCH action', description: 'Dispatches a partial update action to the target microservice via TCP.' })
   @ApiParam({ name: 'service', description: 'Service family' })
   @ApiParam({ name: 'action', description: 'Action to execute' })
@@ -101,7 +102,7 @@ export class GatewayController {
     return this.dispatcher.dispatch(service, payload, mapping);
   }
 
-  @Delete(':action(*)')
+  @Delete(':action(.*)')
   @ApiOperation({ summary: 'Execute a DELETE action', description: 'Dispatches a delete action to the target microservice via TCP.' })
   @ApiParam({ name: 'service', description: 'Service family' })
   @ApiParam({ name: 'action', description: 'Action to execute' })
@@ -121,14 +122,14 @@ export class GatewayController {
     return this.dispatcher.dispatch(service, payload, mapping);
   }
 
-  @Put(':action(*)')
+  @Put(':action(.*)')
   @ApiOperation({ summary: 'Reject PUT', description: 'PUT is not supported by the gateway action router.' })
   @ApiResponse({ status: 405, description: 'Method not allowed' })
   rejectPutMethod(): never {
     return this.rejectUnsupportedMethod();
   }
 
-  @Options(':action(*)')
+  @Options(':action(.*)')
   @ApiOperation({ summary: 'Reject OPTIONS', description: 'OPTIONS is not supported by the gateway action router.' })
   @ApiResponse({ status: 405, description: 'Method not allowed' })
   rejectOptionsMethod(): never {

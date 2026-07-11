@@ -30,7 +30,6 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
     actions: {
       login: { tcpPattern: 'auth.login', transport: 'send', authRequired: false },
       register: { tcpPattern: 'auth.register', transport: 'send', authRequired: false },
-      'register/vendedor': { tcpPattern: 'auth.register_vendedor', transport: 'send', authRequired: false },
       refresh: { tcpPattern: 'auth.refresh', transport: 'send', authRequired: false },
       validate: { tcpPattern: 'auth.validate', transport: 'send', authRequired: false },
       me: { tcpPattern: 'auth.me', transport: 'send', authRequired: true },

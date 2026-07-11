@@ -15,8 +15,9 @@
     "strict": true,
     "skipLibCheck": true,
     "paths": {
-      "@agua/contracts": ["../../packages/contracts/src"]
-    }
+      "@agua/contracts": ["../../packages/contracts/dist"]
+    },
+    "rootDir": "src"
   },
   "include": ["src/**/*.ts", "test/**/*.ts"],
   "exclude": ["node_modules", "dist"]
