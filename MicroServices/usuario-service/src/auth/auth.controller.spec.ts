@@ -3,13 +3,10 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { RegisterVendedorDto } from './dto/register-vendedor.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
-import { UserRole } from '@agua/contracts';
 
 const mockAuthService = {
   register: jest.fn(),
-  registerVendedor: jest.fn(),
   login: jest.fn(),
   refresh: jest.fn(),
   validate: jest.fn(),
@@ -36,43 +33,22 @@ describe('AuthController', () => {
 
   describe('register', () => {
     const dto: RegisterDto = {
-      email: 'new@test.com',
+      email: 'vendedor@test.com',
       password: 'password123',
-      nombre: 'New User',
-      role: UserRole.CLIENTE,
-      qrToken: 'qr-abc',
+      nombre: 'Vendedor',
+      apellido: 'Test',
+      dni: '12345678',
+      telefono: '11-5555-0199',
+      ciudad: 'Capital Federal',
     };
 
-    it('delega a AuthService.register y retorna 201', async () => {
-      const expected = {
-        user: { id: 'user-1', email: 'new@test.com', role: UserRole.CLIENTE },
-      };
+    it('delega a AuthService.register y retorna { status, vendedorId }', async () => {
+      const expected = { status: 'pendiente' as const, vendedorId: 'vendedor-1' };
       mockAuthService.register.mockResolvedValue(expected);
 
       const result = await controller.register(dto);
 
       expect(authService.register).toHaveBeenCalledWith(dto);
-      expect(result).toEqual(expected);
-    });
-  });
-
-  describe('registerVendedor', () => {
-    const dto: RegisterVendedorDto = {
-      email: 'vendedor@test.com',
-      password: 'password123',
-      nombre: 'Vendedor Test',
-      telefono: '11-5555-0199',
-      ciudad: 'Capital Federal',
-      zonaEntrega: 'Villa Crespo',
-    };
-
-    it('delega a AuthService.registerVendedor y retorna 201', async () => {
-      const expected = { status: 'pendiente' as const, vendedorId: 'vendedor-1' };
-      mockAuthService.registerVendedor.mockResolvedValue(expected);
-
-      const result = await controller.registerVendedor(dto);
-
-      expect(authService.registerVendedor).toHaveBeenCalledWith(dto);
       expect(result).toEqual(expected);
     });
   });

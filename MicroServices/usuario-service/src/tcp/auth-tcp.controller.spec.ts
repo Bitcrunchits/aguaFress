@@ -9,7 +9,6 @@ import type { TcpPayload } from './tcp-payload';
 
 type AuthServiceMock = {
   register: jest.Mock;
-  registerVendedor: jest.Mock;
   login: jest.Mock;
   refresh: jest.Mock;
   validate: jest.Mock;
@@ -23,7 +22,6 @@ type UsersServiceMock = {
 
 const mockAuthService: AuthServiceMock = {
   register: jest.fn(),
-  registerVendedor: jest.fn(),
   login: jest.fn(),
   refresh: jest.fn(),
   validate: jest.fn(),

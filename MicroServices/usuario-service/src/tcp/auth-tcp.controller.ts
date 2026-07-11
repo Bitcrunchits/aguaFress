@@ -4,7 +4,6 @@ import { AuthService } from '../auth/auth.service';
 import { Public } from '../auth/decorators/public.decorator';
 import { LoginDto } from '../auth/dto/login.dto';
 import { RegisterDto } from '../auth/dto/register.dto';
-import { RegisterVendedorDto } from '../auth/dto/register-vendedor.dto';
 import { RefreshTokenDto } from '../auth/dto/refresh-token.dto';
 import { ValidateTokenDto } from '../auth/dto/validate-token.dto';
 import { UsersService } from '../users/users.service';
@@ -30,12 +29,6 @@ export class AuthTcpController {
   async register(@Payload() payload: TcpPayload) {
     const dto = await this.payloadAdapter.body(payload, RegisterDto);
     return this.authService.register(dto);
-  }
-
-  @MessagePattern('auth.register_vendedor')
-  async registerVendedor(@Payload() payload: TcpPayload) {
-    const dto = await this.payloadAdapter.body(payload, RegisterVendedorDto);
-    return this.authService.registerVendedor(dto);
   }
 
   @MessagePattern('auth.refresh')
