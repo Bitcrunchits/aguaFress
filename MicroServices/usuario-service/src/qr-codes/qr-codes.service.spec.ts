@@ -10,6 +10,9 @@ import { PrismaService } from '../common/prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 
 const mockPrisma = {
+  vendedor: {
+    findUnique: jest.fn(),
+  },
   qrCode: {
     findUnique: jest.fn(),
     findFirst: jest.fn(),
@@ -46,6 +49,10 @@ describe('QrCodesService', () => {
 
   describe('create', () => {
     const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    beforeEach(() => {
+      mockPrisma.vendedor.findUnique.mockResolvedValue({ estado: 'activo' });
+    });
 
     it('genera codigo y crea QrCode con activo:true y expires_at ~7 dias', async () => {
       const mockQr = {

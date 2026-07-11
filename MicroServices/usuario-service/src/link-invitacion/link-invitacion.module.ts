@@ -11,5 +11,6 @@ import { VendedorGuard } from '../vendedores/guards/vendedor.guard';
   // Vendor controller first so POST/GET /link-invitacion win before /:id routes
   controllers: [LinkInvitacionVendorController, LinkInvitacionAdminController],
   providers: [LinkInvitacionService, VendedorGuard],
+  exports: [LinkInvitacionService],
 })
 export class LinkInvitacionModule {}

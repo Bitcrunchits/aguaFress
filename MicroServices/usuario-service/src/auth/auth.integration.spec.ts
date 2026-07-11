@@ -27,6 +27,7 @@ describe('Auth Integration: register → login → refresh → profile', () => {
   const mockPrisma = {
     authUser: {
       findUnique: jest.fn(),
+      update: jest.fn(),
     },
     cliente: {
       findUnique: jest.fn(),
@@ -88,102 +89,7 @@ describe('Auth Integration: register → login → refresh → profile', () => {
     usersService = module.get<UsersService>(UsersService);
   });
 
-  describe('Scenario 1: Cliente full flow — register → login → refresh → get profile', () => {
-    const mockClienteUser = {
-      id: 'cliente-user-1',
-      email: 'cliente@test.com',
-      password: 'hashed-cliente-pw',
-      role: 'cliente',
-      is_active: true,
-      is_verified: false,
-      created_at: new Date(),
-      updated_at: new Date(),
-    };
-
-    const mockClienteProfile = {
-      nombre: 'Ana',
-      apellido: 'Lopez',
-      telefono: '11-5555-0100',
-      dni: '87654321',
-      tipo_factura: 'B',
-      direccion_calle: 'Calle Falsa',
-      direccion_numero: '123',
-      direccion_piso: null,
-      direccion_referencia: null,
-      direccion_barrio: null,
-      direccion_ciudad: null,
-      direccion_provincia: null,
-      direccion_cp: null,
-    };
-
-    it('completa el ciclo completo: register → login → refresh → profile', async () => {
-      // --- REGISTER ---
-      mockPrisma.authUser.findUnique.mockResolvedValue(null);
-      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-cliente-pw');
-      mockTx.authUser.create.mockResolvedValue(mockClienteUser);
-      mockTx.qrCode.findFirst.mockResolvedValue({
-        codigo: 'qr-vendedor-1',
-        activo: true,
-        vendedor_id: 'vendedor-1',
-      });
-      mockTx.cliente.create.mockResolvedValue({ id: 'cliente-1' });
-
-      const registerResult = await authService.register({
-        email: 'cliente@test.com',
-        password: 'SecurePass1',
-        nombre: 'Ana',
-        role: 'cliente' as any,
-        qrToken: 'qr-vendedor-1',
-      });
-
-      expect(registerResult.user.id).toBe('cliente-user-1');
-      expect(registerResult.user.email).toBe('cliente@test.com');
-      expect(registerResult.token).toBeDefined();
-      expect(registerResult.refreshToken).toBeDefined();
-
-      // --- LOGIN ---
-      mockPrisma.authUser.findUnique.mockResolvedValue(mockClienteUser);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      mockPrisma.cliente.findUnique.mockResolvedValue(mockClienteProfile);
-
-      const loginResult = await authService.login({
-        email: 'cliente@test.com',
-        password: 'SecurePass1',
-      });
-
-      expect(loginResult.token).toBeDefined();
-      expect(loginResult.user.nombre).toBe('Ana');
-      expect(loginResult.user.email).toBe('cliente@test.com');
-
-      // --- REFRESH ---
-      const refreshResult = await authService.refresh(loginResult.refreshToken);
-
-      expect(refreshResult.token).toBeDefined();
-      expect(typeof refreshResult.token).toBe('string');
-      expect(refreshResult.token.split('.')).toHaveLength(3); // valid JWT format
-
-      // --- PROFILE ---
-      mockPrisma.authUser.findUnique.mockResolvedValue({
-        id: 'cliente-user-1',
-        email: 'cliente@test.com',
-        role: 'cliente',
-        is_active: true,
-        vendedor: null,
-        cliente: mockClienteProfile,
-      });
-
-      const profileResult = await usersService.getProfile('cliente-user-1');
-
-      expect(profileResult.email).toBe('cliente@test.com');
-      expect(profileResult.role).toBe('cliente');
-      expect(profileResult.profile).toBeDefined();
-      expect(profileResult.profile!.nombre).toBe('Ana');
-      const clienteProfile = profileResult.profile as { direccionEntrega: { calle: string } };
-      expect(clienteProfile.direccionEntrega.calle).toBe('Calle Falsa');
-    });
-  });
-
-  describe('Scenario 2: Vendedor register + login + update profile', () => {
+  describe('Scenario 1: Vendedor register → login → profile update', () => {
     const mockVendedorUser = {
       id: 'vendor-user-1',
       email: 'vendedor@test.com',
@@ -196,19 +102,20 @@ describe('Auth Integration: register → login → refresh → profile', () => {
     };
 
     it('registra vendedor, loguea y actualiza perfil', async () => {
-      // --- REGISTER VENDEDOR ---
+      // --- REGISTER ---
       mockPrisma.authUser.findUnique.mockResolvedValue(null);
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-vendor-pw');
       mockTx.authUser.create.mockResolvedValue(mockVendedorUser);
       mockTx.vendedor.create.mockResolvedValue({ id: 'vendedor-1' });
 
-      const registerResult = await authService.registerVendedor({
+      const registerResult = await authService.register({
         email: 'vendedor@test.com',
         password: 'VendorPass1',
         nombre: 'Carlos',
+        apellido: 'García',
+        dni: '12345678',
         telefono: '11-5555-0200',
         ciudad: 'Capital Federal',
-        zonaEntrega: 'Palermo',
       });
 
       expect(registerResult.status).toBe('pendiente');
@@ -219,7 +126,7 @@ describe('Auth Integration: register → login → refresh → profile', () => {
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       mockPrisma.vendedor.findUnique.mockResolvedValue({
         nombre: 'Carlos',
-        apellido: null,
+        apellido: 'García',
       });
 
       const loginResult = await authService.login({
@@ -227,6 +134,7 @@ describe('Auth Integration: register → login → refresh → profile', () => {
         password: 'VendorPass1',
       });
 
+      expect(loginResult.token).toBeDefined();
       expect(loginResult.user.nombre).toBe('Carlos');
 
       // --- UPDATE PROFILE ---
@@ -239,13 +147,13 @@ describe('Auth Integration: register → login → refresh → profile', () => {
           is_active: true,
           vendedor: {
             nombre: 'Carlos Updated',
-            apellido: null,
+            apellido: 'García',
             empresa: null,
             logo: null,
-            estado: 'activo',
+            estado: 'pendiente',
             qr_token: null,
             ciudad_default: 'Capital Federal',
-            zona_entrega: 'Palermo',
+            zona_entrega: null,
           },
           cliente: null,
         });
@@ -263,40 +171,7 @@ describe('Auth Integration: register → login → refresh → profile', () => {
     });
   });
 
-  describe('Scenario 3: QR expirado o inválido en register', () => {
-    it('rechaza register con qrToken expirado', async () => {
-      mockPrisma.authUser.findUnique.mockResolvedValue(null);
-      (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-cliente-pw');
-      mockTx.authUser.create.mockResolvedValue({
-        id: 'cliente-user-2',
-        email: 'expirado@test.com',
-        password: 'hashed',
-        role: 'cliente',
-      } as any);
-      // findFirst con expires_at: { gt: new Date() } filtra en DB — devuelve null para expirados
-      mockTx.qrCode.findFirst.mockResolvedValue(null);
-
-      await expect(
-        authService.register({
-          email: 'expirado@test.com',
-          password: 'SecurePass1',
-          nombre: 'Test',
-          role: 'cliente' as any,
-          qrToken: 'qr-expirado',
-        }),
-      ).rejects.toThrow('Invalid or expired QR token');
-
-      expect(mockTx.qrCode.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            expires_at: { gt: expect.any(Date) },
-          }),
-        }),
-      );
-    });
-  });
-
-  describe('Scenario 4: Error cases — invalid login and unauthorised profile', () => {
+  describe('Scenario 2: Error cases — invalid login and unauthorised profile', () => {
     it('rechaza login con credenciales inválidas', async () => {
       mockPrisma.authUser.findUnique.mockResolvedValue(null);
 

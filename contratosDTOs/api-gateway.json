@@ -1,22 +1,56 @@
 {
   "service": "api-gateway",
   "port": 3000,
-  "responsibility": "Punto de entrada único. Routing, autenticación JWT, rate limiting, forwarding a microservicios.",
-  "security_rules": [
-    "El gateway extrae el userId del token JWT y lo pasa a los servicios en los headers.",
-    "Rate limiting: implementar en endpoints de login (máx 5 intentos/min)."
+  "version": "1.0.0",
+  "responsibility": "Punto de entrada único HTTP en puerto 3000. Traduce requests HTTP /api/v1/{service}/{action} a mensajes TCP a los microservicios. No es un proxy HTTP reverso.",
+  "architecture": {
+    "pattern": "TCP action routing",
+    "description": "Cada request HTTP entrante se resuelve contra un action registry. Las acciones mapean a patrones TCP (request/response via send() o fire-and-forget via emit()). El gateway NO hace forwarding HTTP a microservicios.",
+    "http_format": "/api/v1/{service}/{action}",
+    "canonical_methods": ["GET", "POST", "PATCH", "DELETE"],
+    "rejected_methods": ["PUT", "HEAD", "OPTIONS"],
+    "body_format": "JSON",
+    "global_prefix": "/api",
+    "version_prefix": "/v1"
+  },
+  "security": {
+    "auth": "JWT via @agua/contracts UserRole enum. El gateway valida el token y pasa { sub, email, role } al microservicio en el payload TCP.",
+    "rate_limiting": "Global: 100 requests / 60s. Por acción vía @Throttle() donde se requiera.",
+    "helmet": "Cabeceras de seguridad habilitadas (x-frame-options, x-content-type-options, etc.)",
+    "cors": "Habilitado con credentials: true",
+    "payload_limit": "1mb default, configurable via PAYLOAD_LIMIT env"
+  },
+  "tcp_routing": {
+    "transport": "TCP via @nestjs/microservices ClientProxy",
+    "timeout_ms": 5000,
+    "retry_count": 2,
+    "payload_shape": {
+      "body": "request body (opcional)",
+      "query": "query params",
+      "params": "{ service, action }",
+      "user": "JWT payload { sub, email, role } (opcional, solo si autenticado)",
+      "requestId": "UUID o x-request-id header"
+    }
+  },
+  "action_families": [
+    { "service": "auth",     "status": "available",  "tcp_client": "USUARIO_CLIENT", "actions": ["login", "register", "register/vendedor", "refresh", "validate", "me", "logout"] },
+    { "service": "users",    "status": "available",  "tcp_client": "USUARIO_CLIENT", "actions": ["profile", "profile/update"] },
+    { "service": "vendedores", "status": "available","tcp_client": "USUARIO_CLIENT", "actions": ["list", "profile", "profile/update"] },
+    { "service": "clientes",   "status": "available","tcp_client": "USUARIO_CLIENT", "actions": ["list", "cartera"] },
+    { "service": "super-admin", "status": "available","tcp_client": "USUARIO_CLIENT", "actions": ["dashboard", "audit-log", "qr-codes", "link-invitacion", "vendedores"] },
+    { "service": "qr",          "status": "available","tcp_client": "USUARIO_CLIENT", "actions": ["vendor/list", "vendor/create"] },
+    { "service": "link-invitacion", "status": "available","tcp_client": "USUARIO_CLIENT", "actions": ["vendor/list", "vendor/create"] },
+    { "service": "products",     "status": "unavailable", "tcp_client": "TBD", "actions": [] },
+    { "service": "categories",   "status": "unavailable", "tcp_client": "TBD", "actions": [] },
+    { "service": "brands",       "status": "unavailable", "tcp_client": "TBD", "actions": [] },
+    { "service": "orders",       "status": "unavailable", "tcp_client": "TBD", "actions": [] },
+    { "service": "cart",         "status": "unavailable", "tcp_client": "TBD", "actions": [] },
+    { "service": "deliveries",   "status": "unavailable", "tcp_client": "TBD", "actions": [] },
+    { "service": "activity-logs","status": "unavailable", "tcp_client": "TBD", "actions": [] }
   ],
-  "routes": [
-    { "path": "/auth/*", "target": "usuario-service (módulo auth)", "port": 3001, "auth_required": false },
-    { "path": "/users/*", "target": "usuario-service (módulo users)", "port": 3001, "auth_required": true },
-    { "path": "/qr/*", "target": "usuario-service (módulo users)", "port": 3001, "auth_required": false },
-    { "path": "/products/*", "target": "products-service", "port": 3003, "auth_required": false },
-    { "path": "/categories/*", "target": "products-service", "port": 3003, "auth_required": false },
-    { "path": "/brands/*", "target": "products-service", "port": 3003, "auth_required": false },
-    { "path": "/orders/*", "target": "orders-service", "port": 3004, "auth_required": true },
-    { "path": "/cart/*", "target": "orders-service", "port": 3004, "auth_required": true },
-    { "path": "/deliveries/*", "target": "entregas-service", "port": 3005, "auth_required": true },
-    { "path": "/activity-logs/*", "target": "notifications-service", "port": 3006, "auth_required": true },
-    { "path": "/super-admin/*", "target": "usuario-service (módulo auth)", "port": 3001, "auth_required": true }
-  ]
+  "health_endpoint": {
+    "path": "/api/health",
+    "auth_required": false,
+    "response": { "status": "ok", "service": "api-gateway", "version": "1.0.0" }
+  }
 }

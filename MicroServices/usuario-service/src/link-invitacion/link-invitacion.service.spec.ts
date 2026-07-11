@@ -10,6 +10,9 @@ import { PrismaService } from '../common/prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 
 const mockPrisma = {
+  vendedor: {
+    findUnique: jest.fn(),
+  },
   linkInvitacion: {
     findUnique: jest.fn(),
     findFirst: jest.fn(),
@@ -46,6 +49,10 @@ describe('LinkInvitacionService', () => {
 
   describe('create', () => {
     const futureDate = new Date(Date.now() + 48 * 60 * 60 * 1000);
+
+    beforeEach(() => {
+      mockPrisma.vendedor.findUnique.mockResolvedValue({ estado: 'activo' });
+    });
 
     it('genera token y crea LinkInvitacion con activo:true y expires_at ~48h', async () => {
       const mockLink = {

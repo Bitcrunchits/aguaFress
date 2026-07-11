@@ -6,5 +6,6 @@ import { UsersService } from './users.service';
   imports: [],  // AuthModule guards come from global APP_GUARD
   controllers: [UsersController],
   providers: [UsersService],
+  exports: [UsersService],
 })
 export class UsersModule {}

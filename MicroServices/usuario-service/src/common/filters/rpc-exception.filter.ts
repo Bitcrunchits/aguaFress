@@ -35,7 +35,7 @@ export class RpcExceptionFilter implements ExceptionFilter {
 
   constructor(private readonly httpAdapterHost: HttpAdapterHost) {}
 
-  catch(exception: unknown, host: ArgumentsHost): Observable<any> | void {
+  catch(exception: unknown, host: ArgumentsHost): Observable<never> | void {
     const type = host.getType();
 
     if (type === 'rpc') {

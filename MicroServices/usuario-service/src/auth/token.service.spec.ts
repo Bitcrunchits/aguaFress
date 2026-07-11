@@ -61,11 +61,18 @@ describe('TokenService', () => {
       );
 
       expect(jwtService.signAsync).toHaveBeenCalledTimes(2);
-      expect(jwtService.signAsync).toHaveBeenNthCalledWith(1, mockPayload);
-      expect(jwtService.signAsync).toHaveBeenNthCalledWith(2, mockPayload, {
-        secret: 'refresh-secret',
-        expiresIn: '7d',
-      });
+      expect(jwtService.signAsync).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining(mockPayload),
+      );
+      expect(jwtService.signAsync).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining(mockPayload),
+        {
+          secret: 'refresh-secret',
+          expiresIn: '7d',
+        },
+      );
       expect(result).toEqual({
         token: 'access-token',
         refreshToken: 'refresh-token',
@@ -83,7 +90,9 @@ describe('TokenService', () => {
         mockPayload.role,
       );
 
-      expect(jwtService.signAsync).toHaveBeenCalledWith(mockPayload);
+      expect(jwtService.signAsync).toHaveBeenCalledWith(
+        expect.objectContaining(mockPayload),
+      );
       expect(result).toBe('single-access-token');
     });
   });

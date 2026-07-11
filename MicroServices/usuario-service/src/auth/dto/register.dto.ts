@@ -1,6 +1,5 @@
-import { IsEmail, IsString, IsEnum, IsBoolean, IsOptional, MinLength, MaxLength, Length } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { UserRole, TipoFactura } from '@agua/contracts';
+import { IsEmail, IsString, MinLength, MaxLength, Length } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class RegisterDto {
   @ApiProperty({ description: 'Email address', format: 'email' })
@@ -17,82 +16,23 @@ export class RegisterDto {
   @MinLength(2)
   nombre: string;
 
-  // ─── CLIENTE fields (required when role=CLIENTE) ───
-
-  @ApiPropertyOptional({ description: 'Last name', minLength: 2, maxLength: 100 })
-  @IsOptional()
+  @ApiProperty({ description: 'Last name', minLength: 2, maxLength: 100 })
   @IsString()
   @MinLength(2)
   @MaxLength(100)
-  apellido?: string;
+  apellido: string;
 
-  @ApiPropertyOptional({ description: 'DNI', minLength: 8, maxLength: 20 })
-  @IsOptional()
+  @ApiProperty({ description: 'DNI', minLength: 8, maxLength: 8 })
   @IsString()
-  @Length(8, 20)
-  dni?: string;
+  @Length(8, 8)
+  dni: string;
 
-  @ApiPropertyOptional({ description: 'Phone number' })
-  @IsOptional()
+  @ApiProperty({ description: 'Phone number' })
   @IsString()
-  telefono?: string;
+  telefono: string;
 
-  @ApiPropertyOptional({ description: 'Invoice type', enum: TipoFactura, enumName: 'TipoFactura' })
-  @IsOptional()
-  @IsEnum(TipoFactura)
-  tipoFactura?: TipoFactura;
-
-  @ApiPropertyOptional({ description: 'Street address' })
-  @IsOptional()
+  @ApiProperty({ description: 'City', minLength: 2 })
   @IsString()
-  direccionCalle?: string;
-
-  @ApiPropertyOptional({ description: 'Street number' })
-  @IsOptional()
-  @IsString()
-  direccionNumero?: string;
-
-  @ApiPropertyOptional({ description: 'City' })
-  @IsOptional()
-  @IsString()
-  direccionCiudad?: string;
-
-  @ApiPropertyOptional({ description: 'Province' })
-  @IsOptional()
-  @IsString()
-  direccionProvincia?: string;
-
-  @ApiPropertyOptional({ description: 'Same address for delivery' })
-  @IsOptional()
-  @IsBoolean()
-  mismaDireccionEntrega?: boolean;
-
-  @ApiPropertyOptional({ description: 'Delivery street address' })
-  @IsOptional()
-  @IsString()
-  entregaCalle?: string;
-
-  @ApiPropertyOptional({ description: 'Delivery street number' })
-  @IsOptional()
-  @IsString()
-  entregaNumero?: string;
-
-  @ApiPropertyOptional({ description: 'Delivery city' })
-  @IsOptional()
-  @IsString()
-  entregaCiudad?: string;
-
-  @ApiPropertyOptional({ description: 'Delivery province' })
-  @IsOptional()
-  @IsString()
-  entregaProvincia?: string;
-
-  @ApiProperty({ description: 'User role', enum: UserRole, enumName: 'UserRole' })
-  @IsEnum(UserRole)
-  role: UserRole;
-
-  @ApiPropertyOptional({ description: 'QR token' })
-  @IsOptional()
-  @IsString()
-  qrToken?: string;
+  @MinLength(2)
+  ciudad: string;
 }

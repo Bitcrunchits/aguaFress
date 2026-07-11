@@ -1,11 +1,10 @@
 import * as crypto from 'crypto';
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { TokenService } from './token.service';
 import * as bcrypt from 'bcrypt';
-import { UserRole, VendedorEstado, AuditAction, TipoFactura } from '@agua/contracts';
+import { UserRole, VendedorEstado, AuditAction } from '@agua/contracts';
 import { RegisterDto } from './dto/register.dto';
-import { RegisterVendedorDto } from './dto/register-vendedor.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuditLogService } from '../audit-log/audit-log.service';
 
@@ -19,18 +18,6 @@ export class AuthService {
     private readonly auditLogService: AuditLogService,
   ) {}
 
-  private mapRoleToPrisma(role: UserRole): 'cliente' | 'vendedor' {
-    if (role === UserRole.SUPER_ADMIN) throw new ForbiddenException('Cannot register as super admin');
-    switch (role) {
-      case UserRole.CLIENTE:
-        return 'cliente';
-      case UserRole.VENDEDOR:
-        return 'vendedor';
-      default:
-        throw new BadRequestException('Invalid role');
-    }
-  }
-
   private hashToken(token: string): string {
     return crypto.createHash('sha256').update(token).digest('hex');
   }
@@ -40,94 +27,7 @@ export class AuthService {
     if (existing) {
       // Prevent email enumeration: do work regardless, return 201
       await bcrypt.hash(dto.password, this.SALT_ROUNDS);
-      const fakeTokens = { token: '', refreshToken: '' };
-      return {
-        user: { id: '', email: dto.email, role: '' },
-        ...fakeTokens,
-      };
-    }
-
-    const hashedPassword = await bcrypt.hash(dto.password, this.SALT_ROUNDS);
-
-    const result = await this.prisma.$transaction(async (tx) => {
-      const user = await tx.authUser.create({
-        data: {
-          email: dto.email,
-          password: hashedPassword,
-          role: this.mapRoleToPrisma(dto.role),
-        },
-      });
-
-      if (dto.role === UserRole.CLIENTE) {
-        // If qrToken, look up the vendedor
-        let vendedorId: string | undefined;
-        if (dto.qrToken) {
-          const qr = await tx.qrCode.findFirst({ where: { codigo: dto.qrToken, activo: true, expires_at: { gt: new Date() } } });
-          if (qr) vendedorId = qr.vendedor_id;
-        }
-        if (!vendedorId) throw new UnauthorizedException('Invalid or expired QR token');
-
-        await tx.cliente.create({
-          data: {
-            auth_user_id: user.id,
-            nombre: dto.nombre,
-            apellido: dto.apellido ?? '',
-            dni: dto.dni ?? '',
-            telefono: dto.telefono ?? '',
-            tipo_factura: dto.tipoFactura ?? TipoFactura.B,
-            direccion_calle: dto.direccionCalle ?? '',
-            direccion_numero: dto.direccionNumero ?? '',
-            direccion_ciudad: dto.direccionCiudad ?? '',
-            direccion_provincia: dto.direccionProvincia ?? '',
-            misma_direccion_entrega: dto.mismaDireccionEntrega ?? true,
-            entrega_calle: dto.entregaCalle,
-            entrega_numero: dto.entregaNumero,
-            entrega_ciudad: dto.entregaCiudad,
-            entrega_provincia: dto.entregaProvincia,
-            vendedor_id: vendedorId,
-          },
-        });
-      } else if (dto.role === UserRole.VENDEDOR) {
-        await tx.vendedor.create({
-          data: {
-            auth_user_id: user.id,
-            nombre: dto.nombre,
-            estado: VendedorEstado.PENDIENTE,
-          },
-        });
-      }
-
-      return user;
-    });
-
-    const tokens = await this.tokenService.generateTokens(result.id, result.email, result.role);
-
-    // Store refresh token hash for rotation
-    if (tokens.refreshToken) {
-      const hash = this.hashToken(tokens.refreshToken);
-      await this.prisma.authUser.update({
-        where: { id: result.id },
-        data: { refresh_token_hash: hash },
-      });
-    }
-
-    await this.auditLogService.record(AuditAction.USER_REGISTERED, result.id);
-
-    return {
-      user: { id: result.id, email: result.email, role: result.role },
-      ...tokens,
-    };
-  }
-
-  async registerVendedor(dto: RegisterVendedorDto) {
-    const existing = await this.prisma.authUser.findUnique({ where: { email: dto.email } });
-    if (existing) {
-      // Prevent email enumeration: do work regardless, return 201
-      await bcrypt.hash(dto.password, this.SALT_ROUNDS);
-      return {
-        status: 'pendiente' as const,
-        vendedorId: '',
-      };
+      return { status: 'pendiente' as const, vendedorId: '' };
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, this.SALT_ROUNDS);
@@ -147,11 +47,8 @@ export class AuthService {
           nombre: dto.nombre,
           apellido: dto.apellido,
           dni: dto.dni,
-          cuil: dto.cuil,
-          cuit: dto.cuit,
           telefono: dto.telefono,
           ciudad_default: dto.ciudad,
-          zona_entrega: dto.zonaEntrega,
           estado: VendedorEstado.PENDIENTE,
         },
       });
