@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { RolesGuard } from './auth/roles.guard';
 import { createGatewayEnv } from './config/env.config';
+import { DocsModule } from './docs/docs.module';
 import { HealthModule } from './health/health.module';
 import { GatewayRateLimitGuard } from './rate-limit/gateway-rate-limit.guard';
 import { ProtectedRouteRateLimitGuard } from './rate-limit/protected-route-rate-limit.guard';
@@ -22,6 +23,7 @@ import { TcpModule } from './tcp/tcp.module';
     ActionsModule,
     TcpModule,
     AuthModule,
+    DocsModule,
     HealthModule,
     RateLimitModule,
   ],
