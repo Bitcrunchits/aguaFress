@@ -49,12 +49,10 @@ services:
       context: .
       dockerfile: MicroServices/usuario-service/Dockerfile
     container_name: agua-usuario-service
-    ports:
-      - "3001:3001"
+    # No HTTP port — TCP only (internal Docker network)
     env_file:
       - .env
     environment:
-      PORT: "3001"
       TCP_PORT: "3011"
     depends_on:
       postgres:
