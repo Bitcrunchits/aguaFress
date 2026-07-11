@@ -51,18 +51,35 @@ services:
     container_name: agua-usuario-service
     ports:
       - "3001:3001"
+    env_file:
+      - .env
     environment:
-      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/agua"
-      JWT_SECRET: "aguafress-dev-secret-no-usar-en-prod"
-      JWT_EXPIRATION: "24h"
-      REDIS_URL: "redis://redis:6379"
-      PORT: 3001
-      NODE_ENV: development
+      PORT: "3001"
+      TCP_PORT: "3011"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+    restart: unless-stopped
+
+  # ─── api-gateway ────────────────────────────────────────────
+  gateway:
+    build:
+      context: .
+      dockerfile: MicroServices/gateway/Dockerfile
+    container_name: agua-gateway
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      PORT: "3000"
+      USUARIO_SERVICE_HOST: usuario-service
+      USUARIO_SERVICE_TCP_PORT: "3011"
+    depends_on:
+      usuario-service:
+        condition: service_started
     restart: unless-stopped
 
 volumes:

@@ -1,14 +1,26 @@
 # AguaFress - Specification Document
 
-**Versión:** 1.1  
-**Fecha:** Mayo 2026  
-**Estado:** Aprobado para Desarrollo  
-**Proyecto:** AguaFress - Plataforma de Pedidos y Gestión para Distribuidores de Agua y Soda  
-**Equipo:** AguaFress Development (5 personas)  
+**Versión:** 1.2
+**Fecha:** Junio 2026
+**Estado:** En Desarrollo
+**Proyecto:** AguaFress - Plataforma de Pedidos y Gestión para Distribuidores de Agua y Soda
+**Equipo:** AguaFress Development (5 personas)
 **Carrera:** Desarrollo Full Stack
 
+> ⚠️ **⚠️⚠️ ATENCIÓN — CAMBIO DE ARQUITECTURA PENDIENTE ⚠️⚠️⚠️**
+> **La comunicación entre microservicios ya NO será Redis Streams + HTTP REST.**
+> Decisión tomada (27/06/2026): **TCP para comunicación sincrónica** + **Kafka para eventos asíncronos**.
+> Redis Streams queda **descartado**. Este SPEC necesita actualizarse en las secciones 3, 4.3 y 7 cuando se implemente.
+> Mientras tanto, **todo el código nuevo debe asumir Kafka + TCP**, no Redis Streams.
+> ⚠️ **⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️**
+
 > ⚠️ **Este SPEC refleja la arquitectura V1.0 MVP actual.**  
-> Todo el código nuevo debe cumplir **SOLID + Clean Code** (ver sección 11).
+> Todo el código nuevo debe cumplir **SOLID + Clean Code** (ver sección 9).
+
+> ✅ **Fuente de verdad activa para api-gateway (AG-90 / AG-100 / AG-101)**
+> El gateway se define como fachada HTTP versionada para el frontend en `GET|POST|PATCH|DELETE /api/v1/{service}/{action}` y despacha hacia los microservicios exclusivamente por **TCP action routing** mediante mappings explícitos/message patterns.
+> **NO** debe implementarse como proxy HTTP crudo de rutas `/api/*`.
+> La especificación detallada viva está en `openspec/changes/api-gateway/specs/api-gateway/spec.md`; este `SPEC.md` raíz mantiene la verdad global del proyecto.
 
 ---
 
@@ -71,14 +83,15 @@ AguaFress es una plataforma marketplace web que conecta directamente vendedores 
 
 | Componente | Tecnología |
 |------------|-----------|
-| Backend | Node.js 20 LTS + NestJS 10 + TypeScript 5 |
+| Backend | Node.js 22 + NestJS 10 + TypeScript 5 |
 | ORM | Prisma 5 (todos los servicios PostgreSQL) |
 | PostgreSQL 15 | usuario, products, orders, entregas |
 | MongoDB 6 | notifications (activity logs) |
-| Redis 7 | Streams (eventos) + caché |
+| Redis 7 | Caché (sesiones JWT, catálogo) |
 | Monorepo | pnpm workspaces (sin Nx/Turborepo) |
-| Docker | Compose único con perfiles |
-| Comunicación | Redis Streams + HTTP REST (Gateway) |
+| Docker | Compose único con PostgreSQL + Redis |
+| API Docs | Swagger (`/api/docs`) via `@nestjs/swagger` |
+| Comunicación | Contratos compartidos vía `packages/contracts/` |
 | Contratos | `packages/contracts/` (DTOs TypeScript + enums) |
 | Frontend | Por definir (React + Next.js) |
 | MCP | servidor Jira (`mcp/jira-mcp-server`) |
@@ -113,14 +126,85 @@ aguaFress/
 |------------|--------|-----------|
 | PostgreSQL | 5433 | Datos transaccionales (todos los services) |
 | MongoDB | 27017 | Activity Logs (notifications-service) |
-| Redis | 6379 | Streams de eventos + caché |
+| Redis | 6379 | Caché (sesiones JWT, catálogo) — ~~Streams~~ migrado a Kafka |
 | Mailhog | 1025/8025 | Email test (desarrollo) |
 
 ### 4.3 Comunicación Entre Servicios
 
-- **Redis Streams**: Único bus de eventos asíncronos
+- **~~Redis Streams~~ → 🚧 Kafka**: Bus de eventos asíncronos (pendiente implementar)
+- **TCP**: Comunicación sincrónica directa entre microservicios (pendiente implementar)
 - **Redis**: Cache de sesiones (JWT) y catálogo de productos
-- **HTTP REST**: Comunicación síncrona a través del API Gateway
+
+> ⚠️ **Decisión tomada 27/06/2026**: Reemplazar Redis Streams con Kafka, y HTTP REST vía Gateway con TCP directo entre MS. Ver banner al inicio del documento.
+
+### 4.4 API Gateway — Fuente de Verdad AG-90 / AG-100 / AG-101
+
+El `api-gateway` es el único ingreso HTTP público en el puerto `3000`. Su contrato público versionado es:
+
+```txt
+/api/v1/{service}/{action}
+```
+
+Ejemplo canónico:
+
+```txt
+POST /api/v1/auth/login
+```
+
+#### Decisiones obligatorias
+
+| Tema | Decisión |
+|------|----------|
+| Fuente Jira | `AG-90` crea el gateway; `AG-101` define ruteo TCP versionado; `AG-100` define seguridad anti-abuso/anti-DDoS mínima. |
+| Frontera externa | Frontend → Gateway usa HTTP/JSON versionado bajo `/api/v1/{service}/{action}`. |
+| Frontera interna | Gateway → Microservicios usa TCP exclusivamente; no HTTP entre gateway y microservicios. |
+| Contrato público | Las acciones públicas viven bajo `/api/v1/{service}/{action}`. |
+| Ruteo interno | El gateway traduce `{service, action}` a mappings TCP explícitos/message patterns. |
+| Proxy HTTP crudo | Prohibido como arquitectura base. El gateway **NO** preserva rutas downstream arbitrarias `/api/*`. |
+| Rutas legacy | `/auth/*`, `/api/auth/*` y proxy genérico `/api/*` no son rutas canónicas del gateway. |
+| Contratos | `contratosDTOs/api-gateway.json` debe alinearse con `/api/v1/{service}/{action}`. |
+
+#### Seguridad mínima del gateway
+
+El gateway debe aplicar controles anti-abuso en la capa HTTP que recibe del frontend antes de despachar cualquier comando TCP a microservicios:
+
+- headers de seguridad tipo `helmet`;
+- throttling/rate limiting por acción sensible;
+- límites de tamaño de payload/body;
+- timeouts para llamadas TCP downstream;
+- rechazo controlado sin crear trabajo downstream ilimitado.
+
+Acciones sensibles con política más estricta:
+
+- `auth.login`
+- `auth.register`
+- `auth.refresh`
+- `auth.validate`
+- creación de QR
+- creación de link de invitación
+
+#### Autenticación y autorización
+
+- Las acciones públicas solo pueden omitir auth si están declaradas explícitamente como públicas.
+- Las acciones protegidas deben validar JWT y roles antes del dispatch TCP.
+- La validación HTTP ocurre en el gateway; los microservicios reciben comandos TCP ya normalizados con contexto de identidad cuando corresponde.
+- El payload JWT debe ser compatible con:
+
+```typescript
+{ sub: string; email: string; role: UserRole; jti?: string }
+```
+
+#### Health
+
+El gateway debe exponer `GET /api/health` como endpoint público y seguro. Puede incluir readiness sanitizada de servicios, pero nunca secretos, tokens, credenciales ni connection strings.
+
+#### Documento de detalle
+
+La especificación de detalle para implementación y validación vive en:
+
+```txt
+openspec/changes/api-gateway/specs/api-gateway/spec.md
+```
 
 ---
 
@@ -128,19 +212,28 @@ aguaFress/
 
 ### 5.1 usuario-service ✅ (el único con código real)
 
-**AuthModule** y **UsersModule**: scaffolds vacíos (solo `@Module({})`)
 **Implementado**:
+- AuthModule completo: register (vendedor/cliente), login, JWT, refresh, validate
+- VendedoresModule: CRUD admin + perfil propio, guards por rol
+- ClientesModule: CRUD admin + por vendedor, cartera, direcciones
+- SuperAdminModule: perfil + dashboard stats, 251 tests
 - `main.ts` con NestJS bootstrap + ValidationPipe (whitelist, forbidNonWhitelisted)
-- `app.module.ts` importa AuthModule, UsersModule, CommonModule
+- Swagger docs en `/api/docs` con `@nestjs/swagger` + `addBearerAuth()`
 - `PrismaService` (CommonModule @Global) con conexión Prisma
-- `prisma/schema.prisma` completo (ver sección 6)
+- `prisma/schema.prisma` completo: 17 tablas, todos los enums (ver sección 6)
 - `tsconfig.json` con path alias `@agua/contracts`
-- Variables de entorno en `.env`: DATABASE_URL, JWT_SECRET, JWT_EXPIRATION, REDIS_URL, PORT
+- Variables de entorno en `.env` + `.env.example` documentado
+- Dockerfile multi-stage con `node:22-alpine`
+- docker-compose.yml con postgres:15-alpine + redis:7-alpine
 
 ### 5.2 gateway (stub)
 
 - Directorio `src/` con archivos de rutas vacíos
 - Sin controllers ni servicios reales
+- Debe implementarse según AG-101 como fachada HTTP versionada `/api/v1/{service}/{action}` con dispatch interno TCP.
+- El frontend consume el gateway por HTTP/JSON; el gateway se comunica con microservicios únicamente por TCP.
+- Debe incluir seguridad AG-100: helmet, throttling/rate limiting, payload limits y timeouts TCP.
+- No debe implementarse como proxy HTTP crudo de `/api/*`.
 
 ### 5.3 products-service, orders-service, entregas-service, notifications-service (stubs)
 
@@ -206,18 +299,22 @@ ORDER ──1:1──► DELIVERY
 
 ---
 
-## 7. Eventos del Sistema (Redis Streams)
+## 7. Eventos del Sistema (🚧 Kafka — Pendiente implementar)
 
-| Stream | Eventos |
-|--------|---------|
-| `auth-stream` | UserCreated |
-| `user-stream` | VendedorStatusChanged, CarteraClienteAdded |
-| `products-stream` | ProductUpdated, ProductDeleted |
-| `orders-stream` | OrderCreated, OrderStatusChanged |
-| `deliveries-stream` | DeliveryStarted, DeliveryCompleted, DeliveryStatusChanged |
+> ⚠️ Originalmente diseñado con Redis Streams. **Decisión tomada 27/06/2026: migrar a Kafka**. Esta sección se actualizará cuando se implemente la infraestructura de Kafka. Mientras tanto, los topics/eventos conceptuales son:
+
+| Topic (ex-stream) | Eventos |
+|-------------------|---------|
+| `auth-events` | UserCreated |
+| `user-events` | VendedorStatusChanged, CarteraClienteAdded |
+| `products-events` | ProductUpdated, ProductDeleted |
+| `orders-events` | OrderCreated, OrderStatusChanged |
+| `deliveries-events` | DeliveryStarted, DeliveryCompleted, DeliveryStatusChanged |
 
 Todos los eventos extienden `BaseEvent` (garantiza `timestamp` ISO 8601).
 Unión global: `AguaFressEvent`.
+
+🚧 **Pendiente**: Definir topics de Kafka, schema registry, y productores/consumidores por microservicio.
 
 ---
 
@@ -230,9 +327,13 @@ Unión global: `AguaFressEvent`.
 - [ ] Configurar init de PostgreSQL
 
 ### Fase 2 - usuario-service (implementación)
-- [ ] AuthModule: register, login, JWT, refresh, validate
-- [ ] UsersModule: perfiles, cartera, QR, links de invitación
-- [ ] SuperAdminModule: dashboard, activar/suspender vendedores
+- [x] AuthModule: register, login, JWT, refresh, validate
+- [x] VendedoresModule: CRUD admin + perfil propio
+- [x] ClientesModule: CRUD admin + por vendedor
+- [x] SuperAdminModule: perfil + dashboard stats
+- [ ] QrCodeModule: generación y gestión de QR
+- [ ] LinkInvitacionModule: links de invitación
+- [ ] AuditLogModule: trazabilidad de acciones
 
 ### Fase 3 - Servicios restantes
 - [ ] products-service: catálogo, categorías, marcas
@@ -266,19 +367,23 @@ pnpm install
 # Compilar contratos
 pnpm build:contracts
 
-# Variables de entorno (usuario-service)
-# DATABASE_URL="postgresql://postgres:postgres@localhost:5433/agua_users?schema=users"
-# JWT_SECRET="aguafress-dev-secret-no-usar-en-prod"
-# JWT_EXPIRATION="24h"
-# REDIS_URL="redis://localhost:6379"
-# PORT=3001
+# Copiar env vars
+cp .env.example .env
+
+# Levantar infraestructura
+docker compose up -d
 
 # Correr migraciones Prisma
-cd MicroServices/usuario-service
-npx prisma db push
+pnpm --filter @agua/usuario-service exec prisma db push
+
+# Tests
+pnpm --filter @agua/usuario-service test
 
 # Iniciar dev
 pnpm --filter @agua/usuario-service dev
+
+# API docs
+open http://localhost:3001/api/docs
 ```
 
 ---

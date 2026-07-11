@@ -24,26 +24,8 @@ enum VendedorEstado {
   bloqueado
 }
 
-enum OrderEstado {
-  pendiente
-  confirmado
-  en_camino
-  entregado
-  cancelado
-  vencido
-}
-
-enum DeliveryEstado {
-  pendiente
-  en_camino
-  entregada
-}
-
-enum MetodoPago {
-  contra_entrega
-}
-
 enum TipoFactura {
+  A
   B
   C
 }
@@ -53,20 +35,20 @@ enum TipoFactura {
 // ═══════════════════════════════════════════════════════════════
 
 model AuthUser {
-  id          String    @id @default(uuid()) @db.Uuid
-  email       String    @unique @db.VarChar(255)
-  password    String    @db.VarChar(255)
-  role        UserRole
-  is_active   Boolean   @default(true)
-  is_verified Boolean   @default(false)
-  created_at  DateTime  @default(now())
-  updated_at  DateTime  @updatedAt
+  id                 String    @id @default(uuid()) @db.Uuid
+  email              String    @unique @db.VarChar(255)
+  password           String    @db.VarChar(255)
+  role               UserRole
+  refresh_token_hash String?   @db.VarChar(64)
+  is_active          Boolean   @default(true)
+  is_verified        Boolean   @default(false)
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
 
   vendedor      Vendedor?
   cliente       Cliente?
   super_admin   SuperAdmin?
-  audit_logs    AuditLog[]     @relation("AuditLogActor")
-  audit_targets AuditLog[]     @relation("AuditLogTarget")
+  audit_logs AuditLog[] @relation("AuditLogActor")
 
   @@map("AUTH_USER")
 }
@@ -76,12 +58,15 @@ model Vendedor {
   auth_user_id    String         @unique @db.Uuid
   auth_user       AuthUser       @relation(fields: [auth_user_id], references: [id])
   nombre          String         @db.VarChar(100)
-  apellido        String?        @db.VarChar(100)
-  telefono        String?        @db.VarChar(20)
+  apellido        String         @default("") @db.VarChar(100)
+  dni             String         @default("") @db.VarChar(8)
+  cuil            String?        @db.VarChar(15)
+  cuit            String?        @db.VarChar(15)
+  telefono        String         @default("") @db.VarChar(20)
   empresa         String?        @db.VarChar(255)
   logo            String?        @db.VarChar(500)
   estado          VendedorEstado
-  ciudad_default  String?        @db.VarChar(100)
+  ciudad_default  String         @default("") @db.VarChar(100)
   zona_entrega    String?        @db.VarChar(100)
   qr_token        String?        @unique @db.VarChar(50)
   created_at      DateTime       @default(now())
@@ -91,38 +76,49 @@ model Vendedor {
   cartera   Cartera[]    @relation("CarteraVendedor")
   qr_codes  QrCode[]
   links     LinkInvitacion[]
-  productos Product[]
 
   @@map("VENDEDOR")
 }
 
 model Cliente {
-  id                  String         @id @default(uuid()) @db.Uuid
-  auth_user_id        String         @unique @db.Uuid
-  auth_user           AuthUser       @relation(fields: [auth_user_id], references: [id])
-  nombre              String         @db.VarChar(100)
-  apellido            String?        @db.VarChar(100)
-  dni                 String?        @db.VarChar(20)
-  telefono            String?        @db.VarChar(20)
-  tipo_factura        TipoFactura?
+  id                  String        @id @default(uuid()) @db.Uuid
+  auth_user_id        String        @unique @db.Uuid
+  auth_user           AuthUser      @relation(fields: [auth_user_id], references: [id])
+  nombre              String        @db.VarChar(100)
+  apellido            String        @default("") @db.VarChar(100)
+  dni                 String        @default("") @db.VarChar(20)
+  telefono            String        @default("") @db.VarChar(20)
+  tipo_factura        TipoFactura   @default(B)
 
-  // Dirección de entrega por defecto
-  direccion_calle       String?  @db.VarChar(200)
-  direccion_numero      String?  @db.VarChar(20)
+  // Dirección fiscal
+  direccion_calle       String   @default("") @db.VarChar(200)
+  direccion_numero      String   @default("") @db.VarChar(20)
   direccion_piso        String?  @db.VarChar(20)
   direccion_referencia  String?  @db.VarChar(200)
   direccion_barrio      String?  @db.VarChar(100)
-  direccion_ciudad      String?  @db.VarChar(100)
-  direccion_provincia   String?  @db.VarChar(100)
+  direccion_ciudad      String   @default("") @db.VarChar(100)
+  direccion_provincia   String   @default("") @db.VarChar(100)
   direccion_cp          String?  @db.VarChar(20)
-  latitud               Decimal? @db.Decimal(10, 7)
-  longitud              Decimal? @db.Decimal(10, 7)
+
+  // ¿Usa la dirección fiscal como dirección de entrega?
+  misma_direccion_entrega Boolean  @default(true)
+
+  // Dirección de entrega (solo si misma_direccion_entrega = false)
+  entrega_calle       String?  @db.VarChar(200)
+  entrega_numero      String?  @db.VarChar(20)
+  entrega_piso        String?  @db.VarChar(20)
+  entrega_referencia  String?  @db.VarChar(200)
+  entrega_barrio      String?  @db.VarChar(100)
+  entrega_ciudad      String?  @db.VarChar(100)
+  entrega_provincia   String?  @db.VarChar(100)
+  entrega_cp          String?  @db.VarChar(20)
+
+  latitud   Decimal? @db.Decimal(10, 7)
+  longitud  Decimal? @db.Decimal(10, 7)
 
   vendedor_id    String    @db.Uuid
   vendedor       Vendedor  @relation(fields: [vendedor_id], references: [id])
   cartera        Cartera[] @relation("CarteraCliente")
-  pedidos        Order[]
-  carritos       Cart[]
 
   created_at     DateTime  @default(now())
   updated_at     DateTime  @updatedAt
@@ -191,188 +187,14 @@ model AuditLog {
   ip         String?  @db.VarChar(45)
   created_at DateTime @default(now())
 
-  actor  AuthUser? @relation("AuditLogActor", fields: [usuario_id], references: [id])
-  target AuthUser? @relation("AuditLogTarget", fields: [target_id], references: [id])
+  actor AuthUser? @relation("AuditLogActor", fields: [usuario_id], references: [id])
 
+  @@index([usuario_id])
+  @@index([created_at])
   @@map("AUDIT_LOG")
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  products-service
+//  Future: products-service, orders-service, entregas-service
+//  will have their own schema files when implemented
 // ═══════════════════════════════════════════════════════════════
-
-model Category {
-  id          String   @id @default(uuid()) @db.Uuid
-  nombre      String   @db.VarChar(100)
-  orden       Int      @default(0)
-  vendedor_id String   @db.Uuid
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-
-  productos Product[]
-
-  @@map("CATEGORY")
-}
-
-model Brand {
-  id          String   @id @default(uuid()) @db.Uuid
-  nombre      String   @db.VarChar(100)
-  vendedor_id String   @db.Uuid
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-
-  productos Product[]
-
-  @@map("BRAND")
-}
-
-model Product {
-  id              String   @id @default(uuid()) @db.Uuid
-  vendedor_id     String   @db.Uuid
-  categoria_id    String   @db.Uuid
-  marca_id        String?  @db.Uuid
-  nombre          String   @db.VarChar(255)
-  descripcion     String?  @db.Text
-  precio_sin_iva  Decimal  @db.Decimal(10, 2)
-  precio_final    Decimal  @db.Decimal(10, 2)
-  imagen          String?  @db.VarChar(500)
-  stock           Int      @default(0)
-  activo          Boolean  @default(true)
-  mostrar_precio  Boolean  @default(true)
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
-
-  vendedor   Vendedor @relation(fields: [vendedor_id], references: [id])
-  categoria  Category @relation(fields: [categoria_id], references: [id])
-  marca      Brand?   @relation(fields: [marca_id], references: [id])
-
-  @@map("PRODUCT")
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  orders-service
-// ═══════════════════════════════════════════════════════════════
-
-model Cart {
-  id          String   @id @default(uuid()) @db.Uuid
-  cliente_id  String   @db.Uuid
-  vendedor_id String   @db.Uuid
-  created_at  DateTime @default(now())
-  expires_at  DateTime
-
-  cliente Cliente    @relation(fields: [cliente_id], references: [id])
-  items   CartItem[]
-
-  @@map("CART")
-}
-
-model CartItem {
-  id              String  @id @default(uuid()) @db.Uuid
-  cart_id         String  @db.Uuid
-  product_id      String  @db.Uuid
-  nombre          String  @db.VarChar(255)
-  cantidad        Int
-  precio_unitario Decimal @db.Decimal(10, 2)
-
-  cart Cart @relation(fields: [cart_id], references: [id], onDelete: Cascade)
-
-  @@map("CART_ITEM")
-}
-
-model Order {
-  id                  String       @id @default(uuid()) @db.Uuid
-  pedido_numero       String       @unique @db.VarChar(20)
-  cliente_id          String       @db.Uuid
-  vendedor_id         String       @db.Uuid
-  estado              OrderEstado
-  metodo_pago         MetodoPago
-  total_sin_iva       Decimal      @db.Decimal(10, 2)
-  iva                 Decimal      @db.Decimal(10, 2)
-  total               Decimal      @db.Decimal(10, 2)
-
-  // Snapshot de dirección al momento del pedido
-  direccion_calle       String   @db.VarChar(200)
-  direccion_numero      String   @db.VarChar(20)
-  direccion_piso        String?  @db.VarChar(20)
-  direccion_referencia  String?  @db.VarChar(200)
-  direccion_barrio      String?  @db.VarChar(100)
-  direccion_ciudad      String   @db.VarChar(100)
-  direccion_provincia   String   @db.VarChar(100)
-  direccion_cp          String?  @db.VarChar(20)
-  latitud               Decimal? @db.Decimal(10, 7)
-  longitud              Decimal? @db.Decimal(10, 7)
-
-  observaciones String?  @db.Text
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
-
-  cliente  Cliente      @relation(fields: [cliente_id], references: [id])
-  items    OrderItem[]
-  factura  Invoice?
-  delivery Delivery?
-
-  @@map("ORDER")
-}
-
-model OrderItem {
-  id              String  @id @default(uuid()) @db.Uuid
-  order_id        String  @db.Uuid
-  product_id      String  @db.Uuid
-  nombre          String  @db.VarChar(255)
-  cantidad        Int
-  precio_unitario Decimal @db.Decimal(10, 2)
-
-  order Order @relation(fields: [order_id], references: [id], onDelete: Cascade)
-
-  @@map("ORDER_ITEM")
-}
-
-model Invoice {
-  id        String      @id @default(uuid()) @db.Uuid
-  order_id  String      @unique @db.Uuid
-  tipo      TipoFactura
-  numero    String      @unique @db.VarChar(50)
-  pdf_url   String?     @db.VarChar(500)
-  created_at DateTime  @default(now())
-
-  order Order @relation(fields: [order_id], references: [id])
-
-  @@map("INVOICE")
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  entregas-service
-// ═══════════════════════════════════════════════════════════════
-
-model Delivery {
-  id                  String          @id @default(uuid()) @db.Uuid
-  order_id            String          @unique @db.Uuid
-  vendedor_id         String          @db.Uuid
-  estado              DeliveryEstado
-
-  // Snapshot de datos del cliente al asignar entrega
-  cliente_nombre      String          @db.VarChar(255)
-  cliente_telefono    String?         @db.VarChar(20)
-
-  // Snapshot de dirección
-  direccion_calle       String   @db.VarChar(200)
-  direccion_numero      String   @db.VarChar(20)
-  direccion_piso        String?  @db.VarChar(20)
-  direccion_referencia  String?  @db.VarChar(200)
-  direccion_barrio      String?  @db.VarChar(100)
-  direccion_ciudad      String   @db.VarChar(100)
-  direccion_provincia   String   @db.VarChar(100)
-  direccion_cp          String?  @db.VarChar(20)
-  latitud               Decimal? @db.Decimal(10, 7)
-  longitud              Decimal? @db.Decimal(10, 7)
-
-  fecha_asignacion DateTime @default(now())
-  fecha_entrega    DateTime?
-  notas            String?  @db.Text
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
-
-  order Order @relation(fields: [order_id], references: [id])
-
-  @@map("DELIVERY")
-}
