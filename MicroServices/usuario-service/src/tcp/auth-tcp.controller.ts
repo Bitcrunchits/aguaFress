@@ -6,7 +6,6 @@ import { LoginDto } from '../auth/dto/login.dto';
 import { RegisterDto } from '../auth/dto/register.dto';
 import { RefreshTokenDto } from '../auth/dto/refresh-token.dto';
 import { ValidateTokenDto } from '../auth/dto/validate-token.dto';
-import { UsersService } from '../users/users.service';
 import { TcpPayloadAdapter } from './tcp-payload-adapter.service';
 import type { TcpPayload } from './tcp-payload';
 
@@ -15,7 +14,6 @@ import type { TcpPayload } from './tcp-payload';
 export class AuthTcpController {
   constructor(
     private readonly authService: AuthService,
-    private readonly usersService: UsersService,
     private readonly payloadAdapter: TcpPayloadAdapter,
   ) {}
 
@@ -41,11 +39,6 @@ export class AuthTcpController {
   async validate(@Payload() payload: TcpPayload) {
     const dto = await this.payloadAdapter.body(payload, ValidateTokenDto);
     return this.authService.validate(dto.token);
-  }
-
-  @MessagePattern('auth.me')
-  me(@Payload() payload: TcpPayload) {
-    return this.usersService.getProfile(this.payloadAdapter.userId(payload));
   }
 
   @MessagePattern('auth.logout')
