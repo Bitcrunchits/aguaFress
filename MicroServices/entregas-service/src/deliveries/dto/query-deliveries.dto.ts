@@ -1,7 +1,7 @@
 import {ApiPropertyOptional} from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsDateString, IsInt, IsOptional, IsUUID, Min} from 'class-validator';
-
+import { IsDateString, IsInt, IsOptional, Min} from 'class-validator';
+//Quité el idVendedor porque no es necesario para el query de entregas, ya que se obtiene del token del usuario logueado. 
 export class QueryDeliveriesDto {
   @ApiPropertyOptional({
     description: 'Filtra las entregas por día. Formato YYYY-MM-DD,  Sin este parámetro devuelve las entregas del día actual',
@@ -10,12 +10,7 @@ export class QueryDeliveriesDto {
     @IsOptional()
     @IsDateString()
     fecha?: string;
-    @ApiPropertyOptional({
-    format: 'uuid',
-    description: 'Id del vendedor'})
-    @IsOptional()
-    @IsUUID()
-    vendedorId?: string;
+
     @ApiPropertyOptional({ default: 1})
     @IsOptional()
     @Type(() => Number)
