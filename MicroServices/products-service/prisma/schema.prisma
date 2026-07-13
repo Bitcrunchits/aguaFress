@@ -1,0 +1,71 @@
+// products-service — Prisma schema
+// DB: PostgreSQL (misma instancia "agua", schema propio del servicio)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Categoría ───
+// nombre único por vendedor (un mismo vendedor no repite categoría)
+model Categoria {
+  id         String   @id @default(uuid())
+  nombre     String
+  orden      Int      @default(0)
+  vendedorId String   @map("vendedor_id")
+  productos  Producto[]
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([vendedorId, nombre])
+  @@index([vendedorId])
+  @@map("categorias")
+}
+
+// ─── Marca ───
+model Marca {
+  id         String     @id @default(uuid())
+  nombre     String
+  vendedorId String     @map("vendedor_id")
+  productos  Producto[]
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+
+  @@unique([vendedorId, nombre])
+  @@index([vendedorId])
+  @@map("marcas")
+}
+
+// ─── Producto ───
+// precioSinIva: lo manda el vendedor. precioFinal: SIEMPRE calculado server-side.
+model Producto {
+  id            String     @id @default(uuid())
+  nombre        String
+  descripcion   String?
+  precioSinIva  Decimal    @map("precio_sin_iva") @db.Decimal(10, 2)
+  precioFinal   Decimal    @map("precio_final") @db.Decimal(10, 2)
+  imagen        String?
+  stock         Int        @default(0)
+  activo        Boolean    @default(true)
+  mostrarPrecio Boolean    @default(true) @map("mostrar_precio")
+
+  vendedorId  String     @map("vendedor_id")
+  categoriaId String?    @map("categoria_id")
+  marcaId     String?    @map("marca_id")
+
+  categoria Categoria? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+  marca     Marca?     @relation(fields: [marcaId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([vendedorId])
+  @@index([categoriaId])
+  @@index([marcaId])
+  @@index([vendedorId, activo])
+  @@map("productos")
+}
