@@ -1,519 +1,312 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Review — products-service (Emiliano)</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Review técnico — products-service</title>
   <style>
     :root {
-      --bg: #0f0f1a;
-      --card: #1a1a2e;
-      --border: #2a2a4a;
-      --text: #e0e0f0;
-      --muted: #8888aa;
-      --green: #00e676;
-      --yellow: #ffd740;
-      --red: #ff5252;
-      --blue: #40c4ff;
-      --purple: #b388ff;
-      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --bg: #0b1020;
+      --panel: #111a31;
+      --panel-2: #17223e;
+      --border: #2b3b63;
+      --text: #eef3ff;
+      --muted: #a9b5d1;
+      --red: #ff5c7a;
+      --orange: #ffb86c;
+      --yellow: #f8e16c;
+      --green: #5ef0a5;
+      --blue: #6bbcff;
+      --purple: #c29bff;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
     }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    * { box-sizing: border-box; }
+
     body {
-      background: var(--bg);
+      margin: 0;
+      background: radial-gradient(circle at top left, #1d2a55 0, #0b1020 38%);
       color: var(--text);
-      font-family: var(--font);
-      line-height: 1.6;
-      padding: 2rem 1.5rem;
-      max-width: 1000px;
+      font-family: var(--sans);
+      line-height: 1.58;
+      padding: 32px 18px 56px;
+    }
+
+    main {
+      max-width: 1080px;
       margin: 0 auto;
     }
-    h1 { font-size: 2rem; margin-bottom: .25rem; color: #fff; }
-    h1 small { font-size: 1rem; color: var(--muted); font-weight: 400; }
-    .meta { color: var(--muted); font-size: .9rem; margin-bottom: 2rem; }
-    .meta span { margin-right: 1.5rem; }
 
-    h2 {
-      font-size: 1.3rem;
-      margin: 2rem 0 1rem;
-      padding-bottom: .4rem;
-      border-bottom: 1px solid var(--border);
-      color: #fff;
-    }
-    h3 { font-size: 1.1rem; margin: 1.2rem 0 .6rem; color: var(--blue); }
+    h1, h2, h3 { line-height: 1.2; margin: 0; }
+    h1 { font-size: 2.2rem; letter-spacing: -0.03em; }
+    h2 { font-size: 1.35rem; margin-top: 34px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1.05rem; margin-top: 18px; color: var(--blue); }
+    p { margin: 8px 0; }
+    code { font-family: var(--mono); background: #050915; padding: 2px 6px; border-radius: 6px; color: #dce8ff; }
 
-    .chip {
-      display: inline-block;
-      padding: .15rem .7rem;
-      border-radius: 20px;
-      font-size: .75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-    }
-    .chip.green { background: #00e67622; color: var(--green); border: 1px solid #00e67644; }
-    .chip.yellow { background: #ffd74022; color: var(--yellow); border: 1px solid #ffd74044; }
-    .chip.red { background: #ff525222; color: var(--red); border: 1px solid #ff525244; }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: .75rem;
-      margin: 1rem 0;
-    }
-    .card {
-      background: var(--card);
+    .hero, .card, .finding, .callout {
+      background: linear-gradient(180deg, rgba(23,34,62,.98), rgba(17,26,49,.98));
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: .9rem 1rem;
+      border-radius: 16px;
+      box-shadow: 0 14px 40px rgba(0,0,0,.25);
     }
-    .card .label { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
-    .card .value { font-size: 1rem; font-weight: 600; margin-top: .2rem; }
 
-    .badge-list { list-style: none; }
-    .badge-list li {
-      padding: .5rem .8rem;
-      margin: .4rem 0;
-      border-radius: 8px;
+    .hero { padding: 24px; }
+    .meta { color: var(--muted); margin-top: 10px; display: flex; flex-wrap: wrap; gap: 12px 20px; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-top: 18px; }
+    .card { padding: 15px; }
+    .card small { color: var(--muted); display: block; text-transform: uppercase; font-size: .72rem; letter-spacing: .08em; }
+    .card strong { display: block; margin-top: 5px; font-size: 1rem; }
+
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; font-weight: 700; font-size: .78rem; }
+    .badge.red { color: var(--red); background: rgba(255,92,122,.12); border: 1px solid rgba(255,92,122,.38); }
+    .badge.orange { color: var(--orange); background: rgba(255,184,108,.12); border: 1px solid rgba(255,184,108,.38); }
+    .badge.yellow { color: var(--yellow); background: rgba(248,225,108,.12); border: 1px solid rgba(248,225,108,.38); }
+    .badge.green { color: var(--green); background: rgba(94,240,165,.12); border: 1px solid rgba(94,240,165,.38); }
+    .badge.blue { color: var(--blue); background: rgba(107,188,255,.12); border: 1px solid rgba(107,188,255,.38); }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; overflow: hidden; border-radius: 12px; }
+    th, td { text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); padding: 10px 12px; }
+    th { color: var(--muted); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; background: #0d162b; }
+    td { background: rgba(17,26,49,.64); }
+    td:first-child { font-family: var(--mono); font-size: .86rem; }
+
+    .finding { padding: 16px; margin-top: 12px; }
+    .finding h3 { margin-top: 0; color: var(--text); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .finding ul, .callout ul { margin: 8px 0 0 20px; padding: 0; }
+    .finding li, .callout li { margin: 6px 0; }
+
+    .callout { padding: 16px; margin-top: 16px; border-left: 4px solid var(--purple); }
+    .good { border-left: 4px solid var(--green); }
+    .bad { border-left: 4px solid var(--red); }
+    .warn { border-left: 4px solid var(--orange); }
+
+    .toc { margin-top: 18px; display: grid; gap: 8px; }
+    .toc a { color: var(--blue); text-decoration: none; }
+
+    .file {
+      font-family: var(--mono);
+      white-space: pre-wrap;
+      background: #050915;
       border: 1px solid var(--border);
-      font-size: .9rem;
-      display: flex;
-      align-items: center;
-      gap: .6rem;
+      border-radius: 12px;
+      padding: 14px;
+      overflow-x: auto;
+      margin-top: 12px;
+      color: #dce8ff;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: .8rem 0;
-      font-size: .85rem;
-    }
-    th, td {
-      padding: .5rem .7rem;
-      text-align: left;
-      border-bottom: 1px solid var(--border);
-    }
-    th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: .7rem; }
-    td:first-child { font-family: 'JetBrains Mono', monospace; font-size: .8rem; }
-
-    .severity { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: .4rem; }
-    .severity.high { background: var(--red); }
-    .severity.med  { background: var(--yellow); }
-    .severity.low  { background: var(--blue); }
-
-    .quote {
-      border-left: 3px solid var(--purple);
-      padding: .8rem 1rem;
-      margin: 1rem 0;
-      background: #1a1a2e88;
-      border-radius: 0 8px 8px 0;
-      font-style: italic;
-      color: #ccc;
-    }
-    .quote strong { color: #fff; font-style: normal; }
-
-    .section-toggle {
-      display: inline-block;
-      font-size: .75rem;
-      color: var(--muted);
-      margin-left: .5rem;
-    }
-
-    .file-tree {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: .8rem;
-      line-height: 1.8;
-      background: #0a0a18;
-      padding: 1rem 1.2rem;
-      border-radius: 8px;
-      margin: .5rem 0;
-      border: 1px solid var(--border);
-    }
-    .file-tree .dir  { color: var(--blue); }
-    .file-tree .file { color: var(--text); }
-    .file-tree .hl   { color: var(--yellow); }
-
-    @media (max-width: 600px) {
-      body { padding: 1rem; }
-      .grid { grid-template-columns: 1fr; }
+    @media (max-width: 760px) {
+      body { padding: 18px 12px 36px; }
+      h1 { font-size: 1.7rem; }
+      table { font-size: .86rem; }
     }
   </style>
 </head>
 <body>
+<main>
+  <section class="hero">
+    <h1>Review técnico — products-service</h1>
+    <div class="meta">
+      <span>Rama: <code>emiliano/products-service1</code></span>
+      <span>Archivo: <code>MicroServices/products-service/review-emiliano.html</code></span>
+      <span>Fecha: 14/07/2026</span>
+      <span>Modo: review-only, sin merge a <code>develop</code></span>
+    </div>
 
-<h1>products-service <small>Review Técnico</small></h1>
-<div class="meta">
-  <span>👤 Emiliano</span>
-  <span>📂 <code>emiliano/products-service1</code></span>
-  <span>📅 14/07/2026</span>
-</div>
+    <div class="grid">
+      <div class="card"><small>Veredicto</small><strong><span class="badge red">REQUEST CHANGES</span></strong></div>
+      <div class="card"><small>Arquitectura</small><strong>Buena base TCP, pero no está alineado 100%</strong></div>
+      <div class="card"><small>HTTP</small><strong><span class="badge red">Tiene HTTP + Swagger</span></strong></div>
+      <div class="card"><small>Gateway</small><strong><span class="badge red">No integrado</span></strong></div>
+      <div class="card"><small>Tests</small><strong><span class="badge red">Falla el único test</span></strong></div>
+      <div class="card"><small>DB Schema</small><strong><span class="badge orange">Modelo cercano, schema mal ubicado</span></strong></div>
+    </div>
 
-<div class="grid">
-  <div class="card">
-    <div class="label">Archivos</div>
-    <div class="value">26 .ts</div>
-  </div>
-  <div class="card">
-    <div class="label">Endpoints TCP</div>
-    <div class="value">8</div>
-  </div>
-  <div class="card">
-    <div class="label">Endpoints HTTP</div>
-    <div class="value">2 <span style="font-size:.7rem;color:var(--muted)">(health + swagger)</span></div>
-  </div>
-  <div class="card">
-    <div class="label">Tests</div>
-    <div class="value">1 spec <span class="chip yellow">insuficiente</span></div>
-  </div>
-  <div class="card">
-    <div class="label">Modelos DB</div>
-    <div class="value">3 <span style="font-size:.7rem;color:var(--muted)">(Producto, Categoria, Marca)</span></div>
-  </div>
-  <div class="card">
-    <div class="label">Estado General</div>
-    <div class="value"><span class="chip yellow">Bueno, faltan ajustes</span></div>
-  </div>
-</div>
+    <div class="callout bad">
+      <strong>Resumen ejecutivo:</strong> el trabajo tiene una buena base técnica: separa dominio, usa TCP con <code>@MessagePattern</code>, valida payloads, calcula precio server-side y documenta supuestos. Pero todavía <strong>NO está listo para mergear a develop</strong>. La rama está vieja respecto de <code>develop</code>, reintroduciría cambios que ya eliminamos del usuario-service, mantiene HTTP/Swagger directo, no está conectado al gateway y el único test falla.
+    </div>
 
-<!-- ============================================================ -->
-<h2>📐 SOLID</h2>
+    <nav class="toc">
+      <a href="#p0">1. Bloqueantes P0/P1</a>
+      <a href="#arquitectura">2. Arquitectura vs gateway + usuario-service</a>
+      <a href="#modelo">3. Comparación contra modelo de datos</a>
+      <a href="#endpoints">4. Endpoints esperados vía gateway</a>
+      <a href="#solid-dbs">5. SOLID + DBS</a>
+      <a href="#plan">6. Plan recomendado antes de merge</a>
+      <a href="#mensaje">7. Mensaje listo para enviar</a>
+    </nav>
+  </section>
 
-<div class="badge-list">
-  <li><span class="chip green">SRP</span> <strong>✅</strong> Cada clase tiene una responsabilidad clara: ProductsService, CategoriesService, PricingService, TcpPayloadAdapter, controllers separados por dominio.</li>
-  <li><span class="chip green">OCP</span> <strong>✅</strong> Usa interfaces de <code>@agua/contracts</code>. Los DTOs implementan las interfaces. Extensible sin modificar.</li>
-  <li><span class="chip green">LSP</span> <strong>✅</strong> PrismaService extiende PrismaClient correctamente. Tipos sustituibles.</li>
-  <li><span class="chip green">ISP</span> <strong>✅</strong> DTOs segregados por operación (CreateProductDto, UpdateProductDto, ListProductsDto, SearchProductDto, IdQueryDto).</li>
-  <li><span class="chip green">DIP</span> <strong>✅</strong> Depende de PrismaService, ConfigService, y las interfaces de contracts. No de implementaciones concretas.</li>
-</div>
+  <section id="p0">
+    <h2>1. Bloqueantes P0/P1</h2>
 
-<div class="quote">
-  <strong>👏 Punto fuerte:</strong> Es el único MS además del nuestro que implementa TCP + TcpPayloadAdapter con autenticación por rol. Muy buena base.
-</div>
+    <article class="finding bad">
+      <h3><span class="badge red">P0</span> La rama está desactualizada y revertiría parte de develop</h3>
+      <p><strong>Qué pasa:</strong> la rama nace de <code>d28fffc</code>, antes del merge <code>#19</code> de <code>gateway-unica-entrada</code>. Si se mergea así, el diff contra <code>develop</code> muestra que volvería a agregar controllers HTTP de usuario-service y removería piezas del gateway/docs que ya están en develop.</p>
+      <p><strong>Por qué bloquea:</strong> esto rompe la decisión arquitectónica ya cerrada: <strong>usuario-service TCP-only, gateway como única entrada HTTP</strong>.</p>
+      <p><strong>Qué hacer:</strong> rebasear o mergear <code>origin/develop</code> en esta rama y resolver conflictos preservando lo actual de develop. Recién después revisar products-service.</p>
+    </article>
 
-<!-- ============================================================ -->
-<h2>🗄️ Modelo de Datos</h2>
+    <article class="finding bad">
+      <h3><span class="badge red">P0</span> products-service no es TCP-only: levanta HTTP y Swagger</h3>
+      <p><strong>Evidencia:</strong> <code>src/main.ts</code> usa <code>NestFactory.create(AppModule)</code>, <code>app.listen(port)</code>, <code>SwaggerModule.createDocument()</code> y <code>SwaggerModule.setup('api/docs')</code>.</p>
+      <p><strong>Qué esperamos:</strong> después de cerrar HTTP en usuario-service, el patrón correcto para microservicios de dominio es <strong>TCP-only</strong>. El único HTTP público debe ser el gateway.</p>
+      <p><strong>Qué hacer:</strong> quitar Swagger y HTTP directo. Usar <code>NestFactory.createMicroservice()</code> con TCP o mantener HTTP solo si el equipo decide explícitamente un healthcheck interno, nunca como API/documentación de negocio.</p>
+    </article>
 
-<div class="file-tree">
-  <span class="dir">prisma/schema.prisma</span><br>
-  │<br>
-  ├── <span class="dir">model Categoria</span><br>
-  │   ├── id              <span style="color:var(--muted)">UUID</span><br>
-  │   ├── nombre          <span style="color:var(--muted)">String</span><br>
-  │   ├── orden           <span style="color:var(--muted)">Int @default(0)</span><br>
-  │   ├── vendedorId      <span style="color:var(--muted)">String</span><br>
-  │   ├── productos       <span style="color:var(--muted)">Producto[]</span><br>
-  │   ├── <span class="hl">@@unique([vendedorId, nombre])</span><br>
-  │   └── <span class="hl">@@map("categorias")</span><br>
-  │<br>
-  ├── <span class="dir">model Marca</span><br>
-  │   ├── id              <span style="color:var(--muted)">UUID</span><br>
-  │   ├── nombre          <span style="color:var(--muted)">String</span><br>
-  │   ├── vendedorId      <span style="color:var(--muted)">String</span><br>
-  │   ├── productos       <span style="color:var(--muted)">Producto[]</span><br>
-  │   ├── <span class="hl">@@unique([vendedorId, nombre])</span><br>
-  │   └── <span class="hl">@@map("marcas")</span><br>
-  │<br>
-  └── <span class="dir">model Producto</span><br>
-      ├── id              <span style="color:var(--muted)">UUID</span><br>
-      ├── nombre          <span style="color:var(--muted)">String</span><br>
-      ├── descripcion     <span style="color:var(--muted)">String?</span><br>
-      ├── precioSinIva    <span style="color:var(--muted)">Decimal(10,2)  ← manda el frontend</span><br>
-      ├── precioFinal     <span style="color:var(--muted)">Decimal(10,2)  ← calcula server-side</span><br>
-      ├── imagen          <span style="color:var(--muted)">String?</span><br>
-      ├── stock           <span style="color:var(--muted)">Int @default(0)</span><br>
-      ├── activo          <span style="color:var(--muted)">Boolean @default(true)</span><br>
-      ├── mostrarPrecio   <span style="color:var(--muted)">Boolean @default(true)</span><br>
-      ├── vendedorId      <span style="color:var(--muted)">String</span><br>
-      ├── categoriaId     <span style="color:var(--muted)">String?  → Categoria</span><br>
-      ├── marcaId         <span style="color:var(--muted)">String?  → Marca</span><br>
-      ├── <span class="hl">@@index([vendedorId])</span><br>
-      ├── <span class="hl">@@index([categoriaId])</span><br>
-      ├── <span class="hl">@@index([marcaId])</span><br>
-      ├── <span class="hl">@@index([vendedorId, activo])</span><br>
-      └── <span class="hl">@@map("productos")</span>
-</div>
+    <article class="finding bad">
+      <h3><span class="badge red">P1</span> No está conectado al gateway</h3>
+      <p><strong>Qué pasa:</strong> los handlers TCP existen, pero el gateway mantiene <code>products</code>, <code>categories</code> y <code>brands</code> como <code>status: 'unavailable'</code> y sin acciones.</p>
+      <p><strong>Impacto:</strong> el MS corre aislado, pero el frontend no puede llegarle porque el gateway no sabe enrutar <code>/api/v1/products/list</code> → <code>products.list</code>.</p>
+      <p><strong>Qué hacer:</strong> agregar actions al <code>ACTION_REGISTRY</code>, registrar un ClientProxy TCP hacia products-service:3013, agregar env vars y docker-compose.</p>
+    </article>
 
-<!-- ============================================================ -->
-<h2>🔌 Endpoints</h2>
+    <article class="finding bad">
+      <h3><span class="badge red">P1</span> El único test falla</h3>
+      <p><strong>Comando:</strong> <code>pnpm --filter @agua/products-service test</code></p>
+      <p><strong>Resultado:</strong> falla <code>pricing.service.spec.ts</code> con error de parser en <code>import { Test, type TestingModule }</code>. Jest no está configurado para TypeScript/ts-jest en este package.</p>
+      <p><strong>Qué hacer:</strong> agregar configuración Jest equivalente a usuario-service/gateway (<code>preset: 'ts-jest'</code>, <code>testEnvironment: 'node'</code>) y ampliar cobertura.</p>
+    </article>
+  </section>
 
-<h3>TCP (via gateway — @MessagePattern)</h3>
+  <section id="arquitectura">
+    <h2>2. Arquitectura vs gateway + usuario-service</h2>
 
-<table>
-  <tr><th>Pattern</th><th>Método</th><th>Qué hace</th><th>Auth</th></tr>
-  <tr><td>products.list</td><td>list</td><td>Productos con filtros (vendedorId, categoria, disponibles, paginación)</td><td>VENDEDOR / público</td></tr>
-  <tr><td>products.get</td><td>get</td><td>Producto por ID</td><td>🟢 Público</td></tr>
-  <tr><td>products.search</td><td>search</td><td>Búsqueda por nombre (case-insensitive)</td><td>🟢 Público</td></tr>
-  <tr><td>products.create</td><td>create</td><td>Crear producto (vendedorId del JWT, no del body) ✅</td><td><span class="chip green">VENDEDOR</span></td></tr>
-  <tr><td>products.update</td><td>update</td><td>Actualizar producto + ownership check ✅</td><td><span class="chip green">VENDEDOR</span></td></tr>
-  <tr><td>products.delete</td><td>delete</td><td>Eliminar producto + ownership check ✅</td><td><span class="chip green">VENDEDOR</span></td></tr>
-  <tr><td>categories.list</td><td>list</td><td>Categorías por vendedor</td><td>🟢 Público</td></tr>
-  <tr><td>brands.list</td><td>list</td><td>Marcas por vendedor</td><td>🟢 Público</td></tr>
-</table>
+    <table>
+      <tr><th>Área</th><th>Estado actual</th><th>Esperado</th><th>Veredicto</th></tr>
+      <tr>
+        <td>Entrada HTTP</td>
+        <td>products-service levanta HTTP en 3003 y Swagger en <code>/api/docs</code>.</td>
+        <td>El único HTTP público debe ser gateway. MS de dominio por TCP.</td>
+        <td><span class="badge red">Bloquea</span></td>
+      </tr>
+      <tr>
+        <td>TCP interno</td>
+        <td>Implementa <code>@MessagePattern</code> para products/categories/brands.</td>
+        <td>Correcto: gateway → TCP message patterns.</td>
+        <td><span class="badge green">Bien encaminado</span></td>
+      </tr>
+      <tr>
+        <td>Gateway registry</td>
+        <td><code>products</code>, <code>categories</code>, <code>brands</code> están unavailable y sin actions.</td>
+        <td>Debe mapear cada ruta pública a un <code>tcpPattern</code>.</td>
+        <td><span class="badge red">Falta</span></td>
+      </tr>
+      <tr>
+        <td>usuario-service</td>
+        <td>La rama está basada antes del cierre HTTP y podría reintroducir controllers eliminados.</td>
+        <td>No tocar usuario-service salvo compatibilidad real con products.</td>
+        <td><span class="badge red">Rebase obligatorio</span></td>
+      </tr>
+      <tr>
+        <td>Vendedor ID</td>
+        <td>Usa <code>user.sub ?? user.userId</code> como <code>vendedorId</code>.</td>
+        <td>Verificar si <code>sub</code> es AUTH_USER.id o VENDEDOR.id. En usuario-service existe resolución authUser → vendedor.</td>
+        <td><span class="badge orange">Riesgo de datos</span></td>
+      </tr>
+    </table>
 
-<h3>HTTP directo (puerto 3003)</h3>
-<table>
-  <tr><th>Ruta</th><th>Qué hace</th><th>¿Debería estar?</th></tr>
-  <tr><td>GET /health</td><td>Healthcheck del servicio</td><td>✅ necesario para Docker</td></tr>
-  <tr><td>GET /api/docs</td><td>Swagger UI</td><td><span class="chip red">❌ hay que sacarlo</span></td></tr>
-</table>
+    <div class="callout warn">
+      <strong>Punto clave:</strong> no alcanza con que products-service tenga TCP. La arquitectura real es: frontend → gateway HTTP versionado → action registry → ClientProxy TCP → microservicio. Hoy products-service solo tiene la última parte.
+    </div>
+  </section>
 
-<!-- ============================================================ -->
-<h2>🔄 TCP + Gateway</h2>
+  <section id="modelo">
+    <h2>3. Comparación contra modelo de datos/documentación</h2>
+    <p>Fuente comparada: <code>docs/documentacion/modelo-datos.md</code> y <code>contratosDTOs/products-service.json</code>.</p>
 
-<div class="badge-list">
-  <li><span class="chip green">✅</span> <strong>Transporte TCP configurado</strong> — puerto 3013, <code>@MessagePattern</code> en controllers, <code>startAllMicroservices()</code></li>
-  <li><span class="chip green">✅</span> <strong>TcpPayloadAdapter</strong> — implementa <code>requireUser()</code>, <code>requireRole()</code>, validación con ValidationPipe. Mismo patrón que usuario-service.</li>
-  <li><span class="chip green">✅</span> <strong>vendedorId del JWT</strong> — los handlers de escritura usan el token, nunca el body. Correcto per regla de seguridad.</li>
-  <li><span class="chip green">✅</span> <strong>Ownership check</strong> — ProductsService. assertOwnership() en update/delete.</li>
-  <li><span class="chip red">❌</span> <strong>Faltan action registry entries</strong> — el gateway no tiene las 8 rutas de products-service. Sin eso, el gateway no sabe redirigir a este MS.</li>
-  <li><span class="chip red">❌</span> <strong>Falta ClientProxy en gateway</strong> — no está registrado el <code>ClientsModule</code> hacia products-service:3013.</li>
-  <li><span class="chip yellow">⚠️</span> <strong>Falta docker-compose entry</strong> — no hay service definido para products-service.</li>
-  <li><span class="chip yellow">⚠️</span> <strong>vendedorId = sub del JWT</strong> — asume que el <code>sub</code> es el vendedorId directo. En usuario-service hay un <code>VendedorResolver</code> que traduce authUserId → vendedor.id. Esto puede no matchear.</li>
-</div>
+    <table>
+      <tr><th>Entidad/campo</th><th>Documentación</th><th>Implementación</th><th>Resultado</th></tr>
+      <tr><td>PRODUCTO</td><td>id, vendedor_id, nombre, descripcion, marca_id, categoria_id, precio_sin_iva, precio_final, stock, imagen, activo, mostrar_precio, timestamps.</td><td>Los campos principales están.</td><td><span class="badge green">Cerca</span></td></tr>
+      <tr><td>UUIDs</td><td>PK/FK UUID reales.</td><td>Usa <code>String</code> sin <code>@db.Uuid</code> en id/vendedorId/categoriaId/marcaId.</td><td><span class="badge red">Corregir</span></td></tr>
+      <tr><td>FK vendedor_id</td><td>Debe apuntar a VENDEDOR.</td><td>No hay relación Prisma a <code>Vendedor</code> porque el schema está separado.</td><td><span class="badge red">Corregir</span></td></tr>
+      <tr><td>VARCHAR/TEXT</td><td>nombre VARCHAR(255), imagen VARCHAR(500), descripcion TEXT.</td><td>No usa <code>@db.VarChar</code>/<code>@db.Text</code>.</td><td><span class="badge orange">Alinear</span></td></tr>
+      <tr><td>MARCA</td><td>id, vendedor_id, nombre, created_at.</td><td>Incluye esos campos + updated_at.</td><td><span class="badge green">OK, extra aceptable</span></td></tr>
+      <tr><td>CATEGORIA</td><td>id, vendedor_id, nombre, orden, created_at.</td><td>Incluye esos campos + updated_at.</td><td><span class="badge green">OK, extra aceptable</span></td></tr>
+      <tr><td>Table names</td><td>Convención actual: <code>@@map</code> en UPPERCASE con guión bajo.</td><td><code>@@map("productos")</code>, <code>@@map("categorias")</code>, <code>@@map("marcas")</code>.</td><td><span class="badge orange">Cambiar casing</span></td></tr>
+      <tr><td>Schema location</td><td>Schema unificado en usuario-service durante MVP.</td><td>Schema propio dentro de products-service.</td><td><span class="badge red">Bloquea</span></td></tr>
+    </table>
 
-<!-- ============================================================ -->
-<h2>⚠️ Swagger — hay que sacarlo</h2>
+    <div class="callout">
+      <strong>Recomendación concreta para Prisma:</strong> mover los modelos al schema central y mapear tablas como <code>PRODUCTO</code>, <code>MARCA</code>, <code>CATEGORIA</code> — o definir otra convención, pero siempre UPPERCASE. El proyecto mezcla idioma, así que el idioma no es la regla: la regla real es el casing.
+    </div>
+  </section>
 
-<div class="badge-list">
-  <li><span class="chip red">❌</span> <strong>Swagger en HTTP directo del MS no sirve.</strong> usuario-service tenía lo mismo y lo sacamos. La razón: si el objetivo es que todo el tráfico pase por el gateway (TCP), tener Swagger colgado del puerto HTTP 3003 del MS no tiene sentido. El frontend no pega ahí, el gateway no redirige ahí, y Swagger documenta endpoints que solo existen como TCP.</li>
-  <li><span class="chip red">❌</span> <strong>Te va a pasar lo mismo que a nosotros.</strong> Cuando quieras cerrar el HTTP directo (como hicimos con usuario-service), vas a tener que sacar Swagger, borrar <code>SwaggerModule</code> del main.ts, y dejar el HTTP solo para healthcheck (o cerrarlo del todo). Mejor hacerlo ahora que después.</li>
-  <li><span class="chip green">✅</span> <strong>Los TCP controllers están bien</strong> — usan <code>@Controller()</code> sin ruta, así que Swagger no crashea. Pero igual no suma tenerlo.</li>
-</div>
+  <section id="endpoints">
+    <h2>4. Endpoints esperados vía gateway</h2>
+    <p>El código define 8 handlers TCP. Para que sirvan al frontend, deberían exponerse desde gateway como acciones HTTP versionadas.</p>
 
-<!-- ============================================================ -->
-<h2>🔴 Mejoras CRÍTICAS (hay que hacerlas sí o sí)</h2>
+    <table>
+      <tr><th>Gateway HTTP esperado</th><th>TCP pattern</th><th>Auth</th><th>Estado</th></tr>
+      <tr><td>GET /api/v1/products/list</td><td>products.list</td><td>público o vendedor</td><td><span class="badge orange">Handler existe, registry falta</span></td></tr>
+      <tr><td>GET /api/v1/products/get?id=...</td><td>products.get</td><td>público</td><td><span class="badge orange">Handler existe, registry falta</span></td></tr>
+      <tr><td>GET /api/v1/products/search?q=...</td><td>products.search</td><td>público</td><td><span class="badge orange">Handler existe, registry falta</span></td></tr>
+      <tr><td>POST /api/v1/products/create</td><td>products.create</td><td>vendedor</td><td><span class="badge orange">Handler existe, registry falta</span></td></tr>
+      <tr><td>PATCH /api/v1/products/update?id=...</td><td>products.update</td><td>vendedor</td><td><span class="badge orange">Handler existe, registry falta</span></td></tr>
+      <tr><td>DELETE /api/v1/products/delete?id=...</td><td>products.delete</td><td>vendedor</td><td><span class="badge orange">Handler existe, registry falta</span></td></tr>
+      <tr><td>GET /api/v1/categories/list?vendedorId=...</td><td>categories.list</td><td>público</td><td><span class="badge orange">Handler existe, registry falta</span></td></tr>
+      <tr><td>GET /api/v1/brands/list?vendedorId=...</td><td>brands.list</td><td>público</td><td><span class="badge orange">Handler existe, registry falta</span></td></tr>
+    </table>
+  </section>
 
-<table>
-  <tr><th></th><th>Ítem</th><th>Detalle</th></tr>
-  <tr>
-    <td><span class="severity high"></span></td>
-    <td><strong>Schema desunificado</strong></td>
-    <td>
-      <p><strong>Qué pasa:</strong> Tu schema Prisma está en <code>products-service/prisma/schema.prisma</code>, pero el proyecto entero usa un solo schema compartido en <code>usuario-service/prisma/schema.prisma</code>. Ahí viven TODAS las tablas del sistema: AUTH_USER, VENDEDOR, CLIENTE, SUPER_ADMIN, QR_CODE, etc.</p>
-      <p><strong>Por qué está mal:</strong> Si cada MS tiene su propio schema, Prisma genera migraciones independientes. Terminamos con bases de datos inconsistentes — un MS migra y el otro no, las relaciones entre tablas no existen, los tipos chocan. Ya pasó antes y tuvimos que unificar todo a la fuerza.</p>
-      <p><strong>Cómo arreglarlo:</strong> Mover los 3 modelos (<code>Categoria</code>, <code>Marca</code>, <code>Producto</code>) al schema central de <code>usuario-service/prisma/schema.prisma</code>. Tu <code>prisma/</code> local puede quedar vacío o borrarse (el cliente se genera desde el schema unificado igual).</p>
-    </td>
-  </tr>
-  <tr>
-    <td><span class="severity high"></span></td>
-    <td><strong>Sin action registry</strong></td>
-    <td>
-      <p><strong>Qué pasa:</strong> Tus 8 handlers TCP existen en products-service pero el gateway no sabe que existen. El gateway usa un <code>ACTION_REGISTRY</code> (en <code>gateway/src/actions/action-registry.ts</code>) que mapea nombres de ruta a { service, tcpPort }. Sin entries ahí, el gateway tira 404 aunque el MS esté vivo.</p>
-      <p><strong>Por qué está mal:</strong> Nadie puede llamar a <code>products.list</code>, <code>products.create</code>, etc. porque el gateway no sabe hacia dónde redirigir. Todo el sistema está diseñado para que el gateway sea la única puerta de entrada.</p>
-      <p><strong>Cómo arreglarlo:</strong> Agregar 8 entries en <code>action-registry.ts</code> con el formato:
-      <br><code>{ route: 'products.list', service: 'products-service', tcpPort: 3013 },</code>
-      <br><code>{ route: 'products.create', service: 'products-service', tcpPort: 3013, requireAuth: true },</code>
-      <br>etc. Seguir el mismo patrón que las 14 rutas de usuario-service que ya están en el registry.</p>
-    </td>
-  </tr>
-  <tr>
-    <td><span class="severity high"></span></td>
-    <td><strong>TCP sin ClientProxy</strong></td>
-    <td>
-      <p><strong>Qué pasa:</strong> El gateway no tiene un <code>ClientsModule</code> registrado para conectarse por TCP a products-service. Tiene uno para usuario-service (puerto 3011) pero no para products-service (3013).</p>
-      <p><strong>Por qué está mal:</strong> El action registry resuelve la ruta, pero sin un <code>ClientProxy</code> configurado, el gateway no puede abrir un socket TCP hacia tu MS. El <code>ClientTCP</code> de NestJS necesita saber host + puerto.</p>
-      <p><strong>Cómo arreglarlo:</strong> En el módulo del gateway (probablemente <code>gateway/src/app.module.ts</code> o donde esté el <code>ClientsModule.register()</code> de usuario-service):<br>
-      <code>ClientsModule.register([{ name: 'PRODUCTS_SERVICE', transport: Transport.TCP, options: { host: 'products-service', port: 3013 } }])</code><br>
-      Y agregar <code>PRODUCTS_SERVICE_TCP_PORT</code> en las env vars del gateway.</p>
-    </td>
-  </tr>
-  <tr>
-    <td><span class="severity high"></span></td>
-    <td><strong>Faltan tests</strong></td>
-    <td>
-      <p><strong>Qué pasa:</strong> Tenés 1 spec (<code>pricing.service.spec.ts</code>). El proyecto tiene 278+ tests en usuario-service. No podemos mergear un MS sin cobertura.</p>
-      <p><strong>Por qué está mal:</strong> Sin tests no podemos asegurar que el CRUD funciona, que el ownership check no se pasa, que los filtros traen los datos correctos, que el TCP controller responde bien. Ya nos pasó de mergear cosas que rompían todo y había que revertir.</p>
-      <p><strong>Mínimo necesario:</strong><br>
-      - <code>products.service.spec.ts</code>: create, findById, update, delete, ownership check (que un vendedor NO pueda modificar producto de otro)<br>
-      - <code>products-tcp.controller.spec.ts</code>: cada handler responde con el pattern correcto<br>
-      - <code>categories.service.spec.ts</code>: listCategorias y listMarcas filtran por vendedorId<br>
-      - <code>rpc-exception.filter.spec.ts</code>: que maneje HTTP y RPC correctamente</p>
-    </td>
-  </tr>
-  <tr>
-    <td><span class="severity high"></span></td>
-    <td><strong>Naming @@map inconsistente</strong></td>
-    <td>
-      <p><strong>Qué pasa:</strong> Tus tablas se llaman <code>productos</code>, <code>categorias</code>, <code>marcas</code> en la DB (minúscula). El proyecto usa SIEMPRE MAYÚSCULA con guión bajo: <code>AUTH_USER</code>, <code>VENDEDOR</code>, <code>CLIENTE</code>, <code>SUPER_ADMIN</code>, <code>QR_CODE</code>.</p>
-      <p><strong>Por qué está mal:</strong> Cuando alguien corre queries directo a Postgres, tiene que adivinar el casing. Es un desorden que después nadie quiere limpiar.</p>
-      <p><strong>Cómo arreglarlo:</strong> Cambiar los <code>@@map</code> a UPPERCASE:<br>
-      <code>@@map("CATEGORIA")</code>, <code>@@map("MARCA")</code>, <code>@@map("PRODUCTO")</code><br>
-      El idioma (español/inglés) no está definido — el proyecto mezcla. Lo importante es el UPPERCASE.</p>
-    </td>
-  </tr>
-  <tr>
-    <td><span class="severity high"></span></td>
-    <td><strong>Swagger en HTTP directo</strong></td>
-    <td>
-      <p><strong>Qué pasa:</strong> Tu <code>main.ts</code> tiene SwaggerModule montado en el puerto HTTP 3003. En usuario-service teníamos lo mismo y lo sacamos — porque no tiene sentido tener docs Swagger en un MS que eventualmente va a ser TCP-only.</p>
-      <p><strong>Por qué está mal:</strong> El Swagger documenta endpoints HTTP. Pero los endpoints de verdad (products.list, products.create, etc.) son TCP y Swagger no los ve. Lo único que documenta es el healthcheck. Aparte, el frontend no pega directo al puerto 3003 — todo pasa por el gateway. Swagger ahí es código muerto que después hay que limpiar.</p>
-      <p><strong>Cómo arreglarlo:</strong> Sacar <code>SwaggerModule</code> del <code>main.ts</code> y dejar el HTTP vivo solo para health (<code>GET /health</code>). Cuando cerrés el HTTP directo por completo, ya está.</p>
-    </td>
-  </tr>
-  </tr>
-</table>
+  <section id="solid-dbs">
+    <h2>5. SOLID + DBS</h2>
 
-<!-- ============================================================ -->
-<h2>🟡 Mejoras IMPORTANTES (hay que resolver antes de mergear)</h2>
+    <h3>SOLID</h3>
+    <table>
+      <tr><th>Principio</th><th>Lectura</th><th>Veredicto</th></tr>
+      <tr><td>SRP</td><td>ProductsService, CategoriesService, PricingService y TcpPayloadAdapter tienen responsabilidades separadas. Bien.</td><td><span class="badge green">OK</span></td></tr>
+      <tr><td>OCP</td><td>DTOs implementan contracts. Nuevas acciones pueden agregarse en TCP sin tocar servicios centrales.</td><td><span class="badge green">OK</span></td></tr>
+      <tr><td>LSP</td><td>No hay jerarquías complejas. PrismaService extiende PrismaClient como en el resto del proyecto.</td><td><span class="badge green">OK</span></td></tr>
+      <tr><td>ISP</td><td>DTOs separados por caso de uso: create, update, list, search, id query. Bien.</td><td><span class="badge green">OK</span></td></tr>
+      <tr><td>DIP</td><td>La lógica depende de servicios inyectados, pero no hay abstracción para resolver vendedorId contra usuario-service.</td><td><span class="badge orange">Parcial</span></td></tr>
+    </table>
 
-<table>
-  <tr><th></th><th>Ítem</th><th>Detalle</th></tr>
-  <tr>
-    <td><span class="severity med"></span></td>
-    <td><strong>vendedorId ≠ sub del JWT</strong></td>
-    <td>
-      <p><strong>Qué pasa:</strong> En tus TCP controllers usás <code>user.sub ?? user.userId</code> como vendedorId. En usuario-service, el <code>sub</code> del JWT es el <code>authUserId</code> (el ID del registro en AUTH_USER), NO el <code>vendedor.id</code> de la tabla VENDEDOR.</p>
-      <p><strong>Por qué está mal:</strong> Hay una relación 1:1 entre AUTH_USER y VENDEDOR, pero tienen IDs diferentes. usuario-service tiene un <code>VendedorResolver</code> que traduce un authUserId al vendedorId real. Si vos usás el sub directo, estás escribiendo el ID de auth en el campo <code>vendedorId</code> de tus productos — y ese ID no existe en la tabla VENDEDOR.</p>
-      <p><strong>Cómo arreglarlo:</strong> Tenés dos opciones:<br>
-      1. <strong>(Recomendada)</strong> Hacer una llamada TCP desde products-service a usuario-service para resolver el vendedorId real usando el VendedorResolver.<br>
-      2. <strong>(Simplificada)</strong> Si confirmamos que <code>sub</code> = <code>vendedorId</code> (porque el JWT se genera con el vendedorId), entonces está bien — pero hay que verificarlo con el equipo. Preguntar antes de asumir.</p>
-    </td>
-  </tr>
-  <tr>
-    <td><span class="severity med"></span></td>
-    <td><strong>Interceptores duplicados</strong></td>
-    <td>
-      <p><strong>Qué pasa:</strong> Implementaste tus propias versiones de LoggingInterceptor, TimeoutInterceptor y TransformInterceptor. El proyecto ya tiene versiones estándar en <code>usuario-service/src/common/interceptors/</code>.</p>
-      <p><strong>Por qué está mal:</strong> Cuando un dev se mueve entre MS, espera el mismo comportamiento: mismo formato de log, mismo timeout, misma estructura de respuesta. Con interceptores propios, el products-service va a loguear distinto, responder distinto, y tener timeouts distintos al resto del sistema.</p>
-      <p><strong>Cómo arreglarlo:</strong> Copiar los interceptors de usuario-service o, mejor, extraerlos a <code>@agua/contracts</code> como librería compartida. Por ahora con copiarlos alcanza — después los unificamos.</p>
-    </td>
-  </tr>
-  <tr>
-    <td><span class="severity med"></span></td>
-    <td><strong>Sin docker-compose</strong></td>
-    <td>
-      <p><strong>Qué pasa:</strong> No hay un service definido en <code>docker-compose.yml</code> para products-service. Si alguien hace <code>docker compose up</code>, tu MS no arranca.</p>
-      <p><strong>Por qué está mal:</strong> El stack completo se levanta con un solo comando. Si products-service no está en el compose, cada dev tiene que acordarse de levantarlo aparte, configurar las env vars manualmente, etc. Es insostenible en equipo.</p>
-      <p><strong>Cómo arreglarlo:</strong> Agregar al <code>docker-compose.yml</code> raíz un bloque similar a usuario-service:<br>
-      <code>products-service: { build: context: ., dockerfile: MicroServices/products-service/Dockerfile, ports: ['3003:3003', '3013:3013'], env_file: ./MicroServices/products-service/.env, depends_on: [postgres, redis] }</code></p>
-    </td>
-  </tr>
-  <tr>
-    <td><span class="severity med"></span></td>
-    <td><strong>Sin .env.example</strong></td>
-    <td>
-      <p><strong>Qué pasa:</strong> No hay un archivo <code>.env.example</code> en tu MS. Milagros sí lo tiene en entregas-service.</p>
-      <p><strong>Por qué está mal:</strong> Un dev nuevo (o vos mismo en 2 meses) no sabe qué variables de entorno necesita el servicio. Tiene que leer el código para descubrir que necesita <code>DATABASE_URL</code>, <code>TCP_PORT</code>, <code>PORT</code>, <code>IVA_PORCENTAJE</code>. Es una pérdida de tiempo al pedo.</p>
-      <p><strong>Cómo arreglarlo:</strong> Crear <code>MicroServices/products-service/.env.example</code> con:<br>
-      <code>DATABASE_URL=postgresql://postgres:postgres@localhost:5433/agua</code><br>
-      <code>PORT=3003</code><br>
-      <code>TCP_PORT=3013</code><br>
-      <code>IVA_PORCENTAJE=21</code></p>
-    </td>
-  </tr>
-  <tr>
-    <td><span class="severity med"></span></td>
-    <td><strong>TransformInterceptor envuelve TCP</strong></td>
-    <td>
-      <p><strong>Qué pasa:</strong> Tu TransformInterceptor checkea <code>context.getType()</code> y si es HTTP transforma la respuesta. Pero el RpcExceptionFilter también maneja ambos contextos.</p>
-      <p><strong>Por qué está mal:</strong> No hay bug actual, pero si alguien toca el interceptor y no checkea el type, va a transformar respuestas TCP también. El usuario-service ya pasó por este problema y tiene la solución correcta.</p>
-      <p><strong>Cómo arreglarlo:</strong> No tocar nada ahora, pero cuando copies los interceptors de usuario-service esto ya viene resuelto.</p>
-    </td>
-  </tr>
-</table>
+    <h3>DBS / Dont Be Stupid Review</h3>
+    <table>
+      <tr><th>ID</th><th>Finding</th><th>Detalle</th><th>Severidad</th></tr>
+      <tr><td>C01</td><td>Any leak</td><td>No se detectó <code>any</code> explícito en products-service.</td><td><span class="badge green">PASS</span></td></tr>
+      <tr><td>C02</td><td>Console.log prod</td><td>No hay <code>console.log</code>; usa <code>Logger</code>.</td><td><span class="badge green">PASS</span></td></tr>
+      <tr><td>C03</td><td>God Object</td><td>ProductsService tiene 180 líneas, aceptable. No supera el umbral, pero conviene testearlo bien.</td><td><span class="badge green">PASS</span></td></tr>
+      <tr><td>C04</td><td>Tight coupling</td><td>Falta definir cómo resolver vendedorId con usuario-service; si se hace directo mal, será acoplamiento/riesgo de datos.</td><td><span class="badge orange">WARNING</span></td></tr>
+      <tr><td>C05</td><td>Dead code</td><td>Swagger en MS TCP-only funciona como código muerto/contradictorio.</td><td><span class="badge red">FAIL</span></td></tr>
+      <tr><td>W03</td><td>SRP borderline</td><td>El service arma response DTOs con <code>toResponse()</code>. Aceptable por ahora, pero si crece conviene mapper separado.</td><td><span class="badge yellow">SUGGESTION</span></td></tr>
+      <tr><td>W05</td><td>Testability</td><td>Buena DI. El problema no es testabilidad, es falta de Jest config y falta de tests.</td><td><span class="badge orange">WARNING</span></td></tr>
+    </table>
+  </section>
 
-<h2>🔵 Mejoras MENORES</h2>
+  <section id="plan">
+    <h2>6. Plan recomendado antes de merge</h2>
+    <ol>
+      <li><strong>Actualizar la rama contra <code>origin/develop</code></strong> y resolver conflictos sin reintroducir HTTP en usuario-service.</li>
+      <li><strong>Convertir products-service a TCP-only</strong>: sacar <code>SwaggerModule</code>, <code>app.listen()</code> y HTTP business/docs. Si se mantiene health, que sea decisión explícita e interna.</li>
+      <li><strong>Mover modelos Prisma al schema unificado</strong>: aplicar <code>@db.Uuid</code>, relaciones a VENDEDOR, <code>@db.VarChar</code>/<code>@db.Text</code>, y <code>@@map</code> UPPERCASE.</li>
+      <li><strong>Integrar con gateway</strong>: action registry, ClientProxy TCP, env vars y docker-compose.</li>
+      <li><strong>Resolver vendedorId correctamente</strong>: confirmar si JWT <code>sub</code> es AUTH_USER.id o VENDEDOR.id. Si es AUTH_USER.id, usar resolución contra usuario-service.</li>
+      <li><strong>Arreglar Jest y agregar tests mínimos</strong>: ProductsService, CategoriesService, TCP controllers, PricingService.</li>
+      <li><strong>Revisar eventos</strong>: el contrato dice <code>ProductUpdated</code>/<code>ProductDeleted</code>. Si Kafka queda fuera de alcance, documentarlo como pendiente explícito.</li>
+    </ol>
+  </section>
 
-<table>
-  <tr><th></th><th>Ítem</th><th>Detalle</th></tr>
-  <tr>
-    <td><span class="severity low"></span></td>
-    <td>Falta migración Prisma</td>
-    <td>Hay que correr <code>npx prisma migrate dev --name init</code> una vez que el schema esté en el archivo unificado.</td>
-  </tr>
-  <tr>
-    <td><span class="severity low"></span></td>
-    <td>Constants duplicadas</td>
-    <td><code>DEFAULT_PAGE = 1</code> y <code>DEFAULT_LIMIT = 20</code> definidas en el service. Podrían ir a un archivo de constantes o al DTO.</td>
-  </tr>
-  <tr>
-    <td><span class="severity low"></span></td>
-    <td>Sin controller HTTP para productos</td>
-    <td>No es crítico porque todo va por TCP, pero si algún día se necesita debug directo sin gateway... igual está bien así.</td>
-  </tr>
-  <tr>
-    <td><span class="severity low"></span></td>
-    <td>README valioso</td>
-    <td>👍 Buenos comments y asunciones documentadas. Que no se pierda al mergear.</td>
-  </tr>
-</table>
-
-<!-- ============================================================ -->
-<h2>📊 Resumen para Emiliano</h2>
-
-<div class="quote">
-  <strong>Buen laburo, Emiliano.</strong> De los dos MS nuevos que tenemos (vos y Milagros), el tuyo es el que mejor estructura tiene. Te banco que hayas pensado en TCP desde el día uno, que uses TcpPayloadAdapter con roles, que tengas ownership checks, pricing server-side, Dockerfile multi-stage, y que encima hayas documentado todas las asunciones en el README. Eso habla de que entendés la arquitectura. <br><br>
-  <strong>Ahora, lo que hay que ajustar ANTES de mergear a develop (en orden de prioridad):</strong>
-  <ol style="margin-top:.5rem;padding-left:1.2rem;font-style:normal;">
-    <li><strong>Schema unificado</strong> — tus tablas tienen que vivir en el mismo schema.prisma que el resto del sistema. Si no, las migraciones se descontrolan y termina siendo un quilombo.</li>
-    <li><strong>Gateway integration</strong> — action registry + ClientProxy + docker-compose. Sin esto tu MS existe pero nadie puede hablarle. El gateway es la única puerta de entrada.</li>
-    <li><strong>Tests</strong> — mínimo 4 specs cubriendo service CRUD, ownership, TCP handlers, y exception filter. No podemos mergear sin cobertura.</li>
-    <li><strong>@@map a UPPERCASE</strong> — las tablas en DB tienen que estar en mayúscula (<code>CATEGORIA</code>, <code>MARCA</code>, <code>PRODUCTO</code>). El idioma no importa, el proyecto mezcla.</li>
-    <li><strong>Sacar Swagger del HTTP directo</strong> — no tiene sentido tenerlo si el servicio va a ser TCP-only. Nosotros ya pasamos por eso y lo limpiamos. Mejor hacerlo ahora.</li>
-    <li><strong>vendedorId</strong> — revisar si el sub del JWT es realmente el vendedorId o necesitás el VendedorResolver de usuario-service. Esto puede romper todo si está mal.</li>
-    <li><strong>Interceptores</strong> — reemplazar tus implementaciones por las del equipo para mantener consistencia en logs, timeouts y formato de respuesta.</li>
-    <li><strong>.env.example</strong> — crear el archivo para que cualquier dev sepa qué necesita configurar.</li>
-  </ol>
-  <br>
-  Cualquier cosa hablamos, estamos en develop. 🔥
-</div>
-
-<!-- ============================================================ -->
-<h2>📁 Estructura del proyecto</h2>
-
-<div class="file-tree">
-<span class="dir">MicroServices/products-service/</span><br>
-│<br>
-├── <span class="file">Dockerfile</span>          <span style="color:var(--muted)">— multi-stage, pnpm, node:22-alpine ✅</span><br>
-├── <span class="file">package.json</span>        <span style="color:var(--muted)">— @agua/products-service</span><br>
-├── <span class="file">tsconfig.json</span><br>
-├── <span class="file">README.md</span>           <span style="color:var(--muted)">— asunciones documentadas 👍</span><br>
-│<br>
-├── <span class="dir">prisma/</span><br>
-│   └── <span class="file">schema.prisma</span>     <span style="color:var(--yellow)">⚠️ mover al schema unificado</span><br>
-│<br>
-└── <span class="dir">src/</span><br>
-    ├── <span class="file">main.ts</span>            <span style="color:var(--muted)">— HTTP+TCP, Swagger, ValidationPipe</span><br>
-    ├── <span class="file">app.module.ts</span>       <span style="color:var(--muted)">— ConfigModule, Common, Products, Categories, Tcp</span><br>
-    │<br>
-    ├── <span class="dir">products/</span><br>
-    │   ├── <span class="file">products.module.ts</span><br>
-    │   ├── <span class="file">products.service.ts</span>  <span style="color:var(--muted)">— CRUD + ownership + pricing ✅</span><br>
-    │   └── <span class="dir">dto/</span><br>
-    │       ├── <span class="file">create-product.dto.ts</span><br>
-    │       ├── <span class="file">update-product.dto.ts</span><br>
-    │       ├── <span class="file">list-products.dto.ts</span><br>
-    │       └── <span class="file">search-product.dto.ts</span><br>
-    │<br>
-    ├── <span class="dir">categories/</span><br>
-    │   ├── <span class="file">categories.module.ts</span><br>
-    │   ├── <span class="file">categories.service.ts</span>  <span style="color:var(--muted)">— listCategorias + listMarcas</span><br>
-    │   └── <span class="dir">dto/</span><br>
-    │       └── <span class="file">list-catalogo.dto.ts</span><br>
-    │<br>
-    ├── <span class="dir">tcp/</span><br>
-    │   ├── <span class="file">tcp.module.ts</span><br>
-    │   ├── <span class="file">tcp-payload.ts</span>       <span style="color:var(--muted)">— interfaces TcpPayload, TcpAuthenticatedUser</span><br>
-    │   ├── <span class="file">tcp-payload-adapter.service.ts</span>  <span style="color:var(--muted)">— requireUser/requireRole/validate ✅</span><br>
-    │   ├── <span class="file">products-tcp.controller.ts</span>  <span style="color:var(--muted)">— 6 handlers</span><br>
-    │   └── <span class="file">categories-tcp.controller.ts</span> <span style="color:var(--muted)">— 2 handlers</span><br>
-    │<br>
-    └── <span class="dir">common/</span><br>
-        ├── <span class="file">common.module.ts</span>      <span style="color:var(--muted)">— Global, Prisma, interceptors</span><br>
-        ├── <span class="dir">config/</span><br>
-        │   └── <span class="file">env.config.ts</span>        <span style="color:var(--muted)">— IVA_PORCENTAJE, DATABASE_URL validation</span><br>
-        ├── <span class="dir">prisma/</span><br>
-        │   ├── <span class="file">prisma.service.ts</span>    <span style="color:var(--muted)">— extends PrismaClient</span><br>
-        │   ├── <span class="file">pricing.service.ts</span>   <span style="color:var(--muted)">— cálculo server-side de precioFinal ✅</span><br>
-        │   └── <span class="hl">pricing.service.spec.ts</span> <span style="color:var(--muted)">— único test ✅</span><br>
-        ├── <span class="dir">filters/</span><br>
-        │   └── <span class="file">rpc-exception.filter.ts</span>  <span style="color:var(--muted)">— HTTP + RPC ✅</span><br>
-        ├── <span class="dir">interceptors/</span><br>
-        │   ├── <span class="file">logging.interceptor.ts</span>   <span style="color:var(--yellow)">⚠️ propia, reemplazar</span><br>
-        │   ├── <span class="file">transform.interceptor.ts</span> <span style="color:var(--yellow)">⚠️ propia, reemplazar</span><br>
-        │   └── <span class="file">timeout.interceptor.ts</span>   <span style="color:var(--yellow)">⚠️ propia, reemplazar</span><br>
-        └── <span class="dir">health/</span><br>
-            └── <span class="file">health.controller.ts</span> <span style="color:var(--muted)">— GET /health ✅</span><br>
-</div>
-
+  <section id="mensaje">
+    <h2>7. Mensaje listo para enviar</h2>
+    <div class="callout good">
+      <p>Emi, revisamos tu <code>products-service</code>. La base está buena: separaste módulos, tenés TCP con <code>@MessagePattern</code>, payload adapter, validación por rol, ownership checks, pricing server-side y Dockerfile. Eso está alineado con la dirección del proyecto.</p>
+      <p>Pero todavía no está listo para mergear a <code>develop</code>. Los puntos que necesitamos corregir son:</p>
+      <ul>
+        <li>Actualizar tu rama con el <code>develop</code> actual porque quedó atrás del cierre de HTTP en usuario-service.</li>
+        <li>Sacar HTTP/Swagger de products-service para que sea TCP-only como el resto de microservicios de dominio.</li>
+        <li>Mover el schema Prisma al schema unificado y ajustar tipos UUID/FK/casing de tablas.</li>
+        <li>Agregar integración real con gateway: action registry + ClientProxy + docker-compose/envs.</li>
+        <li>Confirmar bien el <code>vendedorId</code>: no asumamos que <code>JWT.sub</code> es el id de VENDEDOR sin verificar.</li>
+        <li>Arreglar Jest y agregar tests; ahora el único test falla.</li>
+      </ul>
+      <p>Después de eso el MS queda muy bien encaminado para entrar a develop.</p>
+    </div>
+  </section>
+</main>
 </body>
 </html>
