@@ -83,12 +83,12 @@
       <div class="card"><small>Arquitectura</small><strong><span class="badge red">HTTP directo, sin TCP</span></strong></div>
       <div class="card"><small>Gateway</small><strong><span class="badge red">No integrado</span></strong></div>
       <div class="card"><small>Tests</small><strong><span class="badge red">0 specs</span></strong></div>
-      <div class="card"><small>DB Schema</small><strong><span class="badge orange">Cerca del modelo, mal ubicado</span></strong></div>
+      <div class="card"><small>DB Schema</small><strong><span class="badge orange">Schema propio correcto, faltan ajustes</span></strong></div>
       <div class="card"><small>Seguridad</small><strong><span class="badge red">Sin auth/tenant filter</span></strong></div>
     </div>
 
     <div class="callout bad">
-      <strong>Resumen ejecutivo:</strong> la rama implementa un primer CRUD de entregas y el schema está bastante cerca del modelo de datos, pero todavía <strong>NO está lista para mergear</strong>. Hay que adaptarla a la arquitectura actual: gateway como única entrada HTTP, microservicios por TCP, schema Prisma unificado, JWT/roles y filtro por vendedor. Hoy el servicio expone HTTP + Swagger directo, no tiene TCP, no está conectado al gateway, no tiene tests y lista entregas sin filtrar por el vendedor autenticado.
+      <strong>Resumen ejecutivo:</strong> la rama implementa un primer CRUD de entregas y el schema está bastante cerca del modelo de datos, pero todavía <strong>NO está lista para mergear</strong>. Hay que adaptarla a la arquitectura actual: gateway como única entrada HTTP, microservicios por TCP, cada MS con su propio Docker + DB + schema Prisma, JWT/roles y filtro por vendedor. Hoy el servicio expone HTTP + Swagger directo, no tiene TCP, no está conectado al gateway, no tiene tests y lista entregas sin filtrar por el vendedor autenticado.
     </div>
 
     <nav class="toc">
@@ -160,7 +160,7 @@
       <tr><td>vendedor_id</td><td>FK → VENDEDOR. Siempre desde token, no query/body.</td><td>Campo existe, pero no se usa para filtrar ni validar ownership.</td><td><span class="badge red">Corregir</span></td></tr>
       <tr><td>order_id</td><td>FK lógica hacia ORDER.</td><td>Campo existe con <code>@unique</code>, pero sin relación por schema separado.</td><td><span class="badge orange">Alinear</span></td></tr>
       <tr><td>Estado</td><td><code>pendiente → en_camino → entregada</code>.</td><td>La transición está implementada.</td><td><span class="badge green">Bien</span></td></tr>
-      <tr><td>Schema location</td><td>Durante MVP, schema unificado en usuario-service.</td><td>Schema propio en entregas-service + migration propia.</td><td><span class="badge red">Bloquea</span></td></tr>
+      <tr><td>Schema location</td><td>Arquitectura vigente: cada MS tiene su propio Docker, DB y schema Prisma.</td><td>Schema propio en entregas-service + migration propia.</td><td><span class="badge green">Correcto</span></td></tr>
       <tr><td>@@map</td><td>Convención real: UPPERCASE.</td><td><code>@@map("DELIVERY")</code>.</td><td><span class="badge green">OK</span></td></tr>
       <tr><td>Eventos</td><td>Consume orders-stream y publica DeliveryStarted/Completed/StatusChanged.</td><td>No implementado.</td><td><span class="badge yellow">Pendiente/documentar scope</span></td></tr>
     </table>
@@ -209,7 +209,7 @@
       <li><strong>Convertir entregas-service a TCP-only</strong>: crear módulo/controller TCP y sacar Swagger/HTTP de negocio.</li>
       <li><strong>Implementar payload adapter</strong>: validar body/query y extraer user/role del payload enviado por gateway.</li>
       <li><strong>Filtrar por vendedor autenticado</strong>: list/get/update deben validar <code>vendedor_id</code>. Nada de vendedorId por query/body.</li>
-      <li><strong>Mover schema al schema unificado</strong>: conservar <code>@@map("DELIVERY")</code>, agregar relaciones si corresponde y eliminar migration local separada.</li>
+      <li><strong>Mantener schema propio del MS</strong>: entregas-service debe tener su propio Docker, DB y <code>schema.prisma</code>. Conservar <code>@@map("DELIVERY")</code>, usar IDs externos como referencias lógicas y evitar FKs Prisma cruzadas a otros MS.</li>
       <li><strong>Integrar gateway</strong>: action registry, ClientProxy, env vars y docker-compose.</li>
       <li><strong>Agregar tests</strong>: service, TCP controller, transiciones válidas/inválidas, ownership y paginación.</li>
       <li><strong>Eventos</strong>: si Kafka queda fuera del scope, documentar que DeliveryStarted/Completed/StatusChanged queda pendiente.</li>
@@ -226,7 +226,7 @@
         <li>Pasar el servicio de HTTP/Swagger a TCP-only. El gateway es la única entrada HTTP.</li>
         <li>Agregar handlers TCP: <code>deliveries.list</code>, <code>deliveries.get</code>, <code>deliveries.update_status</code>.</li>
         <li>Filtrar siempre por vendedor autenticado. Cada vendedor solo puede ver/modificar sus entregas.</li>
-        <li>Mover el modelo Prisma al schema unificado. El <code>@@map("DELIVERY")</code> está bien.</li>
+        <li>Mantener el modelo Prisma en el schema propio de entregas-service. Cada MS tiene su propio Docker, DB y schema. El <code>@@map("DELIVERY")</code> está bien.</li>
         <li>Conectar gateway: action registry + ClientProxy + docker-compose/envs.</li>
         <li>Agregar tests mínimos antes de pedir merge.</li>
       </ul>
