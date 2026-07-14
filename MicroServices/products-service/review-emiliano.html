@@ -281,65 +281,124 @@
 </div>
 
 <!-- ============================================================ -->
-<h2>🔴 Mejoras CRÍTICAS</h2>
+<h2>🔴 Mejoras CRÍTICAS (hay que hacerlas sí o sí)</h2>
 
 <table>
   <tr><th></th><th>Ítem</th><th>Detalle</th></tr>
   <tr>
     <td><span class="severity high"></span></td>
     <td><strong>Schema desunificado</strong></td>
-    <td>El proyecto usa un schema Prisma ÚNICO en <code>usuario-service/prisma/schema.prisma</code>. Las tablas <code>productos</code>, <code>categorias</code>, <code>marcas</code> deben estar ahí, no en un schema separado. Si no, las migraciones rompen.</td>
+    <td>
+      <p><strong>Qué pasa:</strong> Tu schema Prisma está en <code>products-service/prisma/schema.prisma</code>, pero el proyecto entero usa un solo schema compartido en <code>usuario-service/prisma/schema.prisma</code>. Ahí viven TODAS las tablas del sistema: USER, VENDEDOR, CLIENTE, CART, ORDER, DELIVERY, etc.</p>
+      <p><strong>Por qué está mal:</strong> Si cada MS tiene su propio schema, Prisma genera migraciones independientes. Terminamos con bases de datos inconsistentes — un MS migra y el otro no, las relaciones entre tablas no existen, los tipos chocan. Ya pasó antes y tuvimos que unificar todo a la fuerza.</p>
+      <p><strong>Cómo arreglarlo:</strong> Mover los 3 modelos (<code>Categoria</code>, <code>Marca</code>, <code>Producto</code>) al schema central de <code>usuario-service/prisma/schema.prisma</code>. Tu <code>prisma/</code> local puede quedar vacío o borrarse (el cliente se genera desde el schema unificado igual).</p>
+    </td>
   </tr>
   <tr>
     <td><span class="severity high"></span></td>
     <td><strong>Sin action registry</strong></td>
-    <td>Las 8 rutas TCP de products-service no existen en el gateway. Sin eso, el gateway no sabe enrutar. Hay que agregar <code>products.*</code> y <code>categories.*</code> a <code>MicroServices/gateway/src/actions/action-registry.ts</code>.</td>
+    <td>
+      <p><strong>Qué pasa:</strong> Tus 8 handlers TCP existen en products-service pero el gateway no sabe que existen. El gateway usa un <code>ACTION_REGISTRY</code> (en <code>gateway/src/actions/action-registry.ts</code>) que mapea nombres de ruta a { service, tcpPort }. Sin entries ahí, el gateway tira 404 aunque el MS esté vivo.</p>
+      <p><strong>Por qué está mal:</strong> Nadie puede llamar a <code>products.list</code>, <code>products.create</code>, etc. porque el gateway no sabe hacia dónde redirigir. Todo el sistema está diseñado para que el gateway sea la única puerta de entrada.</p>
+      <p><strong>Cómo arreglarlo:</strong> Agregar 8 entries en <code>action-registry.ts</code> con el formato:
+      <br><code>{ route: 'products.list', service: 'products-service', tcpPort: 3013 },</code>
+      <br><code>{ route: 'products.create', service: 'products-service', tcpPort: 3013, requireAuth: true },</code>
+      <br>etc. Seguir el mismo patrón que las 14 rutas de usuario-service que ya están en el registry.</p>
+    </td>
   </tr>
   <tr>
     <td><span class="severity high"></span></td>
     <td><strong>TCP sin ClientProxy</strong></td>
-    <td>El gateway necesita un <code>ClientsModule.register()</code> apuntando a products-service:3013 para poder enviarle mensajes TCP.</td>
+    <td>
+      <p><strong>Qué pasa:</strong> El gateway no tiene un <code>ClientsModule</code> registrado para conectarse por TCP a products-service. Tiene uno para usuario-service (puerto 3011) pero no para products-service (3013).</p>
+      <p><strong>Por qué está mal:</strong> El action registry resuelve la ruta, pero sin un <code>ClientProxy</code> configurado, el gateway no puede abrir un socket TCP hacia tu MS. El <code>ClientTCP</code> de NestJS necesita saber host + puerto.</p>
+      <p><strong>Cómo arreglarlo:</strong> En el módulo del gateway (probablemente <code>gateway/src/app.module.ts</code> o donde esté el <code>ClientsModule.register()</code> de usuario-service):<br>
+      <code>ClientsModule.register([{ name: 'PRODUCTS_SERVICE', transport: Transport.TCP, options: { host: 'products-service', port: 3013 } }])</code><br>
+      Y agregar <code>PRODUCTS_SERVICE_TCP_PORT</code> en las env vars del gateway.</p>
+    </td>
   </tr>
   <tr>
     <td><span class="severity high"></span></td>
     <td><strong>Faltan tests</strong></td>
-    <td>Solo 1 spec (PricingService). Faltan tests de: ProductsService (CRUD, ownership, filtros), TCP controllers, RpcExceptionFilter, interceptors.</td>
+    <td>
+      <p><strong>Qué pasa:</strong> Tenés 1 spec (<code>pricing.service.spec.ts</code>). El proyecto tiene 278+ tests en usuario-service. No podemos mergear un MS sin cobertura.</p>
+      <p><strong>Por qué está mal:</strong> Sin tests no podemos asegurar que el CRUD funciona, que el ownership check no se pasa, que los filtros traen los datos correctos, que el TCP controller responde bien. Ya nos pasó de mergear cosas que rompían todo y había que revertir.</p>
+      <p><strong>Mínimo necesario:</strong><br>
+      - <code>products.service.spec.ts</code>: create, findById, update, delete, ownership check (que un vendedor NO pueda modificar producto de otro)<br>
+      - <code>products-tcp.controller.spec.ts</code>: cada handler responde con el pattern correcto<br>
+      - <code>categories.service.spec.ts</code>: listCategorias y listMarcas filtran por vendedorId<br>
+      - <code>rpc-exception.filter.spec.ts</code>: que maneje HTTP y RPC correctamente</p>
+    </td>
   </tr>
   <tr>
     <td><span class="severity high"></span></td>
     <td><strong>Naming @@map inconsistente</strong></td>
-    <td>El proyecto usa UPPERCASE: <code>@@map("USER")</code>, <code>@@map("DELIVERY")</code>. products-service usa lowercase: <code>@@map("productos")</code>, <code>@@map("categorias")</code>, <code>@@map("marcas")</code>. Hay que unificar.</td>
+    <td>
+      <p><strong>Qué pasa:</strong> Tus tablas se llaman <code>productos</code>, <code>categorias</code>, <code>marcas</code> en la DB (minúscula, español). El proyecto usa <code>USER</code>, <code>VENDEDOR</code>, <code>CLIENTE</code>, <code>DELIVERY</code> (MAYÚSCULA, inglés).</p>
+      <p><strong>Por qué está mal:</strong> Inconsistencia en la base de datos. Cuando alguien hace queries directo a Postgres, tiene que acordarse qué tablas están en inglés y cuáles en español. Es un desorden que después nadie quiere limpiar.</p>
+      <p><strong>Cómo arreglarlo:</strong> Cambiar los <code>@@map</code> a:<br>
+      <code>@@map("CATEGORY")</code>, <code>@@map("BRAND")</code>, <code>@@map("PRODUCT")</code><br>
+      O seguir la convención que tenga el equipo (preguntar).</p>
+    </td>
   </tr>
 </table>
 
-<h2>🟡 Mejoras IMPORTANTES</h2>
+<!-- ============================================================ -->
+<h2>🟡 Mejoras IMPORTANTES (hay que resolver antes de mergear)</h2>
 
 <table>
   <tr><th></th><th>Ítem</th><th>Detalle</th></tr>
   <tr>
     <td><span class="severity med"></span></td>
-    <td><strong>vendedorId resolution</strong></td>
-    <td>El README ya lo advierte: asume que <code>sub</code> del JWT es el <code>vendedorId</code>. En usuario-service hay un <code>VendedorResolver</code> que traduce authUserId → vendedor.id. Si products-service necesita ese mismo mapeo, hay que resolverlo vía TCP a usuario-service.</td>
+    <td><strong>vendedorId ≠ sub del JWT</strong></td>
+    <td>
+      <p><strong>Qué pasa:</strong> En tus TCP controllers usás <code>user.sub ?? user.userId</code> como vendedorId. En usuario-service, el <code>sub</code> del JWT es el <code>authUserId</code> (el ID del registro en AUTH_USER), NO el <code>vendedor.id</code> de la tabla VENDEDOR.</p>
+      <p><strong>Por qué está mal:</strong> Hay una relación 1:1 entre AUTH_USER y VENDEDOR, pero tienen IDs diferentes. usuario-service tiene un <code>VendedorResolver</code> que traduce un authUserId al vendedorId real. Si vos usás el sub directo, estás escribiendo el ID de auth en el campo <code>vendedorId</code> de tus productos — y ese ID no existe en la tabla VENDEDOR.</p>
+      <p><strong>Cómo arreglarlo:</strong> Tenés dos opciones:<br>
+      1. <strong>(Recomendada)</strong> Hacer una llamada TCP desde products-service a usuario-service para resolver el vendedorId real usando el VendedorResolver.<br>
+      2. <strong>(Simplificada)</strong> Si confirmamos que <code>sub</code> = <code>vendedorId</code> (porque el JWT se genera con el vendedorId), entonces está bien — pero hay que verificarlo con el equipo. Preguntar antes de asumir.</p>
+    </td>
   </tr>
   <tr>
     <td><span class="severity med"></span></td>
     <td><strong>Interceptores duplicados</strong></td>
-    <td>LoggingInterceptor, TimeoutInterceptor, TransformInterceptor son implementaciones propias. El proyecto ya tiene versiones estándar en usuario-service. Hay que reemplazar por las del equipo para mantener consistencia.</td>
+    <td>
+      <p><strong>Qué pasa:</strong> Implementaste tus propias versiones de LoggingInterceptor, TimeoutInterceptor y TransformInterceptor. El proyecto ya tiene versiones estándar en <code>usuario-service/src/common/interceptors/</code>.</p>
+      <p><strong>Por qué está mal:</strong> Cuando un dev se mueve entre MS, espera el mismo comportamiento: mismo formato de log, mismo timeout, misma estructura de respuesta. Con interceptores propios, el products-service va a loguear distinto, responder distinto, y tener timeouts distintos al resto del sistema.</p>
+      <p><strong>Cómo arreglarlo:</strong> Copiar los interceptors de usuario-service o, mejor, extraerlos a <code>@agua/contracts</code> como librería compartida. Por ahora con copiarlos alcanza — después los unificamos.</p>
+    </td>
   </tr>
   <tr>
     <td><span class="severity med"></span></td>
     <td><strong>Sin docker-compose</strong></td>
-    <td>No hay entry de products-service en el docker-compose.yml raíz. No se puede levantar junto con el resto del stack.</td>
+    <td>
+      <p><strong>Qué pasa:</strong> No hay un service definido en <code>docker-compose.yml</code> para products-service. Si alguien hace <code>docker compose up</code>, tu MS no arranca.</p>
+      <p><strong>Por qué está mal:</strong> El stack completo se levanta con un solo comando. Si products-service no está en el compose, cada dev tiene que acordarse de levantarlo aparte, configurar las env vars manualmente, etc. Es insostenible en equipo.</p>
+      <p><strong>Cómo arreglarlo:</strong> Agregar al <code>docker-compose.yml</code> raíz un bloque similar a usuario-service:<br>
+      <code>products-service: { build: context: ., dockerfile: MicroServices/products-service/Dockerfile, ports: ['3003:3003', '3013:3013'], env_file: ./MicroServices/products-service/.env, depends_on: [postgres, redis] }</code></p>
+    </td>
   </tr>
   <tr>
     <td><span class="severity med"></span></td>
     <td><strong>Sin .env.example</strong></td>
-    <td>Milagros sí lo tiene. Ayuda a que otros devs sepan qué variables necesita: <code>DATABASE_URL</code>, <code>TCP_PORT</code>, <code>PORT</code>, <code>IVA_PORCENTAJE</code>.</td>
+    <td>
+      <p><strong>Qué pasa:</strong> No hay un archivo <code>.env.example</code> en tu MS. Milagros sí lo tiene en entregas-service.</p>
+      <p><strong>Por qué está mal:</strong> Un dev nuevo (o vos mismo en 2 meses) no sabe qué variables de entorno necesita el servicio. Tiene que leer el código para descubrir que necesita <code>DATABASE_URL</code>, <code>TCP_PORT</code>, <code>PORT</code>, <code>IVA_PORCENTAJE</code>. Es una pérdida de tiempo al pedo.</p>
+      <p><strong>Cómo arreglarlo:</strong> Crear <code>MicroServices/products-service/.env.example</code> con:<br>
+      <code>DATABASE_URL=postgresql://postgres:postgres@localhost:5433/agua</code><br>
+      <code>PORT=3003</code><br>
+      <code>TCP_PORT=3013</code><br>
+      <code>IVA_PORCENTAJE=21</code></p>
+    </td>
   </tr>
   <tr>
     <td><span class="severity med"></span></td>
     <td><strong>TransformInterceptor envuelve TCP</strong></td>
-    <td>Evita <code>type !== 'http' → return next.handle()</code>. Pero el RpcExceptionFilter también maneja ambos contextos. Verificar que no haya doble transform.</td>
+    <td>
+      <p><strong>Qué pasa:</strong> Tu TransformInterceptor checkea <code>context.getType()</code> y si es HTTP transforma la respuesta. Pero el RpcExceptionFilter también maneja ambos contextos.</p>
+      <p><strong>Por qué está mal:</strong> No hay bug actual, pero si alguien toca el interceptor y no checkea el type, va a transformar respuestas TCP también. El usuario-service ya pasó por este problema y tiene la solución correcta.</p>
+      <p><strong>Cómo arreglarlo:</strong> No tocar nada ahora, pero cuando copies los interceptors de usuario-service esto ya viene resuelto.</p>
+    </td>
   </tr>
 </table>
 
@@ -373,17 +432,19 @@
 <h2>📊 Resumen para Emiliano</h2>
 
 <div class="quote">
-  <strong>Buen laburo, Emiliano.</strong> De los dos MS nuevos (Milagros y tuyo), el tuyo es el más completo. Tenés TCP funcionando, adaptador de payload, autenticación por rol, ownership checks, cálculo server-side de precios, Dockerfile multi-stage, y encima documentaste las asunciones en el README. <br><br>
-  <strong>Lo que hay que ajustar antes de mergear:</strong>
+  <strong>Buen laburo, Emiliano.</strong> De los dos MS nuevos que tenemos (vos y Milagros), el tuyo es el que mejor estructura tiene. Te banco que hayas pensado en TCP desde el día uno, que uses TcpPayloadAdapter con roles, que tengas ownership checks, pricing server-side, Dockerfile multi-stage, y que encima hayas documentado todas las asunciones en el README. Eso habla de que entendés la arquitectura. <br><br>
+  <strong>Ahora, lo que hay que ajustar ANTES de mergear a develop (en orden de prioridad):</strong>
   <ol style="margin-top:.5rem;padding-left:1.2rem;font-style:normal;">
-    <li>Unificar el schema Prisma con el archivo central</li>
-    <li>Agregar las 8 rutas al action registry del gateway</li>
-    <li>Registrar el ClientProxy en el gateway</li>
-    <li>Agregar entry de docker-compose</li>
-    <li>Escribir tests (mínimo: service CRUD + TCP controllers)</li>
-    <li>Cambiar @@map a UPPERCASE</li>
-    <li>Resolver el tema del vendedorId (VendedorResolver vs sub del JWT)</li>
+    <li><strong>Schema unificado</strong> — tus tablas tienen que vivir en el mismo schema.prisma que el resto del sistema. Si no, las migraciones se descontrolan y termina siendo un quilombo.</li>
+    <li><strong>Gateway integration</strong> — action registry + ClientProxy + docker-compose. Sin esto tu MS existe pero nadie puede hablarle. El gateway es la única puerta de entrada.</li>
+    <li><strong>Tests</strong> — mínimo 4 specs cubriendo service CRUD, ownership, TCP handlers, y exception filter. No podemos mergear sin cobertura.</li>
+    <li><strong>@@map a UPPERCASE</strong> — las tablas en DB tienen que seguir la convención del proyecto. No mezclar inglés/español, mayúscula/minúscula.</li>
+    <li><strong>vendedorId</strong> — revisar si el sub del JWT es realmente el vendedorId o necesitás el VendedorResolver de usuario-service. Esto puede romper todo si está mal.</li>
+    <li><strong>Interceptores</strong> — reemplazar tus implementaciones por las del equipo para mantener consistencia en logs, timeouts y formato de respuesta.</li>
+    <li><strong>.env.example</strong> — crear el archivo para que cualquier dev sepa qué necesita configurar.</li>
   </ol>
+  <br>
+  Cualquier cosa hablamos, estamos en develop. 🔥
 </div>
 
 <!-- ============================================================ -->
