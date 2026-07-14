@@ -253,9 +253,9 @@
 
 <h3>HTTP directo (puerto 3003)</h3>
 <table>
-  <tr><th>Ruta</th><th>Qué hace</th></tr>
-  <tr><td>GET /health</td><td>Healthcheck del servicio</td></tr>
-  <tr><td>GET /api/docs</td><td>Swagger UI (solo documenta health, no los TCP)</td></tr>
+  <tr><th>Ruta</th><th>Qué hace</th><th>¿Debería estar?</th></tr>
+  <tr><td>GET /health</td><td>Healthcheck del servicio</td><td>✅ necesario para Docker</td></tr>
+  <tr><td>GET /api/docs</td><td>Swagger UI</td><td><span class="chip red">❌ hay que sacarlo</span></td></tr>
 </table>
 
 <!-- ============================================================ -->
@@ -273,11 +273,12 @@
 </div>
 
 <!-- ============================================================ -->
-<h2>⚠️ Swagger</h2>
+<h2>⚠️ Swagger — hay que sacarlo</h2>
 
 <div class="badge-list">
-  <li><span class="chip green">✅</span> <strong> Swagger solo en HTTP directo — seguro.</strong> Los TCP controllers usan <code>@Controller()</code> sin ruta HTTP, así que Swagger no intenta documentarlos. El crash que vimos antes era por <code>@ApiExcludeController</code> en el gateway con rutas dinámicas. Acá no aplica.</li>
-  <li><span class="chip green">✅</span> <strong>No hay <code>@ApiExcludeController</code></strong> — correcto, acá no hace falta.</li>
+  <li><span class="chip red">❌</span> <strong>Swagger en HTTP directo del MS no sirve.</strong> usuario-service tenía lo mismo y lo sacamos. La razón: si el objetivo es que todo el tráfico pase por el gateway (TCP), tener Swagger colgado del puerto HTTP 3003 del MS no tiene sentido. El frontend no pega ahí, el gateway no redirige ahí, y Swagger documenta endpoints que solo existen como TCP.</li>
+  <li><span class="chip red">❌</span> <strong>Te va a pasar lo mismo que a nosotros.</strong> Cuando quieras cerrar el HTTP directo (como hicimos con usuario-service), vas a tener que sacar Swagger, borrar <code>SwaggerModule</code> del main.ts, y dejar el HTTP solo para healthcheck (o cerrarlo del todo). Mejor hacerlo ahora que después.</li>
+  <li><span class="chip green">✅</span> <strong>Los TCP controllers están bien</strong> — usan <code>@Controller()</code> sin ruta, así que Swagger no crashea. Pero igual no suma tenerlo.</li>
 </div>
 
 <!-- ============================================================ -->
@@ -340,6 +341,16 @@
       <code>@@map("CATEGORY")</code>, <code>@@map("BRAND")</code>, <code>@@map("PRODUCT")</code><br>
       O seguir la convención que tenga el equipo (preguntar).</p>
     </td>
+  </tr>
+  <tr>
+    <td><span class="severity high"></span></td>
+    <td><strong>Swagger en HTTP directo</strong></td>
+    <td>
+      <p><strong>Qué pasa:</strong> Tu <code>main.ts</code> tiene SwaggerModule montado en el puerto HTTP 3003. En usuario-service teníamos lo mismo y lo sacamos — porque no tiene sentido tener docs Swagger en un MS que eventualmente va a ser TCP-only.</p>
+      <p><strong>Por qué está mal:</strong> El Swagger documenta endpoints HTTP. Pero los endpoints de verdad (products.list, products.create, etc.) son TCP y Swagger no los ve. Lo único que documenta es el healthcheck. Aparte, el frontend no pega directo al puerto 3003 — todo pasa por el gateway. Swagger ahí es código muerto que después hay que limpiar.</p>
+      <p><strong>Cómo arreglarlo:</strong> Sacar <code>SwaggerModule</code> del <code>main.ts</code> y dejar el HTTP vivo solo para health (<code>GET /health</code>). Cuando cerrés el HTTP directo por completo, ya está.</p>
+    </td>
+  </tr>
   </tr>
 </table>
 
@@ -439,6 +450,7 @@
     <li><strong>Gateway integration</strong> — action registry + ClientProxy + docker-compose. Sin esto tu MS existe pero nadie puede hablarle. El gateway es la única puerta de entrada.</li>
     <li><strong>Tests</strong> — mínimo 4 specs cubriendo service CRUD, ownership, TCP handlers, y exception filter. No podemos mergear sin cobertura.</li>
     <li><strong>@@map a UPPERCASE</strong> — las tablas en DB tienen que seguir la convención del proyecto. No mezclar inglés/español, mayúscula/minúscula.</li>
+    <li><strong>Sacar Swagger del HTTP directo</strong> — no tiene sentido tenerlo si el servicio va a ser TCP-only. Nosotros ya pasamos por eso y lo limpiamos. Mejor hacerlo ahora.</li>
     <li><strong>vendedorId</strong> — revisar si el sub del JWT es realmente el vendedorId o necesitás el VendedorResolver de usuario-service. Esto puede romper todo si está mal.</li>
     <li><strong>Interceptores</strong> — reemplazar tus implementaciones por las del equipo para mantener consistencia en logs, timeouts y formato de respuesta.</li>
     <li><strong>.env.example</strong> — crear el archivo para que cualquier dev sepa qué necesita configurar.</li>
