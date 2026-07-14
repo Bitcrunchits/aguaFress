@@ -39,9 +39,13 @@ model Cart {
   // Se setea desde la capa de servicio: created_at + 24hs
   expires_at  DateTime
   created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
 
   items CartItem[]
 
+  @@index([usuario_id])
+  @@index([vendedor_id])
+  @@index([expires_at])
   @@map("CART")
 }
 
@@ -54,7 +58,10 @@ model CartItem {
   cantidad       Int
   precio_unitario Decimal @db.Decimal(10, 2)
   created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
 
+  @@unique([cart_id, producto_id])
+  @@index([producto_id])
   @@map("CART_ITEM")
 }
 
@@ -63,7 +70,7 @@ model CartItem {
 model Order {
   id               String     @id @default(uuid()) @db.Uuid
   // Secuencial por vendedor — generado por la capa de servicio
-  pedido_numero    String     @unique @db.VarChar(20)
+  pedido_numero    String     @db.VarChar(20)
   // Referencia lógica → AUTH_USER/CLIENTE en usuario-service (sin FK)
   usuario_id       String     @db.Uuid
   // Referencia lógica → VENDEDOR en usuario-service (sin FK)
@@ -82,6 +89,11 @@ model Order {
   items   OrderItem[]
   history OrderHistory[]
 
+  @@unique([vendedor_id, pedido_numero])
+  @@index([usuario_id])
+  @@index([vendedor_id])
+  @@index([estado])
+  @@index([created_at])
   @@map("ORDER")
 }
 
@@ -96,7 +108,9 @@ model OrderItem {
   cantidad       Int
   precio_unitario Decimal  @db.Decimal(10, 2)
   created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
 
+  @@index([producto_id])
   @@map("ORDER_ITEM")
 }
 
@@ -108,6 +122,9 @@ model OrderHistory {
   estado_nuevo   OrderEstado
   notas          String?      @db.Text
   created_at     DateTime     @default(now())
+  updated_at     DateTime     @updatedAt
 
+  @@index([estado_nuevo])
+  @@index([created_at])
   @@map("ORDER_HISTORY")
 }
