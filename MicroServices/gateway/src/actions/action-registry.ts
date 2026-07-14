@@ -32,7 +32,6 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
       register: { tcpPattern: 'auth.register', transport: 'send', authRequired: false },
       refresh: { tcpPattern: 'auth.refresh', transport: 'send', authRequired: false },
       validate: { tcpPattern: 'auth.validate', transport: 'send', authRequired: false },
-      me: { tcpPattern: 'auth.me', transport: 'send', authRequired: true },
       logout: { tcpPattern: 'auth.logout', transport: 'send', authRequired: true },
     },
   },
@@ -49,6 +48,9 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
       list: { tcpPattern: 'vendedores.list', transport: 'send', authRequired: true, roles: ['super_admin'] },
       profile: { tcpPattern: 'vendedores.profile', transport: 'send', authRequired: true },
       'profile/update': { tcpPattern: 'vendedores.profile_update', transport: 'send', authRequired: true },
+      'get-by-id': { tcpPattern: 'vendedores.get_by_id', transport: 'send', authRequired: true, roles: ['super_admin'] },
+      update: { tcpPattern: 'vendedores.update', transport: 'send', authRequired: true, roles: ['super_admin'] },
+      'change-estado': { tcpPattern: 'vendedores.change_estado', transport: 'send', authRequired: true, roles: ['super_admin'] },
     },
   },
   clientes: {
@@ -56,6 +58,11 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
     actions: {
       list: { tcpPattern: 'clientes.list', transport: 'send', authRequired: true },
       cartera: { tcpPattern: 'clientes.cartera', transport: 'send', authRequired: true },
+      'get-by-id': { tcpPattern: 'clientes.get_by_id', transport: 'send', authRequired: true, roles: ['super_admin'] },
+      update: { tcpPattern: 'clientes.update', transport: 'send', authRequired: true, roles: ['super_admin'] },
+      reassign: { tcpPattern: 'clientes.reassign', transport: 'send', authRequired: true, roles: ['super_admin'] },
+      'own/get-by-id': { tcpPattern: 'clientes.own_get_by_id', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      'own/update': { tcpPattern: 'clientes.own_update', transport: 'send', authRequired: true, roles: ['vendedor'] },
     },
   },
   'super-admin': {
@@ -66,6 +73,8 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
       'qr-codes': { tcpPattern: 'super_admin.qr_codes', transport: 'send', authRequired: true, roles: ['super_admin'] },
       'link-invitacion': { tcpPattern: 'super_admin.link_invitacion', transport: 'send', authRequired: true, roles: ['super_admin'] },
       vendedores: { tcpPattern: 'super_admin.vendedores', transport: 'send', authRequired: true, roles: ['super_admin'] },
+      profile: { tcpPattern: 'super_admin.profile', transport: 'send', authRequired: true, roles: ['super_admin'] },
+      'profile/update': { tcpPattern: 'super_admin.profile_update', transport: 'send', authRequired: true, roles: ['super_admin'] },
     },
   },
   qr: {
@@ -73,6 +82,8 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
     actions: {
       'vendor/list': { tcpPattern: 'qr.vendor_list', transport: 'send', authRequired: true, roles: ['vendedor'] },
       'vendor/create': { tcpPattern: 'qr.vendor_create', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      'admin/deactivate': { tcpPattern: 'qr.admin_deactivate', transport: 'send', authRequired: true, roles: ['super_admin'] },
+      'vendor/deactivate': { tcpPattern: 'qr.vendor_deactivate', transport: 'send', authRequired: true, roles: ['vendedor'] },
     },
   },
   'link-invitacion': {
@@ -80,6 +91,8 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
     actions: {
       'vendor/list': { tcpPattern: 'link_invitacion.vendor_list', transport: 'send', authRequired: true, roles: ['vendedor'] },
       'vendor/create': { tcpPattern: 'link_invitacion.vendor_create', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      'admin/deactivate': { tcpPattern: 'link_invitacion.admin_deactivate', transport: 'send', authRequired: true, roles: ['super_admin'] },
+      'vendor/deactivate': { tcpPattern: 'link_invitacion.vendor_deactivate', transport: 'send', authRequired: true, roles: ['vendedor'] },
     },
   },
   // Planned service families — not deployed yet

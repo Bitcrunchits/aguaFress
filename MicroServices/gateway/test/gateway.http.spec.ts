@@ -198,23 +198,23 @@ describe('Gateway HTTP routing', () => {
     await request(app.getHttpServer()).get('/api/users/profile').set(authHeader).expect(404);
   });
 
-  it('resolves nested action paths like register/vendedor', async () => {
-    mockDispatch.mockResolvedValue({ ok: true });
+  it('dispatches public auth/register without requiring a token', async () => {
+    mockDispatch.mockResolvedValue({ status: 'pendiente', vendedorId: 'v-123' });
 
     const response = await request(app.getHttpServer())
-      .post('/api/v1/auth/register/vendedor')
-      .send({ email: 'vendedor@test.com', password: 'secret' })
+      .post('/api/v1/auth/register')
+      .send({ email: 'vendedor@test.com', password: 'secret', nombre: 'Test', telefono: '123456789' })
       .expect(200);
 
-    expect(response.body).toEqual({ ok: true });
+    expect(response.body).toEqual({ status: 'pendiente', vendedorId: 'v-123' });
     expect(mockDispatch).toHaveBeenCalledWith(
       'auth',
       expect.objectContaining({
-        body: { email: 'vendedor@test.com', password: 'secret' },
-        params: { service: 'auth', action: 'register/vendedor' },
+        body: { email: 'vendedor@test.com', password: 'secret', nombre: 'Test', telefono: '123456789' },
+        params: { service: 'auth', action: 'register' },
         user: undefined,
       }),
-      expect.objectContaining({ tcpPattern: 'auth.register_vendedor' }),
+      expect.objectContaining({ tcpPattern: 'auth.register' }),
     );
   });
 

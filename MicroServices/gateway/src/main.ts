@@ -2,7 +2,6 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { json, urlencoded } from 'express';
 import helmet from 'helmet';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { createGatewayEnv } from './config/env.config';
 
@@ -27,18 +26,9 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('AguaFress API Gateway')
-    .setDescription('Punto de entrada HTTP único. Traduce requests /api/v1/{service}/{action} a mensajes TCP a los microservicios.')
-    .setVersion('1.0.0')
-    .addBearerAuth()
-    .build();
-
-  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, swaggerDocument);
-
   await app.listen(gatewayEnv.PORT);
   logger.log(`api-gateway running on port ${gatewayEnv.PORT}`);
+  logger.log(`API docs: http://localhost:${gatewayEnv.PORT}/api/docs`);
 }
 
 void bootstrap();

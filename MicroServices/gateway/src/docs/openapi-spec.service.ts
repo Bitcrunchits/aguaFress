@@ -1,0 +1,541 @@
+import { Injectable } from '@nestjs/common';
+import { ACTION_REGISTRY, type ActionMapping } from '../actions/action-registry';
+
+// ─── OpenAPI Schema helpers ─────────────────────────────────────
+
+type Schema = Record<string, unknown>;
+
+function str(description?: string, example?: unknown): Schema {
+  const s: Schema = { type: 'string' };
+  if (description) s.description = description;
+  if (example !== undefined) s.example = example;
+  return s;
+}
+
+function ref($ref: string): Schema {
+  return { $ref };
+}
+
+function obj(properties: Record<string, Schema>, required?: string[]): Schema {
+  const s: Schema = { type: 'object', properties };
+  if (required?.length) s.required = required;
+  return s;
+}
+
+function arr(items: Schema): Schema {
+  return { type: 'array', items };
+}
+
+function oneOf(...schemas: Schema[]): Schema {
+  return { oneOf: schemas };
+}
+
+// ─── Shared Schemas (from @agua/contracts) ──────────────────────
+
+const SHARED_SCHEMAS: Record<string, Schema> = {
+  DireccionEntrega: obj({
+    calle: str('Calle'),
+    numero: str('Número'),
+    pisoDepto: str('Piso / Depto'),
+    referencia: str('Referencia'),
+    barrio: str('Barrio (texto libre, no es ID)'),
+    ciudad: str('Ciudad'),
+    provincia: str('Provincia'),
+    codigoPostal: str('Código postal'),
+    latitude: { type: 'number', description: 'Latitud' },
+    longitude: { type: 'number', description: 'Longitud' },
+  }),
+
+  PaginationRequest: obj({
+    page: { type: 'integer', description: 'Número de página' },
+    limit: { type: 'integer', description: 'Items por página' },
+  }),
+
+  PaginationResponse: obj({
+    page: { type: 'integer' },
+    limit: { type: 'integer' },
+    total: { type: 'integer' },
+    totalPages: { type: 'integer' },
+  }, ['page', 'limit', 'total', 'totalPages']),
+
+  PaginatedResponse: obj({
+    data: { type: 'array', items: {} },
+    pagination: ref('#/components/schemas/PaginationResponse'),
+  }, ['data', 'pagination']),
+
+  ErrorResponse: obj({
+    statusCode: { type: 'integer' },
+    message: str(),
+    error: str('Error type'),
+    details: { description: 'Detalles adicionales' },
+  }, ['statusCode', 'message']),
+
+  LoginRequest: obj({
+    email: str('Email del usuario', 'vendedor@email.com'),
+    password: str('Contraseña', '********'),
+  }, ['email', 'password']),
+
+  LoginResponse: obj({
+    token: str('JWT access token'),
+    refreshToken: str('JWT refresh token'),
+    user: ref('#/components/schemas/UserInfo'),
+  }, ['token', 'refreshToken', 'user']),
+
+  UserInfo: obj({
+    id: str('User ID (UUID)'),
+    email: str('Email'),
+    role: str('Rol: super_admin | vendedor | cliente'),
+    nombre: str('Nombre'),
+    apellido: str('Apellido'),
+  }, ['id', 'email', 'role']),
+
+  RegisterRequest: obj({
+    email: str('Email', 'vendedor@email.com'),
+    password: str('Contraseña', '********'),
+    nombre: str('Nombre completo'),
+    telefono: str('Teléfono'),
+    ciudad: str('Ciudad'),
+  }, ['email', 'password', 'nombre', 'telefono']),
+
+  RegisterResponse: obj({
+    status: str('Siempre "pendiente"', 'pendiente'),
+    vendedorId: str('ID del vendedor creado'),
+  }, ['status', 'vendedorId']),
+
+  RefreshTokenRequest: obj({
+    refreshToken: str('Refresh token'),
+  }, ['refreshToken']),
+
+  RefreshTokenResponse: obj({
+    token: str('Nuevo access token'),
+  }, ['token']),
+
+  ValidateTokenRequest: obj({
+    token: str('JWT token a validar'),
+  }, ['token']),
+
+  ValidateTokenResponse: obj({
+    valid: { type: 'boolean' },
+    user: oneOf(ref('#/components/schemas/UserInfo'), { type: 'null' }),
+  }, ['valid', 'user']),
+
+  LogoutResponse: obj({
+    message: str('Mensaje de confirmación'),
+  }, ['message']),
+
+  UserProfile: obj({
+    id: str('User ID'),
+    email: str('Email'),
+    nombre: str('Nombre'),
+    apellido: str('Apellido'),
+    role: str('Rol'),
+    telefono: str('Teléfono'),
+    isActive: { type: 'boolean' },
+    profile: oneOf(ref('#/components/schemas/VendedorProfile'), ref('#/components/schemas/ClienteProfile')),
+  }, ['id', 'email', 'role', 'isActive']),
+
+  VendedorProfile: obj({
+    nombre: str(),
+    apellido: str(),
+    empresa: str('Nombre de empresa'),
+    logo: str('URL del logo'),
+    estado: str('Estado: pendiente | activo | inactivo | bloqueado'),
+    qrCode: str('Código QR'),
+    linkPublico: str('Link público'),
+    ciudadDefault: str('Ciudad por defecto'),
+    zonaEntrega: str('Zona de entrega'),
+  }),
+
+  ClienteProfile: obj({
+    nombre: str(),
+    apellido: str(),
+    telefono: str(),
+    dni: str('DNI'),
+    tipoFactura: str('Tipo factura: A | B | C'),
+    direccionFacturacion: str('Dirección de facturación'),
+    direccionEntrega: ref('#/components/schemas/DireccionEntrega'),
+  }),
+
+  UpdateProfileRequest: obj({
+    nombre: str(),
+    apellido: str(),
+    telefono: str(),
+  }),
+
+  VendedorListItem: obj({
+    id: str('Vendedor ID'),
+    nombre: str(),
+    apellido: str(),
+    empresa: str(),
+    email: str(),
+    telefono: str(),
+    ciudad: str(),
+    estado: str('Estado del vendedor'),
+    createdAt: str('ISO 8601'),
+  }, ['id', 'nombre', 'email', 'estado', 'createdAt']),
+
+  UpdateVendedorRequest: obj({
+    nombre: str(),
+    apellido: str(),
+    empresa: str(),
+    telefono: str(),
+    ciudad: str(),
+    logo: str('URL del logo'),
+  }),
+
+  ChangeEstadoRequest: obj({
+    estado: str('Nuevo estado: activo | inactivo | bloqueado'),
+  }, ['estado']),
+
+  SuperAdminProfile: obj({
+    id: str(),
+    email: str(),
+    nombre: str(),
+    apellido: str(),
+    telefono: str(),
+  }, ['id', 'email']),
+
+  UpdateSuperAdminRequest: obj({
+    nombre: str(),
+    apellido: str(),
+    telefono: str(),
+  }),
+
+  ClienteListItem: obj({
+    id: str('Cliente ID'),
+    nombre: str(),
+    apellido: str(),
+    email: str(),
+    telefono: str(),
+    tipoFactura: str('Tipo factura'),
+    vendedorAsignado: str('Nombre del vendedor asignado'),
+    createdAt: str('ISO 8601'),
+  }, ['id', 'nombre', 'email', 'createdAt']),
+
+  UpdateClienteRequest: obj({
+    nombre: str(),
+    apellido: str(),
+    telefono: str(),
+    tipoFactura: str('A | B | C'),
+  }),
+
+  ReasignarVendedorRequest: obj({
+    vendedorId: str('ID del nuevo vendedor'),
+  }, ['vendedorId']),
+
+  UpdateClienteVendedorRequest: obj({
+    nombre: str(),
+    apellido: str(),
+    telefono: str(),
+    direccionEntrega: ref('#/components/schemas/DireccionEntrega'),
+  }),
+
+  QRCodeItem: obj({
+    id: str(),
+    codigo: str('Código QR único'),
+    activo: { type: 'boolean' },
+    expiresAt: str('ISO 8601'),
+    createdAt: str('ISO 8601'),
+  }, ['id', 'codigo', 'activo', 'expiresAt', 'createdAt']),
+
+  CreateQRResponse: obj({
+    qrCode: str('Imagen QR en Base64'),
+    url: str('URL pública'),
+    expiresAt: str('ISO 8601'),
+  }, ['qrCode', 'url', 'expiresAt']),
+
+  LinkInvitacionItem: obj({
+    id: str(),
+    token: str('Token único'),
+    activo: { type: 'boolean' },
+    expiresAt: str('ISO 8601'),
+    createdAt: str('ISO 8601'),
+  }, ['id', 'token', 'activo', 'expiresAt', 'createdAt']),
+
+  CreateLinkResponse: obj({
+    linkUrl: str('URL pública'),
+    token: str('Token'),
+    expiresAt: str('ISO 8601'),
+  }, ['linkUrl', 'token', 'expiresAt']),
+
+  AuditLogItem: obj({
+    id: str(),
+    action: str('Acción realizada'),
+    userId: str(),
+    email: str(),
+    metadata: { type: 'object', description: 'Datos adicionales' },
+    createdAt: str('ISO 8601'),
+  }, ['id', 'action', 'createdAt']),
+
+  SuperAdminDashboard: obj({
+    totalVendedores: { type: 'integer' },
+    pendientes: { type: 'integer' },
+    activos: { type: 'integer' },
+    totalClientes: { type: 'integer' },
+    ultimosRegistros: arr(ref('#/components/schemas/VendedorListItem')),
+  }, ['totalVendedores', 'pendientes', 'activos', 'totalClientes']),
+};
+
+// ─── Action → HTTP method mapping ──────────────────────────────
+
+type HttpMethod = 'get' | 'post' | 'patch' | 'delete';
+
+function inferMethod(action: string, actionName: string): HttpMethod {
+  // Explicit method from action registry
+  if (actionName.startsWith('create') || actionName.startsWith('register')) return 'post';
+  if (actionName.startsWith('login') || actionName.startsWith('refresh') || actionName.startsWith('validate')) return 'post';
+  if (actionName.startsWith('update') || actionName.startsWith('change') || actionName.startsWith('deactivate') || actionName.startsWith('reassign')) return 'patch';
+  return 'get';
+}
+
+// ─── Action documentation metadata ─────────────────────────────
+
+interface ActionDoc {
+  summary: string;
+  description?: string;
+  method: HttpMethod;
+  pathParams?: string[];
+  queryParams?: string[];
+  bodySchema?: string;
+  responseSchema: string;
+  isArray?: boolean;
+  paginated?: boolean;
+  roles?: string[];
+}
+
+const ACTIONS_DOC: Record<string, ActionDoc> = {
+  'auth.login': { summary: 'Iniciar sesión', method: 'post', bodySchema: 'LoginRequest', responseSchema: 'LoginResponse' },
+  'auth.register': { summary: 'Registrar vendedor', method: 'post', bodySchema: 'RegisterRequest', responseSchema: 'RegisterResponse' },
+  'auth.refresh': { summary: 'Refrescar token', method: 'post', bodySchema: 'RefreshTokenRequest', responseSchema: 'RefreshTokenResponse' },
+  'auth.validate': { summary: 'Validar token', method: 'post', bodySchema: 'ValidateTokenRequest', responseSchema: 'ValidateTokenResponse' },
+  'auth.logout': { summary: 'Cerrar sesión', description: 'Invalida el refresh token del usuario autenticado', method: 'post', responseSchema: 'LogoutResponse', roles: ['auth'] },
+
+  'users.profile': { summary: 'Obtener perfil propio', method: 'get', responseSchema: 'UserProfile' },
+  'users.profile_update': { summary: 'Actualizar perfil propio', method: 'patch', bodySchema: 'UpdateProfileRequest', responseSchema: 'UserProfile' },
+
+  'vendedores.list': { summary: 'Listar vendedores (admin)', method: 'get', queryParams: ['page', 'limit', 'search', 'estado'], responseSchema: 'VendedorListItem', isArray: true, paginated: true, roles: ['super_admin'] },
+  'vendedores.get_by_id': { summary: 'Obtener vendedor por ID', method: 'get', pathParams: ['id'], responseSchema: 'VendedorListItem', roles: ['super_admin'] },
+  'vendedores.update': { summary: 'Actualizar vendedor', method: 'patch', pathParams: ['id'], bodySchema: 'UpdateVendedorRequest', responseSchema: 'VendedorListItem', roles: ['super_admin'] },
+  'vendedores.change_estado': { summary: 'Cambiar estado de vendedor', method: 'patch', pathParams: ['id'], bodySchema: 'ChangeEstadoRequest', responseSchema: 'VendedorListItem', roles: ['super_admin'] },
+  'vendedores.profile': { summary: 'Obtener mi perfil (vendedor)', method: 'get', responseSchema: 'VendedorProfile', roles: ['vendedor'] },
+  'vendedores.profile_update': { summary: 'Actualizar mi perfil (vendedor)', method: 'patch', bodySchema: 'UpdateProfileRequest', responseSchema: 'VendedorProfile', roles: ['vendedor'] },
+
+  'super_admin.dashboard': { summary: 'Dashboard del super admin', method: 'get', responseSchema: 'SuperAdminDashboard', roles: ['super_admin'] },
+  'super_admin.profile': { summary: 'Obtener perfil del super admin', method: 'get', responseSchema: 'SuperAdminProfile', roles: ['super_admin'] },
+  'super_admin.profile_update': { summary: 'Actualizar perfil del super admin', method: 'patch', bodySchema: 'UpdateSuperAdminRequest', responseSchema: 'SuperAdminProfile', roles: ['super_admin'] },
+  'super_admin.audit_log': { summary: 'Obtener logs de auditoría', method: 'get', queryParams: ['page', 'limit'], responseSchema: 'AuditLogItem', isArray: true, paginated: true, roles: ['super_admin'] },
+  'super_admin.qr_codes': { summary: 'Listar QR codes de un vendedor', method: 'get', queryParams: ['vendedorId', 'page', 'limit'], responseSchema: 'QRCodeItem', isArray: true, paginated: true, roles: ['super_admin'] },
+  'super_admin.link_invitacion': { summary: 'Listar links de invitación de un vendedor', method: 'get', queryParams: ['vendedorId', 'page', 'limit'], responseSchema: 'LinkInvitacionItem', isArray: true, paginated: true, roles: ['super_admin'] },
+  'super_admin.vendedores': { summary: 'Listar vendedores (admin)', description: 'Alias de vendedores.list', method: 'get', queryParams: ['page', 'limit', 'search', 'estado'], responseSchema: 'VendedorListItem', isArray: true, paginated: true, roles: ['super_admin'] },
+
+  'clientes.list': { summary: 'Listar clientes (admin)', method: 'get', queryParams: ['page', 'limit', 'search'], responseSchema: 'ClienteListItem', isArray: true, paginated: true, roles: ['super_admin'] },
+  'clientes.get_by_id': { summary: 'Obtener cliente por ID', method: 'get', pathParams: ['id'], responseSchema: 'ClienteListItem', roles: ['super_admin'] },
+  'clientes.update': { summary: 'Actualizar cliente', method: 'patch', pathParams: ['id'], bodySchema: 'UpdateClienteRequest', responseSchema: 'ClienteListItem', roles: ['super_admin'] },
+  'clientes.reassign': { summary: 'Reasignar cliente a otro vendedor', method: 'patch', pathParams: ['id'], bodySchema: 'ReasignarVendedorRequest', responseSchema: 'ClienteListItem', roles: ['super_admin'] },
+  'clientes.cartera': { summary: 'Obtener mis clientes (vendedor)', method: 'get', queryParams: ['page', 'limit', 'search'], responseSchema: 'ClienteListItem', isArray: true, paginated: true, roles: ['vendedor'] },
+  'clientes.own_get_by_id': { summary: 'Obtener cliente propio por ID', method: 'get', pathParams: ['id'], responseSchema: 'ClienteListItem', roles: ['vendedor'] },
+  'clientes.own_update': { summary: 'Actualizar cliente propio', method: 'patch', pathParams: ['id'], bodySchema: 'UpdateClienteVendedorRequest', responseSchema: 'ClienteListItem', roles: ['vendedor'] },
+
+  'qr.vendor_list': { summary: 'Listar mis QR codes (vendedor)', method: 'get', queryParams: ['page', 'limit'], responseSchema: 'QRCodeItem', isArray: true, paginated: true, roles: ['vendedor'] },
+  'qr.vendor_create': { summary: 'Crear QR code (vendedor)', method: 'post', responseSchema: 'CreateQRResponse', roles: ['vendedor'] },
+  'qr.admin_deactivate': { summary: 'Desactivar QR code (admin)', method: 'patch', pathParams: ['id'], responseSchema: 'QRCodeItem', roles: ['super_admin'] },
+  'qr.vendor_deactivate': { summary: 'Desactivar QR code propio', method: 'patch', pathParams: ['id'], responseSchema: 'QRCodeItem', roles: ['vendedor'] },
+
+  'link_invitacion.vendor_list': { summary: 'Listar mis links de invitación', method: 'get', queryParams: ['page', 'limit'], responseSchema: 'LinkInvitacionItem', isArray: true, paginated: true, roles: ['vendedor'] },
+  'link_invitacion.vendor_create': { summary: 'Crear link de invitación', method: 'post', responseSchema: 'CreateLinkResponse', roles: ['vendedor'] },
+  'link_invitacion.admin_deactivate': { summary: 'Desactivar link (admin)', method: 'patch', pathParams: ['id'], responseSchema: 'LinkInvitacionItem', roles: ['super_admin'] },
+  'link_invitacion.vendor_deactivate': { summary: 'Desactivar link propio', method: 'patch', pathParams: ['id'], responseSchema: 'LinkInvitacionItem', roles: ['vendedor'] },
+};
+
+// ─── Service Family Display Names ───────────────────────────────
+
+const SERVICE_NAMES: Record<string, string> = {
+  auth: 'Autenticación',
+  users: 'Usuarios / Perfil',
+  vendedores: 'Vendedores (admin)',
+  'super-admin': 'Super Admin',
+  clientes: 'Clientes',
+  qr: 'Códigos QR',
+  'link-invitacion': 'Links de Invitación',
+};
+
+// ─── OpenAPI Generator ──────────────────────────────────────────
+
+@Injectable()
+export class OpenApiSpecService {
+  generateSpec(): Record<string, unknown> {
+    const paths: Record<string, Record<string, unknown>> = {};
+    const tags: Set<string> = new Set();
+
+    for (const [service, family] of Object.entries(ACTION_REGISTRY)) {
+      if (family.status === 'unavailable') continue;
+
+      const tagName = SERVICE_NAMES[service] ?? service;
+      tags.add(tagName);
+
+      for (const [actionName, mapping] of Object.entries(family.actions)) {
+        const tcpPattern = mapping.tcpPattern;
+        const doc = ACTIONS_DOC[tcpPattern];
+        if (!doc) continue;
+
+        const path = `/api/v1/${service}/${actionName}`;
+        const method = doc.method;
+        const operation = this.buildOperation(tcpPattern, mapping, doc, tagName);
+
+        if (!paths[path]) paths[path] = {};
+        paths[path][method] = operation;
+      }
+    }
+
+    const spec: Record<string, unknown> = {
+      openapi: '3.0.3',
+      info: {
+        title: 'AguaFress API Gateway',
+        description: `API Gateway para AguaFress — plataforma de pedidos y gestión para distribuidores de agua y soda.
+        
+**Autenticación**: Los endpoints protegidos requieren un JWT en el header \`Authorization: Bearer <token>\`.
+Los roles se especifican por endpoint: \`super_admin\`, \`vendedor\`.
+
+**IDs en parámetros de ruta**: Se pasan como query params. Ej: \`GET /api/v1/vendedores/get-by-id?id=uuid\``,
+        version: '1.0.0',
+      },
+      servers: [
+        { url: 'http://localhost:3000', description: 'Desarrollo local' },
+      ],
+      paths,
+      components: {
+        schemas: SHARED_SCHEMAS,
+        securitySchemes: {
+          bearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT',
+          },
+        },
+      },
+      tags: Array.from(tags).map(name => ({ name })),
+    };
+
+    return spec;
+  }
+
+  private buildOperation(
+    tcpPattern: string,
+    mapping: ActionMapping,
+    doc: ActionDoc,
+    tagName: string,
+  ): Record<string, unknown> {
+    const parameters: Record<string, unknown>[] = [];
+    const security: Record<string, unknown>[] = [];
+
+    // Auth
+    if (mapping.authRequired) {
+      security.push({ bearerAuth: [] });
+    }
+
+    // Path params as query params
+    for (const param of doc.pathParams ?? []) {
+      parameters.push({
+        name: param,
+        in: 'query',
+        required: true,
+        schema: { type: 'string', format: 'uuid' },
+        description: `ID del recurso`,
+      });
+    }
+
+    // Query params
+    for (const param of doc.queryParams ?? []) {
+      const isPagination = ['page', 'limit'].includes(param);
+      parameters.push({
+        name: param,
+        in: 'query',
+        required: param === 'vendedorId',
+        schema: isPagination ? { type: 'integer' } : { type: 'string' },
+        description: isPagination
+          ? param === 'page' ? 'Número de página' : 'Items por página'
+          : `Filtro por ${param}`,
+      });
+    }
+
+    // Roles description
+    const roles = doc.roles ?? mapping.roles;
+    const roleDesc = roles?.length
+      ? `**Roles requeridos**: ${roles.join(', ')}`
+      : 'Requiere autenticación';
+
+    const operation: Record<string, unknown> = {
+      tags: [tagName],
+      summary: doc.summary,
+      description: doc.description ?? doc.summary,
+      security,
+      parameters: parameters.length > 0 ? parameters : undefined,
+      responses: {
+        '200': this.buildResponse(200, doc),
+        '401': { description: 'No autenticado — falta JWT o es inválido' },
+        '403': { description: `No autorizado — rol insuficiente. ${roleDesc}` },
+        '404': { description: 'Recurso no encontrado' },
+      },
+    };
+
+    // Request body
+    if (doc.bodySchema && SHARED_SCHEMAS[doc.bodySchema]) {
+      operation.requestBody = {
+        required: true,
+        content: {
+          'application/json': {
+            schema: ref(`#/components/schemas/${doc.bodySchema}`),
+          },
+        },
+      };
+    }
+
+    return operation;
+  }
+
+  private buildResponse(status: number, doc: ActionDoc): Record<string, unknown> {
+    if (doc.paginated) {
+      return {
+        description: 'Operación exitosa (paginada)',
+        content: {
+          'application/json': {
+            schema: obj({
+              data: {
+                type: 'array',
+                items: ref(`#/components/schemas/${doc.responseSchema}`),
+              },
+              pagination: ref('#/components/schemas/PaginationResponse'),
+            }),
+          },
+        },
+      };
+    }
+
+    if (doc.isArray) {
+      return {
+        description: 'Operación exitosa',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'array',
+              items: ref(`#/components/schemas/${doc.responseSchema}`),
+            },
+          },
+        },
+      };
+    }
+
+    if (doc.responseSchema && SHARED_SCHEMAS[doc.responseSchema]) {
+      return {
+        description: 'Operación exitosa',
+        content: {
+          'application/json': {
+            schema: ref(`#/components/schemas/${doc.responseSchema}`),
+          },
+        },
+      };
+    }
+
+    return { description: 'Operación exitosa' };
+  }
+}

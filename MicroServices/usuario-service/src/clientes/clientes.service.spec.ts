@@ -496,11 +496,7 @@ describe('ClientesService', () => {
       expect(prisma.cliente.findMany).toHaveBeenCalledWith({
         skip: 0,
         take: 20,
-        where: {
-          cartera: {
-            some: { vendedor_id: 'user-vendedor-1', activo: true },
-          },
-        },
+        where: { vendedor_id: 'user-vendedor-1' },
         orderBy: { created_at: 'desc' },
         include: {
           vendedor: { select: { id: true, nombre: true, apellido: true, empresa: true } },
@@ -508,11 +504,7 @@ describe('ClientesService', () => {
         },
       });
       expect(prisma.cliente.count).toHaveBeenCalledWith({
-        where: {
-          cartera: {
-            some: { vendedor_id: 'user-vendedor-1', activo: true },
-          },
-        },
+        where: { vendedor_id: 'user-vendedor-1' },
       });
       expect(result.data).toHaveLength(1);
       expect(result.pagination.total).toBe(1);
@@ -527,9 +519,7 @@ describe('ClientesService', () => {
       expect(prisma.cliente.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {
-            cartera: {
-              some: { vendedor_id: 'user-vendedor-1', activo: true },
-            },
+            vendedor_id: 'user-vendedor-1',
             OR: [
               { nombre: { contains: 'Pérez', mode: 'insensitive' } },
               { apellido: { contains: 'Pérez', mode: 'insensitive' } },
@@ -594,9 +584,7 @@ describe('ClientesService', () => {
       expect(prisma.cliente.findFirst).toHaveBeenCalledWith({
         where: {
           id: 'cliente-1',
-          cartera: {
-            some: { vendedor_id: 'user-vendedor-1', activo: true },
-          },
+          vendedor_id: 'user-vendedor-1',
         },
         include: {
           vendedor: { select: { id: true, nombre: true, apellido: true, empresa: true } },
@@ -648,9 +636,7 @@ describe('ClientesService', () => {
       expect(prisma.cliente.findFirst).toHaveBeenCalledWith({
         where: {
           id: 'cliente-1',
-          cartera: {
-            some: { vendedor_id: 'user-vendedor-1', activo: true },
-          },
+          vendedor_id: 'user-vendedor-1',
         },
         select: { id: true },
       });
