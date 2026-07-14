@@ -195,8 +195,6 @@
 <div class="file-tree">
   <span class="dir">prisma/schema.prisma</span><br>
   │<br>
-  ├── <span class="hl">enum DeliveryEstado</span>  <span style="color:var(--muted)">— pendiente, en_camino, entregada</span><br>
-  │<br>
   ├── <span class="dir">model Categoria</span><br>
   │   ├── id              <span style="color:var(--muted)">UUID</span><br>
   │   ├── nombre          <span style="color:var(--muted)">String</span><br>
@@ -290,7 +288,7 @@
     <td><span class="severity high"></span></td>
     <td><strong>Schema desunificado</strong></td>
     <td>
-      <p><strong>Qué pasa:</strong> Tu schema Prisma está en <code>products-service/prisma/schema.prisma</code>, pero el proyecto entero usa un solo schema compartido en <code>usuario-service/prisma/schema.prisma</code>. Ahí viven TODAS las tablas del sistema: USER, VENDEDOR, CLIENTE, CART, ORDER, DELIVERY, etc.</p>
+      <p><strong>Qué pasa:</strong> Tu schema Prisma está en <code>products-service/prisma/schema.prisma</code>, pero el proyecto entero usa un solo schema compartido en <code>usuario-service/prisma/schema.prisma</code>. Ahí viven TODAS las tablas del sistema: AUTH_USER, VENDEDOR, CLIENTE, SUPER_ADMIN, QR_CODE, etc.</p>
       <p><strong>Por qué está mal:</strong> Si cada MS tiene su propio schema, Prisma genera migraciones independientes. Terminamos con bases de datos inconsistentes — un MS migra y el otro no, las relaciones entre tablas no existen, los tipos chocan. Ya pasó antes y tuvimos que unificar todo a la fuerza.</p>
       <p><strong>Cómo arreglarlo:</strong> Mover los 3 modelos (<code>Categoria</code>, <code>Marca</code>, <code>Producto</code>) al schema central de <code>usuario-service/prisma/schema.prisma</code>. Tu <code>prisma/</code> local puede quedar vacío o borrarse (el cliente se genera desde el schema unificado igual).</p>
     </td>
@@ -335,11 +333,11 @@
     <td><span class="severity high"></span></td>
     <td><strong>Naming @@map inconsistente</strong></td>
     <td>
-      <p><strong>Qué pasa:</strong> Tus tablas se llaman <code>productos</code>, <code>categorias</code>, <code>marcas</code> en la DB (minúscula, español). El proyecto usa <code>USER</code>, <code>VENDEDOR</code>, <code>CLIENTE</code>, <code>DELIVERY</code> (MAYÚSCULA, inglés).</p>
-      <p><strong>Por qué está mal:</strong> Inconsistencia en la base de datos. Cuando alguien hace queries directo a Postgres, tiene que acordarse qué tablas están en inglés y cuáles en español. Es un desorden que después nadie quiere limpiar.</p>
-      <p><strong>Cómo arreglarlo:</strong> Cambiar los <code>@@map</code> a:<br>
-      <code>@@map("CATEGORY")</code>, <code>@@map("BRAND")</code>, <code>@@map("PRODUCT")</code><br>
-      O seguir la convención que tenga el equipo (preguntar).</p>
+      <p><strong>Qué pasa:</strong> Tus tablas se llaman <code>productos</code>, <code>categorias</code>, <code>marcas</code> en la DB (minúscula). El proyecto usa SIEMPRE MAYÚSCULA con guión bajo: <code>AUTH_USER</code>, <code>VENDEDOR</code>, <code>CLIENTE</code>, <code>SUPER_ADMIN</code>, <code>QR_CODE</code>.</p>
+      <p><strong>Por qué está mal:</strong> Cuando alguien corre queries directo a Postgres, tiene que adivinar el casing. Es un desorden que después nadie quiere limpiar.</p>
+      <p><strong>Cómo arreglarlo:</strong> Cambiar los <code>@@map</code> a UPPERCASE:<br>
+      <code>@@map("CATEGORIA")</code>, <code>@@map("MARCA")</code>, <code>@@map("PRODUCTO")</code><br>
+      El idioma (español/inglés) no está definido — el proyecto mezcla. Lo importante es el UPPERCASE.</p>
     </td>
   </tr>
   <tr>
@@ -449,7 +447,7 @@
     <li><strong>Schema unificado</strong> — tus tablas tienen que vivir en el mismo schema.prisma que el resto del sistema. Si no, las migraciones se descontrolan y termina siendo un quilombo.</li>
     <li><strong>Gateway integration</strong> — action registry + ClientProxy + docker-compose. Sin esto tu MS existe pero nadie puede hablarle. El gateway es la única puerta de entrada.</li>
     <li><strong>Tests</strong> — mínimo 4 specs cubriendo service CRUD, ownership, TCP handlers, y exception filter. No podemos mergear sin cobertura.</li>
-    <li><strong>@@map a UPPERCASE</strong> — las tablas en DB tienen que seguir la convención del proyecto. No mezclar inglés/español, mayúscula/minúscula.</li>
+    <li><strong>@@map a UPPERCASE</strong> — las tablas en DB tienen que estar en mayúscula (<code>CATEGORIA</code>, <code>MARCA</code>, <code>PRODUCTO</code>). El idioma no importa, el proyecto mezcla.</li>
     <li><strong>Sacar Swagger del HTTP directo</strong> — no tiene sentido tenerlo si el servicio va a ser TCP-only. Nosotros ya pasamos por eso y lo limpiamos. Mejor hacerlo ahora.</li>
     <li><strong>vendedorId</strong> — revisar si el sub del JWT es realmente el vendedorId o necesitás el VendedorResolver de usuario-service. Esto puede romper todo si está mal.</li>
     <li><strong>Interceptores</strong> — reemplazar tus implementaciones por las del equipo para mantener consistencia en logs, timeouts y formato de respuesta.</li>
