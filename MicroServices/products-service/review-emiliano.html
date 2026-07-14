@@ -122,7 +122,7 @@
       <div class="card"><small>HTTP</small><strong><span class="badge red">Tiene HTTP + Swagger</span></strong></div>
       <div class="card"><small>Gateway</small><strong><span class="badge red">No integrado</span></strong></div>
       <div class="card"><small>Tests</small><strong><span class="badge red">Falla el único test</span></strong></div>
-      <div class="card"><small>DB Schema</small><strong><span class="badge orange">Modelo cercano, schema mal ubicado</span></strong></div>
+      <div class="card"><small>DB Schema</small><strong><span class="badge orange">Schema propio correcto, faltan ajustes</span></strong></div>
     </div>
 
     <div class="callout bad">
@@ -222,16 +222,16 @@
       <tr><th>Entidad/campo</th><th>Documentación</th><th>Implementación</th><th>Resultado</th></tr>
       <tr><td>PRODUCTO</td><td>id, vendedor_id, nombre, descripcion, marca_id, categoria_id, precio_sin_iva, precio_final, stock, imagen, activo, mostrar_precio, timestamps.</td><td>Los campos principales están.</td><td><span class="badge green">Cerca</span></td></tr>
       <tr><td>UUIDs</td><td>PK/FK UUID reales.</td><td>Usa <code>String</code> sin <code>@db.Uuid</code> en id/vendedorId/categoriaId/marcaId.</td><td><span class="badge red">Corregir</span></td></tr>
-      <tr><td>FK vendedor_id</td><td>Debe apuntar a VENDEDOR.</td><td>No hay relación Prisma a <code>Vendedor</code> porque el schema está separado.</td><td><span class="badge red">Corregir</span></td></tr>
+      <tr><td>vendedor_id</td><td>Referencia lógica al vendedor dueño del catálogo.</td><td>No debe tener FK Prisma directa a <code>Vendedor</code> si products-service tiene DB propia. Debe ser UUID escalar + validación por TCP/auth.</td><td><span class="badge orange">Alinear ownership</span></td></tr>
       <tr><td>VARCHAR/TEXT</td><td>nombre VARCHAR(255), imagen VARCHAR(500), descripcion TEXT.</td><td>No usa <code>@db.VarChar</code>/<code>@db.Text</code>.</td><td><span class="badge orange">Alinear</span></td></tr>
       <tr><td>MARCA</td><td>id, vendedor_id, nombre, created_at.</td><td>Incluye esos campos + updated_at.</td><td><span class="badge green">OK, extra aceptable</span></td></tr>
       <tr><td>CATEGORIA</td><td>id, vendedor_id, nombre, orden, created_at.</td><td>Incluye esos campos + updated_at.</td><td><span class="badge green">OK, extra aceptable</span></td></tr>
       <tr><td>Table names</td><td>Convención actual: <code>@@map</code> en UPPERCASE con guión bajo.</td><td><code>@@map("productos")</code>, <code>@@map("categorias")</code>, <code>@@map("marcas")</code>.</td><td><span class="badge orange">Cambiar casing</span></td></tr>
-      <tr><td>Schema location</td><td>Schema unificado en usuario-service durante MVP.</td><td>Schema propio dentro de products-service.</td><td><span class="badge red">Bloquea</span></td></tr>
+      <tr><td>Schema location</td><td>Arquitectura vigente: cada MS tiene su propio Docker, DB y schema Prisma.</td><td>Schema propio dentro de products-service.</td><td><span class="badge green">Correcto</span></td></tr>
     </table>
 
     <div class="callout">
-      <strong>Recomendación concreta para Prisma:</strong> mover los modelos al schema central y mapear tablas como <code>PRODUCTO</code>, <code>MARCA</code>, <code>CATEGORIA</code> — o definir otra convención, pero siempre UPPERCASE. El proyecto mezcla idioma, así que el idioma no es la regla: la regla real es el casing.
+      <strong>Recomendación concreta para Prisma:</strong> mantener schema propio en <code>products-service</code> porque cada MS tiene su propia DB. Ajustar UUIDs con <code>@db.Uuid</code>, evitar FKs Prisma cruzadas a otros MS, validar ownership por TCP/auth y mapear tablas como <code>PRODUCTO</code>, <code>MARCA</code>, <code>CATEGORIA</code>. El proyecto mezcla idioma, así que el idioma no es la regla: la regla real es el casing.
     </div>
   </section>
 
@@ -283,7 +283,7 @@
     <ol>
       <li><strong>Actualizar la rama contra <code>origin/develop</code></strong> y resolver conflictos sin reintroducir HTTP en usuario-service.</li>
       <li><strong>Convertir products-service a TCP-only</strong>: sacar <code>SwaggerModule</code>, <code>app.listen()</code> y HTTP business/docs. Si se mantiene health, que sea decisión explícita e interna.</li>
-      <li><strong>Mover modelos Prisma al schema unificado</strong>: aplicar <code>@db.Uuid</code>, relaciones a VENDEDOR, <code>@db.VarChar</code>/<code>@db.Text</code>, y <code>@@map</code> UPPERCASE.</li>
+      <li><strong>Mantener schema Prisma propio del MS</strong>: products-service debe tener su propio Docker, DB y <code>schema.prisma</code>. Aplicar <code>@db.Uuid</code>, <code>@db.VarChar</code>/<code>@db.Text</code>, <code>@@map</code> UPPERCASE y referencias lógicas por ID, sin FKs Prisma cruzadas a usuario-service.</li>
       <li><strong>Integrar con gateway</strong>: action registry, ClientProxy TCP, env vars y docker-compose.</li>
       <li><strong>Resolver vendedorId correctamente</strong>: confirmar si JWT <code>sub</code> es AUTH_USER.id o VENDEDOR.id. Si es AUTH_USER.id, usar resolución contra usuario-service.</li>
       <li><strong>Arreglar Jest y agregar tests mínimos</strong>: ProductsService, CategoriesService, TCP controllers, PricingService.</li>
@@ -299,7 +299,7 @@
       <ul>
         <li>Actualizar tu rama con el <code>develop</code> actual porque quedó atrás del cierre de HTTP en usuario-service.</li>
         <li>Sacar HTTP/Swagger de products-service para que sea TCP-only como el resto de microservicios de dominio.</li>
-        <li>Mover el schema Prisma al schema unificado y ajustar tipos UUID/FK/casing de tablas.</li>
+        <li>Mantener el schema Prisma propio de products-service y ajustar UUIDs, referencias lógicas por ID, ownership y casing UPPERCASE. No mover tablas al schema de usuario-service.</li>
         <li>Agregar integración real con gateway: action registry + ClientProxy + docker-compose/envs.</li>
         <li>Confirmar bien el <code>vendedorId</code>: no asumamos que <code>JWT.sub</code> es el id de VENDEDOR sin verificar.</li>
         <li>Arreglar Jest y agregar tests; ahora el único test falla.</li>
