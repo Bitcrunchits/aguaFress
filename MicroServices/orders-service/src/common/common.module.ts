@@ -1,1 +1,4 @@
-// Common — Guards, decorators, pipes compartidos del servicio
+import { Module } from '@nestjs/common';
+
+@Module({})
+export class CommonModule {}

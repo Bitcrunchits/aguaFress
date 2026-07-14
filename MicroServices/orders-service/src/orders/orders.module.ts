@@ -1,1 +1,4 @@
-// Módulo orders — Pedidos, estados, cancelación
+import { Module } from '@nestjs/common';
+
+@Module({})
+export class OrdersModule {}
