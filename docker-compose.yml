@@ -76,6 +76,11 @@ services:
     container_name: agua-gateway
     ports:
       - "3000:3000"
+    # DEVELOPMENT ONLY:
+    # Reuses the root .env for local convenience while we iterate quickly.
+    # Before production, split gateway envs so it receives only gateway-owned
+    # config (PORT, JWT_SECRET, TCP hosts/ports, rate limits) and never domain
+    # DB credentials such as DATABASE_URL.
     env_file:
       - .env
     environment:
