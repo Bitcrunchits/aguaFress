@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Review — products-service (Emiliano)</title>
+  <style>
+    :root {
+      --bg: #0f0f1a;
+      --card: #1a1a2e;
+      --border: #2a2a4a;
+      --text: #e0e0f0;
+      --muted: #8888aa;
+      --green: #00e676;
+      --yellow: #ffd740;
+      --red: #ff5252;
+      --blue: #40c4ff;
+      --purple: #b388ff;
+      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.6;
+      padding: 2rem 1.5rem;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 2rem; margin-bottom: .25rem; color: #fff; }
+    h1 small { font-size: 1rem; color: var(--muted); font-weight: 400; }
+    .meta { color: var(--muted); font-size: .9rem; margin-bottom: 2rem; }
+    .meta span { margin-right: 1.5rem; }
+
+    h2 {
+      font-size: 1.3rem;
+      margin: 2rem 0 1rem;
+      padding-bottom: .4rem;
+      border-bottom: 1px solid var(--border);
+      color: #fff;
+    }
+    h3 { font-size: 1.1rem; margin: 1.2rem 0 .6rem; color: var(--blue); }
+
+    .chip {
+      display: inline-block;
+      padding: .15rem .7rem;
+      border-radius: 20px;
+      font-size: .75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .chip.green { background: #00e67622; color: var(--green); border: 1px solid #00e67644; }
+    .chip.yellow { background: #ffd74022; color: var(--yellow); border: 1px solid #ffd74044; }
+    .chip.red { background: #ff525222; color: var(--red); border: 1px solid #ff525244; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: .75rem;
+      margin: 1rem 0;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: .9rem 1rem;
+    }
+    .card .label { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+    .card .value { font-size: 1rem; font-weight: 600; margin-top: .2rem; }
+
+    .badge-list { list-style: none; }
+    .badge-list li {
+      padding: .5rem .8rem;
+      margin: .4rem 0;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: .9rem;
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: .8rem 0;
+      font-size: .85rem;
+    }
+    th, td {
+      padding: .5rem .7rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: .7rem; }
+    td:first-child { font-family: 'JetBrains Mono', monospace; font-size: .8rem; }
+
+    .severity { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: .4rem; }
+    .severity.high { background: var(--red); }
+    .severity.med  { background: var(--yellow); }
+    .severity.low  { background: var(--blue); }
+
+    .quote {
+      border-left: 3px solid var(--purple);
+      padding: .8rem 1rem;
+      margin: 1rem 0;
+      background: #1a1a2e88;
+      border-radius: 0 8px 8px 0;
+      font-style: italic;
+      color: #ccc;
+    }
+    .quote strong { color: #fff; font-style: normal; }
+
+    .section-toggle {
+      display: inline-block;
+      font-size: .75rem;
+      color: var(--muted);
+      margin-left: .5rem;
+    }
+
+    .file-tree {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .8rem;
+      line-height: 1.8;
+      background: #0a0a18;
+      padding: 1rem 1.2rem;
+      border-radius: 8px;
+      margin: .5rem 0;
+      border: 1px solid var(--border);
+    }
+    .file-tree .dir  { color: var(--blue); }
+    .file-tree .file { color: var(--text); }
+    .file-tree .hl   { color: var(--yellow); }
+
+    @media (max-width: 600px) {
+      body { padding: 1rem; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<h1>products-service <small>Review Técnico</small></h1>
+<div class="meta">
+  <span>👤 Emiliano</span>
+  <span>📂 <code>emiliano/products-service1</code></span>
+  <span>📅 14/07/2026</span>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <div class="label">Archivos</div>
+    <div class="value">26 .ts</div>
+  </div>
+  <div class="card">
+    <div class="label">Endpoints TCP</div>
+    <div class="value">8</div>
+  </div>
+  <div class="card">
+    <div class="label">Endpoints HTTP</div>
+    <div class="value">2 <span style="font-size:.7rem;color:var(--muted)">(health + swagger)</span></div>
+  </div>
+  <div class="card">
+    <div class="label">Tests</div>
+    <div class="value">1 spec <span class="chip yellow">insuficiente</span></div>
+  </div>
+  <div class="card">
+    <div class="label">Modelos DB</div>
+    <div class="value">3 <span style="font-size:.7rem;color:var(--muted)">(Producto, Categoria, Marca)</span></div>
+  </div>
+  <div class="card">
+    <div class="label">Estado General</div>
+    <div class="value"><span class="chip yellow">Bueno, faltan ajustes</span></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>📐 SOLID</h2>
+
+<div class="badge-list">
+  <li><span class="chip green">SRP</span> <strong>✅</strong> Cada clase tiene una responsabilidad clara: ProductsService, CategoriesService, PricingService, TcpPayloadAdapter, controllers separados por dominio.</li>
+  <li><span class="chip green">OCP</span> <strong>✅</strong> Usa interfaces de <code>@agua/contracts</code>. Los DTOs implementan las interfaces. Extensible sin modificar.</li>
+  <li><span class="chip green">LSP</span> <strong>✅</strong> PrismaService extiende PrismaClient correctamente. Tipos sustituibles.</li>
+  <li><span class="chip green">ISP</span> <strong>✅</strong> DTOs segregados por operación (CreateProductDto, UpdateProductDto, ListProductsDto, SearchProductDto, IdQueryDto).</li>
+  <li><span class="chip green">DIP</span> <strong>✅</strong> Depende de PrismaService, ConfigService, y las interfaces de contracts. No de implementaciones concretas.</li>
+</div>
+
+<div class="quote">
+  <strong>👏 Punto fuerte:</strong> Es el único MS además del nuestro que implementa TCP + TcpPayloadAdapter con autenticación por rol. Muy buena base.
+</div>
+
+<!-- ============================================================ -->
+<h2>🗄️ Modelo de Datos</h2>
+
+<div class="file-tree">
+  <span class="dir">prisma/schema.prisma</span><br>
+  │<br>
+  ├── <span class="hl">enum DeliveryEstado</span>  <span style="color:var(--muted)">— pendiente, en_camino, entregada</span><br>
+  │<br>
+  ├── <span class="dir">model Categoria</span><br>
+  │   ├── id              <span style="color:var(--muted)">UUID</span><br>
+  │   ├── nombre          <span style="color:var(--muted)">String</span><br>
+  │   ├── orden           <span style="color:var(--muted)">Int @default(0)</span><br>
+  │   ├── vendedorId      <span style="color:var(--muted)">String</span><br>
+  │   ├── productos       <span style="color:var(--muted)">Producto[]</span><br>
+  │   ├── <span class="hl">@@unique([vendedorId, nombre])</span><br>
+  │   └── <span class="hl">@@map("categorias")</span><br>
+  │<br>
+  ├── <span class="dir">model Marca</span><br>
+  │   ├── id              <span style="color:var(--muted)">UUID</span><br>
+  │   ├── nombre          <span style="color:var(--muted)">String</span><br>
+  │   ├── vendedorId      <span style="color:var(--muted)">String</span><br>
+  │   ├── productos       <span style="color:var(--muted)">Producto[]</span><br>
+  │   ├── <span class="hl">@@unique([vendedorId, nombre])</span><br>
+  │   └── <span class="hl">@@map("marcas")</span><br>
+  │<br>
+  └── <span class="dir">model Producto</span><br>
+      ├── id              <span style="color:var(--muted)">UUID</span><br>
+      ├── nombre          <span style="color:var(--muted)">String</span><br>
+      ├── descripcion     <span style="color:var(--muted)">String?</span><br>
+      ├── precioSinIva    <span style="color:var(--muted)">Decimal(10,2)  ← manda el frontend</span><br>
+      ├── precioFinal     <span style="color:var(--muted)">Decimal(10,2)  ← calcula server-side</span><br>
+      ├── imagen          <span style="color:var(--muted)">String?</span><br>
+      ├── stock           <span style="color:var(--muted)">Int @default(0)</span><br>
+      ├── activo          <span style="color:var(--muted)">Boolean @default(true)</span><br>
+      ├── mostrarPrecio   <span style="color:var(--muted)">Boolean @default(true)</span><br>
+      ├── vendedorId      <span style="color:var(--muted)">String</span><br>
+      ├── categoriaId     <span style="color:var(--muted)">String?  → Categoria</span><br>
+      ├── marcaId         <span style="color:var(--muted)">String?  → Marca</span><br>
+      ├── <span class="hl">@@index([vendedorId])</span><br>
+      ├── <span class="hl">@@index([categoriaId])</span><br>
+      ├── <span class="hl">@@index([marcaId])</span><br>
+      ├── <span class="hl">@@index([vendedorId, activo])</span><br>
+      └── <span class="hl">@@map("productos")</span>
+</div>
+
+<!-- ============================================================ -->
+<h2>🔌 Endpoints</h2>
+
+<h3>TCP (via gateway — @MessagePattern)</h3>
+
+<table>
+  <tr><th>Pattern</th><th>Método</th><th>Qué hace</th><th>Auth</th></tr>
+  <tr><td>products.list</td><td>list</td><td>Productos con filtros (vendedorId, categoria, disponibles, paginación)</td><td>VENDEDOR / público</td></tr>
+  <tr><td>products.get</td><td>get</td><td>Producto por ID</td><td>🟢 Público</td></tr>
+  <tr><td>products.search</td><td>search</td><td>Búsqueda por nombre (case-insensitive)</td><td>🟢 Público</td></tr>
+  <tr><td>products.create</td><td>create</td><td>Crear producto (vendedorId del JWT, no del body) ✅</td><td><span class="chip green">VENDEDOR</span></td></tr>
+  <tr><td>products.update</td><td>update</td><td>Actualizar producto + ownership check ✅</td><td><span class="chip green">VENDEDOR</span></td></tr>
+  <tr><td>products.delete</td><td>delete</td><td>Eliminar producto + ownership check ✅</td><td><span class="chip green">VENDEDOR</span></td></tr>
+  <tr><td>categories.list</td><td>list</td><td>Categorías por vendedor</td><td>🟢 Público</td></tr>
+  <tr><td>brands.list</td><td>list</td><td>Marcas por vendedor</td><td>🟢 Público</td></tr>
+</table>
+
+<h3>HTTP directo (puerto 3003)</h3>
+<table>
+  <tr><th>Ruta</th><th>Qué hace</th></tr>
+  <tr><td>GET /health</td><td>Healthcheck del servicio</td></tr>
+  <tr><td>GET /api/docs</td><td>Swagger UI (solo documenta health, no los TCP)</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>🔄 TCP + Gateway</h2>
+
+<div class="badge-list">
+  <li><span class="chip green">✅</span> <strong>Transporte TCP configurado</strong> — puerto 3013, <code>@MessagePattern</code> en controllers, <code>startAllMicroservices()</code></li>
+  <li><span class="chip green">✅</span> <strong>TcpPayloadAdapter</strong> — implementa <code>requireUser()</code>, <code>requireRole()</code>, validación con ValidationPipe. Mismo patrón que usuario-service.</li>
+  <li><span class="chip green">✅</span> <strong>vendedorId del JWT</strong> — los handlers de escritura usan el token, nunca el body. Correcto per regla de seguridad.</li>
+  <li><span class="chip green">✅</span> <strong>Ownership check</strong> — ProductsService. assertOwnership() en update/delete.</li>
+  <li><span class="chip red">❌</span> <strong>Faltan action registry entries</strong> — el gateway no tiene las 8 rutas de products-service. Sin eso, el gateway no sabe redirigir a este MS.</li>
+  <li><span class="chip red">❌</span> <strong>Falta ClientProxy en gateway</strong> — no está registrado el <code>ClientsModule</code> hacia products-service:3013.</li>
+  <li><span class="chip yellow">⚠️</span> <strong>Falta docker-compose entry</strong> — no hay service definido para products-service.</li>
+  <li><span class="chip yellow">⚠️</span> <strong>vendedorId = sub del JWT</strong> — asume que el <code>sub</code> es el vendedorId directo. En usuario-service hay un <code>VendedorResolver</code> que traduce authUserId → vendedor.id. Esto puede no matchear.</li>
+</div>
+
+<!-- ============================================================ -->
+<h2>⚠️ Swagger</h2>
+
+<div class="badge-list">
+  <li><span class="chip green">✅</span> <strong> Swagger solo en HTTP directo — seguro.</strong> Los TCP controllers usan <code>@Controller()</code> sin ruta HTTP, así que Swagger no intenta documentarlos. El crash que vimos antes era por <code>@ApiExcludeController</code> en el gateway con rutas dinámicas. Acá no aplica.</li>
+  <li><span class="chip green">✅</span> <strong>No hay <code>@ApiExcludeController</code></strong> — correcto, acá no hace falta.</li>
+</div>
+
+<!-- ============================================================ -->
+<h2>🔴 Mejoras CRÍTICAS</h2>
+
+<table>
+  <tr><th></th><th>Ítem</th><th>Detalle</th></tr>
+  <tr>
+    <td><span class="severity high"></span></td>
+    <td><strong>Schema desunificado</strong></td>
+    <td>El proyecto usa un schema Prisma ÚNICO en <code>usuario-service/prisma/schema.prisma</code>. Las tablas <code>productos</code>, <code>categorias</code>, <code>marcas</code> deben estar ahí, no en un schema separado. Si no, las migraciones rompen.</td>
+  </tr>
+  <tr>
+    <td><span class="severity high"></span></td>
+    <td><strong>Sin action registry</strong></td>
+    <td>Las 8 rutas TCP de products-service no existen en el gateway. Sin eso, el gateway no sabe enrutar. Hay que agregar <code>products.*</code> y <code>categories.*</code> a <code>MicroServices/gateway/src/actions/action-registry.ts</code>.</td>
+  </tr>
+  <tr>
+    <td><span class="severity high"></span></td>
+    <td><strong>TCP sin ClientProxy</strong></td>
+    <td>El gateway necesita un <code>ClientsModule.register()</code> apuntando a products-service:3013 para poder enviarle mensajes TCP.</td>
+  </tr>
+  <tr>
+    <td><span class="severity high"></span></td>
+    <td><strong>Faltan tests</strong></td>
+    <td>Solo 1 spec (PricingService). Faltan tests de: ProductsService (CRUD, ownership, filtros), TCP controllers, RpcExceptionFilter, interceptors.</td>
+  </tr>
+  <tr>
+    <td><span class="severity high"></span></td>
+    <td><strong>Naming @@map inconsistente</strong></td>
+    <td>El proyecto usa UPPERCASE: <code>@@map("USER")</code>, <code>@@map("DELIVERY")</code>. products-service usa lowercase: <code>@@map("productos")</code>, <code>@@map("categorias")</code>, <code>@@map("marcas")</code>. Hay que unificar.</td>
+  </tr>
+</table>
+
+<h2>🟡 Mejoras IMPORTANTES</h2>
+
+<table>
+  <tr><th></th><th>Ítem</th><th>Detalle</th></tr>
+  <tr>
+    <td><span class="severity med"></span></td>
+    <td><strong>vendedorId resolution</strong></td>
+    <td>El README ya lo advierte: asume que <code>sub</code> del JWT es el <code>vendedorId</code>. En usuario-service hay un <code>VendedorResolver</code> que traduce authUserId → vendedor.id. Si products-service necesita ese mismo mapeo, hay que resolverlo vía TCP a usuario-service.</td>
+  </tr>
+  <tr>
+    <td><span class="severity med"></span></td>
+    <td><strong>Interceptores duplicados</strong></td>
+    <td>LoggingInterceptor, TimeoutInterceptor, TransformInterceptor son implementaciones propias. El proyecto ya tiene versiones estándar en usuario-service. Hay que reemplazar por las del equipo para mantener consistencia.</td>
+  </tr>
+  <tr>
+    <td><span class="severity med"></span></td>
+    <td><strong>Sin docker-compose</strong></td>
+    <td>No hay entry de products-service en el docker-compose.yml raíz. No se puede levantar junto con el resto del stack.</td>
+  </tr>
+  <tr>
+    <td><span class="severity med"></span></td>
+    <td><strong>Sin .env.example</strong></td>
+    <td>Milagros sí lo tiene. Ayuda a que otros devs sepan qué variables necesita: <code>DATABASE_URL</code>, <code>TCP_PORT</code>, <code>PORT</code>, <code>IVA_PORCENTAJE</code>.</td>
+  </tr>
+  <tr>
+    <td><span class="severity med"></span></td>
+    <td><strong>TransformInterceptor envuelve TCP</strong></td>
+    <td>Evita <code>type !== 'http' → return next.handle()</code>. Pero el RpcExceptionFilter también maneja ambos contextos. Verificar que no haya doble transform.</td>
+  </tr>
+</table>
+
+<h2>🔵 Mejoras MENORES</h2>
+
+<table>
+  <tr><th></th><th>Ítem</th><th>Detalle</th></tr>
+  <tr>
+    <td><span class="severity low"></span></td>
+    <td>Falta migración Prisma</td>
+    <td>Hay que correr <code>npx prisma migrate dev --name init</code> una vez que el schema esté en el archivo unificado.</td>
+  </tr>
+  <tr>
+    <td><span class="severity low"></span></td>
+    <td>Constants duplicadas</td>
+    <td><code>DEFAULT_PAGE = 1</code> y <code>DEFAULT_LIMIT = 20</code> definidas en el service. Podrían ir a un archivo de constantes o al DTO.</td>
+  </tr>
+  <tr>
+    <td><span class="severity low"></span></td>
+    <td>Sin controller HTTP para productos</td>
+    <td>No es crítico porque todo va por TCP, pero si algún día se necesita debug directo sin gateway... igual está bien así.</td>
+  </tr>
+  <tr>
+    <td><span class="severity low"></span></td>
+    <td>README valioso</td>
+    <td>👍 Buenos comments y asunciones documentadas. Que no se pierda al mergear.</td>
+  </tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>📊 Resumen para Emiliano</h2>
+
+<div class="quote">
+  <strong>Buen laburo, Emiliano.</strong> De los dos MS nuevos (Milagros y tuyo), el tuyo es el más completo. Tenés TCP funcionando, adaptador de payload, autenticación por rol, ownership checks, cálculo server-side de precios, Dockerfile multi-stage, y encima documentaste las asunciones en el README. <br><br>
+  <strong>Lo que hay que ajustar antes de mergear:</strong>
+  <ol style="margin-top:.5rem;padding-left:1.2rem;font-style:normal;">
+    <li>Unificar el schema Prisma con el archivo central</li>
+    <li>Agregar las 8 rutas al action registry del gateway</li>
+    <li>Registrar el ClientProxy en el gateway</li>
+    <li>Agregar entry de docker-compose</li>
+    <li>Escribir tests (mínimo: service CRUD + TCP controllers)</li>
+    <li>Cambiar @@map a UPPERCASE</li>
+    <li>Resolver el tema del vendedorId (VendedorResolver vs sub del JWT)</li>
+  </ol>
+</div>
+
+<!-- ============================================================ -->
+<h2>📁 Estructura del proyecto</h2>
+
+<div class="file-tree">
+<span class="dir">MicroServices/products-service/</span><br>
+│<br>
+├── <span class="file">Dockerfile</span>          <span style="color:var(--muted)">— multi-stage, pnpm, node:22-alpine ✅</span><br>
+├── <span class="file">package.json</span>        <span style="color:var(--muted)">— @agua/products-service</span><br>
+├── <span class="file">tsconfig.json</span><br>
+├── <span class="file">README.md</span>           <span style="color:var(--muted)">— asunciones documentadas 👍</span><br>
+│<br>
+├── <span class="dir">prisma/</span><br>
+│   └── <span class="file">schema.prisma</span>     <span style="color:var(--yellow)">⚠️ mover al schema unificado</span><br>
+│<br>
+└── <span class="dir">src/</span><br>
+    ├── <span class="file">main.ts</span>            <span style="color:var(--muted)">— HTTP+TCP, Swagger, ValidationPipe</span><br>
+    ├── <span class="file">app.module.ts</span>       <span style="color:var(--muted)">— ConfigModule, Common, Products, Categories, Tcp</span><br>
+    │<br>
+    ├── <span class="dir">products/</span><br>
+    │   ├── <span class="file">products.module.ts</span><br>
+    │   ├── <span class="file">products.service.ts</span>  <span style="color:var(--muted)">— CRUD + ownership + pricing ✅</span><br>
+    │   └── <span class="dir">dto/</span><br>
+    │       ├── <span class="file">create-product.dto.ts</span><br>
+    │       ├── <span class="file">update-product.dto.ts</span><br>
+    │       ├── <span class="file">list-products.dto.ts</span><br>
+    │       └── <span class="file">search-product.dto.ts</span><br>
+    │<br>
+    ├── <span class="dir">categories/</span><br>
+    │   ├── <span class="file">categories.module.ts</span><br>
+    │   ├── <span class="file">categories.service.ts</span>  <span style="color:var(--muted)">— listCategorias + listMarcas</span><br>
+    │   └── <span class="dir">dto/</span><br>
+    │       └── <span class="file">list-catalogo.dto.ts</span><br>
+    │<br>
+    ├── <span class="dir">tcp/</span><br>
+    │   ├── <span class="file">tcp.module.ts</span><br>
+    │   ├── <span class="file">tcp-payload.ts</span>       <span style="color:var(--muted)">— interfaces TcpPayload, TcpAuthenticatedUser</span><br>
+    │   ├── <span class="file">tcp-payload-adapter.service.ts</span>  <span style="color:var(--muted)">— requireUser/requireRole/validate ✅</span><br>
+    │   ├── <span class="file">products-tcp.controller.ts</span>  <span style="color:var(--muted)">— 6 handlers</span><br>
+    │   └── <span class="file">categories-tcp.controller.ts</span> <span style="color:var(--muted)">— 2 handlers</span><br>
+    │<br>
+    └── <span class="dir">common/</span><br>
+        ├── <span class="file">common.module.ts</span>      <span style="color:var(--muted)">— Global, Prisma, interceptors</span><br>
+        ├── <span class="dir">config/</span><br>
+        │   └── <span class="file">env.config.ts</span>        <span style="color:var(--muted)">— IVA_PORCENTAJE, DATABASE_URL validation</span><br>
+        ├── <span class="dir">prisma/</span><br>
+        │   ├── <span class="file">prisma.service.ts</span>    <span style="color:var(--muted)">— extends PrismaClient</span><br>
+        │   ├── <span class="file">pricing.service.ts</span>   <span style="color:var(--muted)">— cálculo server-side de precioFinal ✅</span><br>
+        │   └── <span class="hl">pricing.service.spec.ts</span> <span style="color:var(--muted)">— único test ✅</span><br>
+        ├── <span class="dir">filters/</span><br>
+        │   └── <span class="file">rpc-exception.filter.ts</span>  <span style="color:var(--muted)">— HTTP + RPC ✅</span><br>
+        ├── <span class="dir">interceptors/</span><br>
+        │   ├── <span class="file">logging.interceptor.ts</span>   <span style="color:var(--yellow)">⚠️ propia, reemplazar</span><br>
+        │   ├── <span class="file">transform.interceptor.ts</span> <span style="color:var(--yellow)">⚠️ propia, reemplazar</span><br>
+        │   └── <span class="file">timeout.interceptor.ts</span>   <span style="color:var(--yellow)">⚠️ propia, reemplazar</span><br>
+        └── <span class="dir">health/</span><br>
+            └── <span class="file">health.controller.ts</span> <span style="color:var(--muted)">— GET /health ✅</span><br>
+</div>
+
+</body>
+</html>
