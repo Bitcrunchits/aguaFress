@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ENUMS DEL SISTEMA
+// ═══════════════════════════════════════════════════════════════
+
+enum OrderEstado {
+  pendiente
+  confirmado
+  en_camino
+  entregado
+  cancelado
+  vencido
+}
+
+enum MetodoPago {
+  contra_entrega
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  orders-service — Carrito + Pedidos
+// ═══════════════════════════════════════════════════════════════
+
+// ── CARRITO ───────────────────────────────────────────────────
+
+model Cart {
+  id         String    @id @default(uuid()) @db.Uuid
+  // Referencia lógica → AUTH_USER/CLIENTE en usuario-service (sin FK)
+  usuario_id String    @db.Uuid
+  // Referencia lógica → VENDEDOR en usuario-service (sin FK)
+  vendedor_id String   @db.Uuid
+  // Se setea desde la capa de servicio: created_at + 24hs
+  expires_at  DateTime
+  created_at  DateTime  @default(now())
+
+  items CartItem[]
+
+  @@map("CART")
+}
+
+model CartItem {
+  id             String   @id @default(uuid()) @db.Uuid
+  cart_id        String   @db.Uuid
+  cart           Cart     @relation(fields: [cart_id], references: [id], onDelete: Cascade)
+  // Referencia lógica → PRODUCTO en products-service (sin FK)
+  producto_id    String   @db.Uuid
+  cantidad       Int
+  precio_unitario Decimal @db.Decimal(10, 2)
+  created_at     DateTime @default(now())
+
+  @@map("CART_ITEM")
+}
+
+// ── PEDIDO ────────────────────────────────────────────────────
+
+model Order {
+  id               String     @id @default(uuid()) @db.Uuid
+  // Secuencial por vendedor — generado por la capa de servicio
+  pedido_numero    String     @unique @db.VarChar(20)
+  // Referencia lógica → AUTH_USER/CLIENTE en usuario-service (sin FK)
+  usuario_id       String     @db.Uuid
+  // Referencia lógica → VENDEDOR en usuario-service (sin FK)
+  vendedor_id      String     @db.Uuid
+  // Snapshot de DireccionEntrega al crear el pedido
+  direccion_entrega Json
+  estado           OrderEstado
+  metodo_pago      MetodoPago
+  total_sin_iva    Decimal    @db.Decimal(10, 2)
+  iva              Decimal    @db.Decimal(10, 2)
+  total            Decimal    @db.Decimal(10, 2)
+  observaciones    String?    @db.Text
+  created_at       DateTime   @default(now())
+  updated_at       DateTime   @updatedAt
+
+  items   OrderItem[]
+  history OrderHistory[]
+
+  @@map("ORDER")
+}
+
+model OrderItem {
+  id             String   @id @default(uuid()) @db.Uuid
+  order_id       String   @db.Uuid
+  order          Order    @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  // Referencia lógica → PRODUCTO en products-service (sin FK)
+  producto_id    String   @db.Uuid
+  // Snapshot del nombre del producto al momento del pedido
+  nombre         String   @db.VarChar(255)
+  cantidad       Int
+  precio_unitario Decimal  @db.Decimal(10, 2)
+  created_at     DateTime @default(now())
+
+  @@map("ORDER_ITEM")
+}
+
+model OrderHistory {
+  id             String       @id @default(uuid()) @db.Uuid
+  order_id       String       @db.Uuid
+  order          Order        @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  estado_anterior OrderEstado?
+  estado_nuevo   OrderEstado
+  notas          String?      @db.Text
+  created_at     DateTime     @default(now())
+
+  @@map("ORDER_HISTORY")
+}
