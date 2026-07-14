@@ -18,7 +18,7 @@
 > Todo el código nuevo debe cumplir **SOLID + Clean Code** (ver sección 9).
 
 > ✅ **Gateway como única entrada HTTP**
-> El gateway (`localhost:3000`) es el ÚNICO punto de entrada HTTP. Los microservicios NO exponen HTTP directo — solo comunicación TCP interna.
+> El gateway (`localhost:3000`) es el ÚNICO punto de entrada HTTP. Los microservicios de dominio NO exponen endpoints HTTP públicos: reciben comandos por TCP interno.
 > 
 > **Documentación de APIs**: el gateway genera un spec OpenAPI 3.0 vivo desde su action registry y lo sirve con **Scalar** (UI moderna con cliente API integrado) en `http://localhost:3000/api/docs`.
 > 
@@ -91,8 +91,8 @@ AguaFress es una plataforma marketplace web que conecta directamente vendedores 
 | MongoDB 6 | notifications (activity logs) |
 | Redis 7 | Caché (sesiones JWT, catálogo) |
 | Monorepo | pnpm workspaces (sin Nx/Turborepo) |
-| Docker | Compose único con PostgreSQL + Redis |
-| API Docs | Swagger (`/api/docs`) via `@nestjs/swagger` |
+| Docker | Docker por microservicio + Compose local para desarrollo |
+| API Docs | OpenAPI 3.0 generado por gateway + Scalar (`/api/docs`) |
 | Comunicación | Contratos compartidos vía `packages/contracts/` |
 | Contratos | `packages/contracts/` (DTOs TypeScript + enums) |
 | Frontend | Por definir (React + Next.js) |
@@ -107,15 +107,15 @@ AguaFress es una plataforma marketplace web que conecta directamente vendedores 
 ```
 aguaFress/
 ├── MicroServices/
-│   ├── usuario-service/     # NestJS - TCP 3011 - PostgreSQL (sin HTTP)
-│   ├── products-service/    # NestJS - Puerto 3003 - PostgreSQL (stub)
-│   ├── orders-service/      # NestJS - Puerto 3004 - PostgreSQL (stub)
-│   ├── entregas-service/    # NestJS - Puerto 3005 - PostgreSQL (stub)
-│   ├── notifications-service/ # NestJS - Puerto 3006 - MongoDB (stub)
+│   ├── usuario-service/     # NestJS - TCP 3011 - PostgreSQL propio (sin HTTP público)
+│   ├── products-service/    # NestJS - TCP interno - PostgreSQL propio (stub)
+│   ├── orders-service/      # NestJS - TCP interno - PostgreSQL propio (stub)
+│   ├── entregas-service/    # NestJS - TCP interno - PostgreSQL propio (stub)
+│   ├── notifications-service/ # NestJS - TCP/eventos internos - MongoDB propio (stub)
 │   └── gateway/             # NestJS - HTTP 3000 - Única entrada HTTP
 ├── packages/
 │   └── contracts/           # @agua/contracts - DTOs, enums, eventos
-├── docker-compose.yml       # NO EXISTE - pendiente de crear
+├── docker-compose.yml       # Compose local de desarrollo
 ├── pnpm-workspace.yaml
 ├── SPEC.md
 ├── AGENTS.md                # Reglas de code review
@@ -135,7 +135,7 @@ aguaFress/
 ### 4.3 Comunicación Entre Servicios
 
 - **~~Redis Streams~~ → 🚧 Kafka**: Bus de eventos asíncronos (pendiente implementar)
-- **TCP**: Comunicación sincrónica directa entre microservicios (pendiente implementar)
+- **TCP**: Comunicación sincrónica interna entre gateway y microservicios de dominio
 - **Redis**: Cache de sesiones (JWT) y catálogo de productos
 
 > ⚠️ **Decisión tomada 27/06/2026**: Reemplazar Redis Streams con Kafka, y HTTP REST vía Gateway con TCP directo entre MS. Ver banner al inicio del documento.
@@ -243,11 +243,11 @@ openspec/changes/api-gateway/specs/api-gateway/spec.md
 - SuperAdminModule: perfil + dashboard stats, 251 tests
 - `main.ts` con NestJS microservice TCP puro (sin HTTP)
 - `PrismaService` (CommonModule @Global) con conexión Prisma
-- `prisma/schema.prisma` completo: 17 tablas, todos los enums (ver sección 6)
+- `prisma/schema.prisma` propio del usuario-service: tablas de auth/usuarios y enums del servicio (ver sección 6)
 - `tsconfig.json` con path alias `@agua/contracts`
 - Variables de entorno en `.env` + `.env.example` documentado
 - Dockerfile multi-stage con `node:22-alpine`
-- docker-compose.yml con postgres:15-alpine + redis:7-alpine
+- Dockerfile propio y compose local con postgres:15-alpine + redis:7-alpine
 
 ### 5.2 gateway ✅ (completo para usuario-service)
 
@@ -255,13 +255,13 @@ openspec/changes/api-gateway/specs/api-gateway/spec.md
 - **36 acciones registradas**: auth, users, vendedores, clientes, super-admin, qr, link-invitacion
 - **Seguridad**: JwtAuthGuard global con excepciones por action, RolesGuard dinámico desde registry, rate limiting, payload limits, timeouts TCP, helmet
 - **Documentación de APIs**: Scalar UI en `/api/docs` con spec OpenAPI 3.0 generado desde el action registry
-- **Comunicación**: Gateway → Microservicios únicamente por TCP. Sin HTTP directo a servicios.
+- **Comunicación**: Gateway → Microservicios únicamente por TCP. Sin endpoints HTTP públicos en servicios de dominio.
 - **Pendiente**: Conectar products-service, orders-service, entregas-service, notifications-service cuando estén implementados
 
 ### 5.3 products-service, orders-service, entregas-service, notifications-service (stubs)
 
 - Todos tienen `node_modules/`, `package.json`, `src/`, `test/`
-- Sin `prisma/schema.prisma`
+- Deben tener `prisma/schema.prisma` propio cuando se implementen sus tablas
 - Sin controllers ni servicios reales
 - Solo módulos scaffold: `common.module.ts` + módulo específico vacío
 
@@ -273,7 +273,11 @@ openspec/changes/api-gateway/specs/api-gateway/spec.md
 
 ---
 
-## 6. Modelo de Datos (PostgreSQL - Una sola DB)
+## 6. Modelo de Datos (DB y Prisma por Microservicio)
+
+Cada microservicio es dueño de su propia base de datos, su propio `prisma/schema.prisma` y sus tablas. No existe un schema Prisma unificado entre microservicios.
+
+Los IDs que apuntan a entidades de otro microservicio son referencias lógicas UUID escalares. No se modelan como relaciones Prisma ni foreign keys entre bases de datos.
 
 ### Enums
 
@@ -299,7 +303,7 @@ TipoFactura    = B | C
 | `LINK_INVITACION` | Links de invitación: token UNIQUE, activo, expires_at |
 | `AUDIT_LOG` | Trazabilidad interna: usuario_id, target_id, accion, detalle JSONB, ip |
 
-### Tablas pendientes (otros servicios)
+### Tablas pendientes en schemas propios (otros servicios)
 
 | Servicio | Tablas a crear |
 |----------|----------------|
@@ -307,7 +311,9 @@ TipoFactura    = B | C
 | orders-service | `CART`, `CART_ITEM`, `ORDER`, `ORDER_ITEM`, `INVOICE` |
 | entregas-service | `DELIVERY` |
 
-### Relaciones clave
+### Relaciones conceptuales clave
+
+Estas relaciones explican el dominio. Solo las relaciones dentro de la misma base pueden existir como relaciones Prisma/FK; las referencias entre microservicios quedan como UUID escalares.
 
 ```
 AUTH_USER ──1:1──► VENDEDOR / CLIENTE / SUPER_ADMIN
@@ -344,8 +350,8 @@ Unión global: `AguaFressEvent`.
 ## 8. Próximos Pasos (priorizados)
 
 ### Fase 1 - Infraestructura (AHORA)
-- [ ] Crear `docker-compose.yml` con PostgreSQL + Redis
-- [ ] Unificar schema de Prisma (todas las tablas en usuario-service)
+- [x] Crear `docker-compose.yml` local con PostgreSQL + Redis para desarrollo
+- [ ] Crear Docker/DB/Prisma schema propio por cada microservicio al implementar sus tablas
 - [ ] Agregar MongoDB al compose (para notifications-service)
 - [ ] Configurar init de PostgreSQL
 

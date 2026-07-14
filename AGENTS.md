@@ -53,9 +53,12 @@
 - ✅ Usar `@@map()` para nombres de tablas en mayúsculas (ej: `@@map("USER")`).
 - ✅ Timestamps `created_at` y `updated_at` en todas las tablas.
 - ✅ IDs UUID generados con `@default(uuid())`.
-- ✅ Relaciones explícitas con `@relation()` nombrado.
+- ✅ Relaciones explícitas con `@relation()` nombrado solo dentro de la DB propia del microservicio.
+- ✅ Referencias a entidades de otro microservicio como UUID escalares lógicos, sin Prisma relation/FK cross-DB.
 
-## Sesión 12/06 — Infraestructura Docker + Schema Unificado
+## Sesión 12/06 — Infraestructura Docker + Nota Histórica Stale
+
+> Esta sección es histórica. La guía anterior de schema centralizado quedó obsoleta: la arquitectura vigente exige Docker, DB y Prisma schema propios por microservicio.
 
 ### docker-compose.yml (raíz)
 - `postgres:15-alpine` en puerto `5433`, DB `agua`, user `postgres:postgres`
@@ -69,14 +72,12 @@
 - Stage run: copiar solo dist + prisma + node_modules, ejecutar `prisma db push` al iniciar
 - Se instaló `openssl` via apk para que Prisma funcione en Alpine
 
-### Schema unificado (17 tablas en una DB)
-- Todas las tablas de todos los microservicios viven en `MicroServices/usuario-service/prisma/schema.prisma`
-- Cuando un MS se separa a su propio Docker, lleva solo sus tablas
-- Tablas de usuario-service: AUTH_USER, VENDEDOR, CLIENTE, SUPER_ADMIN, RELACION_CARTERA, QR_CODE, LINK_INVITACION, AUDIT_LOG
-- Tablas de products-service: CATEGORY, BRAND, PRODUCT
-- Tablas de orders-service: CART, CART_ITEM, ORDER, ORDER_ITEM, INVOICE
-- Tablas de entregas-service: DELIVERY
-- Enums: UserRole, VendedorEstado, OrderEstado, DeliveryEstado, MetodoPago, TipoFactura
+### Arquitectura vigente de datos
+- Cada microservicio mantiene su propio Dockerfile/setup, base de datos y `prisma/schema.prisma`.
+- No existe un Prisma schema centralizado entre microservicios.
+- Tablas de usuario-service: AUTH_USER, VENDEDOR, CLIENTE, SUPER_ADMIN, RELACION_CARTERA, QR_CODE, LINK_INVITACION, AUDIT_LOG.
+- Tablas de products-service, orders-service y entregas-service viven en los schemas propios de esos servicios cuando se implementan.
+- Los IDs cross-service son UUID escalares lógicos; no usar relaciones Prisma ni FKs entre DBs distintas.
 
 ### .env actualizado
 ```env
