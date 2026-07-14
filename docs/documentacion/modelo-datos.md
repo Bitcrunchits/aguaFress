@@ -9,35 +9,36 @@
 > Funcionalidades marcadas como V2.0 NO se implementan en esta versión.  
 > Los tipos definitivos están en `packages/contracts/src/` (TypeScript).
 
+> ✅ **Decisión actual de arquitectura**: cada microservicio tiene Docker, base de datos y Prisma schema propios. No existe schema Prisma unificado. El gateway es la única entrada HTTP pública; los microservicios de dominio se comunican por TCP interno. Los IDs hacia entidades de otro microservicio son UUID escalares lógicos, no relaciones Prisma/FK entre DBs.
+
 ---
 
 ## 1. Servicios del Sistema
 
 | Servicio | Puerto | DB | ORM | Responsabilidad |
 |----------|--------|-----|-----|-----------------|
-| **usuario-service** (auth + users) | 3001 | PostgreSQL | Prisma | Login, JWT, roles, perfiles, cartera, QR |
-| **products-service** | 3003 | PostgreSQL | Prisma | Catálogo, productos, marcas, categorías |
-| **orders-service** | 3004 | PostgreSQL | Prisma | Carrito, pedidos, facturas |
-| **entregas-service** | 3005 | PostgreSQL | Prisma | Repartos, estados, asignación |
-| **notifications-service** | 3006 | MongoDB | Mongoose | Activity logs (solo consume eventos) |
+| **gateway** | HTTP 3000 | — | — | Única entrada HTTP pública |
+| **usuario-service** (auth + users) | TCP 3011 | PostgreSQL propia | Prisma propio | Login, JWT, roles, perfiles, cartera, QR |
+| **products-service** | TCP interno | PostgreSQL propia | Prisma propio | Catálogo, productos, marcas, categorías |
+| **orders-service** | TCP interno | PostgreSQL propia | Prisma propio | Carrito, pedidos, facturas |
+| **entregas-service** | TCP interno | PostgreSQL propia | Prisma propio | Repartos, estados, asignación |
+| **notifications-service** | TCP/eventos internos | MongoDB propia | Mongoose propio | Activity logs (solo consume eventos) |
 
-> **Nota:** En MVP no hay api-gateway. Cada servicio se comunica por HTTP directo.  
-> El gateway está planificado para V1.1 con Nginx → Gateway → TCP.
+> Las referencias entre servicios se validan por contrato/aplicación. No se crean foreign keys ni relaciones Prisma entre bases de datos de microservicios distintos.
 
 ---
 
 ## 2. Entidades por Servicio
 
-### 2.1 usuario-service (Puerto 3001 — PostgreSQL, schema unificado)
+### 2.1 usuario-service (TCP 3011 — PostgreSQL propia, Prisma schema propio)
 
-Schema unificado: todas las tablas de los microservicios viven en `usuario-service/prisma/schema.prisma`.
-Cuando un MS se separa a su propio Docker, lleva solo sus tablas.
+El usuario-service contiene solo sus tablas de auth, perfiles, cartera, QR, links y auditoría interna. Las tablas de products, orders y entregas viven en los schemas propios de sus microservicios cuando se implementan.
 
 Las tablas se separaron por rol siguiendo SRP: `AUTH_USER` solo tiene datos de login,
 `VENDEDOR`, `CLIENTE` y `SUPER_ADMIN` tienen los datos específicos de cada perfil.
 `AUDIT_LOG` provee trazabilidad interna.
 
-> ℹ️ El esquema completo está en `MicroServices/usuario-service/prisma/schema.prisma`
+> ℹ️ El esquema del usuario-service está en `MicroServices/usuario-service/prisma/schema.prisma`
 
 #### AUTH_USER
 | Campo | Tipo | Requerido | Default | Descripción |
@@ -172,13 +173,13 @@ Las tablas se separaron por rol siguiendo SRP: `AUTH_USER` solo tiene datos de l
 
 ---
 
-### 2.2 products-service (Puerto 3003 — PostgreSQL)
+### 2.2 products-service (TCP interno — PostgreSQL propia)
 
 #### PRODUCTO
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | id | UUID | PK |
-| vendedor_id | UUID | FK → VENDEDOR |
+| vendedor_id | UUID | Referencia lógica → VENDEDOR en usuario-service |
 | nombre | VARCHAR(255) | |
 | descripcion | TEXT | |
 | marca_id | UUID | FK → MARCA |
@@ -196,7 +197,7 @@ Las tablas se separaron por rol siguiendo SRP: `AUTH_USER` solo tiene datos de l
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | id | UUID | PK |
-| vendedor_id | UUID | FK → VENDEDOR |
+| vendedor_id | UUID | Referencia lógica → VENDEDOR en usuario-service |
 | nombre | VARCHAR(100) | ej: Villavicencio |
 | created_at | TIMESTAMP | |
 
@@ -204,21 +205,21 @@ Las tablas se separaron por rol siguiendo SRP: `AUTH_USER` solo tiene datos de l
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | id | UUID | PK |
-| vendedor_id | UUID | FK → VENDEDOR |
+| vendedor_id | UUID | Referencia lógica → VENDEDOR en usuario-service |
 | nombre | VARCHAR(100) | ej: Agua, Soda |
 | orden | INTEGER | Posición en listado |
 | created_at | TIMESTAMP | |
 
 ---
 
-### 2.3 orders-service (Puerto 3004 — PostgreSQL)
+### 2.3 orders-service (TCP interno — PostgreSQL propia)
 
 #### CART
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | id | UUID | PK |
-| usuario_id | UUID | FK → AUTH_USER (cliente) |
-| vendedor_id | UUID | FK → VENDEDOR |
+| usuario_id | UUID | Referencia lógica → AUTH_USER/CLIENTE en usuario-service |
+| vendedor_id | UUID | Referencia lógica → VENDEDOR en usuario-service |
 | expires_at | TIMESTAMP | created_at + 24hs |
 | created_at | TIMESTAMP | |
 
@@ -227,7 +228,7 @@ Las tablas se separaron por rol siguiendo SRP: `AUTH_USER` solo tiene datos de l
 |-------|------|-------------|
 | id | UUID | PK |
 | cart_id | UUID | FK → CART |
-| producto_id | UUID | FK → PRODUCTO |
+| producto_id | UUID | Referencia lógica → PRODUCTO en products-service |
 | cantidad | INTEGER | |
 | precio_unitario | DECIMAL(10,2) | Precio al momento de agregar |
 | created_at | TIMESTAMP | |
@@ -237,8 +238,8 @@ Las tablas se separaron por rol siguiendo SRP: `AUTH_USER` solo tiene datos de l
 |-------|------|-------------|
 | id | UUID | PK |
 | pedido_numero | VARCHAR(20) | Secuencial por vendedor |
-| usuario_id | UUID | FK → AUTH_USER (cliente) |
-| vendedor_id | UUID | FK → VENDEDOR |
+| usuario_id | UUID | Referencia lógica → AUTH_USER/CLIENTE en usuario-service |
+| vendedor_id | UUID | Referencia lógica → VENDEDOR en usuario-service |
 | direccion_entrega | JSON | Snapshot de la dirección al crear |
 | estado | ENUM(OrderEstado) | pendiente, confirmado, en_camino, entregado, cancelado, vencido |
 | metodo_pago | ENUM(MetodoPago) | contra_entrega |
@@ -254,7 +255,7 @@ Las tablas se separaron por rol siguiendo SRP: `AUTH_USER` solo tiene datos de l
 |-------|------|-------------|
 | id | UUID | PK |
 | order_id | UUID | FK → ORDER |
-| producto_id | UUID | FK → PRODUCTO |
+| producto_id | UUID | Referencia lógica → PRODUCTO en products-service |
 | nombre | VARCHAR(255) | Snapshot al crear |
 | cantidad | INTEGER | |
 | precio_unitario | DECIMAL(10,2) | Precio al momento del pedido |
@@ -272,14 +273,14 @@ Las tablas se separaron por rol siguiendo SRP: `AUTH_USER` solo tiene datos de l
 
 ---
 
-### 2.4 entregas-service (Puerto 3005 — PostgreSQL)
+### 2.4 entregas-service (TCP interno — PostgreSQL propia)
 
 #### DELIVERY
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | id | UUID | PK |
-| order_id | UUID | FK → ORDER |
-| vendedor_id | UUID | FK → VENDEDOR |
+| order_id | UUID | Referencia lógica → ORDER en orders-service |
+| vendedor_id | UUID | Referencia lógica → VENDEDOR en usuario-service |
 | estado | ENUM(DeliveryEstado) | pendiente, en_camino, entregada |
 | direccion | JSON | Snapshot (DireccionEntrega) |
 | cliente_nombre | VARCHAR(255) | Snapshot |
@@ -292,7 +293,7 @@ Las tablas se separaron por rol siguiendo SRP: `AUTH_USER` solo tiene datos de l
 
 ---
 
-### 2.5 notifications-service (Puerto 3006 — MongoDB)
+### 2.5 notifications-service (TCP/eventos internos — MongoDB propia)
 
 #### ACTIVITY_LOG
 | Campo | Tipo | Descripción |
@@ -387,6 +388,8 @@ export const RedisStreams = {
 
 ## 4. Diagrama de Relaciones (MVP)
 
+Diagrama conceptual de dominio. Las relaciones que cruzan microservicios representan UUID escalares lógicos, no FKs ni relaciones Prisma entre DBs.
+
 ```
 AUTH_USER
     │
@@ -436,11 +439,11 @@ AUTH_USER
 |------------|-----------|
 | Backend | Node.js 22 LTS + NestJS 10 + TypeScript 5 |
 | ORM | Prisma 5 |
-| DB Principal | PostgreSQL 15 |
+| DBs | PostgreSQL 15 por microservicio transaccional; MongoDB para notifications |
 | Activity Logs | AuditLog en PostgreSQL (no MongoDB en MVP) |
 | Cache | Redis 7 |
-| Event Bus | Redis Streams |
-| Comunicación | HTTP REST directo (sin gateway en MVP) |
+| Event Bus | Kafka pendiente para eventos asíncronos |
+| Comunicación | Frontend → Gateway por HTTP; Gateway → microservicios por TCP interno |
 | Frontend | Por definir |
 | Contratos Compartidos | `packages/contracts/` (TypeScript) |
 | Monorepo | pnpm workspaces |
@@ -450,10 +453,13 @@ AUTH_USER
 
 ## 7. Infraestructura Docker
 
-### docker-compose.yml (raíz)
-- `postgres:15-alpine` en puerto `5433`, DB `agua`
+### docker-compose.yml (raíz, desarrollo local)
+- `postgres:15-alpine` en puerto `5433`, DB local de desarrollo para servicios implementados
 - `redis:7-alpine` en puerto `6379`
-- Servicios expuestos por puerto directo (sin gateway en MVP)
+- `gateway` expuesto en `3000` como única entrada HTTP pública
+- Microservicios de dominio sin puertos HTTP publicados; comunicación TCP interna
+
+Cada microservicio debe mantener su propio Dockerfile, base de datos y Prisma schema. El compose raíz solo coordina el entorno local; no convierte las DBs ni schemas en una unidad compartida.
 
 ### .env
 ```env
@@ -482,7 +488,7 @@ docker compose down -v                  # destruir todo + volúmenes
 ---
 
 **Documento actualizado para desarrollo V1.0 MVP**  
-**⚠️ La fuente de verdad de los tipos es `packages/contracts/src/` y `MicroServices/usuario-service/prisma/schema.prisma`**
+**⚠️ La fuente de verdad de los tipos es `packages/contracts/src/`; cada microservicio define su propio `prisma/schema.prisma` para sus tablas**
 
 _AguaFress - Modelo de Datos_  
 _Julio 2026_
