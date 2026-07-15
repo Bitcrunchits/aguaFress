@@ -1,0 +1,1 @@
+{"version":"7.0.2","root":["./src/enums.ts","./src/events.ts","./src/index.ts","./src/dto/auth.dto.ts","./src/dto/common.dto.ts","./src/dto/deliveries.dto.ts","./src/dto/notifications.dto.ts","./src/dto/orders.dto.ts","./src/dto/products.dto.ts","./src/dto/super-admin.dto.ts","./src/dto/user.dto.ts"],"packageJsons":["./package.json"]}

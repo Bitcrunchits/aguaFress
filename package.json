@@ -6,5 +6,8 @@
   "scripts": {
     "build:contracts": "pnpm --filter @agua/contracts build",
     "build": "pnpm run build:contracts"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
   }
 }
