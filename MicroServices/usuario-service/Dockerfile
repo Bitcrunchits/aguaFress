@@ -44,7 +44,7 @@ COPY --from=build /app/packages/contracts/dist ./packages/contracts/dist
 COPY --from=build /app/MicroServices/usuario-service/dist ./MicroServices/usuario-service/dist
 COPY --from=build /app/MicroServices/usuario-service/prisma ./MicroServices/usuario-service/prisma
 
-EXPOSE 3001
+EXPOSE 3011
 
 # db push auto + arranque
-CMD cd MicroServices/usuario-service && npx prisma generate && npx prisma db push && node dist/MicroServices/usuario-service/src/main.js
+CMD cd MicroServices/usuario-service && npx prisma generate && npx prisma db push && node dist/main.js

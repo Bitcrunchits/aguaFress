@@ -21,8 +21,9 @@ Plataforma de pedidos para distribuidores de agua y soda. Sistema multi-tenant c
 ```
 aguaFress/
 ├── MicroServices/             # Microservicios
+│   ├── gateway/               # Única entrada HTTP pública (puerto 3000)
 │   └── usuario-service/       # Auth, usuarios, vendedores, clientes, super-admins
-│       ├── prisma/            # Schema unificado (7 tablas + futuras)
+│       ├── prisma/            # Schema propio del usuario-service
 │       └── src/
 │           ├── auth/          # Login, register, JWT guards, refresh rotation
 │           ├── vendedores/    # CRUD vendedores (admin + perfil propio)
@@ -53,96 +54,101 @@ cp .env.example .env
 # 4. Levantar infraestructura (PostgreSQL + Redis)
 docker compose up -d
 
-# 5. Sincronizar schema a la DB
+# 5. Sincronizar el schema propio del usuario-service a su DB
 DATABASE_URL="postgresql://postgres:postgres@localhost:5433/agua" \
   pnpm --filter @agua/usuario-service exec prisma db push
 
-# 6. Build y levantar servicio
+# 6. Build y levantar usuario-service como TCP interno
 pnpm --filter @agua/usuario-service build
 DATABASE_URL="postgresql://postgres:postgres@localhost:5433/agua" \
   JWT_SECRET="..." JWT_REFRESH_SECRET="..." \
-  PORT=3001 node MicroServices/usuario-service/dist/main.js
+  TCP_PORT=3011 node MicroServices/usuario-service/dist/main.js
 
-# 7. Probar health
-curl http://localhost:3001/api/auth/login -X POST \
+# 7. Levantar gateway y probar por la única entrada HTTP pública
+pnpm --filter @agua/gateway build
+PORT=3000 USUARIO_SERVICE_HOST=localhost USUARIO_SERVICE_TCP_PORT=3011 \
+  node MicroServices/gateway/dist/main.js
+
+curl http://localhost:3000/api/v1/auth/login -X POST \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@test.com","password":"..."}'
 ```
 
-## Endpoints — usuario-service
+## API pública — Gateway
 
-Todas las rutas bajo `/api`. Autenticación via `Authorization: Bearer <token>`.
+El gateway es la única entrada HTTP pública. Los microservicios de dominio no exponen endpoints HTTP; reciben comandos TCP internos desde el gateway.
+
+Patrón canónico: `/{method} /api/v1/{service}/{action}`. Autenticación via `Authorization: Bearer <token>` cuando la acción no sea pública.
 
 ### Auth (público)
 
 | Method | Path | Descripción |
 |--------|------|-------------|
-| POST | `/api/auth/register` | Registrar cliente (requiere qrToken) |
-| POST | `/api/auth/register/vendedor` | Autoregistro vendedor (queda pendiente) |
-| POST | `/api/auth/login` | Login (email + password) → JWT |
-| POST | `/api/auth/refresh` | Rotar refresh token |
-| POST | `/api/auth/validate` | Validar token activo |
-| POST | `/api/auth/logout` | Cerrar sesión (invalida refresh token) |
+| POST | `/api/v1/auth/register` | Registrar cliente o vendedor según payload |
+| POST | `/api/v1/auth/login` | Login (email + password) → JWT |
+| POST | `/api/v1/auth/refresh` | Rotar refresh token |
+| POST | `/api/v1/auth/validate` | Validar token activo |
+| POST | `/api/v1/auth/logout` | Cerrar sesión (invalida refresh token) |
 
 ### Vendedores (vendedor propio + admin)
 
 | Method | Path | Acceso | Descripción |
 |--------|------|--------|-------------|
-| GET | `/api/vendedores/me` | VENDEDOR | Perfil propio |
-| PATCH | `/api/vendedores/me` | VENDEDOR | Actualizar perfil propio |
-| GET | `/api/vendedores` | SUPER_ADMIN | Listar vendedores |
-| GET | `/api/vendedores/:id` | SUPER_ADMIN | Ver vendedor |
-| PATCH | `/api/vendedores/:id` | SUPER_ADMIN | Actualizar vendedor |
-| PATCH | `/api/vendedores/:id/estado` | SUPER_ADMIN | Cambiar estado |
+| GET | `/api/v1/vendedores/profile` | VENDEDOR | Perfil propio |
+| PATCH | `/api/v1/vendedores/profile/update` | VENDEDOR | Actualizar perfil propio |
+| GET | `/api/v1/vendedores/list` | SUPER_ADMIN | Listar vendedores |
+| GET | `/api/v1/vendedores/get-by-id?id={uuid}` | SUPER_ADMIN | Ver vendedor |
+| PATCH | `/api/v1/vendedores/update?id={uuid}` | SUPER_ADMIN | Actualizar vendedor |
+| PATCH | `/api/v1/vendedores/change-estado?id={uuid}` | SUPER_ADMIN | Cambiar estado |
 
 ### Clientes (vendedor + admin)
 
 | Method | Path | Acceso | Descripción |
 |--------|------|--------|-------------|
-| GET | `/api/clientes/mios` | VENDEDOR | Mis clientes (cartera) |
-| GET | `/api/clientes/mios/:id` | VENDEDOR | Detalle cliente propio |
-| PATCH | `/api/clientes/mios/:id` | VENDEDOR | Actualizar cliente propio |
-| GET | `/api/clientes` | SUPER_ADMIN | Listar todos |
-| GET | `/api/clientes/:id` | SUPER_ADMIN | Ver cliente |
-| PATCH | `/api/clientes/:id` | SUPER_ADMIN | Actualizar cliente |
-| PATCH | `/api/clientes/:id/reassign` | SUPER_ADMIN | Reasignar vendedor |
+| GET | `/api/v1/clientes/cartera` | VENDEDOR | Mis clientes (cartera) |
+| GET | `/api/v1/clientes/own/get-by-id?id={uuid}` | VENDEDOR | Detalle cliente propio |
+| PATCH | `/api/v1/clientes/own/update?id={uuid}` | VENDEDOR | Actualizar cliente propio |
+| GET | `/api/v1/clientes/list` | SUPER_ADMIN | Listar todos |
+| GET | `/api/v1/clientes/get-by-id?id={uuid}` | SUPER_ADMIN | Ver cliente |
+| PATCH | `/api/v1/clientes/update?id={uuid}` | SUPER_ADMIN | Actualizar cliente |
+| PATCH | `/api/v1/clientes/reassign?id={uuid}` | SUPER_ADMIN | Reasignar vendedor |
 
 ### QR Codes (vendedor)
 
 | Method | Path | Acceso | Descripción |
 |--------|------|--------|-------------|
-| POST | `/api/qr-codes` | VENDEDOR | Generar QR de invitación |
-| GET | `/api/qr-codes` | VENDEDOR | Listar QR propios |
-| PATCH | `/api/qr-codes/:id/deactivate` | VENDEDOR | Desactivar QR |
+| POST | `/api/v1/qr/vendor/create` | VENDEDOR | Generar QR de invitación |
+| GET | `/api/v1/qr/vendor/list` | VENDEDOR | Listar QR propios |
+| PATCH | `/api/v1/qr/vendor/deactivate?id={uuid}` | VENDEDOR | Desactivar QR |
 
 ### Link Invitación (vendedor)
 
 | Method | Path | Acceso | Descripción |
 |--------|------|--------|-------------|
-| POST | `/api/link-invitacion` | VENDEDOR | Generar link de invitación |
-| GET | `/api/link-invitacion` | VENDEDOR | Listar links propios |
-| PATCH | `/api/link-invitacion/:id/deactivate` | VENDEDOR | Desactivar link |
+| POST | `/api/v1/link-invitacion/vendor/create` | VENDEDOR | Generar link de invitación |
+| GET | `/api/v1/link-invitacion/vendor/list` | VENDEDOR | Listar links propios |
+| PATCH | `/api/v1/link-invitacion/vendor/deactivate?id={uuid}` | VENDEDOR | Desactivar link |
 
 ### Super Admin
 
 | Method | Path | Descripción |
 |--------|------|-------------|
-| GET | `/api/super-admin/me` | Perfil SUPER_ADMIN |
-| PATCH | `/api/super-admin/me` | Actualizar perfil |
-| GET | `/api/super-admin/dashboard` | Dashboard stats (vendedores, clientes, actividad) |
+| GET | `/api/v1/super-admin/profile` | Perfil SUPER_ADMIN |
+| PATCH | `/api/v1/super-admin/profile/update` | Actualizar perfil |
+| GET | `/api/v1/super-admin/dashboard` | Dashboard stats (vendedores, clientes, actividad) |
 
 ### Users (perfil unificado)
 
 | Method | Path | Descripción |
 |--------|------|-------------|
-| GET | `/api/users/profile` | Perfil completo del usuario logueado (incluye profile según rol) |
-| PATCH | `/api/users/profile` | Actualizar perfil |
+| GET | `/api/v1/users/profile` | Perfil completo del usuario logueado (incluye profile según rol) |
+| PATCH | `/api/v1/users/profile/update` | Actualizar perfil |
 
 ### Admin: Audit Logs
 
 | Method | Path | Descripción |
 |--------|------|-------------|
-| GET | `/api/admin/audit-logs` | Listar logs de auditoría |
+| GET | `/api/v1/super-admin/audit-log` | Listar logs de auditoría |
 
 ## Roles y permisos
 
@@ -170,8 +176,11 @@ JWT_REFRESH_SECRET="auth-dev-refresh-secret-min-32!!"
 JWT_EXPIRES_IN="1d"
 JWT_REFRESH_EXPIRES_IN="7d"
 
-# Puerto
-PORT=3001
+# Gateway HTTP público
+PORT=3000
+
+# usuario-service TCP interno
+TCP_PORT=3011
 ```
 
 ## Tests
@@ -203,3 +212,4 @@ bash /tmp/api-test.sh
 - Fechas en **ISO 8601**
 - Estados con **enums**, no strings
 - Endpoints protegidos con guards (`JwtAuthGuard` global, `RolesGuard`, `VendedorGuard`)
+- Cada microservicio mantiene su propia DB y Prisma schema; referencias a entidades de otro MS son UUID escalares lógicos

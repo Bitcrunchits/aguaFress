@@ -6,10 +6,17 @@
 #    docker compose up -d postgres redis     → solo infra
 #    docker compose logs -f usuario-service  → logs del MS
 #    docker compose down -v                  → destruye todo + volúmenes
+#
+#  Arquitectura:
+#    - Gateway es la única entrada HTTP pública.
+#    - Los microservicios de dominio son TCP-only.
+#    - Cada microservicio debe tener DB/schema propios; este compose local
+#      solo coordina los servicios implementados, no define un Prisma
+#      schema centralizado.
 # ───────────────────────────────────────────────────────────────
 
 services:
-  # ─── PostgreSQL ─────────────────────────────────────────────
+  # ─── PostgreSQL local para servicios implementados ───────────
   postgres:
     image: postgres:15-alpine
     container_name: agua-postgres
@@ -49,12 +56,10 @@ services:
       context: .
       dockerfile: MicroServices/usuario-service/Dockerfile
     container_name: agua-usuario-service
-    ports:
-      - "3001:3001"
+    # No HTTP port — TCP only (internal Docker network)
     env_file:
       - .env
     environment:
-      PORT: "3001"
       TCP_PORT: "3011"
     depends_on:
       postgres:
