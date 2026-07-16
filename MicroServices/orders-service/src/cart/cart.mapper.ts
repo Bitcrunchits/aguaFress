@@ -7,6 +7,7 @@ export function toCartResponse(cart: CartRecord): CartResponse {
     return {
       id: item.id,
       productoId: item.productoId,
+      nombre: item.nombre,
       cantidad: item.cantidad,
       precioUnitario: item.precioUnitario,
       subtotal,

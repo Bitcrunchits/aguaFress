@@ -57,6 +57,8 @@ model CartItem {
   cart           Cart     @relation(fields: [cart_id], references: [id], onDelete: Cascade)
   // Referencia lógica → PRODUCTO en products-service (sin FK)
   producto_id    String   @db.Uuid
+  // Snapshot del nombre del producto al momento de agregar al carrito
+  nombre         String   @db.VarChar(255)
   cantidad       Int
   precio_unitario Decimal @db.Decimal(10, 2)
   created_at     DateTime @default(now())

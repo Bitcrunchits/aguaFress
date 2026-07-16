@@ -32,6 +32,7 @@ export class CartService {
     const updatedCart = await this.repository.incrementItemQuantity(
       cart.id,
       product.id,
+      product.nombre,
       request.cantidad,
       product.precioFinal,
     );
@@ -47,6 +48,7 @@ export class CartService {
     const updatedCart = await this.repository.replaceItemQuantity(
       cart.id,
       product.id,
+      product.nombre,
       request.cantidad,
       product.precioFinal,
     );

@@ -5,6 +5,7 @@ import { PrismaService } from '../common/prisma.service';
 export interface CartItemRecord {
   readonly id: string;
   readonly productoId: string;
+  readonly nombre: string;
   readonly cantidad: number;
   readonly precioUnitario: number;
 }
@@ -21,8 +22,8 @@ export interface CartRepository {
   findActiveByCliente(clienteId: string, now: Date): Promise<CartRecord | null>;
   findById(cartId: string): Promise<CartRecord | null>;
   findOrCreateActiveCart(clienteId: string, vendedorId: string, expiresAt: Date, now: Date): Promise<CartRecord>;
-  incrementItemQuantity(cartId: string, productoId: string, cantidad: number, precioUnitario: number): Promise<CartRecord>;
-  replaceItemQuantity(cartId: string, productoId: string, cantidad: number, precioUnitario: number): Promise<CartRecord>;
+  incrementItemQuantity(cartId: string, productoId: string, nombre: string, cantidad: number, precioUnitario: number): Promise<CartRecord>;
+  replaceItemQuantity(cartId: string, productoId: string, nombre: string, cantidad: number, precioUnitario: number): Promise<CartRecord>;
   deleteItem(cartId: string, productoId: string): Promise<CartRecord>;
 }
 
@@ -120,6 +121,7 @@ export class PrismaCartRepository implements CartRepository {
   async incrementItemQuantity(
     cartId: string,
     productoId: string,
+    nombre: string,
     cantidad: number,
     precioUnitario: number,
   ): Promise<CartRecord> {
@@ -131,12 +133,14 @@ export class PrismaCartRepository implements CartRepository {
         },
       },
       update: {
+        nombre,
         cantidad: { increment: cantidad },
         precio_unitario: precioUnitario,
       },
       create: {
         cart_id: cartId,
         producto_id: productoId,
+        nombre,
         cantidad,
         precio_unitario: precioUnitario,
       },
@@ -148,6 +152,7 @@ export class PrismaCartRepository implements CartRepository {
   async replaceItemQuantity(
     cartId: string,
     productoId: string,
+    nombre: string,
     cantidad: number,
     precioUnitario: number,
   ): Promise<CartRecord> {
@@ -159,12 +164,14 @@ export class PrismaCartRepository implements CartRepository {
         },
       },
       update: {
+        nombre,
         cantidad,
         precio_unitario: precioUnitario,
       },
       create: {
         cart_id: cartId,
         producto_id: productoId,
+        nombre,
         cantidad,
         precio_unitario: precioUnitario,
       },
@@ -209,6 +216,7 @@ function mapCart(cart: PrismaCartWithItems): CartRecord {
     items: cart.items.map((item) => ({
       id: item.id,
       productoId: item.producto_id,
+      nombre: item.nombre,
       cantidad: item.cantidad,
       precioUnitario: decimalToNumber(item.precio_unitario),
     })),

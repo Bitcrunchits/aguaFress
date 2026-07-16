@@ -54,6 +54,7 @@ describe('CartService', () => {
         {
           id: 'item-1',
           productoId: 'product-1',
+          nombre: 'Agua 20L',
           cantidad: 2,
           precioUnitario: 1200,
           subtotal: 2400,
@@ -114,7 +115,7 @@ describe('CartService', () => {
     await service.addItem(clienteId, { productoId: 'product-1', cantidad: 1 });
 
     expect(repository.findOrCreateActiveCart).toHaveBeenCalledWith(clienteId, vendedorId, cartTtlExpiration, now);
-    expect(repository.incrementItemQuantity).toHaveBeenCalledWith('cart-1', 'product-1', 1, 1200);
+    expect(repository.incrementItemQuantity).toHaveBeenCalledWith('cart-1', 'product-1', 'Agua 20L', 1, 1200);
   });
 
   it('rejects when concurrent active cart creation resolves to another vendor', async () => {
@@ -188,7 +189,7 @@ describe('CartService', () => {
 
     const cart = await service.addItem(clienteId, { productoId: 'product-1', cantidad: 3 });
 
-    expect(repository.incrementItemQuantity).toHaveBeenCalledWith('cart-1', 'product-1', 3, 1200);
+    expect(repository.incrementItemQuantity).toHaveBeenCalledWith('cart-1', 'product-1', 'Agua 20L', 3, 1200);
     expect(cart.items[0]?.cantidad).toBe(5);
     expect(cart.total).toBe(6000);
   });
@@ -204,7 +205,7 @@ describe('CartService', () => {
 
     const cart = await service.updateItem(clienteId, { cartId: 'cart-1', productoId: 'product-1', cantidad: 3 });
 
-    expect(repository.replaceItemQuantity).toHaveBeenCalledWith('cart-1', 'product-1', 3, 1200);
+    expect(repository.replaceItemQuantity).toHaveBeenCalledWith('cart-1', 'product-1', 'Agua 20L', 3, 1200);
     expect(cart.items[0]?.cantidad).toBe(3);
     expect(cart.total).toBe(3600);
   });
@@ -234,6 +235,7 @@ describe('CartService', () => {
     return {
       id: 'item-1',
       productoId: 'product-1',
+      nombre: 'Agua 20L',
       cantidad: 1,
       precioUnitario: 1200,
       ...overrides,

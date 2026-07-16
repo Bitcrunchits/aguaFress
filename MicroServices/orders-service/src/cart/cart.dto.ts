@@ -3,6 +3,7 @@ import { BadRequestException } from '@nestjs/common';
 export interface CartItemResponse {
   readonly id: string;
   readonly productoId: string;
+  readonly nombre: string;
   readonly cantidad: number;
   readonly precioUnitario: number;
   readonly subtotal: number;

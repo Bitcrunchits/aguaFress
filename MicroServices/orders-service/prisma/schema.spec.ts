@@ -19,4 +19,8 @@ describe('orders Prisma schema', () => {
   it('supports a database-backed active cart uniqueness invariant per cliente', () => {
     expect(schema).toContain('active_cart_key  String?   @unique @db.Uuid');
   });
+
+  it('persists cart item product name snapshots for order checkout', () => {
+    expect(schema).toContain('nombre         String   @db.VarChar(255)');
+  });
 });
