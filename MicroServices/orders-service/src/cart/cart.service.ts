@@ -6,18 +6,17 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { PRODUCT_CATALOG_PORT, type ProductCatalogPort, type ProductSnapshot } from '../products/product-catalog.port';
+import { CLOCK, type Clock } from '../common/clock.provider';
 import { type AddCartItemRequest, type CartResponse, type DeleteCartItemRequest, type UpdateCartItemRequest } from './cart.dto';
 import { cartExpiresAt, PrismaCartRepository, type CartRecord, type CartRepository } from './cart.repository';
 import { toCartResponse } from './cart.mapper';
-
-type Clock = () => Date;
 
 @Injectable()
 export class CartService {
   constructor(
     @Inject(PrismaCartRepository) private readonly repository: CartRepository,
     @Inject(PRODUCT_CATALOG_PORT) private readonly productCatalog: ProductCatalogPort,
-    private readonly clock: Clock = () => new Date(),
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async getActiveCart(clienteId: string): Promise<CartResponse | null> {

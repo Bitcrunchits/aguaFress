@@ -1,6 +1,7 @@
 import { ForbiddenException, Inject, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { OrderEstado, UserRole } from '@agua/contracts';
 import type { CartRecord } from '../cart/cart.repository';
+import { CLOCK, type Clock } from '../common/clock.provider';
 import { PRODUCT_CATALOG_PORT, type ProductCatalogPort, type ProductSnapshot } from '../products/product-catalog.port';
 import type { TcpAuthenticatedUser } from '../tcp/tcp-payload';
 import { assertOrderTransition } from './order-state';
@@ -9,14 +10,12 @@ import { PrismaOrdersRepository } from './orders.repository';
 import type { CreateOrderRequest, OrderResponse } from './orders.dto';
 import { toOrderResponse } from './orders.mapper';
 
-type Clock = () => Date;
-
 @Injectable()
 export class OrdersService {
   constructor(
     @Inject(PrismaOrdersRepository) private readonly ordersRepository: OrdersRepository,
     @Inject(PRODUCT_CATALOG_PORT) private readonly productCatalog: ProductCatalogPort,
-    private readonly clock: Clock = () => new Date(),
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async create(user: TcpAuthenticatedUser, request: CreateOrderRequest): Promise<OrderResponse> {
