@@ -1,3 +1,4 @@
+import { VendedorDashboard } from '../features/vendedor/VendedorDashboard';
 import { Login } from '../features/auth/Login';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './ProtectedRoute';
@@ -40,11 +41,11 @@ export const router = createBrowserRouter([
 
   // --- RUTAS PROTEGIDAS PARA VENDEDORES ---
   {
-    element: <ProtectedRoute allowedRoles={[UserRole.VENDEDOR]} />, // Solo Vendedores[cite: 1]
+    element: <ProtectedRoute allowedRoles={[UserRole.VENDEDOR]} />, // Solo Vendedores
     children: [
       {
         path: '/vendedor/dashboard',
-        element: <VendedorDashboard />,
+        element: <VendedorDashboard />, // ¡Ya no es un mock!
       },
     ],
   },
