@@ -107,7 +107,7 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
       create: { tcpPattern: 'orders.create', transport: 'send', authRequired: true, roles: ['cliente'] },
       'status/update': { tcpPattern: 'orders.status_update', transport: 'send', authRequired: true, roles: ['vendedor'] },
       cancel: { tcpPattern: 'orders.cancel', transport: 'send', authRequired: true, roles: ['cliente'] },
-      confirm: { tcpPattern: 'orders.confirm', transport: 'send', authRequired: true, roles: ['cliente'] },
+      confirm: { tcpPattern: 'orders.confirm', transport: 'send', authRequired: true, roles: ['vendedor'] },
     },
   },
   cart: {

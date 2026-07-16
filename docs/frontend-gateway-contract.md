@@ -113,7 +113,7 @@ Authorization: Bearer <token>
 | `POST` | `/api/v1/orders/create` | `cliente` |
 | `PATCH` | `/api/v1/orders/status/update` | `vendedor` |
 | `POST` | `/api/v1/orders/cancel` | `cliente` |
-| `POST` | `/api/v1/orders/confirm` | `cliente` |
+| `POST` | `/api/v1/orders/confirm` | `vendedor` |
 
 ### Carrito y pedidos
 
@@ -132,7 +132,7 @@ El frontend debe consumir carrito y pedidos por el gateway; `orders-service` sig
 | `POST` | `/api/v1/orders/cancel` | `orders.cancel` | `CancelOrderRequest` + `id` | `OrderResponse` |
 | `POST` | `/api/v1/orders/confirm` | `orders.confirm` | `ConfirmOrderRequest` + `id` | `OrderResponse` |
 
-Regla de identidad: nunca mandar ni confiar en `userId` dentro del body. El gateway remueve `userId` del payload HTTP —incluyendo cuerpos `DELETE`— y reenvía la identidad confiable desde el JWT en `payload.user`.
+Regla de identidad: nunca mandar ni confiar en `userId` dentro del body. El gateway remueve `userId` del payload HTTP —incluyendo cuerpos `DELETE`— y reenvía la identidad confiable desde el JWT en `payload.user`. Las acciones de ciclo de vida del pedido (`orders.status_update` y `orders.confirm`) son acciones de `vendedor`; `orders.cancel` sigue siendo de `cliente`.
 
 Mientras products-service no tenga un adaptador real para snapshots, los comandos que dependen de productos pueden responder error controlado de no disponibilidad desde orders-service. El frontend debe mostrar una recuperación clara y no asumir que el precio del body será aceptado.
 

@@ -26,7 +26,7 @@
     { "path": "/api/v1/orders/create", "method": "POST", "tcp_pattern": "orders.create", "auth": "CLIENTE" },
     { "path": "/api/v1/orders/status/update", "method": "PATCH", "tcp_pattern": "orders.status_update", "auth": "VENDEDOR" },
     { "path": "/api/v1/orders/cancel", "method": "POST", "tcp_pattern": "orders.cancel", "auth": "CLIENTE" },
-    { "path": "/api/v1/orders/confirm", "method": "POST", "tcp_pattern": "orders.confirm", "auth": "CLIENTE" }
+    { "path": "/api/v1/orders/confirm", "method": "POST", "tcp_pattern": "orders.confirm", "auth": "VENDEDOR" }
   ],
   "events_publishes": ["orders-stream: OrderCreated, OrderStatusChanged"],
   "events_consumes": ["deliveries-stream: DeliveryCompleted"],
@@ -73,8 +73,8 @@
     {
       "path": "/orders/:id/confirmar",
       "method": "POST",
-      "auth": "CLIENTE",
-      "notes": "El cliente confirma la visita del vendedor. Opcionalmente puede actualizar dirección de entrega.",
+      "auth": "VENDEDOR",
+      "notes": "El vendedor confirma el pedido como parte del ciclo de vida operativo. Opcionalmente puede actualizar dirección de entrega.",
       "request": { "direccion?": "DireccionEntrega" },
       "response": { "orderId": "uuid", "estado": "confirmado", "mensaje": "string" }
     },

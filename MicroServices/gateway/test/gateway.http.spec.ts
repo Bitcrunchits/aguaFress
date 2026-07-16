@@ -250,6 +250,33 @@ describe('Gateway HTTP routing', () => {
     );
   });
 
+  it('restricts order confirmation to vendedor lifecycle actors', async () => {
+    mockDispatch.mockResolvedValue({ id: 'order-1', estado: 'confirmado' });
+
+    await request(app.getHttpServer())
+      .post('/api/v1/orders/confirm?id=order-1')
+      .set('Authorization', `Bearer ${clienteToken}`)
+      .expect(403);
+    expect(mockDispatch).not.toHaveBeenCalled();
+
+    await request(app.getHttpServer())
+      .post('/api/v1/orders/confirm?id=order-1')
+      .set('Authorization', `Bearer ${vendedorToken}`)
+      .send({ userId: 'forged-user' })
+      .expect(200);
+
+    expect(mockDispatch).toHaveBeenCalledWith(
+      'orders',
+      expect.objectContaining({
+        body: {},
+        query: { id: 'order-1' },
+        params: { service: 'orders', action: 'confirm' },
+        user: expect.objectContaining({ sub: 'test-user-id', role: 'vendedor' }),
+      }),
+      expect.objectContaining({ tcpPattern: 'orders.confirm', authRequired: true, roles: ['vendedor'] }),
+    );
+  });
+
   it('rejects unauthenticated cart and order actions before TCP dispatch', async () => {
     await request(app.getHttpServer()).get('/api/v1/cart/get').expect(401);
     await request(app.getHttpServer()).post('/api/v1/orders/create').send({}).expect(401);

@@ -51,6 +51,7 @@
   "orders_gateway_routes": {
     "identity_rule": "El gateway elimina userId del body y reenvía la identidad confiable del JWT en payload.user.",
     "delete_body_rule": "DELETE /api/v1/cart/items/delete acepta body JSON y elimina userId antes de reenviarlo por TCP.",
+    "order_lifecycle_role_rule": "orders.status/update y orders.confirm requieren rol VENDEDOR; orders.cancel requiere rol CLIENTE.",
     "cart_item_delete_request": { "cartId": "string", "productoId": "string" },
     "cart": {
       "get": "cart.get",
