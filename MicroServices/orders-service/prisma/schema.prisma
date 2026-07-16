@@ -128,3 +128,12 @@ model OrderHistory {
   @@index([created_at])
   @@map("ORDER_HISTORY")
 }
+
+model OrderCounter {
+  vendedor_id   String   @id @db.Uuid
+  current_value Int      @default(0)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  @@map("PEDIDO_COUNTER")
+}
