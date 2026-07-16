@@ -1,6 +1,6 @@
 {
   "service": "orders-service",
-  "port": 3004,
+  "port": 3014,
   "database": "PostgreSQL",
   "orm": "Prisma",
   "responsibility": "Gestión de carrito, pedidos, estados y facturas B/C. Solo contra_entrega como método de pago.",

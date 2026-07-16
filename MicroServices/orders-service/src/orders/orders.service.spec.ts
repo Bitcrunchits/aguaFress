@@ -124,6 +124,41 @@ describe('OrdersService', () => {
     expect(order.estado).toBe(OrderEstado.CONFIRMADO);
   });
 
+  it('allows a cliente to cancel their own eligible order', async () => {
+    ordersRepository.findById.mockResolvedValue(orderRecord({ estado: OrderEstado.PENDIENTE, usuarioId: clienteId }));
+    ordersRepository.updateStatus.mockResolvedValue(orderRecord({ estado: OrderEstado.CANCELADO }));
+
+    const order = await service.cancel(clienteUser(), 'order-1', 'Changed delivery plan');
+
+    expect(ordersRepository.updateStatus).toHaveBeenCalledWith(
+      'order-1',
+      OrderEstado.PENDIENTE,
+      OrderEstado.CANCELADO,
+      'Changed delivery plan',
+    );
+    expect(order.estado).toBe(OrderEstado.CANCELADO);
+  });
+
+  it('rejects cliente cancellation for another cliente order', async () => {
+    ordersRepository.findById.mockResolvedValue(orderRecord({ estado: OrderEstado.PENDIENTE, usuarioId: 'cliente-2' }));
+
+    await expect(service.cancel(clienteUser(), 'order-1', 'Not mine')).rejects.toThrow(ForbiddenException);
+
+    expect(ordersRepository.updateStatus).not.toHaveBeenCalled();
+  });
+
+  it('keeps vendedor lifecycle updates enforced for vendedor-owned orders only', async () => {
+    ordersRepository.findById.mockResolvedValue(orderRecord({ estado: OrderEstado.PENDIENTE, vendedorId }));
+    ordersRepository.updateStatus.mockResolvedValue(orderRecord({ estado: OrderEstado.CONFIRMADO }));
+
+    await expect(service.updateStatus(vendedorUser(), 'order-1', OrderEstado.CONFIRMADO)).resolves.toMatchObject({
+      estado: OrderEstado.CONFIRMADO,
+    });
+
+    ordersRepository.findById.mockResolvedValue(orderRecord({ estado: OrderEstado.PENDIENTE, vendedorId: 'vendedor-2' }));
+    await expect(service.updateStatus(vendedorUser(), 'order-1', OrderEstado.CONFIRMADO)).rejects.toThrow(ForbiddenException);
+  });
+
   it('returns a controlled request exception when a concurrent status update sees stale state', async () => {
     ordersRepository.findById.mockResolvedValue(orderRecord({ estado: OrderEstado.PENDIENTE }));
     ordersRepository.updateStatus.mockRejectedValue(new BadRequestException('Order status changed before update'));

@@ -67,7 +67,7 @@ export class OrdersService {
   }
 
   cancel(user: TcpAuthenticatedUser, orderId: string, motivo?: string): Promise<OrderResponse> {
-    return this.updateStatus(user, orderId, OrderEstado.CANCELADO, motivo);
+    return this.cancelOwnOrder(user, orderId, motivo);
   }
 
   confirm(user: TcpAuthenticatedUser, orderId: string): Promise<OrderResponse> {
@@ -104,6 +104,22 @@ export class OrdersService {
     }
 
     throw new ForbiddenException('Order access denied');
+  }
+
+  private async cancelOwnOrder(user: TcpAuthenticatedUser, orderId: string, motivo?: string): Promise<OrderResponse> {
+    const order = await this.requireOrder(orderId);
+    this.assertClienteOwnsOrder(user, order);
+    assertOrderTransition(order.estado, OrderEstado.CANCELADO);
+    const updatedOrder = await this.ordersRepository.updateStatus(orderId, order.estado, OrderEstado.CANCELADO, motivo);
+    return toOrderResponse(updatedOrder);
+  }
+
+  private assertClienteOwnsOrder(user: TcpAuthenticatedUser, order: OrderRecord): void {
+    if (user.role === UserRole.CLIENTE && order.usuarioId === user.userId) {
+      return;
+    }
+
+    throw new ForbiddenException('Order cancellation access denied');
   }
 
   private assertLifecycleWriter(user: TcpAuthenticatedUser, order: OrderRecord): void {

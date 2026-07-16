@@ -5,6 +5,7 @@ export interface ActionMapping {
   readonly transport: TcpTransport;
   readonly authRequired: boolean;
   readonly roles?: readonly string[];
+  readonly retryOnTimeout?: boolean;
 }
 
 export type ServiceFamilyStatus = 'available' | 'unavailable';
@@ -104,19 +105,19 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
     actions: {
       list: { tcpPattern: 'orders.list', transport: 'send', authRequired: true },
       'get-by-id': { tcpPattern: 'orders.get_by_id', transport: 'send', authRequired: true },
-      create: { tcpPattern: 'orders.create', transport: 'send', authRequired: true, roles: ['cliente'] },
-      'status/update': { tcpPattern: 'orders.status_update', transport: 'send', authRequired: true, roles: ['vendedor'] },
-      cancel: { tcpPattern: 'orders.cancel', transport: 'send', authRequired: true, roles: ['cliente'] },
-      confirm: { tcpPattern: 'orders.confirm', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      create: { tcpPattern: 'orders.create', transport: 'send', authRequired: true, roles: ['cliente'], retryOnTimeout: false },
+      'status/update': { tcpPattern: 'orders.status_update', transport: 'send', authRequired: true, roles: ['vendedor'], retryOnTimeout: false },
+      cancel: { tcpPattern: 'orders.cancel', transport: 'send', authRequired: true, roles: ['cliente'], retryOnTimeout: false },
+      confirm: { tcpPattern: 'orders.confirm', transport: 'send', authRequired: true, roles: ['vendedor'], retryOnTimeout: false },
     },
   },
   cart: {
     status: 'available',
     actions: {
       get: { tcpPattern: 'cart.get', transport: 'send', authRequired: true, roles: ['cliente'] },
-      'items/add': { tcpPattern: 'cart.items_add', transport: 'send', authRequired: true, roles: ['cliente'] },
-      'items/update': { tcpPattern: 'cart.items_update', transport: 'send', authRequired: true, roles: ['cliente'] },
-      'items/delete': { tcpPattern: 'cart.items_delete', transport: 'send', authRequired: true, roles: ['cliente'] },
+      'items/add': { tcpPattern: 'cart.items_add', transport: 'send', authRequired: true, roles: ['cliente'], retryOnTimeout: false },
+      'items/update': { tcpPattern: 'cart.items_update', transport: 'send', authRequired: true, roles: ['cliente'], retryOnTimeout: false },
+      'items/delete': { tcpPattern: 'cart.items_delete', transport: 'send', authRequired: true, roles: ['cliente'], retryOnTimeout: false },
     },
   },
   deliveries: { status: 'unavailable', actions: {} },

@@ -67,7 +67,7 @@ export class TcpDispatcherService {
    *
    * - Uses request/response via `send()` for `'send'` transport
    * - Uses fire-and-forget via `emit()` for `'publish'` transport
-   * - Applies timeout and bounded retry (1 retry on timeout only)
+   * - Applies timeout and bounded retry when the action allows it
    */
   async dispatch(
     service: string,
@@ -81,15 +81,16 @@ export class TcpDispatcherService {
       return { queued: true, pattern: mapping.tcpPattern };
     }
 
-    return this.sendWithRetry(client, mapping.tcpPattern, payload);
+    return this.sendWithRetry(client, mapping.tcpPattern, payload, mapping.retryOnTimeout !== false);
   }
 
   private async sendWithRetry(
     client: ClientProxy,
     pattern: string,
     payload: TcpCommandPayload,
+    retryOnTimeout: boolean,
   ): Promise<unknown> {
-    const maxAttempts = 2;
+    const maxAttempts = retryOnTimeout ? 2 : 1;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {

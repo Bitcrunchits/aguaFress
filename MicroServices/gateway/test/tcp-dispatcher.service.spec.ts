@@ -1,4 +1,5 @@
-import { of } from 'rxjs';
+import { GatewayTimeoutException, Logger } from '@nestjs/common';
+import { NEVER, of } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
 import type { ClientProxy } from '@nestjs/microservices';
 import { ORDERS_CLIENT, USUARIO_CLIENT } from '../src/tcp/tcp-clients.module';
@@ -12,14 +13,14 @@ describe('TcpDispatcherService', () => {
     };
   }
 
-  function createDispatcher(): {
+  function createDispatcher(tcpTimeoutMs = 5000): {
     dispatcher: TcpDispatcherService;
     usuarioClient: jest.Mocked<Pick<ClientProxy, 'send' | 'emit'>>;
     ordersClient: jest.Mocked<Pick<ClientProxy, 'send' | 'emit'>>;
   } {
     const usuarioClient = createClient();
     const ordersClient = createClient();
-    const configService = { get: jest.fn().mockReturnValue(5000) } as unknown as ConfigService;
+    const configService = { get: jest.fn().mockReturnValue(tcpTimeoutMs) } as unknown as ConfigService;
     const dispatcher = new TcpDispatcherService(
       usuarioClient as unknown as ClientProxy,
       ordersClient as unknown as ClientProxy,
@@ -34,6 +35,14 @@ describe('TcpDispatcherService', () => {
     params: { service: 'orders', action: 'list' },
     user: { sub: 'cliente-1', email: 'cliente@agua.com', role: 'cliente' },
   };
+
+  beforeEach(() => {
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   it('exports an ORDERS_CLIENT token separate from USUARIO_CLIENT', () => {
     expect(ORDERS_CLIENT).toBe('ORDERS_CLIENT');
@@ -64,5 +73,33 @@ describe('TcpDispatcherService', () => {
 
     expect(ordersClient.send).toHaveBeenCalledWith('cart.get', payload);
     expect(usuarioClient.send).not.toHaveBeenCalled();
+  });
+
+  it('does not retry mutating send actions on timeout', async () => {
+    const { dispatcher, ordersClient } = createDispatcher(1);
+    ordersClient.send.mockReturnValue(NEVER);
+
+    await expect(dispatcher.dispatch('orders', payload, {
+      tcpPattern: 'orders.create',
+      transport: 'send',
+      authRequired: true,
+      roles: ['cliente'],
+      retryOnTimeout: false,
+    })).rejects.toThrow(GatewayTimeoutException);
+
+    expect(ordersClient.send).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries safe read send actions once on timeout', async () => {
+    const { dispatcher, ordersClient } = createDispatcher(1);
+    ordersClient.send.mockReturnValue(NEVER);
+
+    await expect(dispatcher.dispatch('orders', payload, {
+      tcpPattern: 'orders.list',
+      transport: 'send',
+      authRequired: true,
+    })).rejects.toThrow(GatewayTimeoutException);
+
+    expect(ordersClient.send).toHaveBeenCalledTimes(2);
   });
 });
