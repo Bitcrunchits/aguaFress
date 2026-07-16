@@ -8,6 +8,7 @@ import { TcpDispatcherService } from '../src/tcp/tcp-dispatcher.service';
 
 describe('Gateway HTTP routing', () => {
   let app: INestApplication;
+  let clienteToken: string;
   let vendedorToken: string;
   let superAdminToken: string;
   let mockDispatch: jest.Mock;
@@ -16,6 +17,8 @@ describe('Gateway HTTP routing', () => {
     process.env.JWT_SECRET = 'test-secret';
     process.env.USUARIO_SERVICE_HOST = 'usuario-service';
     process.env.USUARIO_SERVICE_TCP_PORT = '3011';
+    process.env.ORDERS_SERVICE_HOST = 'orders-service';
+    process.env.ORDERS_SERVICE_TCP_PORT = '3014';
 
     mockDispatch = jest.fn();
 
@@ -41,6 +44,11 @@ describe('Gateway HTTP routing', () => {
     await app.init();
 
     const jwtService = moduleRef.get(JwtService);
+    clienteToken = jwtService.sign({
+      sub: 'cliente-user-id',
+      email: 'cliente@agua.com',
+      role: UserRole.CLIENTE,
+    });
     vendedorToken = jwtService.sign({
       sub: 'test-user-id',
       email: 'test@agua.com',
@@ -183,6 +191,85 @@ describe('Gateway HTTP routing', () => {
       .expect(503);
   });
 
+  it('dispatches protected cart actions to orders-service TCP patterns', async () => {
+    mockDispatch.mockResolvedValue({ cartId: 'cart-1', items: [] });
+
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/cart/get')
+      .set('Authorization', `Bearer ${clienteToken}`)
+      .expect(200);
+
+    expect(response.body).toEqual({ cartId: 'cart-1', items: [] });
+    expect(mockDispatch).toHaveBeenCalledWith(
+      'cart',
+      expect.objectContaining({
+        params: { service: 'cart', action: 'get' },
+        user: expect.objectContaining({ sub: 'cliente-user-id', role: 'cliente' }),
+      }),
+      expect.objectContaining({ tcpPattern: 'cart.get', authRequired: true }),
+    );
+  });
+
+  it('forwards sanitized DELETE body for cart item deletion', async () => {
+    mockDispatch.mockResolvedValue({ cartId: 'cart-1', items: [] });
+
+    await request(app.getHttpServer())
+      .delete('/api/v1/cart/items/delete')
+      .set('Authorization', `Bearer ${clienteToken}`)
+      .send({ cartId: 'cart-1', productoId: 'producto-1', userId: 'forged-user' })
+      .expect(200);
+
+    expect(mockDispatch).toHaveBeenCalledWith(
+      'cart',
+      expect.objectContaining({
+        body: { cartId: 'cart-1', productoId: 'producto-1' },
+        params: { service: 'cart', action: 'items/delete' },
+        user: expect.objectContaining({ sub: 'cliente-user-id', role: 'cliente' }),
+      }),
+      expect.objectContaining({ tcpPattern: 'cart.items_delete', authRequired: true }),
+    );
+  });
+
+  it('dispatches protected order actions and ignores body userId as identity source', async () => {
+    mockDispatch.mockResolvedValue({ id: 'order-1', estado: 'pendiente' });
+
+    await request(app.getHttpServer())
+      .post('/api/v1/orders/create')
+      .set('Authorization', `Bearer ${clienteToken}`)
+      .send({ userId: 'forged-user', metodoPago: 'contra_entrega' })
+      .expect(200);
+
+    expect(mockDispatch).toHaveBeenCalledWith(
+      'orders',
+      expect.objectContaining({
+        body: { metodoPago: 'contra_entrega' },
+        params: { service: 'orders', action: 'create' },
+        user: expect.objectContaining({ sub: 'cliente-user-id', role: 'cliente' }),
+      }),
+      expect.objectContaining({ tcpPattern: 'orders.create', authRequired: true }),
+    );
+  });
+
+  it('rejects unauthenticated cart and order actions before TCP dispatch', async () => {
+    await request(app.getHttpServer()).get('/api/v1/cart/get').expect(401);
+    await request(app.getHttpServer()).post('/api/v1/orders/create').send({}).expect(401);
+
+    expect(mockDispatch).not.toHaveBeenCalled();
+  });
+
+  it('returns a controlled 404 for unknown cart and order actions', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/cart/unknown')
+      .set('Authorization', `Bearer ${vendedorToken}`)
+      .expect(404);
+    await request(app.getHttpServer())
+      .post('/api/v1/orders/unknown')
+      .set('Authorization', `Bearer ${vendedorToken}`)
+      .expect(404);
+
+    expect(mockDispatch).not.toHaveBeenCalled();
+  });
+
   it('returns 404 for unknown service families', async () => {
     await request(app.getHttpServer())
       .post('/api/v1/foobar/test')
@@ -237,7 +324,7 @@ describe('Gateway HTTP routing', () => {
     );
   });
 
-  it('forwards POST/PATCH bodies but leaves GET/DELETE body undefined', async () => {
+  it('forwards POST/PATCH/DELETE bodies but leaves GET body undefined', async () => {
     mockDispatch.mockResolvedValue({ ok: true });
     const server = app.getHttpServer();
     const authHeader = { Authorization: `Bearer ${vendedorToken}` };
@@ -249,12 +336,12 @@ describe('Gateway HTTP routing', () => {
       .send({ name: 'New Name' })
       .expect(200);
     await request(server).get('/api/v1/users/profile').set(authHeader).expect(200);
-    await request(server).delete('/api/v1/auth/logout').set(authHeader).expect(200);
+    await request(server).delete('/api/v1/auth/logout').set(authHeader).send({ reason: 'manual' }).expect(200);
 
     expect(mockDispatch.mock.calls[0]?.[1]).toEqual(expect.objectContaining({ body: { email: 'a@b.com' } }));
     expect(mockDispatch.mock.calls[1]?.[1]).toEqual(expect.objectContaining({ body: { name: 'New Name' } }));
     expect(mockDispatch.mock.calls[2]?.[1]).toEqual(expect.objectContaining({ body: undefined }));
-    expect(mockDispatch.mock.calls[3]?.[1]).toEqual(expect.objectContaining({ body: undefined }));
+    expect(mockDispatch.mock.calls[3]?.[1]).toEqual(expect.objectContaining({ body: { reason: 'manual' } }));
   });
 
   it('rejects oversized payload beyond the limit', async () => {

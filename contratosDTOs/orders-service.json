@@ -7,6 +7,27 @@
   "security_rules": [
     "⚠️ userId/clienteId NUNCA viene del body. Se extrae del token JWT en el middleware."
   ],
+  "public_entrypoint": {
+    "type": "api-gateway",
+    "base_path": "/api/v1/{service}/{action}",
+    "note": "orders-service permanece TCP-only; el frontend no consume HTTP directo del microservicio."
+  },
+  "tcp_patterns": {
+    "cart": ["cart.get", "cart.items_add", "cart.items_update", "cart.items_delete"],
+    "orders": ["orders.list", "orders.get_by_id", "orders.create", "orders.status_update", "orders.cancel", "orders.confirm"]
+  },
+  "gateway_routes": [
+    { "path": "/api/v1/cart/get", "method": "GET", "tcp_pattern": "cart.get", "auth": "CLIENTE" },
+    { "path": "/api/v1/cart/items/add", "method": "POST", "tcp_pattern": "cart.items_add", "auth": "CLIENTE" },
+    { "path": "/api/v1/cart/items/update", "method": "PATCH", "tcp_pattern": "cart.items_update", "auth": "CLIENTE" },
+    { "path": "/api/v1/cart/items/delete", "method": "DELETE", "tcp_pattern": "cart.items_delete", "auth": "CLIENTE", "request": { "cartId": "string", "productoId": "string" } },
+    { "path": "/api/v1/orders/list", "method": "GET", "tcp_pattern": "orders.list", "auth": "CLIENTE|VENDEDOR|SUPER_ADMIN" },
+    { "path": "/api/v1/orders/get-by-id?id={orderId}", "method": "GET", "tcp_pattern": "orders.get_by_id", "auth": "CLIENTE|VENDEDOR|SUPER_ADMIN" },
+    { "path": "/api/v1/orders/create", "method": "POST", "tcp_pattern": "orders.create", "auth": "CLIENTE" },
+    { "path": "/api/v1/orders/status/update", "method": "PATCH", "tcp_pattern": "orders.status_update", "auth": "VENDEDOR" },
+    { "path": "/api/v1/orders/cancel", "method": "POST", "tcp_pattern": "orders.cancel", "auth": "CLIENTE" },
+    { "path": "/api/v1/orders/confirm", "method": "POST", "tcp_pattern": "orders.confirm", "auth": "CLIENTE" }
+  ],
   "events_publishes": ["orders-stream: OrderCreated, OrderStatusChanged"],
   "events_consumes": ["deliveries-stream: DeliveryCompleted"],
   "events_listens": ["deliveries-stream: DeliveryStarted, DeliveryCompleted, DeliveryStatusChanged"],
@@ -83,7 +104,7 @@
       "path": "/cart/items/:id",
       "method": "DELETE",
       "auth": "CLIENTE",
-      "request": {},
+      "request": { "cartId": "uuid", "productoId": "uuid" },
       "response": { "deleted": "boolean" }
     }
   ]

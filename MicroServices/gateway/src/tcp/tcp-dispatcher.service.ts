@@ -2,7 +2,7 @@ import { Injectable, Inject, GatewayTimeoutException, Logger } from '@nestjs/com
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { catchError, firstValueFrom, throwError, timeout, TimeoutError, type Observable } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
-import { USUARIO_CLIENT } from './tcp-clients.module';
+import { ORDERS_CLIENT, USUARIO_CLIENT } from './tcp-clients.module';
 import type { ActionMapping } from '../actions/action-registry';
 
 export interface TcpCommandPayload {
@@ -25,6 +25,8 @@ const SERVICE_CLIENT_MAP: Record<string, string> = {
   'super-admin': USUARIO_CLIENT,
   qr: USUARIO_CLIENT,
   'link-invitacion': USUARIO_CLIENT,
+  orders: ORDERS_CLIENT,
+  cart: ORDERS_CLIENT,
 };
 
 @Injectable()
@@ -34,6 +36,7 @@ export class TcpDispatcherService {
 
   constructor(
     @Inject(USUARIO_CLIENT) private readonly usuarioClient: ClientProxy,
+    @Inject(ORDERS_CLIENT) private readonly ordersClient: ClientProxy,
     configService: ConfigService,
   ) {
     this.tcpTimeoutMs = configService.get<number>('TCP_TIMEOUT_MS', 5000);
@@ -48,11 +51,15 @@ export class TcpDispatcherService {
       throw new Error(`No TCP client configured for service family "${service}"`);
     }
 
-    if (clientName !== USUARIO_CLIENT) {
-      throw new Error(`TCP client "${clientName}" is not yet available`);
+    if (clientName === USUARIO_CLIENT) {
+      return this.usuarioClient;
     }
 
-    return this.usuarioClient;
+    if (clientName === ORDERS_CLIENT) {
+      return this.ordersClient;
+    }
+
+    throw new Error(`TCP client "${clientName}" is not configured`);
   }
 
   /**

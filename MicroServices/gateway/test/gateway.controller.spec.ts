@@ -74,7 +74,7 @@ describe('GatewayController', () => {
       expect(result).toEqual({ updated: true });
     });
 
-    it('resolves and dispatches DELETE actions', async () => {
+    it('resolves and dispatches DELETE actions with sanitized body', async () => {
       mockResolver.resolve.mockReturnValue({
         tcpPattern: 'auth.session',
         transport: 'send',
@@ -83,9 +83,18 @@ describe('GatewayController', () => {
       mockDispatcher.dispatch.mockResolvedValue({ deleted: true });
 
       const req = { headers: {} };
-      const result = await controller.handleDeleteAction('auth', 'session', {}, req as never);
+      const result = await controller.handleDeleteAction(
+        'auth',
+        'session',
+        { id: 'session-1', userId: 'forged-user' },
+        {},
+        req as never,
+      );
 
       expect(mockResolver.resolve).toHaveBeenCalledWith('auth', 'session');
+      expect(mockDispatcher.dispatch).toHaveBeenCalledWith('auth', expect.objectContaining({
+        body: { id: 'session-1' },
+      }), expect.objectContaining({ tcpPattern: 'auth.session' }));
       expect(result).toEqual({ deleted: true });
     });
 

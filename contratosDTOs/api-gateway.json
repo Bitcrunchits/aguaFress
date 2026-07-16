@@ -40,14 +40,33 @@
     { "service": "super-admin", "status": "available","tcp_client": "USUARIO_CLIENT", "actions": ["dashboard", "audit-log", "qr-codes", "link-invitacion", "vendedores"] },
     { "service": "qr",          "status": "available","tcp_client": "USUARIO_CLIENT", "actions": ["vendor/list", "vendor/create"] },
     { "service": "link-invitacion", "status": "available","tcp_client": "USUARIO_CLIENT", "actions": ["vendor/list", "vendor/create"] },
+    { "service": "orders",       "status": "available", "tcp_client": "ORDERS_CLIENT", "actions": ["list", "get-by-id", "create", "status/update", "cancel", "confirm"] },
+    { "service": "cart",         "status": "available", "tcp_client": "ORDERS_CLIENT", "actions": ["get", "items/add", "items/update", "items/delete"] },
     { "service": "products",     "status": "unavailable", "tcp_client": "TBD", "actions": [] },
     { "service": "categories",   "status": "unavailable", "tcp_client": "TBD", "actions": [] },
     { "service": "brands",       "status": "unavailable", "tcp_client": "TBD", "actions": [] },
-    { "service": "orders",       "status": "unavailable", "tcp_client": "TBD", "actions": [] },
-    { "service": "cart",         "status": "unavailable", "tcp_client": "TBD", "actions": [] },
     { "service": "deliveries",   "status": "unavailable", "tcp_client": "TBD", "actions": [] },
     { "service": "activity-logs","status": "unavailable", "tcp_client": "TBD", "actions": [] }
   ],
+  "orders_gateway_routes": {
+    "identity_rule": "El gateway elimina userId del body y reenvía la identidad confiable del JWT en payload.user.",
+    "delete_body_rule": "DELETE /api/v1/cart/items/delete acepta body JSON y elimina userId antes de reenviarlo por TCP.",
+    "cart_item_delete_request": { "cartId": "string", "productoId": "string" },
+    "cart": {
+      "get": "cart.get",
+      "items/add": "cart.items_add",
+      "items/update": "cart.items_update",
+      "items/delete": "cart.items_delete"
+    },
+    "orders": {
+      "list": "orders.list",
+      "get-by-id": "orders.get_by_id",
+      "create": "orders.create",
+      "status/update": "orders.status_update",
+      "cancel": "orders.cancel",
+      "confirm": "orders.confirm"
+    }
+  },
   "health_endpoint": {
     "path": "/api/health",
     "auth_required": false,

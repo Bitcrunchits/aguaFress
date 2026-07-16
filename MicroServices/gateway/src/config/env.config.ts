@@ -14,6 +14,8 @@ const REQUIRED_ENV_KEYS = {
   JWT_SECRET: 'JWT_SECRET',
   USUARIO_SERVICE_HOST: 'USUARIO_SERVICE_HOST',
   USUARIO_SERVICE_TCP_PORT: 'USUARIO_SERVICE_TCP_PORT',
+  ORDERS_SERVICE_HOST: 'ORDERS_SERVICE_HOST',
+  ORDERS_SERVICE_TCP_PORT: 'ORDERS_SERVICE_TCP_PORT',
 } as const;
 
 type RequiredEnvKey = (typeof REQUIRED_ENV_KEYS)[keyof typeof REQUIRED_ENV_KEYS];
@@ -30,6 +32,8 @@ export interface GatewayEnv {
   readonly JWT_SECRET: string;
   readonly USUARIO_SERVICE_HOST: string;
   readonly USUARIO_SERVICE_TCP_PORT: number;
+  readonly ORDERS_SERVICE_HOST: string;
+  readonly ORDERS_SERVICE_TCP_PORT: number;
   readonly TCP_TIMEOUT_MS: number;
   readonly RATE_LIMIT_TTL_MS: number;
   readonly RATE_LIMIT_MAX: number;
@@ -49,6 +53,10 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
   const usuarioServiceTcpPort = readRequiredPort(
     envInput.USUARIO_SERVICE_TCP_PORT,
     'USUARIO_SERVICE_TCP_PORT',
+  );
+  const ordersServiceTcpPort = readRequiredPort(
+    envInput.ORDERS_SERVICE_TCP_PORT,
+    'ORDERS_SERVICE_TCP_PORT',
   );
   const tcpTimeoutMs = readOptionalPositiveInteger(
     envInput.TCP_TIMEOUT_MS,
@@ -89,6 +97,7 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
   const invalidMessages = [
     port.error,
     usuarioServiceTcpPort.error,
+    ordersServiceTcpPort.error,
     tcpTimeoutMs.error,
     rateLimitTtlMs.error,
     rateLimitMax.error,
@@ -107,6 +116,8 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
     JWT_SECRET: envInput.JWT_SECRET as string,
     USUARIO_SERVICE_HOST: envInput.USUARIO_SERVICE_HOST as string,
     USUARIO_SERVICE_TCP_PORT: usuarioServiceTcpPort.value,
+    ORDERS_SERVICE_HOST: envInput.ORDERS_SERVICE_HOST as string,
+    ORDERS_SERVICE_TCP_PORT: ordersServiceTcpPort.value,
     TCP_TIMEOUT_MS: tcpTimeoutMs.value,
     RATE_LIMIT_TTL_MS: rateLimitTtlMs.value,
     RATE_LIMIT_MAX: rateLimitMax.value,

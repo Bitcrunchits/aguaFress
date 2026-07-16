@@ -31,7 +31,7 @@ POST http://localhost:3000/api/v1/auth/login
 | Segmento | Ejemplo | Descripción |
 |----------|---------|-------------|
 | `version` | `v1` | Versión pública del contrato HTTP. |
-| `service` | `auth`, `users`, `vendedores` | Familia funcional que resuelve el gateway. |
+| `service` | `auth`, `users`, `vendedores`, `cart`, `orders` | Familia funcional que resuelve el gateway. |
 | `action` | `login`, `profile/update` | Acción dentro de la familia. Puede tener subpath. |
 
 Ejemplos:
@@ -89,6 +89,8 @@ Authorization: Bearer <token>
 | `PATCH` | `/api/v1/vendedores/profile/update` | Usuario autenticado | `UpdateProfileRequest` |
 | `GET` | `/api/v1/clientes/list` | Usuario autenticado | `ClienteResponse[]` |
 | `GET` | `/api/v1/clientes/cartera` | Usuario autenticado | `ClienteResponse[]` |
+| `GET` | `/api/v1/orders/list` | Usuario autenticado | `OrderListResponse[]` |
+| `GET` | `/api/v1/orders/get-by-id?id={orderId}` | Usuario autenticado | `OrderResponse` |
 
 ### Acciones protegidas por rol
 
@@ -104,6 +106,35 @@ Authorization: Bearer <token>
 | `POST` | `/api/v1/qr/vendor/create` | `vendedor` |
 | `GET` | `/api/v1/link-invitacion/vendor/list` | `vendedor` |
 | `POST` | `/api/v1/link-invitacion/vendor/create` | `vendedor` |
+| `GET` | `/api/v1/cart/get` | `cliente` |
+| `POST` | `/api/v1/cart/items/add` | `cliente` |
+| `PATCH` | `/api/v1/cart/items/update` | `cliente` |
+| `DELETE` | `/api/v1/cart/items/delete` | `cliente` |
+| `POST` | `/api/v1/orders/create` | `cliente` |
+| `PATCH` | `/api/v1/orders/status/update` | `vendedor` |
+| `POST` | `/api/v1/orders/cancel` | `cliente` |
+| `POST` | `/api/v1/orders/confirm` | `cliente` |
+
+### Carrito y pedidos
+
+El frontend debe consumir carrito y pedidos por el gateway; `orders-service` sigue siendo TCP-only y no expone HTTP público.
+
+| Método sugerido | Endpoint gateway | TCP pattern | Request | Response |
+|-----------------|------------------|-------------|---------|----------|
+| `GET` | `/api/v1/cart/get` | `cart.get` | — | `CartResponse \| null` |
+| `POST` | `/api/v1/cart/items/add` | `cart.items_add` | `AddCartItemRequest` | `CartResponse` |
+| `PATCH` | `/api/v1/cart/items/update` | `cart.items_update` | `UpdateCartItemRequest` + `id` | `CartResponse` |
+| `DELETE` | `/api/v1/cart/items/delete` | `cart.items_delete` | `{ cartId: string, productoId: string }` | `CartResponse` |
+| `GET` | `/api/v1/orders/list` | `orders.list` | query filters | `OrderListResponse[]` |
+| `GET` | `/api/v1/orders/get-by-id?id={orderId}` | `orders.get_by_id` | query `id` | `OrderResponse` |
+| `POST` | `/api/v1/orders/create` | `orders.create` | `CreateOrderRequest` | `OrderResponse` |
+| `PATCH` | `/api/v1/orders/status/update` | `orders.status_update` | `UpdateOrderStatusRequest` + `id` | `OrderResponse` |
+| `POST` | `/api/v1/orders/cancel` | `orders.cancel` | `CancelOrderRequest` + `id` | `OrderResponse` |
+| `POST` | `/api/v1/orders/confirm` | `orders.confirm` | `ConfirmOrderRequest` + `id` | `OrderResponse` |
+
+Regla de identidad: nunca mandar ni confiar en `userId` dentro del body. El gateway remueve `userId` del payload HTTP —incluyendo cuerpos `DELETE`— y reenvía la identidad confiable desde el JWT en `payload.user`.
+
+Mientras products-service no tenga un adaptador real para snapshots, los comandos que dependen de productos pueden responder error controlado de no disponibilidad desde orders-service. El frontend debe mostrar una recuperación clara y no asumir que el precio del body será aceptado.
 
 ## Servicios planificados pero no disponibles
 
@@ -112,8 +143,6 @@ Estas familias existen en el mapa del gateway, pero hoy responden `503 Service U
 - `products`
 - `categories`
 - `brands`
-- `orders`
-- `cart`
 - `deliveries`
 - `activity-logs`
 

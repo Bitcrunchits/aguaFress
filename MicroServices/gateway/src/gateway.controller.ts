@@ -77,7 +77,7 @@ export class GatewayController {
     @Req() req: Request,
   ): Promise<unknown> {
     const mapping = this.resolver.resolve(service, action);
-    const payload = this.buildPayload(req, query, { service, action }, body);
+    const payload = this.buildPayload(req, query, { service, action }, sanitizeBodyIdentity(body));
     return this.dispatcher.dispatch(service, payload, mapping);
   }
 
@@ -98,7 +98,7 @@ export class GatewayController {
     @Req() req: Request,
   ): Promise<unknown> {
     const mapping = this.resolver.resolve(service, action);
-    const payload = this.buildPayload(req, query, { service, action }, body);
+    const payload = this.buildPayload(req, query, { service, action }, sanitizeBodyIdentity(body));
     return this.dispatcher.dispatch(service, payload, mapping);
   }
 
@@ -114,11 +114,12 @@ export class GatewayController {
   async handleDeleteAction(
     @Param('service') service: string,
     @Param('action') action: string,
+    @Body() body: unknown,
     @Query() query: Record<string, string>,
     @Req() req: Request,
   ): Promise<unknown> {
     const mapping = this.resolver.resolve(service, action);
-    const payload = this.buildPayload(req, query, { service, action });
+    const payload = this.buildPayload(req, query, { service, action }, sanitizeBodyIdentity(body));
     return this.dispatcher.dispatch(service, payload, mapping);
   }
 
@@ -158,4 +159,18 @@ export class GatewayController {
   private rejectUnsupportedMethod(): never {
     throw new MethodNotAllowedException('Gateway actions support GET, POST, PATCH, and DELETE only');
   }
+}
+
+function sanitizeBodyIdentity(body: unknown): unknown {
+  if (!isPlainRecord(body)) {
+    return body;
+  }
+
+  const bodyWithoutUserId = { ...body };
+  delete bodyWithoutUserId.userId;
+  return bodyWithoutUserId;
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
