@@ -1,5 +1,5 @@
 // ─── Orders Service ───
-// Puerto: 3004
+// Puerto: 3014
 // Base de datos: PostgreSQL
 // Unifica: carrito + pedidos + facturas
 //
@@ -23,33 +23,46 @@ export type MetodoPagoPermitido = Extract<MetodoPago, MetodoPago.CONTRA_ENTREGA>
 /**
  * Agregar un item al carrito del usuario autenticado.
  * El userId se obtiene del token JWT, no del body.
+ * Puede devolver 503 controlado hasta que exista el adaptador real de productos.
  */
 export interface AddCartItemRequest {
-  productId: string;
+  cartId?: string;
+  productoId: string;
   cantidad: number;
 }
 
 export interface CartItemResponse {
   id: string;
-  productId: string;
+  productoId: string;
   nombre: string;
   cantidad: number;
   precioUnitario: number;
+  subtotal: number;
 }
 
 export interface CartResponse {
-  cartId: string;
+  id: string;
+  clienteId: string;
   vendedorId: string;
   items: CartItemResponse[];
-  totalSinIva: number;
-  iva: number;
   total: number;
   /** ISO 8601 — el carrito expira 24hs después de creado */
   expiresAt: string;
 }
 
+/**
+ * Actualiza la cantidad de un item existente.
+ * No crea items faltantes y puede devolver 503 controlado hasta que exista el adaptador real de productos.
+ */
 export interface UpdateCartItemRequest {
+  cartId: string;
+  productoId: string;
   cantidad: number;
+}
+
+export interface DeleteCartItemRequest {
+  cartId: string;
+  productoId: string;
 }
 
 // ════════════════════════════════════════════
@@ -60,6 +73,7 @@ export interface UpdateCartItemRequest {
  * Crear un pedido desde el carrito del usuario autenticado.
  * - userId y clienteId se obtienen del token JWT
  * - Los precios se calculan server-side contra products-service
+ * - Hasta que exista el adaptador real de productos, puede devolver 503 controlado
  * - No se aceptan otros métodos de pago en MVP V1
  */
 export interface CreateOrderRequest {
@@ -71,7 +85,8 @@ export interface CreateOrderRequest {
 export interface OrderResponse {
   id: string;
   pedidoNumero: string;
-  cliente: { id: string; nombre: string; apellido?: string };
+  clienteId: string;
+  vendedorId: string;
   items: {
     productId: string;
     nombre: string;
@@ -84,7 +99,9 @@ export interface OrderResponse {
   estado: OrderEstado;
   metodoPago: MetodoPagoPermitido;
   direccion: DireccionEntrega;
+  observaciones?: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface OrderListFilters extends PaginationRequest {
@@ -109,12 +126,10 @@ export interface OrderListResponse {
 // ════════════════════════════════════════════
 
 /**
- * El cliente confirma la visita del vendedor.
- * Puede opcionalmente actualizar la dirección de entrega.
+ * El vendedor confirma el pedido como parte del ciclo de vida operativo.
  */
 export interface ConfirmOrderRequest {
-  /** Opcional — si el cliente quiere cambiar la dirección antes de la visita */
-  direccion?: DireccionEntrega;
+  id: string;
 }
 
 export interface ConfirmOrderResponse {
@@ -128,9 +143,12 @@ export interface ConfirmOrderResponse {
 // ════════════════════════════════════════════
 
 export interface UpdateOrderStatusRequest {
+  id: string;
   estado: OrderEstado;
+  notas?: string;
 }
 
 export interface CancelOrderRequest {
+  id: string;
   motivo?: string;
 }

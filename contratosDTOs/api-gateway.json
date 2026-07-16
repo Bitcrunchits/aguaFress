@@ -51,7 +51,8 @@
   "orders_gateway_routes": {
     "identity_rule": "El gateway elimina userId del body y reenvía la identidad confiable del JWT en payload.user.",
     "delete_body_rule": "DELETE /api/v1/cart/items/delete acepta body JSON y elimina userId antes de reenviarlo por TCP.",
-    "order_lifecycle_role_rule": "orders.status/update y orders.confirm requieren rol VENDEDOR; orders.cancel requiere rol CLIENTE.",
+    "order_lifecycle_role_rule": "orders.status/update y orders.confirm requieren rol VENDEDOR; orders.cancel requiere rol CLIENTE y solo cancela pedidos propios en estado pendiente.",
+    "product_dependency_rule": "Solo cart.items_add, cart.items_update y orders.create pueden devolver 503 controlado mientras no exista adaptador real de productos; lecturas, borrado de items y cambios de estado siguen disponibles.",
     "cart_item_delete_request": { "cartId": "string", "productoId": "string" },
     "cart": {
       "get": "cart.get",

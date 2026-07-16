@@ -109,9 +109,15 @@ export class OrdersService {
   private async cancelOwnOrder(user: TcpAuthenticatedUser, orderId: string, motivo?: string): Promise<OrderResponse> {
     const order = await this.requireOrder(orderId);
     this.assertClienteOwnsOrder(user, order);
-    assertOrderTransition(order.estado, OrderEstado.CANCELADO);
+    this.assertClienteCanCancel(order);
     const updatedOrder = await this.ordersRepository.updateStatus(orderId, order.estado, OrderEstado.CANCELADO, motivo);
     return toOrderResponse(updatedOrder);
+  }
+
+  private assertClienteCanCancel(order: OrderRecord): void {
+    if (order.estado !== OrderEstado.PENDIENTE) {
+      throw new ForbiddenException('Cliente can only cancel pending orders');
+    }
   }
 
   private assertClienteOwnsOrder(user: TcpAuthenticatedUser, order: OrderRecord): void {

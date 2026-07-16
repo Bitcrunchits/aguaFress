@@ -143,7 +143,10 @@ describe('CartService', () => {
 
   it('rejects update when the product vendor does not match the cart vendor', async () => {
     productCatalog.getSnapshot.mockResolvedValue({ ...productSnapshot, vendedorId: 'vendedor-2' });
-    repository.findById.mockResolvedValue(cartRecord({ vendedorId }));
+    repository.findById.mockResolvedValue(cartRecord({
+      vendedorId,
+      items: [cartItem({ productoId: 'product-1' })],
+    }));
 
     await expect(
       service.updateItem(clienteId, { cartId: 'cart-1', productoId: 'product-1', cantidad: 1 }),
@@ -208,6 +211,19 @@ describe('CartService', () => {
     expect(repository.replaceItemQuantity).toHaveBeenCalledWith('cart-1', 'product-1', 'Agua 20L', 3, 1200);
     expect(cart.items[0]?.cantidad).toBe(3);
     expect(cart.total).toBe(3600);
+  });
+
+  it('rejects update when the item does not exist in the cart without product lookup or write', async () => {
+    repository.findById.mockResolvedValue(cartRecord({
+      items: [cartItem({ productoId: 'existing-product' })],
+    }));
+
+    await expect(
+      service.updateItem(clienteId, { cartId: 'cart-1', productoId: 'missing-product', cantidad: 3 }),
+    ).rejects.toThrow(NotFoundException);
+
+    expect(productCatalog.getSnapshot).not.toHaveBeenCalled();
+    expect(repository.replaceItemQuantity).not.toHaveBeenCalled();
   });
 
   it('rejects a missing cart mutation without writing', async () => {

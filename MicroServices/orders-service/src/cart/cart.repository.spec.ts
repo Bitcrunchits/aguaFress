@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 import { PrismaCartRepository } from './cart.repository';
 import type { PrismaService } from '../common/prisma.service';
 
@@ -65,6 +66,43 @@ describe('PrismaCartRepository', () => {
     });
   });
 
+  it('replaces an existing item quantity without creating a missing item', async () => {
+    const prisma = rootPrismaService({
+      updatedCount: 1,
+      cart: prismaCart({
+        items: [prismaCartItem({ producto_id: 'product-1', cantidad: 3 })],
+      }),
+    });
+    const repository = new PrismaCartRepository(prisma);
+
+    const cart = await repository.replaceItemQuantity('cart-1', 'product-1', 'Agua 20L', 3, 1200);
+
+    expect(prisma.cartItem.updateMany).toHaveBeenCalledWith({
+      where: {
+        cart_id: 'cart-1',
+        producto_id: 'product-1',
+      },
+      data: {
+        nombre: 'Agua 20L',
+        cantidad: 3,
+        precio_unitario: 1200,
+      },
+    });
+    expect(prisma.cartItem.upsert).not.toHaveBeenCalled();
+    expect(cart.items[0]?.cantidad).toBe(3);
+  });
+
+  it('rejects replace quantity when the cart item does not exist', async () => {
+    const prisma = rootPrismaService({ updatedCount: 0, cart: prismaCart({}) });
+    const repository = new PrismaCartRepository(prisma);
+
+    await expect(repository.replaceItemQuantity('cart-1', 'missing-product', 'Agua 20L', 3, 1200)).rejects.toThrow(
+      NotFoundException,
+    );
+
+    expect(prisma.cart.findUnique).not.toHaveBeenCalled();
+  });
+
   function prismaService(tx: TransactionClientMock): PrismaService {
     return {
       $transaction: jest.fn(async (callback: (client: TransactionClientMock) => Promise<unknown>) => callback(tx)),
@@ -78,6 +116,18 @@ describe('PrismaCartRepository', () => {
         findFirst: jest.fn().mockResolvedValue(activeCart),
       },
     } as unknown as PrismaService & RootPrismaMock;
+  }
+
+  function rootPrismaService(options: RootPrismaOptions): PrismaService & RootPrismaMutationMock {
+    return {
+      cartItem: {
+        updateMany: jest.fn().mockResolvedValue({ count: options.updatedCount }),
+        upsert: jest.fn(),
+      },
+      cart: {
+        findUnique: jest.fn().mockResolvedValue(options.cart),
+      },
+    } as unknown as PrismaService & RootPrismaMutationMock;
   }
 
   function transactionClient(options: TransactionClientOptions): TransactionClientMock {
@@ -101,7 +151,23 @@ describe('PrismaCartRepository', () => {
       ...overrides,
     };
   }
+
+  function prismaCartItem(overrides: Partial<PrismaCartItemMock>): PrismaCartItemMock {
+    return {
+      id: 'item-1',
+      producto_id: 'product-1',
+      nombre: 'Agua 20L',
+      cantidad: 1,
+      precio_unitario: { toNumber: () => 1200 },
+      ...overrides,
+    };
+  }
 });
+
+interface RootPrismaOptions {
+  readonly updatedCount: number;
+  readonly cart: PrismaCartMock;
+}
 
 interface TransactionClientOptions {
   readonly activeCart: PrismaCartMock | null;
@@ -123,10 +189,32 @@ interface RootPrismaMock {
   readonly cart: Pick<CartDelegateMock, 'findFirst'>;
 }
 
+interface RootPrismaMutationMock {
+  readonly cart: Pick<CartDelegateMock, 'findUnique'>;
+  readonly cartItem: CartItemDelegateMock;
+}
+
+interface CartItemDelegateMock {
+  readonly updateMany: jest.Mock;
+  readonly upsert: jest.Mock;
+}
+
+interface DecimalLikeMock {
+  toNumber(): number;
+}
+
+interface PrismaCartItemMock {
+  readonly id: string;
+  readonly producto_id: string;
+  readonly nombre: string;
+  readonly cantidad: number;
+  readonly precio_unitario: DecimalLikeMock;
+}
+
 interface PrismaCartMock {
   readonly id: string;
   readonly usuario_id: string;
   readonly vendedor_id: string;
   readonly expires_at: Date;
-  readonly items: readonly [];
+  readonly items: readonly PrismaCartItemMock[];
 }

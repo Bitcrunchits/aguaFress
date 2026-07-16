@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../common/prisma.service';
 
@@ -156,26 +156,21 @@ export class PrismaCartRepository implements CartRepository {
     cantidad: number,
     precioUnitario: number,
   ): Promise<CartRecord> {
-    await this.prisma.cartItem.upsert({
+    const updateResult = await this.prisma.cartItem.updateMany({
       where: {
-        cart_id_producto_id: {
-          cart_id: cartId,
-          producto_id: productoId,
-        },
-      },
-      update: {
-        nombre,
-        cantidad,
-        precio_unitario: precioUnitario,
-      },
-      create: {
         cart_id: cartId,
         producto_id: productoId,
+      },
+      data: {
         nombre,
         cantidad,
         precio_unitario: precioUnitario,
       },
     });
+
+    if (updateResult.count !== 1) {
+      throw new NotFoundException('Cart item was not found');
+    }
 
     return this.findByIdOrThrow(cartId);
   }

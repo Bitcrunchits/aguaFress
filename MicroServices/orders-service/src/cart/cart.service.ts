@@ -42,6 +42,7 @@ export class CartService {
 
   async updateItem(clienteId: string, request: UpdateCartItemRequest): Promise<CartResponse> {
     const cart = await this.requireMutableCart(clienteId, request.cartId);
+    this.assertCartHasItem(cart, request.productoId);
     const product = await this.getAvailableProduct(request.productoId);
     this.assertCartBelongsToVendedor(cart, product.vendedorId);
     this.assertAvailableStock(product, request.cantidad, 0);
@@ -100,6 +101,12 @@ export class CartService {
   private assertCartBelongsToVendedor(cart: CartRecord, vendedorId: string): void {
     if (cart.vendedorId !== vendedorId) {
       throw new ForbiddenException('Cart belongs to another vendedor');
+    }
+  }
+
+  private assertCartHasItem(cart: CartRecord, productoId: string): void {
+    if (!cart.items.some((item) => item.productoId === productoId)) {
+      throw new NotFoundException('Cart item was not found');
     }
   }
 

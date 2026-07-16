@@ -147,6 +147,22 @@ describe('OrdersService', () => {
     expect(ordersRepository.updateStatus).not.toHaveBeenCalled();
   });
 
+  it('rejects cliente cancellation for their own confirmed order', async () => {
+    ordersRepository.findById.mockResolvedValue(orderRecord({ estado: OrderEstado.CONFIRMADO, usuarioId: clienteId }));
+
+    await expect(service.cancel(clienteUser(), 'order-1', 'Already confirmed')).rejects.toThrow(ForbiddenException);
+
+    expect(ordersRepository.updateStatus).not.toHaveBeenCalled();
+  });
+
+  it('rejects cliente cancellation for their own order already en camino', async () => {
+    ordersRepository.findById.mockResolvedValue(orderRecord({ estado: OrderEstado.EN_CAMINO, usuarioId: clienteId }));
+
+    await expect(service.cancel(clienteUser(), 'order-1', 'Already on the way')).rejects.toThrow(ForbiddenException);
+
+    expect(ordersRepository.updateStatus).not.toHaveBeenCalled();
+  });
+
   it('keeps vendedor lifecycle updates enforced for vendedor-owned orders only', async () => {
     ordersRepository.findById.mockResolvedValue(orderRecord({ estado: OrderEstado.PENDIENTE, vendedorId }));
     ordersRepository.updateStatus.mockResolvedValue(orderRecord({ estado: OrderEstado.CONFIRMADO }));

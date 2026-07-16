@@ -7,6 +7,7 @@
   "security_rules": [
     "⚠️ userId/clienteId NUNCA viene del body. Se extrae del token JWT en el middleware."
   ],
+  "product_dependency_rule": "Hasta que exista un adaptador real de products-service, cart.items_add, cart.items_update y orders.create pueden devolver 503 controlado. Lecturas, cart.items_delete y operaciones de estado no dependen del catálogo y siguen disponibles.",
   "public_entrypoint": {
     "type": "api-gateway",
     "base_path": "/api/v1/{service}/{action}",
@@ -58,7 +59,7 @@
       "path": "/orders/:id/status",
       "method": "PATCH",
       "auth": "VENDEDOR",
-      "notes": "Transiciones válidas: pendiente→confirmado→en_camino→entregado. Cualquier estado→cancelado.",
+      "notes": "Transiciones válidas para vendedor: pendiente→confirmado→en_camino→entregado y cancelaciones según máquina de estados.",
       "request": { "estado": "confirmado|en_camino|entregado|cancelado" },
       "response": { "id": "uuid", "estado": "OrderEstado", "updated": "boolean" }
     },
@@ -66,7 +67,7 @@
       "path": "/orders/:id/cancelar",
       "method": "POST",
       "auth": "CLIENTE",
-      "notes": "El cliente solo puede cancelar pedidos en estado pendiente.",
+      "notes": "El cliente solo puede cancelar pedidos propios en estado pendiente.",
       "request": { "motivo?": "string" },
       "response": { "id": "uuid", "estado": "cancelado" }
     },
@@ -83,29 +84,31 @@
       "method": "GET",
       "auth": "CLIENTE",
       "request": {},
-      "response": { "cartId": "uuid", "vendedorId": "uuid", "items": [{ "id": "uuid", "productId": "uuid", "nombre": "string", "cantidad": "number", "precioUnitario": "number" }], "totalSinIva": "number", "iva": "number", "total": "number", "expiresAt": "string (ISO 8601)" }
+      "response": { "id": "uuid", "clienteId": "uuid", "vendedorId": "uuid", "items": [{ "id": "uuid", "productoId": "uuid", "nombre": "string", "cantidad": "number", "precioUnitario": "number", "subtotal": "number" }], "total": "number", "expiresAt": "string (ISO 8601)" }
     },
     {
       "path": "/cart/items",
       "method": "POST",
       "auth": "CLIENTE",
       "notes": "Agrega un item al carrito del usuario autenticado.",
-      "request": { "productId": "uuid", "cantidad": "number" },
-      "response": { "items": "array", "total": "number" }
+      "request": { "cartId?": "uuid", "productoId": "uuid", "cantidad": "number" },
+      "response": "CartResponse",
+      "unavailable_behavior": "Puede devolver 503 controlado hasta que exista adaptador real de productos. Duplicate add incrementa cantidad."
     },
     {
       "path": "/cart/items/:id",
       "method": "PATCH",
       "auth": "CLIENTE",
-      "request": { "cantidad": "number" },
-      "response": { "updated": "boolean" }
+      "request": { "cartId": "uuid", "productoId": "uuid", "cantidad": "number" },
+      "response": "CartResponse",
+      "unavailable_behavior": "Puede devolver 503 controlado hasta que exista adaptador real de productos. Si el item no existe, devuelve 404 y no lo crea."
     },
     {
       "path": "/cart/items/:id",
       "method": "DELETE",
       "auth": "CLIENTE",
       "request": { "cartId": "uuid", "productoId": "uuid" },
-      "response": { "deleted": "boolean" }
+      "response": "CartResponse"
     }
   ]
 }

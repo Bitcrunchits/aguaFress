@@ -1,10 +1,10 @@
 # Verification Report: complete-orders-service
 
-**Change**: `complete-orders-service`  
-**Mode**: Strict TDD  
-**Verified on**: 2026-07-16  
-**Branch**: `adrian/ag-87-orders-service`  
-**Committed implementation base**: `d3d14f9`, `6c21d71`, `b2a2d9e`, `146d401`  
+**Change**: `complete-orders-service`
+**Mode**: Strict TDD
+**Verified on**: 2026-07-16
+**Branch**: `adrian/ag-87-orders-service`
+**Committed implementation base**: `d3d14f9`, `6c21d71`, `b2a2d9e`, `146d401`
 **Working tree included**: uncommitted `orders.confirm` verify-fix changes
 
 ## Verdict
@@ -81,8 +81,8 @@ Note: `pnpm --filter <pkg> test -- --coverage` was also tried and fails because 
 
 ## Quality Metrics
 
-**Linter**: ➖ No linter script detected for the target packages.  
-**Type Checker**: ✅ `pnpm --filter @agua/orders-service build` and `pnpm --filter @agua/gateway build` passed.  
+**Linter**: ➖ No linter script detected for the target packages.
+**Type Checker**: ✅ `pnpm --filter @agua/orders-service build` and `pnpm --filter @agua/gateway build` passed.
 **DBS**: ⚠️ CLI unavailable; manual scan of intended verify-fix diff found no `any`, `console.*`, `unknown[]`, dead-code addition, or new concrete cross-service coupling.
 
 ## Spec Compliance Matrix

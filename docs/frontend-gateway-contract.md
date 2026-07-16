@@ -123,7 +123,7 @@ El frontend debe consumir carrito y pedidos por el gateway; `orders-service` sig
 |-----------------|------------------|-------------|---------|----------|
 | `GET` | `/api/v1/cart/get` | `cart.get` | — | `CartResponse \| null` |
 | `POST` | `/api/v1/cart/items/add` | `cart.items_add` | `AddCartItemRequest` | `CartResponse` |
-| `PATCH` | `/api/v1/cart/items/update` | `cart.items_update` | `UpdateCartItemRequest` + `id` | `CartResponse` |
+| `PATCH` | `/api/v1/cart/items/update` | `cart.items_update` | `UpdateCartItemRequest` (`cartId`, `productoId`, `cantidad`) | `CartResponse` |
 | `DELETE` | `/api/v1/cart/items/delete` | `cart.items_delete` | `{ cartId: string, productoId: string }` | `CartResponse` |
 | `GET` | `/api/v1/orders/list` | `orders.list` | query filters | `OrderListResponse[]` |
 | `GET` | `/api/v1/orders/get-by-id?id={orderId}` | `orders.get_by_id` | query `id` | `OrderResponse` |
@@ -132,9 +132,9 @@ El frontend debe consumir carrito y pedidos por el gateway; `orders-service` sig
 | `POST` | `/api/v1/orders/cancel` | `orders.cancel` | `CancelOrderRequest` + `id` | `OrderResponse` |
 | `POST` | `/api/v1/orders/confirm` | `orders.confirm` | `ConfirmOrderRequest` + `id` | `OrderResponse` |
 
-Regla de identidad: nunca mandar ni confiar en `userId` dentro del body. El gateway remueve `userId` del payload HTTP —incluyendo cuerpos `DELETE`— y reenvía la identidad confiable desde el JWT en `payload.user`. Las acciones de ciclo de vida del pedido (`orders.status_update` y `orders.confirm`) son acciones de `vendedor`; `orders.cancel` sigue siendo de `cliente`.
+Regla de identidad: nunca mandar ni confiar en `userId` dentro del body. El gateway remueve `userId` del payload HTTP —incluyendo cuerpos `DELETE`— y reenvía la identidad confiable desde el JWT en `payload.user`. Las acciones de ciclo de vida del pedido (`orders.status_update` y `orders.confirm`) son acciones de `vendedor`; `orders.cancel` sigue siendo de `cliente` y solo permite cancelar pedidos propios en estado `pendiente`.
 
-Mientras products-service no tenga un adaptador real para snapshots, los comandos que dependen de productos pueden responder error controlado de no disponibilidad desde orders-service. El frontend debe mostrar una recuperación clara y no asumir que el precio del body será aceptado.
+Mientras products-service no tenga un adaptador real para snapshots, solo los comandos que dependen de productos (`cart.items_add`, `cart.items_update` y `orders.create`) pueden responder `503 Service Unavailable` controlado desde orders-service. Las lecturas, borrado de items y acciones de estado no dependen del catálogo y no deben tratarse como servicio completo no disponible. El frontend debe mostrar una recuperación clara y no asumir que el precio del body será aceptado.
 
 ## Servicios planificados pero no disponibles
 
@@ -221,7 +221,7 @@ await fetch('http://localhost:3000/api/v1/users/profile/update', {
 | `404` | Service/action no mapeado. | Revisar endpoint; no reintentar automáticamente. |
 | `405` | Método HTTP no soportado. | Corregir método usado por el cliente. |
 | `413` | Body supera el límite permitido. | Reducir payload/archivo antes de reenviar. |
-| `503` | Familia planificada pero no desplegada. | Ocultar feature o mostrar “no disponible”. |
+| `503` | Familia planificada no desplegada, o comando de carrito/pedido dependiente de productos sin adaptador de catálogo disponible. | Ocultar feature o mostrar “no disponible”; no asumir indisponibilidad total de carrito/pedidos. |
 | `504` | Timeout del microservicio destino. | Mostrar retry controlado. |
 
 ## Headers recomendados
