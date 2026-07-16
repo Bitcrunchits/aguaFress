@@ -37,9 +37,11 @@ model Cart {
   // Referencia lógica → VENDEDOR en usuario-service (sin FK)
   vendedor_id String   @db.Uuid
   // Se setea desde la capa de servicio: created_at + 24hs
-  expires_at  DateTime
-  created_at  DateTime  @default(now())
-  updated_at  DateTime  @updatedAt
+  expires_at       DateTime
+  // Null para carritos inactivos/vencidos; usuario_id mientras está activo para asegurar uno por cliente.
+  active_cart_key  String?   @unique @db.Uuid
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
 
   items CartItem[]
 

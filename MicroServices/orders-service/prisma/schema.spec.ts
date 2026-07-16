@@ -15,4 +15,8 @@ describe('orders Prisma schema', () => {
     expect(schema).toContain('created_at    DateTime @default(now())');
     expect(schema).toContain('updated_at    DateTime @updatedAt');
   });
+
+  it('supports a database-backed active cart uniqueness invariant per cliente', () => {
+    expect(schema).toContain('active_cart_key  String?   @unique @db.Uuid');
+  });
 });
