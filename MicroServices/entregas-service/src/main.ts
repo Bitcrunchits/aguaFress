@@ -1,8 +1,9 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 async function bootstrap() {
+const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
     app.setGlobalPrefix('api', { exclude: ['health'] });
     app.useGlobalPipes(new ValidationPipe({
@@ -20,7 +21,7 @@ const document = SwaggerModule.createDocument(app, config);
 SwaggerModule.setup('api/docs', app, document);
 const PORT = process.env.PORT || 3005;
 await app.listen(PORT, () => {
-    console.log(`Entregas Service corriendo en el puerto ${PORT}`);
+    logger.log(`Entregas Service corriendo en el puerto ${PORT}`);
 });
 }
 bootstrap();
