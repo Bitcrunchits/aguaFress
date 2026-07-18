@@ -4,6 +4,7 @@ import { Test } from '@nestjs/testing';
 import { json } from 'express';
 import request from 'supertest';
 import { UserRole } from '@agua/contracts';
+import { OrdersCreateQueueService } from '../src/queues/orders-create-queue.service';
 import { TcpDispatcherService } from '../src/tcp/tcp-dispatcher.service';
 
 describe('Gateway HTTP routing', () => {
@@ -12,6 +13,7 @@ describe('Gateway HTTP routing', () => {
   let vendedorToken: string;
   let superAdminToken: string;
   let mockDispatch: jest.Mock;
+  let mockEnqueueOrderCreate: jest.Mock;
 
   beforeAll(async () => {
     process.env.JWT_SECRET = 'test-secret';
@@ -21,6 +23,7 @@ describe('Gateway HTTP routing', () => {
     process.env.ORDERS_SERVICE_TCP_PORT = '3014';
 
     mockDispatch = jest.fn();
+    mockEnqueueOrderCreate = jest.fn();
 
     const { AppModule } = await import('../src/app.module');
 
@@ -29,6 +32,8 @@ describe('Gateway HTTP routing', () => {
     })
       .overrideProvider(TcpDispatcherService)
       .useValue({ dispatch: mockDispatch })
+      .overrideProvider(OrdersCreateQueueService)
+      .useValue({ enqueue: mockEnqueueOrderCreate })
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -69,6 +74,7 @@ describe('Gateway HTTP routing', () => {
 
   beforeEach(() => {
     mockDispatch.mockReset();
+    mockEnqueueOrderCreate.mockReset();
   });
 
   it('serves GET /api/health publicly with sanitized output', async () => {
@@ -230,24 +236,66 @@ describe('Gateway HTTP routing', () => {
     );
   });
 
-  it('dispatches protected order actions and ignores body userId as identity source', async () => {
-    mockDispatch.mockResolvedValue({ id: 'order-1', estado: 'pendiente' });
+  it('enqueues protected orders.create with 202 and ignores body userId as identity source', async () => {
+    mockEnqueueOrderCreate.mockResolvedValue({
+      jobId: 'orders.create:cliente-user-id:http-key',
+      trackingId: 'tracking-http',
+      status: 'PENDING',
+      statusUrl: '/api/v1/orders/job-status?id=tracking-http',
+      acceptedAt: '2026-07-17T19:00:00.000Z',
+    });
 
-    await request(app.getHttpServer())
+    const response = await request(app.getHttpServer())
       .post('/api/v1/orders/create')
+      .set('Idempotency-Key', 'http-key')
       .set('Authorization', `Bearer ${clienteToken}`)
       .send({ userId: 'forged-user', metodoPago: 'contra_entrega' })
+      .expect(202);
+
+    expect(response.body).toEqual(expect.objectContaining({
+      jobId: 'orders.create:cliente-user-id:http-key',
+      trackingId: 'tracking-http',
+      status: 'PENDING',
+      statusUrl: '/api/v1/orders/job-status?id=tracking-http',
+    }));
+    expect(mockEnqueueOrderCreate).toHaveBeenCalledWith(expect.objectContaining({
+        body: { metodoPago: 'contra_entrega' },
+        clienteId: 'cliente-user-id',
+        idempotencyKey: 'http-key',
+    }));
+    expect(mockDispatch).not.toHaveBeenCalled();
+  });
+
+  it('dispatches orders.job-status through TCP using the action-router shape', async () => {
+    mockDispatch.mockResolvedValue({ trackingId: 'tracking-http', status: 'PENDING' });
+
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/orders/job-status?id=tracking-http')
+      .set('Authorization', `Bearer ${clienteToken}`)
       .expect(200);
 
+    expect(response.body).toEqual({ trackingId: 'tracking-http', status: 'PENDING' });
     expect(mockDispatch).toHaveBeenCalledWith(
       'orders',
       expect.objectContaining({
-        body: { metodoPago: 'contra_entrega' },
-        params: { service: 'orders', action: 'create' },
+        query: { id: 'tracking-http' },
+        params: { service: 'orders', action: 'job-status' },
         user: expect.objectContaining({ sub: 'cliente-user-id', role: 'cliente' }),
       }),
-      expect.objectContaining({ tcpPattern: 'orders.create', authRequired: true }),
+      expect.objectContaining({ tcpPattern: 'orders.job_status', authRequired: true }),
     );
+    expect(mockEnqueueOrderCreate).not.toHaveBeenCalled();
+  });
+
+  it('rejects orders.create without idempotency before TCP fallback', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/orders/create')
+      .set('Authorization', `Bearer ${clienteToken}`)
+      .send({ metodoPago: 'contra_entrega' })
+      .expect(400);
+
+    expect(mockEnqueueOrderCreate).not.toHaveBeenCalled();
+    expect(mockDispatch).not.toHaveBeenCalled();
   });
 
   it('restricts order confirmation to vendedor lifecycle actors', async () => {

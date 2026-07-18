@@ -97,6 +97,12 @@ services:
     environment:
       TCP_PORT: "3014"
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/agua_orders"
+      REDIS_URL: "redis://redis:6379"
+      ORDERS_CREATE_QUEUE_NAME: "orders.create"
+      ORDERS_CREATE_QUEUE_ATTEMPTS: "3"
+      ORDERS_CREATE_QUEUE_BACKOFF_MS: "5000"
+      ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE: "1000"
+      ORDERS_CREATE_WORKER_CONCURRENCY: "1"
     depends_on:
       postgres-init:
         condition: service_completed_successfully
@@ -125,6 +131,11 @@ services:
       USUARIO_SERVICE_TCP_PORT: "3011"
       ORDERS_SERVICE_HOST: orders-service
       ORDERS_SERVICE_TCP_PORT: "3014"
+      REDIS_URL: "redis://redis:6379"
+      ORDERS_CREATE_QUEUE_NAME: "orders.create"
+      ORDERS_CREATE_QUEUE_ATTEMPTS: "3"
+      ORDERS_CREATE_QUEUE_BACKOFF_MS: "5000"
+      ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE: "1000"
     depends_on:
       usuario-service:
         condition: service_started

@@ -52,3 +52,15 @@ aguaFress es la plataforma para vendedores de agua y soda que convierte visitas 
 
 **Resultado:** más ventas, menos viajes en vacío y ahorro real en combustible, todo con una app simple que cualquier vendedor puede usar.
 
+---
+
+## Arquitectura de resiliencia
+
+aguaFress mantiene al `api-gateway` como única entrada HTTP pública. Los microservicios de dominio no exponen HTTP directo al frontend; `orders-service` sigue consumiéndose solo a través del gateway.
+
+| Camino | Uso |
+|--------|-----|
+| TCP síncrono | Login, perfil, validaciones, lecturas simples y respuestas inmediatas. Si un MS está caído, se devuelve error controlado, `503` o timeout; no se encola. |
+| Redis + BullMQ async | Operaciones críticas que no deben perderse y pueden esperar segundos, empezando por creación de órdenes. El gateway responde `202 Accepted` con `jobId`/`trackingId`; `orders-service` procesa y persiste el resultado final. |
+
+Kafka no se usa para esta necesidad. El piloto de resiliencia/persistencia aplica primero a `orders-service`, `gateway` y contratos compartidos; luego se evalúan notificaciones, entregas y productos caso por caso.

@@ -35,8 +35,8 @@ The 6 `routes/*.routes.ts` files document the intended target MS and module but 
 - **`usuario-service` (port 3001)** — fully implemented, 12 controllers, 38 endpoints, 355+ tests passing. Sets `setGlobalPrefix('api')` in `main.ts`. JWT via `@nestjs/passport` + `passport-jwt`, secret from `JWT_SECRET`, refresh secret from `JWT_REFRESH_SECRET`, expiry `1d` / `7d`. Global `JwtAuthGuard` (registered as `APP_GUARD`) with `@Public()` opt-out, plus a `RolesGuard` driven by `@Roles(UserRole.*)` metadata. `@CurrentUser('userId')` extracts the userId after `JwtStrategy.validate()` does a DB hit. `JwtPayload = { sub, email, role, jti? }`.
 - **`packages/contracts`** — full enum and DTO set, builds via `pnpm --filter @agua/contracts build`. Already imported by `usuario-service` as `@agua/contracts`.
 - **Other 4 MS** — `package.json` + empty `src/<feature>/<feature>.module.ts` (1-line comment). No controllers, no services, no Prisma schema. Their `contratosDTOs/*.json` files describe intended endpoints but nothing is built.
-- **docker-compose.yml** — has `postgres`, `redis`, and `usuario-service` only. No gateway service, no Kafka, no MongoDB.
-- **TCP / Kafka** — there is NO working MS-to-MS transport yet. The only `@nestjs/microservices` reference in the repo is the `RpcExceptionFilter` in `usuario-service` (unused, "Planned for Kafka microservice integration"). The architecture decision (27/06) is to use TCP for sync and Kafka for async, but the gateway's job is HTTP ingress — it does NOT need to participate in the TCP/Kafka bus for the MVP. The gateway receives HTTP and forwards HTTP to downstream services; the TCP/Kafka bus is for MS-to-MS communication that hasn't been implemented anywhere yet.
+- **docker-compose.yml** — has `postgres`, `redis`, and `usuario-service` only in this historical gateway exploration snapshot. Redis is the approved backing service for BullMQ async jobs; Kafka is not used for the current resilience/persistence problem.
+- **TCP / Redis + BullMQ** — the architecture uses two roads: TCP for synchronous request/response and Redis + BullMQ for durable async commands that can wait seconds. The gateway remains the HTTP ingress: it routes immediate actions to TCP and, for scoped critical commands such as `orders.create`, enqueues BullMQ jobs instead of becoming owner of business data.
 
 ### Routes the gateway MUST route (full inventory)
 
@@ -106,7 +106,7 @@ Every `usuario-service` route below is what the gateway must accept on `:3000/ap
 |------|--------------------|
 | `MicroServices/gateway/` | The whole project: add `tsconfig.json`, `nest-cli.json`, `Dockerfile`, real `src/main.ts`, `src/app.module.ts`, auth, proxy, routes, health, tests. |
 | `MicroServices/gateway/package.json` | Add `@agua/contracts: workspace:*`, `@nestjs/axios`, `@nestjs/throttler`, `helmet`, `class-validator`, `class-transformer`, dev deps for testing. |
-| `docker-compose.yml` | Add `gateway` service (port 3000), healthcheck, depends_on `usuario-service`. Probably add `kafka` and `mongo` if other MS get built at the same time — but for gateway MVP, only gateway container needed. |
+| `docker-compose.yml` | Add `gateway` service (port 3000), healthcheck, depends_on required services. For async durability use existing Redis/BullMQ; do not add Kafka for this problem. |
 | `MicroServices/usuario-service/Dockerfile` | Reference for the gateway Dockerfile (multi-stage, pnpm 11, node 22-alpine, openssl apk). The gateway has no Prisma so no `prisma generate` step. |
 | `.env` and `.env.example` | Add `JWT_SECRET` and `JWT_REFRESH_SECRET` (must match usuario-service!), `USUARIO_SERVICE_URL=http://usuario-service:3001`, `PRODUCTS_SERVICE_URL`, `ORDERS_SERVICE_URL`, `ENTREGAS_SERVICE_URL`, `NOTIFICATIONS_SERVICE_URL`, `RATE_LIMIT_LOGIN_TTL=60`, `RATE_LIMIT_LOGIN_MAX=5`. |
 | `contratosDTOs/api-gateway.json` | Drift: declares `/auth/*`, `/users/*`, `/qr/*`, etc. but the real paths are `/api/auth/*`, `/api/users/profile`, `/api/qr-codes`, etc. Plus it omits `/vendedores/*`, `/clientes/*`, `/link-invitacion/*`, `/admin/*` that the gateway MUST route. Update the contract to match real routes before/during implementation. |
@@ -147,7 +147,7 @@ Use the `express-http-middleware` package via a `MiddlewareConsumer.apply()` cal
 
 Configure the gateway as a NestJS microservice that receives TCP messages from other MS and proxies them. Doesn't fit — the gateway is an HTTP ingress, not a TCP consumer. The TCP bus is for MS-to-MS sync calls and isn't wired anywhere yet.
 
-- **Pros**: None for this scope. Would be architecturally consistent with the TCP+Kafka decision if the gateway were ALSO an MS bus participant.
+- **Pros**: None for this scope. A gateway TCP consumer is not needed for the current HTTP ingress design.
 - **Cons**: Wrong tool. Adds @nestjs/microservices overhead without benefit. The gateway receives HTTP from browsers/mobile clients — there is no TCP client.
 - **Effort**: High (and wrong).
 
@@ -198,7 +198,7 @@ This stays inside the monorepo's NestJS + patterns, is unit-testable, and matche
 - **Rate-limit memory vs Redis.** `@nestjs/throttler` defaults to in-memory. Behind a single gateway instance that's fine. If the gateway ever scales horizontally, throttle counters drift. Mitigation: switch to Redis storage in the same Redis we already have running, or accept the trade-off for MVP and document it.
 - **Missing controllers in non-usuario MS.** Even if the gateway routes to `products-service:3003`, that service has no controllers. Forwarded requests will get 404. The gateway itself can still come up and route `/auth/*` correctly; the contract is "the gateway is ready when its MS arrive", not "the gateway waits for its MS to be built". This is acceptable but should be explicit in the change so the orchestrator / user doesn't think we're blocking on the other MS.
 - **The malformed `{src/health/` directories** in both `gateway` and `notifications-service` are leftover shell-glob artifacts (a `{` was used instead of `/`). Harmless but worth cleaning up so `find src` doesn't trip on them.
-- **TCP+Kafka decision does NOT affect the gateway's HTTP ingress path.** If a future iteration wants the gateway to also produce Kafka events (e.g. emit a `GatewayRequest` audit event), that's a separate change. For the MVP, the gateway is HTTP-only.
+- **Redis + BullMQ async commands are explicit exceptions, not implicit forwarding.** The gateway keeps HTTP ingress responsibilities, uses TCP for immediate actions, and only enqueues approved critical commands such as `orders.create`. Kafka is not part of this resilience solution.
 
 ## Ready for Proposal
 
@@ -207,7 +207,7 @@ This stays inside the monorepo's NestJS + patterns, is unit-testable, and matche
 - We are about to design the **api-gateway MVP** (port 3000): JWT validation + HTTP proxying + throttling + health.
 - The gateway will be ready for `usuario-service` (live) and stubbed for the other 4 MS (forward-only, no waiting).
 - We need to fix the `contratosDTOs/api-gateway.json` drift (path prefix `/api`, missing route families) as part of the same change.
-- The TCP+Kafka decision is **not** in scope for the gateway MVP — that's MS-to-MS and the gateway is HTTP-internal.
+- The Redis + BullMQ async path is scoped separately from normal TCP routing: only approved critical commands should be queued, starting with `orders.create`; everything else remains immediate TCP or controlled failure.
 - Effort estimate: **Medium**. Recommend splitting into 3 chained PRs: (1) Foundation — module bootstrap, config, JWT guard, health; (2) Proxy — `ProxyService` + `ProxyController` + declarative route table for `usuario-service` only; (3) Wire-up — rate limiting, docker-compose, throttler, full route table including the planned other MS.
 
 Suggested first question for the user (one at a time, per persona): **"Do you want to fix the `api-gateway.json` contract drift as part of this change, or in a separate prior change?"**

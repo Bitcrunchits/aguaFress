@@ -8,6 +8,11 @@ export const GATEWAY_ENV_DEFAULTS = {
   RATE_LIMIT_PUBLIC_TTL_MS: 60000,
   RATE_LIMIT_PUBLIC_MAX: 300,
   PAYLOAD_LIMIT: '1mb',
+  REDIS_URL: 'redis://localhost:6379',
+  ORDERS_CREATE_QUEUE_NAME: 'orders.create',
+  ORDERS_CREATE_QUEUE_ATTEMPTS: 3,
+  ORDERS_CREATE_QUEUE_BACKOFF_MS: 1000,
+  ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE: 1000,
 } as const;
 
 const REQUIRED_ENV_KEYS = {
@@ -42,6 +47,11 @@ export interface GatewayEnv {
   readonly RATE_LIMIT_PUBLIC_TTL_MS: number;
   readonly RATE_LIMIT_PUBLIC_MAX: number;
   readonly PAYLOAD_LIMIT: string;
+  readonly REDIS_URL: string;
+  readonly ORDERS_CREATE_QUEUE_NAME: string;
+  readonly ORDERS_CREATE_QUEUE_ATTEMPTS: number;
+  readonly ORDERS_CREATE_QUEUE_BACKOFF_MS: number;
+  readonly ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE: number;
 }
 
 type GatewayEnvInput = Record<string, string | undefined>;
@@ -93,6 +103,21 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
     GATEWAY_ENV_DEFAULTS.RATE_LIMIT_PUBLIC_MAX,
     'RATE_LIMIT_PUBLIC_MAX',
   );
+  const ordersCreateQueueAttempts = readOptionalPositiveInteger(
+    envInput.ORDERS_CREATE_QUEUE_ATTEMPTS,
+    GATEWAY_ENV_DEFAULTS.ORDERS_CREATE_QUEUE_ATTEMPTS,
+    'ORDERS_CREATE_QUEUE_ATTEMPTS',
+  );
+  const ordersCreateQueueBackoffMs = readOptionalPositiveInteger(
+    envInput.ORDERS_CREATE_QUEUE_BACKOFF_MS,
+    GATEWAY_ENV_DEFAULTS.ORDERS_CREATE_QUEUE_BACKOFF_MS,
+    'ORDERS_CREATE_QUEUE_BACKOFF_MS',
+  );
+  const ordersCreateQueueRemoveOnComplete = readOptionalPositiveInteger(
+    envInput.ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE,
+    GATEWAY_ENV_DEFAULTS.ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE,
+    'ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE',
+  );
 
   const invalidMessages = [
     port.error,
@@ -105,6 +130,9 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
     rateLimitAuthSensitiveMax.error,
     rateLimitPublicTtlMs.error,
     rateLimitPublicMax.error,
+    ordersCreateQueueAttempts.error,
+    ordersCreateQueueBackoffMs.error,
+    ordersCreateQueueRemoveOnComplete.error,
   ].filter(isString);
 
   if (invalidMessages.length > 0) {
@@ -126,6 +154,11 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
     RATE_LIMIT_PUBLIC_TTL_MS: rateLimitPublicTtlMs.value,
     RATE_LIMIT_PUBLIC_MAX: rateLimitPublicMax.value,
     PAYLOAD_LIMIT: envInput.PAYLOAD_LIMIT ?? GATEWAY_ENV_DEFAULTS.PAYLOAD_LIMIT,
+    REDIS_URL: envInput.REDIS_URL ?? GATEWAY_ENV_DEFAULTS.REDIS_URL,
+    ORDERS_CREATE_QUEUE_NAME: envInput.ORDERS_CREATE_QUEUE_NAME ?? GATEWAY_ENV_DEFAULTS.ORDERS_CREATE_QUEUE_NAME,
+    ORDERS_CREATE_QUEUE_ATTEMPTS: ordersCreateQueueAttempts.value,
+    ORDERS_CREATE_QUEUE_BACKOFF_MS: ordersCreateQueueBackoffMs.value,
+    ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE: ordersCreateQueueRemoveOnComplete.value,
   };
 }
 

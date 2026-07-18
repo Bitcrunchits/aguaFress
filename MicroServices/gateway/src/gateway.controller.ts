@@ -1,10 +1,12 @@
 import {
   Body,
+  BadRequestException,
   Controller,
   Delete,
   Get,
   Head,
   HttpCode,
+  HttpStatus,
   MethodNotAllowedException,
   Options,
   Param,
@@ -13,12 +15,14 @@ import {
   Put,
   Query,
   Req,
+  Res,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiExcludeController, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { randomUUID } from 'node:crypto';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { ActionResolverService } from './actions/action-resolver.service';
 import { TcpDispatcherService, type TcpCommandPayload } from './tcp/tcp-dispatcher.service';
+import { OrdersCreateQueueService } from './queues/orders-create-queue.service';
 
 @ApiExcludeController()
 @ApiTags('Gateway Actions')
@@ -28,6 +32,7 @@ export class GatewayController {
   constructor(
     private readonly resolver: ActionResolverService,
     private readonly dispatcher: TcpDispatcherService,
+    private readonly ordersCreateQueue: OrdersCreateQueueService,
   ) {}
 
   @Head(':action(.*)')
@@ -75,9 +80,22 @@ export class GatewayController {
     @Body() body: unknown,
     @Query() query: Record<string, string>,
     @Req() req: Request,
+    @Res({ passthrough: true }) res?: Response,
   ): Promise<unknown> {
     const mapping = this.resolver.resolve(service, action);
-    const payload = this.buildPayload(req, query, { service, action }, sanitizeBodyIdentity(body));
+    const sanitizedBody = sanitizeBodyIdentity(body);
+
+    if (mapping.asyncQueue === 'orders.create') {
+      res?.status(HttpStatus.ACCEPTED);
+      return this.ordersCreateQueue.enqueue({
+        clienteId: readAuthenticatedClienteId(req),
+        idempotencyKey: readOrdersCreateIdempotencyKey(req, sanitizedBody),
+        body: sanitizeAsyncMetadata(sanitizedBody),
+        requestId: readRequestId(req),
+      });
+    }
+
+    const payload = this.buildPayload(req, query, { service, action }, sanitizedBody);
     return this.dispatcher.dispatch(service, payload, mapping);
   }
 
@@ -152,7 +170,7 @@ export class GatewayController {
       query,
       params,
       user,
-      requestId: (req.headers['x-request-id'] as string) ?? randomUUID(),
+      requestId: readRequestId(req),
     };
   }
 
@@ -169,6 +187,54 @@ function sanitizeBodyIdentity(body: unknown): unknown {
   const bodyWithoutUserId = { ...body };
   delete bodyWithoutUserId.userId;
   return bodyWithoutUserId;
+}
+
+function sanitizeAsyncMetadata(body: unknown): Record<string, unknown> {
+  if (!isPlainRecord(body)) {
+    return {};
+  }
+
+  const bodyWithoutAsyncMetadata = { ...body };
+  delete bodyWithoutAsyncMetadata.idempotencyKey;
+  return bodyWithoutAsyncMetadata;
+}
+
+function readOrdersCreateIdempotencyKey(req: Request, body: unknown): string {
+  const headerKey = readStringHeader(req.headers['idempotency-key']);
+  const bodyKey = isPlainRecord(body) && typeof body.idempotencyKey === 'string'
+    ? body.idempotencyKey.trim()
+    : undefined;
+
+  if (headerKey !== undefined && bodyKey !== undefined && headerKey !== bodyKey) {
+    throw new BadRequestException('Idempotency-Key header must match body idempotencyKey');
+  }
+
+  const idempotencyKey = headerKey ?? bodyKey;
+  if (idempotencyKey === undefined || idempotencyKey.length === 0) {
+    throw new BadRequestException('Idempotency key is required for orders.create');
+  }
+
+  return idempotencyKey;
+}
+
+function readAuthenticatedClienteId(req: Request): string {
+  const user = (req as unknown as { user?: { sub?: string } }).user;
+
+  if (typeof user?.sub !== 'string' || user.sub.trim().length === 0) {
+    throw new BadRequestException('Authenticated cliente id is required for orders.create');
+  }
+
+  return user.sub;
+}
+
+function readRequestId(req: Request): string {
+  return readStringHeader(req.headers['x-request-id']) ?? randomUUID();
+}
+
+function readStringHeader(header: string | string[] | undefined): string | undefined {
+  const value = Array.isArray(header) ? header[0] : header;
+  const trimmedValue = value?.trim();
+  return trimmedValue && trimmedValue.length > 0 ? trimmedValue : undefined;
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {

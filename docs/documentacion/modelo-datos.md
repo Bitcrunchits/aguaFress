@@ -441,9 +441,9 @@ AUTH_USER
 | ORM | Prisma 5 |
 | DBs | PostgreSQL 15 por microservicio transaccional; MongoDB para notifications |
 | Activity Logs | AuditLog en PostgreSQL (no MongoDB en MVP) |
-| Cache | Redis 7 |
-| Event Bus | Kafka pendiente para eventos asíncronos |
-| Comunicación | Frontend → Gateway por HTTP; Gateway → microservicios por TCP interno |
+| Cache/colas | Redis 7 + BullMQ para comandos async críticos |
+| Event streaming | Kafka no se usa para la resiliencia actual |
+| Comunicación | Frontend → Gateway por HTTP; Gateway → microservicios por TCP interno o jobs BullMQ según criticidad |
 | Frontend | Por definir |
 | Contratos Compartidos | `packages/contracts/` (TypeScript) |
 | Monorepo | pnpm workspaces |
@@ -457,7 +457,16 @@ AUTH_USER
 - `postgres:15-alpine` en puerto `5433`, DB local de desarrollo para servicios implementados
 - `redis:7-alpine` en puerto `6379`
 - `gateway` expuesto en `3000` como única entrada HTTP pública
-- Microservicios de dominio sin puertos HTTP publicados; comunicación TCP interna
+- Microservicios de dominio sin puertos HTTP publicados; comunicación TCP interna para operaciones inmediatas y BullMQ para comandos críticos reintentables
+
+### Resiliencia operacional
+
+| Camino | Casos | Regla |
+|--------|-------|-------|
+| TCP síncrono | Login, perfil, validaciones y lecturas simples. | Si el MS está caído, devolver error controlado, `503` o timeout. No encolar. |
+| Redis + BullMQ | Crear orden, pagos o flujos similares, notificaciones y tareas de entrega que puedan esperar segundos. | Encolar, responder `202 Accepted` y procesar con worker cuando el servicio esté disponible. |
+
+El piloto se implementa primero en `orders-service` + `gateway` + contratos compartidos. `orders-service` conserva la persistencia final y los workers; el gateway no se vuelve dueño de datos de negocio.
 
 Cada microservicio debe mantener su propio Dockerfile, base de datos y Prisma schema. El compose raíz solo coordina el entorno local; no convierte las DBs ni schemas en una unidad compartida.
 

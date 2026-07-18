@@ -1,11 +1,18 @@
 export type TcpTransport = 'send' | 'publish';
 
+export const ASYNC_QUEUE_NAMES = {
+  ORDERS_CREATE: 'orders.create',
+} as const;
+
+export type AsyncQueueName = (typeof ASYNC_QUEUE_NAMES)[keyof typeof ASYNC_QUEUE_NAMES];
+
 export interface ActionMapping {
   readonly tcpPattern: string;
   readonly transport: TcpTransport;
   readonly authRequired: boolean;
   readonly roles?: readonly string[];
   readonly retryOnTimeout?: boolean;
+  readonly asyncQueue?: AsyncQueueName;
 }
 
 export type ServiceFamilyStatus = 'available' | 'unavailable';
@@ -105,7 +112,15 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
     actions: {
       list: { tcpPattern: 'orders.list', transport: 'send', authRequired: true },
       'get-by-id': { tcpPattern: 'orders.get_by_id', transport: 'send', authRequired: true },
-      create: { tcpPattern: 'orders.create', transport: 'send', authRequired: true, roles: ['cliente'], retryOnTimeout: false },
+      'job-status': { tcpPattern: 'orders.job_status', transport: 'send', authRequired: true },
+      create: {
+        tcpPattern: 'orders.create',
+        transport: 'send',
+        authRequired: true,
+        roles: ['cliente'],
+        retryOnTimeout: false,
+        asyncQueue: ASYNC_QUEUE_NAMES.ORDERS_CREATE,
+      },
       'status/update': { tcpPattern: 'orders.status_update', transport: 'send', authRequired: true, roles: ['vendedor'], retryOnTimeout: false },
       cancel: { tcpPattern: 'orders.cancel', transport: 'send', authRequired: true, roles: ['cliente'], retryOnTimeout: false },
       confirm: { tcpPattern: 'orders.confirm', transport: 'send', authRequired: true, roles: ['vendedor'], retryOnTimeout: false },

@@ -1,6 +1,6 @@
 # Contrato Frontend ↔ API Gateway
 
-Esta guía es el punto de partida para que el frontend consuma el `api-gateway` sin adivinar rutas, roles ni payloads. El gateway expone un único patrón HTTP y traduce cada request a mensajes TCP hacia los microservicios.
+Esta guía es el punto de partida para que el frontend consuma el `api-gateway` sin adivinar rutas, roles ni payloads. El gateway expone un único patrón HTTP: usa TCP para operaciones inmediatas y Redis + BullMQ para comandos críticos asíncronos que no deben perderse.
 
 ## Camino rápido
 
@@ -8,7 +8,8 @@ Esta guía es el punto de partida para que el frontend consuma el `api-gateway` 
 2. Consumir endpoints con el patrón `/v1/{service}/{action}`.
 3. Enviar `Authorization: Bearer <token>` solo en acciones protegidas.
 4. Importar contratos desde `@agua/contracts` cuando el frontend esté dentro del monorepo.
-5. Verificar rutas disponibles en Swagger: `http://localhost:3000/api/docs`.
+5. Para comandos async, enviar `idempotencyKey` y esperar `202 Accepted` con `jobId` y `trackingId`.
+6. Verificar rutas disponibles en Swagger: `http://localhost:3000/api/docs`.
 
 ## Base URL
 
@@ -54,6 +55,15 @@ GET   /api/v1/vendedores/list
 | `DELETE` | Acciones de borrado/cierre. |
 
 El gateway rechaza `PUT`, `HEAD` y `OPTIONS` con `405 Method Not Allowed` para acciones `/api/v1/{service}/{action}`.
+
+## Transporte y resiliencia
+
+| Camino | Cuándo se usa | Qué debe hacer el frontend |
+|--------|---------------|----------------------------|
+| TCP síncrono | Login, perfil, validaciones, lecturas simples y acciones que requieren respuesta inmediata. | Esperar respuesta directa. Si el MS está caído, manejar `503` o `504`; no asumir que quedó en cola. |
+| Redis + BullMQ asíncrono | Comandos críticos que no deben perderse y pueden esperar segundos, empezando por creación de órdenes. | Enviar `idempotencyKey`, recibir `202 Accepted` con `jobId`/`trackingId` y consultar estado. |
+
+Kafka no forma parte de esta solución de resiliencia. Para este problema se usa Redis + BullMQ porque el objetivo es conservar jobs y reintentarlos cuando el worker vuelva.
 
 ## Autenticación y roles
 
@@ -117,24 +127,42 @@ Authorization: Bearer <token>
 
 ### Carrito y pedidos
 
-El frontend debe consumir carrito y pedidos por el gateway; `orders-service` sigue siendo TCP-only y no expone HTTP público.
+El frontend debe consumir carrito y pedidos por el gateway; `orders-service` no expone HTTP público. Las lecturas y acciones inmediatas siguen por TCP interno; la creación de órdenes pasa a ser el piloto async con Redis + BullMQ.
 
-| Método sugerido | Endpoint gateway | TCP pattern | Request | Response |
-|-----------------|------------------|-------------|---------|----------|
-| `GET` | `/api/v1/cart/get` | `cart.get` | — | `CartResponse \| null` |
-| `POST` | `/api/v1/cart/items/add` | `cart.items_add` | `AddCartItemRequest` | `CartResponse` |
-| `PATCH` | `/api/v1/cart/items/update` | `cart.items_update` | `UpdateCartItemRequest` (`cartId`, `productoId`, `cantidad`) | `CartResponse` |
-| `DELETE` | `/api/v1/cart/items/delete` | `cart.items_delete` | `{ cartId: string, productoId: string }` | `CartResponse` |
-| `GET` | `/api/v1/orders/list` | `orders.list` | query filters | `OrderListResponse[]` |
-| `GET` | `/api/v1/orders/get-by-id?id={orderId}` | `orders.get_by_id` | query `id` | `OrderResponse` |
-| `POST` | `/api/v1/orders/create` | `orders.create` | `CreateOrderRequest` | `OrderResponse` |
-| `PATCH` | `/api/v1/orders/status/update` | `orders.status_update` | `UpdateOrderStatusRequest` + `id` | `OrderResponse` |
-| `POST` | `/api/v1/orders/cancel` | `orders.cancel` | `CancelOrderRequest` + `id` | `OrderResponse` |
-| `POST` | `/api/v1/orders/confirm` | `orders.confirm` | `ConfirmOrderRequest` + `id` | `OrderResponse` |
+| Método sugerido | Endpoint gateway | Transporte | Request | Response |
+|-----------------|------------------|------------|---------|----------|
+| `GET` | `/api/v1/cart/get` | TCP `cart.get` | — | `CartResponse \| null` |
+| `POST` | `/api/v1/cart/items/add` | TCP `cart.items_add` | `AddCartItemRequest` | `CartResponse` |
+| `PATCH` | `/api/v1/cart/items/update` | TCP `cart.items_update` | `UpdateCartItemRequest` (`cartId`, `productoId`, `cantidad`) | `CartResponse` |
+| `DELETE` | `/api/v1/cart/items/delete` | TCP `cart.items_delete` | `{ cartId: string, productoId: string }` | `CartResponse` |
+| `GET` | `/api/v1/orders/list` | TCP `orders.list` | query filters | `OrderListResponse[]` |
+| `GET` | `/api/v1/orders/get-by-id?id={orderId}` | TCP `orders.get_by_id` | query `id` | `OrderResponse` |
+| `POST` | `/api/v1/orders/create` | BullMQ `orders.create` | `CreateOrderRequest` + `idempotencyKey` | `202 Accepted` + `AsyncAcceptedResponse` |
+| `GET` | `/api/v1/orders/job-status?id={trackingId}` | TCP `orders.job_status` | query `id` | `OrderJobStatusResponse` |
+| `PATCH` | `/api/v1/orders/status/update` | TCP `orders.status_update` | `UpdateOrderStatusRequest` + `id` | `OrderResponse` |
+| `POST` | `/api/v1/orders/cancel` | TCP `orders.cancel` | `CancelOrderRequest` + `id` | `OrderResponse` |
+| `POST` | `/api/v1/orders/confirm` | TCP `orders.confirm` | `ConfirmOrderRequest` + `id` | `OrderResponse` |
 
 Regla de identidad: nunca mandar ni confiar en `userId` dentro del body. El gateway remueve `userId` del payload HTTP —incluyendo cuerpos `DELETE`— y reenvía la identidad confiable desde el JWT en `payload.user`. Las acciones de ciclo de vida del pedido (`orders.status_update` y `orders.confirm`) son acciones de `vendedor`; `orders.cancel` sigue siendo de `cliente` y solo permite cancelar pedidos propios en estado `pendiente`.
 
-Mientras products-service no tenga un adaptador real para snapshots, solo los comandos que dependen de productos (`cart.items_add`, `cart.items_update` y `orders.create`) pueden responder `503 Service Unavailable` controlado desde orders-service. Las lecturas, borrado de items y acciones de estado no dependen del catálogo y no deben tratarse como servicio completo no disponible. El frontend debe mostrar una recuperación clara y no asumir que el precio del body será aceptado.
+Mientras products-service no tenga un adaptador real para snapshots, los comandos síncronos que dependen de productos (`cart.items_add` y `cart.items_update`) pueden responder `503 Service Unavailable` controlado desde orders-service. En `orders.create`, el gateway acepta el comando async si el payload es válido; el worker de `orders-service` resuelve la dependencia y refleja el resultado final en el estado del job. El frontend debe mostrar tracking claro y no asumir que el precio del body será aceptado.
+
+### Respuesta async de creación de orden
+
+```http
+HTTP/1.1 202 Accepted
+Content-Type: application/json
+```
+
+```json
+{
+  "jobId": "bullmq-job-id",
+  "trackingId": "public-tracking-id",
+  "status": "PENDING"
+}
+```
+
+Estados esperados: `PENDING`, `PROCESSING`, `RETRYING`, `COMPLETED`, `FAILED`, `DEAD_LETTER`.
 
 ## Servicios planificados pero no disponibles
 
@@ -220,8 +248,9 @@ await fetch('http://localhost:3000/api/v1/users/profile/update', {
 | `403` | Rol insuficiente. | Mostrar pantalla de acceso denegado. |
 | `404` | Service/action no mapeado. | Revisar endpoint; no reintentar automáticamente. |
 | `405` | Método HTTP no soportado. | Corregir método usado por el cliente. |
+| `409` | `idempotencyKey` duplicada con payload incompatible. | No reintentar automáticamente; revisar estado del comando original. |
 | `413` | Body supera el límite permitido. | Reducir payload/archivo antes de reenviar. |
-| `503` | Familia planificada no desplegada, o comando de carrito/pedido dependiente de productos sin adaptador de catálogo disponible. | Ocultar feature o mostrar “no disponible”; no asumir indisponibilidad total de carrito/pedidos. |
+| `503` | Familia planificada no desplegada o camino TCP síncrono con dependencia caída. | Ocultar feature o mostrar “no disponible”; no asumir que fue encolado. |
 | `504` | Timeout del microservicio destino. | Mostrar retry controlado. |
 
 ## Headers recomendados
@@ -230,6 +259,7 @@ await fetch('http://localhost:3000/api/v1/users/profile/update', {
 |--------|---------------|------|
 | `Content-Type: application/json` | Requests con body. | Obligatorio en `POST`/`PATCH` JSON. |
 | `Authorization: Bearer <token>` | Acciones protegidas. | No hace falta en acciones públicas. |
+| `Idempotency-Key` | Comandos async críticos como creación de orden. | Debe ser estable por intento lógico del usuario. |
 | `x-request-id` | Debug/tracing opcional. | Si no se manda, el gateway genera uno. |
 
 ## Checklist para el frontend
@@ -237,6 +267,8 @@ await fetch('http://localhost:3000/api/v1/users/profile/update', {
 - [ ] Configurar `API_BASE_URL=http://localhost:3000/api` en entorno local.
 - [ ] Crear un cliente HTTP que agregue JWT solo en rutas protegidas.
 - [ ] Centralizar manejo de `401`, `403`, `503` y `504`.
+- [ ] Para comandos async, enviar `Idempotency-Key` y manejar `202 Accepted`.
+- [ ] Consultar `trackingId` hasta estado terminal antes de mostrar la orden como confirmada.
 - [ ] Importar DTOs desde `@agua/contracts` si el frontend vive en el monorepo.
 - [ ] No consumir familias marcadas como no disponibles.
 - [ ] Validar roles de UI contra `UserRole` del token/perfil, no con strings sueltos.
