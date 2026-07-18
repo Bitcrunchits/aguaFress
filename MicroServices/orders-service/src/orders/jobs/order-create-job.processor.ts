@@ -11,7 +11,7 @@ export interface OrderCreateJobAttemptContext {
   readonly maxAttempts: number;
 }
 
-type OrderCreateJobTrackingService = Pick<OrderCommandTrackingService, 'transitionStatus'>;
+type OrderCreateJobTrackingService = Pick<OrderCommandTrackingService, 'registerPending' | 'transitionStatus'>;
 type OrderCreateJobOrdersService = Pick<OrdersService, 'create'>;
 
 @Injectable()
@@ -24,6 +24,12 @@ export class OrderCreateJobProcessor {
 
   async process(data: CreateOrderJobData, context: OrderCreateJobAttemptContext): Promise<OrderJobStatusResponse> {
     const currentAttempt = context.attemptsMade + 1;
+
+    // First attempt: register the pending tracking record (idempotent, race-safe)
+    if (context.attemptsMade === 0) {
+      await this.trackingService.registerPending(data);
+    }
+
     const previousStatus = context.attemptsMade === 0 ? OrderJobStatus.PENDING : OrderJobStatus.RETRYING;
 
     await this.trackingService.transitionStatus({

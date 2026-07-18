@@ -57,6 +57,6 @@ Chain strategy: feature-branch-chain
 
 ## Phase 5: PR 5 — Final Verification / Jira
 
-- [ ] 5.1 VERIFY: Run contracts, gateway, orders tests/builds plus Prisma validate/generate.
-- [ ] 5.2 REFACTOR: Remove dead code/imports; confirm no `console.log`, `any`, or gateway business persistence.
+- [x] 5.1 VERIFY: Run contracts, gateway, orders tests/builds plus Prisma validate/generate.
+- [x] 5.2 REFACTOR: Remove dead code/imports; confirm no `console.log`, `any`, or gateway business persistence.
 - [ ] 5.3 TASK: After implementation, update Jira AG-161 with chained PR links, verification, and status route decision.

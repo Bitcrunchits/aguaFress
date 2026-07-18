@@ -16,12 +16,12 @@ export function buildOrdersCreateJobId(clienteId: string, idempotencyKey: string
 }
 
 export function buildOrdersCreateTrackingId(clienteId: string, idempotencyKey: string): string {
-  const digest = createHash('sha256')
+  const digest = createHash('md5')
     .update(`${clienteId}:${idempotencyKey}`)
-    .digest('hex')
-    .slice(0, 32);
+    .digest('hex');
 
-  return `order-create-${digest}`;
+  // Format as a standard UUID shape: 8-4-4-4-12.
+  return `${digest.slice(0, 8)}-${digest.slice(8, 12)}-${digest.slice(12, 16)}-${digest.slice(16, 20)}-${digest.slice(20)}`;
 }
 
 @Injectable()

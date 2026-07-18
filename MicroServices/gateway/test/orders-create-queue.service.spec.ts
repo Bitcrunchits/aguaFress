@@ -16,7 +16,7 @@ describe('OrdersCreateQueueService', () => {
     expect(firstJobId).toBe('orders.create:cliente-1:idem-1');
     expect(secondJobId).toBe(firstJobId);
     expect(secondTrackingId).toBe(firstTrackingId);
-    expect(firstTrackingId).toMatch(/^order-create-[a-f0-9]{32}$/);
+    expect(firstTrackingId).toMatch(/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/);
   });
 
   it('enqueues create order jobs with stable tracking response and raw body payload', async () => {

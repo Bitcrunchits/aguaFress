@@ -4,7 +4,7 @@ import { OrderCreateJobProcessor } from './order-create-job.processor';
 import type { OrderCommandTrackingService } from './order-command-tracking.service';
 import type { OrdersService } from '../orders.service';
 
-type TrackingMock = jest.Mocked<Pick<OrderCommandTrackingService, 'transitionStatus'>>;
+type TrackingMock = jest.Mocked<Pick<OrderCommandTrackingService, 'registerPending' | 'transitionStatus'>>;
 type OrdersServiceMock = jest.Mocked<Pick<OrdersService, 'create'>>;
 
 describe('OrderCreateJobProcessor', () => {
@@ -17,19 +17,22 @@ describe('OrderCreateJobProcessor', () => {
   let processor: OrderCreateJobProcessor;
 
   beforeEach(() => {
-    tracking = { transitionStatus: jest.fn().mockImplementation(async (input) => ({
-      clienteId,
-      idempotencyKey: 'idem-1',
-      trackingId,
-      jobId,
-      createdAt,
-      updatedAt: createdAt,
-      status: input.nextStatus,
-      orderId: input.orderId,
-      errorCode: input.errorCode,
-      errorMessage: input.errorMessage,
-      attempts: input.attempts ?? 0,
-    })) };
+    tracking = {
+      registerPending: jest.fn().mockResolvedValue(undefined),
+      transitionStatus: jest.fn().mockImplementation(async (input) => ({
+        clienteId,
+        idempotencyKey: 'idem-1',
+        trackingId,
+        jobId,
+        createdAt,
+        updatedAt: createdAt,
+        status: input.nextStatus,
+        orderId: input.orderId,
+        errorCode: input.errorCode,
+        errorMessage: input.errorMessage,
+        attempts: input.attempts ?? 0,
+      })),
+    };
     ordersService = { create: jest.fn().mockResolvedValue(orderResponse()) };
     processor = new OrderCreateJobProcessor(tracking, ordersService);
   });
@@ -40,6 +43,8 @@ describe('OrderCreateJobProcessor', () => {
       orderId: 'order-1',
     }));
 
+    expect(tracking.registerPending).toHaveBeenCalledTimes(1);
+    expect(tracking.registerPending).toHaveBeenCalledWith(createJobData());
     expect(tracking.transitionStatus).toHaveBeenNthCalledWith(1, expect.objectContaining({
       trackingId,
       previousStatus: OrderJobStatus.PENDING,
@@ -60,6 +65,7 @@ describe('OrderCreateJobProcessor', () => {
   it('moves RETRYING jobs back to PROCESSING on the next BullMQ attempt', async () => {
     await processor.process(createJobData(), { attemptsMade: 1, maxAttempts: 3 });
 
+    expect(tracking.registerPending).not.toHaveBeenCalled();
     expect(tracking.transitionStatus).toHaveBeenNthCalledWith(1, expect.objectContaining({
       previousStatus: OrderJobStatus.RETRYING,
       nextStatus: OrderJobStatus.PROCESSING,
