@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from "@nestjs/common";
 import { Delivery } from '@prisma/client';
 import { DeliveryEstado, DeliveryResponse } from "@agua/contracts";
 import { PrismaService } from "../common/prisma/prisma.service";
@@ -9,7 +9,7 @@ export class DeliveriesService {
   constructor(private readonly prisma: PrismaService) {}
 
   //GET /deliveries- entregas del día paginadas
-  async findAll(query: QueryDeliveriesDto) {
+  async findAll(query: QueryDeliveriesDto, vendedorId: string) {
   const { fecha, page = 1, limit = 10 } = query;
   //rango del día- periodo
   const dia = fecha ? new Date(`${fecha}T00:00:00`) : new Date();
@@ -19,6 +19,7 @@ export class DeliveriesService {
     finDia.setHours(23, 59, 59, 999);
   
     const where = {
+      vendedor_id:vendedorId,
       fecha_asignacion: {
         gte: inicioDia,
         lte: finDia,
@@ -45,18 +46,24 @@ export class DeliveriesService {
       };
     }
     //GET /deliveries/:id - entrega por id
-    async findOne(id: string): Promise<DeliveryResponse> {
+    async findOne(id: string, vendedorId: string): Promise<DeliveryResponse> {
       const entrega = await this.prisma.delivery.findUnique({ where: { id } });
       if (!entrega) {
         throw new NotFoundException(`Entrega ${id} no encontrada`);
       }
+      if (entrega.vendedor_id !== vendedorId) {
+        throw new ForbiddenException('No tiene acceso a esta entrega');
+      }
       return this.toResponse(entrega);
     }
     //PATCH /deliveries/:id/status - actualizar estado de entrega
-    async updateStatus(id: string, dto: UpdateDeliveryStatusDto) {
+    async updateStatus(id: string, dto: UpdateDeliveryStatusDto, vendedorId: string): Promise<DeliveryResponse> {
         const entrega = await this.prisma.delivery.findUnique({ where: { id } });
         if (!entrega) {
           throw new NotFoundException(`Entrega ${id} no encontrada`);
+        }
+        if (entrega.vendedor_id !== vendedorId) {
+          throw new ForbiddenException(`No tiene acceso a esta entrega`)
         }
     //Manejo de estados
     const transicionesValidas: Record<string, DeliveryEstado[]> = {

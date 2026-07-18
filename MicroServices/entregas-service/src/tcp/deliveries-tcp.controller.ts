@@ -15,22 +15,23 @@ export class DeliveriesTcpController {
 
   @MessagePattern('deliveries.list')
 async list(@Payload() payload: TcpPayload) {
+  const user = this.payloadAdapter.requireUser(payload);
   const query = await this.payloadAdapter.query(payload, QueryDeliveriesDto);
-  return this.deliveriesService.findAll(query);
+  return this.deliveriesService.findAll(query, user.sub ?? user.userId ?? '');
 }
 
   @MessagePattern('deliveries.get')
   async get(@Payload() payload: TcpPayload) {
-    this.payloadAdapter.requireUser(payload);
+    const user = this.payloadAdapter.requireUser(payload);
     const id = payload.params?.id ?? payload.query?.id ?? '';
-    return this.deliveriesService.findOne(id);
+    return this.deliveriesService.findOne(id, user.sub ?? user.userId ?? '');
   }
 
   @MessagePattern('deliveries.update_status')
   async updateStatus(@Payload() payload: TcpPayload) {
-    this.payloadAdapter.requireUser(payload);
+    const user = this.payloadAdapter.requireUser(payload)
     const id = payload.params?.id ?? payload.query?.id ?? '';
     const dto = await this.payloadAdapter.body(payload, UpdateDeliveryStatusDto);
-    return this.deliveriesService.updateStatus(id, dto);
+    return this.deliveriesService.updateStatus(id,  dto, user.sub ?? user.userId ?? '');
   }
 }
