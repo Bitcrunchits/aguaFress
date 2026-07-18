@@ -43,10 +43,10 @@ Chain strategy: feature-branch-chain
 
 ## Phase 3: PR 3 — Orders Tracking Persistence
 
-- [ ] 3.1 RED: Add tests for duplicate `(clienteId,idempotencyKey)`, payload conflict, lookup, and atomic transitions.
-- [ ] 3.2 GREEN: Add `OrderCommandJob` to `MicroServices/orders-service/prisma/schema.prisma` with unique `tracking_id`, `job_id`, and `(cliente_id,idempotency_key)`.
-- [ ] 3.3 GREEN: Extend `orders.repository.ts` and tracking service with create/find/update methods using enums and ISO strings.
-- [ ] 3.4 VERIFY: Run `pnpm --filter @agua/orders-service prisma:validate`, `prisma:generate`, and `test`.
+- [x] 3.1 RED: Add tests for duplicate `(clienteId,idempotencyKey)`, payload conflict, lookup, and atomic transitions.
+- [x] 3.2 GREEN: Add `OrderCommandJob` to `MicroServices/orders-service/prisma/schema.prisma` with unique `tracking_id`, `job_id`, and `(cliente_id,idempotency_key)`.
+- [x] 3.3 GREEN: Extend `orders.repository.ts` and tracking service with create/find/update methods using enums and ISO strings.
+- [x] 3.4 VERIFY: Run `pnpm --filter @agua/orders-service prisma:validate`, `prisma:generate`, and `test`.
 
 ## Phase 4: PR 4 — Worker / Status / Failure Semantics
 

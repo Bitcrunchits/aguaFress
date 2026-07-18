@@ -10,10 +10,19 @@ import { PrismaOrdersRepository } from './orders.repository';
 import type { CreateOrderRequest, OrderResponse } from './orders.dto';
 import { toOrderResponse } from './orders.mapper';
 
+type OrdersServiceRepository = Pick<OrdersRepository,
+  | 'createFromCart'
+  | 'findById'
+  | 'findMany'
+  | 'findManyForCliente'
+  | 'findManyForVendedor'
+  | 'updateStatus'
+>;
+
 @Injectable()
 export class OrdersService {
   constructor(
-    @Inject(PrismaOrdersRepository) private readonly ordersRepository: OrdersRepository,
+    @Inject(PrismaOrdersRepository) private readonly ordersRepository: OrdersServiceRepository,
     @Inject(PRODUCT_CATALOG_PORT) private readonly productCatalog: ProductCatalogPort,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}

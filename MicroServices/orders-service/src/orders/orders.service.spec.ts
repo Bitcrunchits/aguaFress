@@ -12,7 +12,14 @@ describe('OrdersService', () => {
   const vendedorId = 'vendedor-1';
   const direccion = { calle: 'San Martin', numero: '123', ciudad: 'Mendoza', provincia: 'Mendoza' };
 
-  let ordersRepository: jest.Mocked<OrdersRepository>;
+  let ordersRepository: jest.Mocked<Pick<OrdersRepository,
+    | 'createFromCart'
+    | 'findById'
+    | 'findMany'
+    | 'findManyForCliente'
+    | 'findManyForVendedor'
+    | 'updateStatus'
+  >>;
   let productCatalog: jest.Mocked<ProductCatalogPort>;
   let service: OrdersService;
 
