@@ -13,6 +13,7 @@ import { GatewayRateLimitGuard } from './rate-limit/gateway-rate-limit.guard';
 import { ProtectedRouteRateLimitGuard } from './rate-limit/protected-route-rate-limit.guard';
 import { RateLimitModule } from './rate-limit/rate-limit.module';
 import { TcpModule } from './tcp/tcp.module';
+import { OrdersQueueModule } from './queues/orders-queue.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { TcpModule } from './tcp/tcp.module';
     }),
     ActionsModule,
     TcpModule,
+    OrdersQueueModule,
     AuthModule,
     DocsModule,
     HealthModule,

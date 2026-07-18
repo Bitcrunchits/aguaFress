@@ -24,6 +24,15 @@ enum MetodoPago {
   contra_entrega
 }
 
+enum OrderJobStatus {
+  PENDING
+  PROCESSING
+  RETRYING
+  COMPLETED
+  FAILED
+  DEAD_LETTER
+}
+
 // ═══════════════════════════════════════════════════════════════
 //  orders-service — Carrito + Pedidos
 // ═══════════════════════════════════════════════════════════════
@@ -140,4 +149,26 @@ model OrderCounter {
   updated_at    DateTime @updatedAt
 
   @@map("PEDIDO_COUNTER")
+}
+
+model OrderCommandJob {
+  id              String         @id @default(uuid()) @db.Uuid
+  tracking_id     String         @unique @db.Uuid
+  job_id          String         @unique @db.VarChar(255)
+  cliente_id      String         @db.Uuid
+  idempotency_key String         @db.VarChar(255)
+  payload_hash    String         @db.VarChar(64)
+  payload_body    Json
+  status          OrderJobStatus @default(PENDING)
+  order_id        String?        @db.Uuid
+  error_code      String?        @db.VarChar(100)
+  error_message   String?        @db.Text
+  attempts        Int            @default(0)
+  created_at      DateTime       @default(now())
+  updated_at      DateTime       @updatedAt
+
+  @@unique([cliente_id, idempotency_key])
+  @@index([status])
+  @@index([created_at])
+  @@map("ORDER_COMMAND_JOB")
 }

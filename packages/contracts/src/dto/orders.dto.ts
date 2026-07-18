@@ -7,7 +7,7 @@
 //    Se extrae del token JWT en el middleware. Si un endpoint necesita
 //    el usuario autenticado, lo lee del token, NO del request body.
 
-import { MetodoPago, OrderEstado } from '../enums';
+import { MetodoPago, OrderEstado, OrderJobStatus } from '../enums';
 import type { DireccionEntrega, PaginationRequest } from './common.dto';
 
 // ─── OCP-friendly: al agregar un método de pago:
@@ -80,6 +80,43 @@ export interface CreateOrderRequest {
   metodoPago: MetodoPagoPermitido;
   direccion: DireccionEntrega;
   observaciones?: string;
+}
+
+export interface OrderCommandIdempotencyMetadata {
+  clienteId: string;
+  idempotencyKey: string;
+}
+
+export interface AsyncAcceptedResponse {
+  jobId: string;
+  trackingId: string;
+  status: OrderJobStatus.PENDING;
+  statusUrl: string;
+  /** ISO 8601 */
+  acceptedAt: string;
+}
+
+export interface CreateOrderJobData extends OrderCommandIdempotencyMetadata {
+  jobId: string;
+  trackingId: string;
+  requestId: string;
+  body: Record<string, unknown>;
+  /** ISO 8601 */
+  requestedAt: string;
+}
+
+export interface OrderJobStatusResponse extends OrderCommandIdempotencyMetadata {
+  jobId: string;
+  trackingId: string;
+  status: OrderJobStatus;
+  orderId?: string;
+  errorCode?: string;
+  errorMessage?: string;
+  attempts: number;
+  /** ISO 8601 */
+  createdAt: string;
+  /** ISO 8601 */
+  updatedAt: string;
 }
 
 export interface OrderResponse {

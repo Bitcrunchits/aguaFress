@@ -2,12 +2,14 @@ import { MethodNotAllowedException } from '@nestjs/common';
 import { ActionResolverService, ActionNotFoundError, ServiceUnavailable } from '../src/actions/action-resolver.service';
 import { type ActionMapping } from '../src/actions/action-registry';
 import { GatewayController } from '../src/gateway.controller';
+import { OrdersCreateQueueService } from '../src/queues/orders-create-queue.service';
 import { TcpDispatcherService } from '../src/tcp/tcp-dispatcher.service';
 
 describe('GatewayController', () => {
   let controller: GatewayController;
   let mockResolver: jest.Mocked<ActionResolverService>;
   let mockDispatcher: { dispatch: jest.Mock };
+  let mockOrdersCreateQueue: { enqueue: jest.Mock };
 
   const mockMapping: ActionMapping = {
     tcpPattern: 'auth.login',
@@ -24,7 +26,15 @@ describe('GatewayController', () => {
       dispatch: jest.fn(),
     };
 
-    controller = new GatewayController(mockResolver, mockDispatcher as unknown as TcpDispatcherService);
+    mockOrdersCreateQueue = {
+      enqueue: jest.fn(),
+    };
+
+    controller = new GatewayController(
+      mockResolver,
+      mockDispatcher as unknown as TcpDispatcherService,
+      mockOrdersCreateQueue as unknown as OrdersCreateQueueService,
+    );
   });
 
   describe('action routing', () => {
@@ -56,6 +66,27 @@ describe('GatewayController', () => {
         body: { email: 'test@agua.com', password: 'secret' },
       }), mockMapping);
       expect(result).toEqual({ token: 'abc' });
+    });
+
+    it('accepts body idempotency key for orders.create', async () => {
+      mockResolver.resolve.mockReturnValue({
+        tcpPattern: 'orders.create',
+        transport: 'send',
+        authRequired: true,
+        roles: ['cliente'],
+        asyncQueue: 'orders.create',
+      });
+      mockOrdersCreateQueue.enqueue.mockResolvedValue({ jobId: 'orders.create:cliente-1:body-key', trackingId: 't-1', status: 'PENDING', statusUrl: '/api/v1/orders/job-status?id=t-1', acceptedAt: '2026-07-17T19:00:00.000Z' });
+
+      await controller.handlePostAction(
+        'orders',
+        'create',
+        { idempotencyKey: 'body-key', metodoPago: 'contra_entrega' },
+        {},
+        { headers: {}, user: { sub: 'cliente-1', email: 'c@agua.com', role: 'cliente' } } as never,
+      );
+
+      expect(mockOrdersCreateQueue.enqueue).toHaveBeenCalledWith(expect.objectContaining({ idempotencyKey: 'body-key' }));
     });
 
     it('resolves and dispatches PATCH actions', async () => {

@@ -51,4 +51,4 @@ COPY --from=build /app/MicroServices/orders-service/prisma ./MicroServices/order
 EXPOSE 3014
 
 # db push auto + arranque
-CMD cd MicroServices/orders-service && npx prisma generate && npx prisma db push && node dist/main.js
+CMD cd MicroServices/orders-service && npx prisma generate && npx prisma db push --accept-data-loss && node dist/main.js

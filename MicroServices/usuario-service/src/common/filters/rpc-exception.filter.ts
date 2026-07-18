@@ -33,7 +33,7 @@ import { Observable, throwError } from 'rxjs';
 export class RpcExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(RpcExceptionFilter.name);
 
-  constructor(private readonly httpAdapterHost: HttpAdapterHost) {}
+  constructor(private readonly httpAdapterHost?: HttpAdapterHost) {}
 
   catch(exception: unknown, host: ArgumentsHost): Observable<never> | void {
     const type = host.getType();
@@ -86,6 +86,10 @@ export class RpcExceptionFilter implements ExceptionFilter {
 
   // ── HTTP ──────────────────────────────────────────────────
   private handleHttpError(exception: unknown, host: ArgumentsHost): void {
+    if (!this.httpAdapterHost) {
+      throw exception;
+    }
+
     const { httpAdapter } = this.httpAdapterHost;
     const ctx = host.switchToHttp();
     const path = httpAdapter.getRequestUrl(ctx.getRequest());

@@ -1,4 +1,4 @@
-import { Injectable, Inject, GatewayTimeoutException, Logger } from '@nestjs/common';
+import { Injectable, Inject, GatewayTimeoutException, HttpException, Logger } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { catchError, firstValueFrom, throwError, timeout, TimeoutError, type Observable } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
@@ -118,13 +118,14 @@ export class TcpDispatcherService {
             );
           }
 
-          // Business logic / validation errors from the microservice — rethrow as-is
-          throw error;
+          // Business logic / validation errors from the microservice arrive over TCP
+          // as plain payloads, so restore their HTTP status before Nest handles them.
+          throw normalizeTcpError(error);
         }
 
         // Only retry on timeouts
         if (!isTimeout) {
-          throw error;
+          throw normalizeTcpError(error);
         }
 
         this.logger.warn(
@@ -136,4 +137,45 @@ export class TcpDispatcherService {
     // Should never reach here
     throw new Error(`Unexpected: dispatch exited loop for pattern "${pattern}"`);
   }
+}
+
+interface TcpErrorPayload {
+  readonly statusCode: number;
+  readonly message?: unknown;
+  readonly error?: unknown;
+}
+
+function normalizeTcpError(error: unknown): unknown {
+  if (error instanceof HttpException) {
+    return error;
+  }
+
+  const tcpErrorPayload = extractTcpErrorPayload(error);
+  if (tcpErrorPayload) {
+    return new HttpException(tcpErrorPayload, tcpErrorPayload.statusCode);
+  }
+
+  return error;
+}
+
+function extractTcpErrorPayload(error: unknown): TcpErrorPayload | undefined {
+  if (isTcpErrorPayload(error)) {
+    return error;
+  }
+
+  if (typeof error !== 'object' || error === null || !('error' in error)) {
+    return undefined;
+  }
+
+  const nestedError = (error as { readonly error?: unknown }).error;
+  return isTcpErrorPayload(nestedError) ? nestedError : undefined;
+}
+
+function isTcpErrorPayload(error: unknown): error is TcpErrorPayload {
+  if (typeof error !== 'object' || error === null) {
+    return false;
+  }
+
+  const statusCode = (error as { readonly statusCode?: unknown }).statusCode;
+  return typeof statusCode === 'number' && statusCode >= 400 && statusCode < 600;
 }

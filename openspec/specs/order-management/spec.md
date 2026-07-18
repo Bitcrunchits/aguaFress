@@ -8,21 +8,36 @@ Order behavior.
 
 ### Requirement: Create from cart
 
-The system MUST create orders from carts using server product data and clear carts only after success.
+The system MUST accept order creation as an asynchronous command, then create orders from carts using server product data and clear carts only after successful worker processing.
+
+#### Scenario: Accepted
+
+- GIVEN a cliente has a valid request and idempotency key
+- WHEN the cliente creates an order through the gateway
+- THEN the gateway MUST return `202 Accepted` with `jobId` and `trackingId`
+- AND the order MUST NOT be considered completed until the async job reaches `COMPLETED`
 
 #### Scenario: Created
 
 - GIVEN a cliente has a valid cart with product data
-- WHEN the cliente creates an order
+- WHEN the orders-service worker processes the accepted async command
 - THEN the order MUST have enum status and ISO 8601 dates
 - AND the cart MUST be cleared
 
 #### Scenario: Product missing
 
 - GIVEN product data is unavailable
-- WHEN the cliente creates an order
-- THEN the system MUST return controlled unavailable
+- WHEN the orders-service worker processes the accepted async command
+- THEN the system MUST retry with backoff when the error is recoverable
+- AND MUST eventually mark the job `FAILED` or `DEAD_LETTER` if it cannot complete
 - AND MUST NOT create an order or clear the cart
+
+#### Scenario: Idempotent retry
+
+- GIVEN the same cliente retries an async create command with the same idempotency key
+- WHEN the original command already exists
+- THEN the system MUST return or preserve the original tracking result
+- AND MUST NOT create duplicate orders
 
 ### Requirement: Role-scoped reads
 

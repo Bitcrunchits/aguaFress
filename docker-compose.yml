@@ -27,6 +27,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: agua
+      TZ: America/Argentina/Buenos_Aires
     volumes:
       - agua-postgres-data:/var/lib/postgresql/data
       - ./docker/init-db:/docker-entrypoint-initdb.d:ro
@@ -58,8 +59,8 @@ services:
     container_name: agua-redis
     ports:
       - "6379:6379"
-    volumes:
-      - agua-redis-data:/data
+    environment:
+      TZ: America/Argentina/Buenos_Aires
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -67,18 +68,26 @@ services:
       retries: 5
     restart: unless-stopped
 
-  # ─── usuario-service ────────────────────────────────────────
   usuario-service:
     build:
       context: .
       dockerfile: MicroServices/usuario-service/Dockerfile
     container_name: agua-usuario-service
-    # No HTTP port — TCP only (internal Docker network)
+    ports:
+      - "3011"
     env_file:
       - .env
     environment:
+      TZ: America/Argentina/Buenos_Aires
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/agua"
       TCP_PORT: "3011"
+      JWT_SECRET: "aguafress-dev-secret-no-usar-en-prod"
+      JWT_REFRESH_SECRET: "auth-dev-refresh-secret-min-32!!"
+      JWT_EXPIRES_IN: "24h"
+      JWT_REFRESH_EXPIRES_IN: "7d"
     depends_on:
+      postgres:
+        condition: service_healthy
       postgres-init:
         condition: service_completed_successfully
       redis:
@@ -95,8 +104,15 @@ services:
     env_file:
       - .env
     environment:
+      TZ: America/Argentina/Buenos_Aires
       TCP_PORT: "3014"
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/agua_orders"
+      REDIS_URL: "redis://redis:6379"
+      ORDERS_CREATE_QUEUE_NAME: "orders.create"
+      ORDERS_CREATE_QUEUE_ATTEMPTS: "3"
+      ORDERS_CREATE_QUEUE_BACKOFF_MS: "5000"
+      ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE: "1000"
+      ORDERS_CREATE_WORKER_CONCURRENCY: "1"
     depends_on:
       postgres-init:
         condition: service_completed_successfully
@@ -120,11 +136,17 @@ services:
     env_file:
       - .env
     environment:
+      TZ: America/Argentina/Buenos_Aires
       PORT: "3000"
       USUARIO_SERVICE_HOST: usuario-service
       USUARIO_SERVICE_TCP_PORT: "3011"
       ORDERS_SERVICE_HOST: orders-service
       ORDERS_SERVICE_TCP_PORT: "3014"
+      REDIS_URL: "redis://redis:6379"
+      ORDERS_CREATE_QUEUE_NAME: "orders.create"
+      ORDERS_CREATE_QUEUE_ATTEMPTS: "3"
+      ORDERS_CREATE_QUEUE_BACKOFF_MS: "5000"
+      ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE: "1000"
     depends_on:
       usuario-service:
         condition: service_started

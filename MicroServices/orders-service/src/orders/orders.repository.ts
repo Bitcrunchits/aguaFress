@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { MetodoPago, OrderEstado, type DireccionEntrega } from '@agua/contracts';
+import { MetodoPago, OrderEstado, OrderJobStatus, type DireccionEntrega } from '@agua/contracts';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../common/prisma.service';
 import type { CartRecord } from '../cart/cart.repository';
@@ -46,8 +46,48 @@ export interface OrderRecord {
   readonly items: readonly OrderItemRecord[];
 }
 
+export interface CreateOrderCommandJobInput {
+  readonly trackingId: string;
+  readonly jobId: string;
+  readonly clienteId: string;
+  readonly idempotencyKey: string;
+  readonly payloadHash: string;
+  readonly payloadBody: Prisma.InputJsonObject;
+  readonly status: OrderJobStatus.PENDING;
+}
+
+export interface UpdateOrderCommandJobStatusInput {
+  readonly trackingId: string;
+  readonly previousStatus: OrderJobStatus;
+  readonly nextStatus: OrderJobStatus;
+  readonly orderId?: string;
+  readonly errorCode?: string;
+  readonly errorMessage?: string;
+  readonly attempts?: number;
+}
+
+export interface OrderCommandJobRecord {
+  readonly id: string;
+  readonly trackingId: string;
+  readonly jobId: string;
+  readonly clienteId: string;
+  readonly idempotencyKey: string;
+  readonly payloadHash: string;
+  readonly status: OrderJobStatus;
+  readonly orderId: string | null;
+  readonly errorCode: string | null;
+  readonly errorMessage: string | null;
+  readonly attempts: number;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
+}
+
 export interface OrdersRepository {
   createFromCart(input: CreateOrderFromCartInput): Promise<OrderRecord>;
+  createOrderCommandJob(input: CreateOrderCommandJobInput): Promise<OrderCommandJobRecord>;
+  findOrderCommandByIdempotency(clienteId: string, idempotencyKey: string): Promise<OrderCommandJobRecord | null>;
+  findOrderCommandByTrackingId(trackingId: string): Promise<OrderCommandJobRecord | null>;
+  updateOrderCommandJobStatus(input: UpdateOrderCommandJobStatusInput): Promise<OrderCommandJobRecord | null>;
   findById(orderId: string): Promise<OrderRecord | null>;
   findMany(): Promise<readonly OrderRecord[]>;
   findManyForCliente(clienteId: string): Promise<readonly OrderRecord[]>;
@@ -136,6 +176,54 @@ export class PrismaOrdersRepository implements OrdersRepository {
 
       return mapOrder(order);
     });
+  }
+
+  async createOrderCommandJob(input: CreateOrderCommandJobInput): Promise<OrderCommandJobRecord> {
+    const job = await this.prisma.orderCommandJob.create({
+      data: {
+        tracking_id: input.trackingId,
+        job_id: input.jobId,
+        cliente_id: input.clienteId,
+        idempotency_key: input.idempotencyKey,
+        payload_hash: input.payloadHash,
+        payload_body: input.payloadBody,
+        status: input.status,
+      },
+    });
+
+    return mapOrderCommandJob(job);
+  }
+
+  async findOrderCommandByIdempotency(clienteId: string, idempotencyKey: string): Promise<OrderCommandJobRecord | null> {
+    const job = await this.prisma.orderCommandJob.findUnique({
+      where: { cliente_id_idempotency_key: { cliente_id: clienteId, idempotency_key: idempotencyKey } },
+    });
+
+    return job === null ? null : mapOrderCommandJob(job);
+  }
+
+  async findOrderCommandByTrackingId(trackingId: string): Promise<OrderCommandJobRecord | null> {
+    const job = await this.prisma.orderCommandJob.findUnique({ where: { tracking_id: trackingId } });
+    return job === null ? null : mapOrderCommandJob(job);
+  }
+
+  async updateOrderCommandJobStatus(input: UpdateOrderCommandJobStatusInput): Promise<OrderCommandJobRecord | null> {
+    const updateResult = await this.prisma.orderCommandJob.updateMany({
+      where: { tracking_id: input.trackingId, status: input.previousStatus },
+      data: cleanUpdateInput({
+        status: input.nextStatus,
+        order_id: input.orderId,
+        error_code: input.errorCode,
+        error_message: input.errorMessage,
+        attempts: input.attempts,
+      }),
+    });
+
+    if (updateResult.count !== 1) {
+      return null;
+    }
+
+    return this.findOrderCommandByTrackingId(input.trackingId);
   }
 
   async findById(orderId: string): Promise<OrderRecord | null> {
@@ -244,6 +332,28 @@ function mapOrder(order: PrismaOrderWithItems): OrderRecord {
       precioUnitario: decimalToNumber(item.precio_unitario),
     })),
   };
+}
+
+function mapOrderCommandJob(job: Prisma.OrderCommandJobGetPayload<object>): OrderCommandJobRecord {
+  return {
+    id: job.id,
+    trackingId: job.tracking_id,
+    jobId: job.job_id,
+    clienteId: job.cliente_id,
+    idempotencyKey: job.idempotency_key,
+    payloadHash: job.payload_hash,
+    status: job.status as OrderJobStatus,
+    orderId: job.order_id,
+    errorCode: job.error_code,
+    errorMessage: job.error_message,
+    attempts: job.attempts,
+    createdAt: job.created_at,
+    updatedAt: job.updated_at,
+  };
+}
+
+function cleanUpdateInput<T extends Record<string, unknown>>(input: T): Partial<T> {
+  return Object.fromEntries(Object.entries(input).filter((entry) => entry[1] !== undefined)) as Partial<T>;
 }
 
 function calculateTotal(items: readonly CreateOrderItemInput[]): number {

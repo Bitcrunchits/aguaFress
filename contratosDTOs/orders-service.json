@@ -3,19 +3,31 @@
   "port": 3014,
   "database": "PostgreSQL",
   "orm": "Prisma",
-  "responsibility": "Gestión de carrito, pedidos, estados y facturas B/C. Solo contra_entrega como método de pago.",
+  "responsibility": "Gestión de carrito, pedidos, estados, jobs async de pedidos y facturas B/C. Solo contra_entrega como método de pago.",
   "security_rules": [
     "⚠️ userId/clienteId NUNCA viene del body. Se extrae del token JWT en el middleware."
   ],
-  "product_dependency_rule": "Hasta que exista un adaptador real de products-service, cart.items_add, cart.items_update y orders.create pueden devolver 503 controlado. Lecturas, cart.items_delete y operaciones de estado no dependen del catálogo y siguen disponibles.",
+  "product_dependency_rule": "Hasta que exista un adaptador real de products-service, cart.items_add y cart.items_update pueden devolver 503 controlado por TCP. orders.create se maneja como job async; si la dependencia falla, el estado del job refleja retry, failed o dead letter. Lecturas, cart.items_delete y operaciones de estado no dependen del catálogo y siguen disponibles.",
   "public_entrypoint": {
     "type": "api-gateway",
     "base_path": "/api/v1/{service}/{action}",
-    "note": "orders-service permanece TCP-only; el frontend no consume HTTP directo del microservicio."
+    "note": "orders-service no expone HTTP público; el frontend no consume HTTP directo del microservicio. Las operaciones inmediatas usan TCP interno y orders.create usa BullMQ como piloto async."
   },
   "tcp_patterns": {
     "cart": ["cart.get", "cart.items_add", "cart.items_update", "cart.items_delete"],
-    "orders": ["orders.list", "orders.get_by_id", "orders.create", "orders.status_update", "orders.cancel", "orders.confirm"]
+    "orders": ["orders.list", "orders.get_by_id", "orders.job_status", "orders.status_update", "orders.cancel", "orders.confirm"]
+  },
+  "async_queue": {
+    "transport": "Redis + BullMQ",
+    "no_kafka_for_this_problem": true,
+    "owner": "orders-service",
+    "pilot_operations": ["orders.create"],
+    "queue_names": ["orders.create"],
+    "job_names": ["orders.create"],
+    "gateway_response": { "http_status": 202, "body": { "jobId": "string", "trackingId": "string", "status": "PENDING" } },
+    "tracking_states": ["PENDING", "PROCESSING", "RETRYING", "COMPLETED", "FAILED", "DEAD_LETTER"],
+    "required_controls": ["idempotencyKey", "retries", "exponential_backoff", "failed_jobs_or_dlq", "safe_error_payloads"],
+    "ownership_rule": "Gateway valida/auth/enqueues y devuelve tracking; orders-service ejecuta reglas de negocio, persiste la orden final y mantiene estado del job."
   },
   "gateway_routes": [
     { "path": "/api/v1/cart/get", "method": "GET", "tcp_pattern": "cart.get", "auth": "CLIENTE" },
@@ -24,7 +36,8 @@
     { "path": "/api/v1/cart/items/delete", "method": "DELETE", "tcp_pattern": "cart.items_delete", "auth": "CLIENTE", "request": { "cartId": "string", "productoId": "string" } },
     { "path": "/api/v1/orders/list", "method": "GET", "tcp_pattern": "orders.list", "auth": "CLIENTE|VENDEDOR|SUPER_ADMIN" },
     { "path": "/api/v1/orders/get-by-id?id={orderId}", "method": "GET", "tcp_pattern": "orders.get_by_id", "auth": "CLIENTE|VENDEDOR|SUPER_ADMIN" },
-    { "path": "/api/v1/orders/create", "method": "POST", "tcp_pattern": "orders.create", "auth": "CLIENTE" },
+    { "path": "/api/v1/orders/create", "method": "POST", "transport": "BullMQ", "job": "orders.create", "auth": "CLIENTE", "request": { "body": "CreateOrderRequest", "idempotencyKey": "string" }, "response": { "statusCode": 202, "body": "AsyncAcceptedResponse" } },
+    { "path": "/api/v1/orders/job-status?id={trackingId}", "method": "GET", "tcp_pattern": "orders.job_status", "auth": "CLIENTE|VENDEDOR|SUPER_ADMIN", "response": "OrderJobStatusResponse" },
     { "path": "/api/v1/orders/status/update", "method": "PATCH", "tcp_pattern": "orders.status_update", "auth": "VENDEDOR" },
     { "path": "/api/v1/orders/cancel", "method": "POST", "tcp_pattern": "orders.cancel", "auth": "CLIENTE" },
     { "path": "/api/v1/orders/confirm", "method": "POST", "tcp_pattern": "orders.confirm", "auth": "VENDEDOR" }
@@ -51,9 +64,9 @@
       "path": "/orders",
       "method": "POST",
       "auth": "CLIENTE",
-      "notes": "Crea pedido desde el carrito del usuario autenticado. Los items se toman del carrito, no del body.",
-      "request": { "metodoPago": "contra_entrega", "direccion": "DireccionEntrega", "observaciones?": "string" },
-      "response": { "id": "uuid", "pedidoNumero": "string", "estado": "pendiente", "total": "number" }
+      "notes": "Contrato público vía gateway para crear pedido como comando async. Los items se toman del carrito, no del body. orders-service persiste la orden final desde el worker.",
+      "request": { "metodoPago": "contra_entrega", "direccion": "DireccionEntrega", "observaciones?": "string", "idempotencyKey": "string" },
+      "response": { "statusCode": 202, "jobId": "string", "trackingId": "string", "status": "PENDING" }
     },
     {
       "path": "/orders/:id/status",

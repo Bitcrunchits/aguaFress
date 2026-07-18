@@ -1,5 +1,5 @@
 import { GatewayTimeoutException, Logger } from '@nestjs/common';
-import { NEVER, of } from 'rxjs';
+import { NEVER, of, throwError } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
 import type { ClientProxy } from '@nestjs/microservices';
 import { ORDERS_CLIENT, USUARIO_CLIENT } from '../src/tcp/tcp-clients.module';
@@ -101,5 +101,91 @@ describe('TcpDispatcherService', () => {
     })).rejects.toThrow(GatewayTimeoutException);
 
     expect(ordersClient.send).toHaveBeenCalledTimes(2);
+  });
+
+  it('restores HTTP status from serialized TCP business errors', async () => {
+    const { dispatcher, usuarioClient } = createDispatcher();
+    const serializedUnauthorized = {
+      statusCode: 401,
+      message: 'Invalid credentials',
+      error: 'Unauthorized',
+    };
+    usuarioClient.send.mockReturnValue(throwError(() => serializedUnauthorized));
+
+    await expect(dispatcher.dispatch('auth', payload, {
+      tcpPattern: 'auth.login',
+      transport: 'send',
+      authRequired: false,
+      retryOnTimeout: false,
+    })).rejects.toMatchObject({
+      response: serializedUnauthorized,
+      status: 401,
+    });
+  });
+
+  it('restores HTTP status from TCP business errors serialized as Error instances', async () => {
+    const { dispatcher, usuarioClient } = createDispatcher();
+    const serializedUnauthorized = Object.assign(new Error('Invalid credentials'), {
+      statusCode: 401,
+      error: 'Unauthorized',
+    });
+    usuarioClient.send.mockReturnValue(throwError(() => serializedUnauthorized));
+
+    await expect(dispatcher.dispatch('auth', payload, {
+      tcpPattern: 'auth.login',
+      transport: 'send',
+      authRequired: false,
+      retryOnTimeout: false,
+    })).rejects.toMatchObject({
+      response: serializedUnauthorized,
+      status: 401,
+    });
+  });
+
+  it('restores HTTP status from TCP business errors wrapped by Nest transport', async () => {
+    const { dispatcher, usuarioClient } = createDispatcher();
+    const serializedUnauthorized = {
+      statusCode: 401,
+      message: 'Invalid credentials',
+      error: 'Unauthorized',
+    };
+    usuarioClient.send.mockReturnValue(throwError(() => ({
+      error: serializedUnauthorized,
+      message: 'Invalid credentials',
+    })));
+
+    await expect(dispatcher.dispatch('auth', payload, {
+      tcpPattern: 'auth.login',
+      transport: 'send',
+      authRequired: false,
+      retryOnTimeout: false,
+    })).rejects.toMatchObject({
+      response: serializedUnauthorized,
+      status: 401,
+    });
+  });
+
+  it('restores HTTP status from TCP business errors before retrying non-timeout failures', async () => {
+    const { dispatcher, usuarioClient } = createDispatcher();
+    const serializedUnauthorized = {
+      statusCode: 401,
+      message: 'Invalid credentials',
+      error: 'Unauthorized',
+    };
+    usuarioClient.send.mockReturnValue(throwError(() => ({
+      error: serializedUnauthorized,
+      message: 'Invalid credentials',
+    })));
+
+    await expect(dispatcher.dispatch('auth', payload, {
+      tcpPattern: 'auth.login',
+      transport: 'send',
+      authRequired: false,
+    })).rejects.toMatchObject({
+      response: serializedUnauthorized,
+      status: 401,
+    });
+
+    expect(usuarioClient.send).toHaveBeenCalledTimes(1);
   });
 });

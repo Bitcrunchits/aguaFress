@@ -1,7 +1,8 @@
-import { BadRequestException, Controller } from '@nestjs/common';
+import { BadRequestException, Controller, NotFoundException } from '@nestjs/common';
+import { UserRole, type OrderJobStatusResponse } from '@agua/contracts';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { TcpPayloadAdapter } from '../tcp/tcp-payload-adapter.service';
-import type { TcpPayload } from '../tcp/tcp-payload';
+import type { TcpAuthenticatedUser, TcpPayload } from '../tcp/tcp-payload';
 import {
   parseCancelOrderRequest,
   parseConfirmOrderRequest,
@@ -10,12 +11,14 @@ import {
   type OrderResponse,
 } from './orders.dto';
 import { OrdersService } from './orders.service';
+import { OrderCommandTrackingService } from './jobs/order-command-tracking.service';
 
 @Controller()
 export class OrdersController {
   constructor(
     private readonly payloadAdapter: TcpPayloadAdapter,
     private readonly ordersService: OrdersService,
+    private readonly trackingService: OrderCommandTrackingService,
   ) {}
 
   @MessagePattern('orders.list')
@@ -33,6 +36,17 @@ export class OrdersController {
   create(@Payload() payload: TcpPayload): Promise<OrderResponse> {
     const user = this.payloadAdapter.requireUser(payload);
     return this.ordersService.create(user, parseCreateOrderRequest(payload.body));
+  }
+
+  @MessagePattern('orders.job_status')
+  async jobStatus(@Payload() payload: TcpPayload): Promise<OrderJobStatusResponse> {
+    const user = this.payloadAdapter.requireUser(payload);
+    const status = await this.trackingService.findByTrackingId(readQueryId(payload));
+    if (status === null || !canReadJobStatus(user, status)) {
+      throw new NotFoundException('Order job was not found');
+    }
+
+    return status;
   }
 
   @MessagePattern('orders.status_update')
@@ -64,4 +78,12 @@ function readQueryId(payload: TcpPayload): string {
   }
 
   return id;
+}
+
+function canReadJobStatus(user: TcpAuthenticatedUser, status: OrderJobStatusResponse): boolean {
+  if (user.role === UserRole.SUPER_ADMIN) {
+    return true;
+  }
+
+  return user.role === UserRole.CLIENTE && status.clienteId === user.userId;
 }
