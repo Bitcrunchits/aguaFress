@@ -50,10 +50,10 @@ Chain strategy: feature-branch-chain
 
 ## Phase 4: PR 4 — Worker / Status / Failure Semantics
 
-- [ ] 4.1 RED: Add tests for `PROCESSING`, `COMPLETED`, `RETRYING`, `FAILED`, `DEAD_LETTER`, and no cart clear on failure.
-- [ ] 4.2 GREEN: Create `orders/jobs/*` worker, processor, classifier, BullMQ wiring; call existing `OrdersService.create()`.
-- [ ] 4.3 GREEN: Add `orders.job_status` in `orders.controller.ts`; remove sync `orders.create` only after gateway cutover.
-- [ ] 4.4 REFACTOR/VERIFY: Run `pnpm --filter @agua/orders-service test` and `pnpm --filter @agua/orders-service build`.
+- [x] 4.1 RED: Add tests for `PROCESSING`, `COMPLETED`, `RETRYING`, `FAILED`, `DEAD_LETTER`, and no cart clear on failure.
+- [x] 4.2 GREEN: Create `orders/jobs/*` worker, processor, classifier, BullMQ wiring; call existing `OrdersService.create()`.
+- [x] 4.3 GREEN: Add `orders.job_status` in `orders.controller.ts`; remove sync `orders.create` only after gateway cutover.
+- [x] 4.4 REFACTOR/VERIFY: Run `pnpm --filter @agua/orders-service test` and `pnpm --filter @agua/orders-service build`.
 
 ## Phase 5: PR 5 — Final Verification / Jira
 
