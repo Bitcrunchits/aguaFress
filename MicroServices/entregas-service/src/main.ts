@@ -1,27 +1,30 @@
+import {Logger }from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { Transport, type MicroserviceOptions} from '@nestjs/microservices';
 import { AppModule } from './app.module';
-async function bootstrap() {
-const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule);
-    app.setGlobalPrefix('api', { exclude: ['health'] });
-    app.useGlobalPipes(new ValidationPipe({
-            whitelist: true,
-            forbidNonWhitelisted: true,
-            transform: true,
-        })
-    );
-const config = new DocumentBuilder()
-    .setTitle('Entregas Service')
-    .setDescription('API para gestión de entregas - AguaFress')
-    .setVersion('1.0')
-    .build();
-const document = SwaggerModule.createDocument(app, config);
-SwaggerModule.setup('api/docs', app, document);
-const PORT = process.env.PORT || 3005;
-await app.listen(PORT, () => {
-    logger.log(`Entregas Service corriendo en el puerto ${PORT}`);
-});
+import { validateEnv } from './common/config/env.config';
+
+export function getTcpPort() : number {
+return parseInt(process.env.TCP_PORT ?? '',10) || 3015;
 }
-bootstrap();
+async function bootstrap() {
+    const logger = new Logger ('Bootstrap');
+    validateEnv();
+
+    const app = await NestFactory.createMicroservice<MicroserviceOptions> (
+        AppModule,
+    {
+        transport: Transport.TCP,
+        options: {
+            host: '0.0.0.0',
+            port: getTcpPort()
+        },
+        },
+);
+await app.listen();
+    logger.log(`Entregas Service corriendo en el puerto ${getTcpPort()}`);
+}
+
+if (require.main === module) {
+    void bootstrap();
+}
