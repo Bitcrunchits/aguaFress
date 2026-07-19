@@ -3,7 +3,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 export const USUARIO_CLIENT = 'USUARIO_CLIENT';
-
+export const ENTREGAS_CLIENT = 'ENTREGAS_CLIENT';
 @Module({
   imports: [
     ClientsModule.registerAsync([
@@ -18,6 +18,18 @@ export const USUARIO_CLIENT = 'USUARIO_CLIENT';
             port: configService.getOrThrow<number>('USUARIO_SERVICE_TCP_PORT'),
           },
         }),
+      },
+        {
+          name: ENTREGAS_CLIENT,
+          imports:[ConfigModule],
+          inject:[ConfigService],
+          useFactory: (configService: ConfigService) => ({
+            transport: Transport.TCP,
+            options: {
+              host: configService.getOrThrow<string>('ENTREGAS_SERVICE_HOST'),
+              port: configService.getOrThrow<number>('ENTREGAS_SERVICE_TCP_PORT'),
+            },
+          }),
       },
     ]),
   ],
