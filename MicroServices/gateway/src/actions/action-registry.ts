@@ -1,3 +1,5 @@
+import { get } from "node:http";
+
 export type TcpTransport = 'send' | 'publish';
 
 export interface ActionMapping {
@@ -101,6 +103,39 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
   brands: { status: 'unavailable', actions: {} },
   orders: { status: 'unavailable', actions: {} },
   cart: { status: 'unavailable', actions: {} },
-  deliveries: { status: 'unavailable', actions: {} },
+  deliveries: { 
+    status: 'available',
+    actions: {
+      list: { tcpPattern: 'deliveries.list', transport: 'send', authRequired: true, roles:['vendedor']},
+      get: {tcpPattern: 'deliveries.get', transport: 'send', authRequired: true, roles:['vendedor']},
+      'update-status': { tcpPattern: 'deliveries.update_status', transport: 'send', authRequired: true, roles: ['vendedor'] },
+  },
+},
   'activity-logs': { status: 'unavailable', actions: {} },
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
