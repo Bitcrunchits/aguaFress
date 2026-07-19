@@ -82,12 +82,8 @@ export class DeliveriesService {
             fecha_entrega: dto.estado === DeliveryEstado.ENTREGADA ? new Date() : undefined,
         },
       });
-      // respuesta segun el contrato JSON
-      return {
-        id: actualizada.id,
-        estado: actualizada.estado as DeliveryEstado,
-        updated: true,
-      };
+      // respuesta segun actualización de contato
+      return this.toResponse(actualizada);
     }
     //Método privado para mapear la entidad Delivery a DeliveryResponse
     private toResponse(entrega: Delivery): DeliveryResponse {
