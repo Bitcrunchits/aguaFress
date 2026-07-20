@@ -3,9 +3,10 @@
 #  ───────────────────────────────────────────────────────────────
 #  Uso:
 #    docker compose up -d                    → levanta todo
-#    docker compose up -d postgres redis     → solo infra
+#    docker compose up -d postgres redis mongo → solo infra
 #    docker compose logs -f usuario-service  → logs del MS
 #    docker compose logs -f orders-service   → logs del MS
+#    docker compose logs -f notifications-service → logs del MS
 #    docker compose down -v                  → destruye todo + volúmenes
 #
 #  Arquitectura:
@@ -68,6 +69,23 @@ services:
       retries: 5
     restart: unless-stopped
 
+  # ─── MongoDB local para notifications-service ───────────────
+  mongo:
+    image: mongo:7
+    container_name: agua-mongo
+    ports:
+      - "27017:27017"
+    environment:
+      TZ: America/Argentina/Buenos_Aires
+    volumes:
+      - agua-mongo-data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --eval \"db.adminCommand('ping')\" --quiet"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   usuario-service:
     build:
       context: .
@@ -120,6 +138,22 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # ─── notifications-service ─────────────────────────────────
+  notifications-service:
+    build:
+      context: .
+      dockerfile: MicroServices/notifications-service/Dockerfile
+    container_name: agua-notifications-service
+    # No HTTP port — TCP only (internal Docker network)
+    environment:
+      TZ: America/Argentina/Buenos_Aires
+      TCP_PORT: "3016"
+      MONGODB_URI: "mongodb://mongo:27017/agua_notifications"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+
   # ─── api-gateway ────────────────────────────────────────────
   gateway:
     build:
@@ -142,6 +176,8 @@ services:
       USUARIO_SERVICE_TCP_PORT: "3011"
       ORDERS_SERVICE_HOST: orders-service
       ORDERS_SERVICE_TCP_PORT: "3014"
+      NOTIFICATIONS_SERVICE_HOST: notifications-service
+      NOTIFICATIONS_SERVICE_TCP_PORT: "3016"
       REDIS_URL: "redis://redis:6379"
       ORDERS_CREATE_QUEUE_NAME: "orders.create"
       ORDERS_CREATE_QUEUE_ATTEMPTS: "3"
@@ -152,8 +188,11 @@ services:
         condition: service_started
       orders-service:
         condition: service_started
+      notifications-service:
+        condition: service_started
     restart: unless-stopped
 
 volumes:
   agua-postgres-data:
   agua-redis-data:
+  agua-mongo-data:
