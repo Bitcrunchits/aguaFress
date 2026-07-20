@@ -1,52 +1,22 @@
-import {
-  Catch,
-  ExceptionFilter,
-  HttpException,
-  HttpStatus,
-  Logger,
-  type ArgumentsHost,
-} from '@nestjs/common';
-import { HttpAdapterHost } from '@nestjs/core';
+import { Catch, HttpException, HttpStatus, Logger, type ArgumentsHost, type ExceptionFilter } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { Observable, throwError } from 'rxjs';
 
 /**
- * Filtro global que captura TODAS las excepciones y maneja
- * correctamente tanto contexto HTTP como RPC (TCP).
+ * ⚠️ INFERIDO, NO CONFIRMADO: no tuvimos acceso al rpc-exception.filter.ts
+ * actualizado de usuario-service. Sabemos por el nuevo main.ts que ahora se
+ * instancia como `new RpcExceptionFilter()` (sin HttpAdapterHost), lo que
+ * indica que el equipo ya sacó el manejo de contexto HTTP ya que
+ * usuario-service (y ahora products-service) son TCP-only.
  *
- * HTTP: usa HttpAdapterHost para ser platform-agnostic.
- *       Devuelve JSON con statusCode, message, path y timestamp.
- *
- * RPC: devuelve Observable con RpcException que preserva
- *      el mensaje original (el handler nativo lo aplasta
- *      a "Internal server error").
- *
- * Logging:
- *   - 4xx (client error) → Logger.warn
- *   - 5xx (server error) → Logger.error con stack trace
- *   - RPC                → Logger.error (NestJS traga el error del otro lado)
- *
- * Uso en main.ts:
- *   app.useGlobalFilters(new RpcExceptionFilter(app.get(HttpAdapterHost)));
+ * Esta versión solo maneja el contexto 'rpc'. Reemplazar por el archivo
+ * real del equipo en cuanto lo compartan.
  */
 @Catch()
 export class RpcExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(RpcExceptionFilter.name);
 
-  constructor(private readonly httpAdapterHost: HttpAdapterHost) {}
-
-  catch(exception: unknown, host: ArgumentsHost): Observable<never> | void {
-    const type = host.getType();
-
-    if (type === 'rpc') {
-      return this.handleRpcError(exception);
-    }
-
-    this.handleHttpError(exception, host);
-  }
-
-  // ── RPC ───────────────────────────────────────────────────
-  private handleRpcError(exception: unknown): Observable<never> {
+  catch(exception: unknown, _host: ArgumentsHost): Observable<never> {
     if (exception instanceof HttpException) {
       const errorPayload = this.extractErrorPayload(exception);
       const logMsg = this.serializeForLog(errorPayload);
@@ -61,9 +31,7 @@ export class RpcExceptionFilter implements ExceptionFilter {
     }
 
     if (exception instanceof RpcException) {
-      this.logger.warn(
-        `RPC — RpcException: ${JSON.stringify(exception.getError())}`,
-      );
+      this.logger.warn(`RPC — RpcException: ${JSON.stringify(exception.getError())}`);
       return throwError(() => exception);
     }
 
@@ -81,46 +49,6 @@ export class RpcExceptionFilter implements ExceptionFilter {
     );
   }
 
-  // ── HTTP ──────────────────────────────────────────────────
-  private handleHttpError(exception: unknown, host: ArgumentsHost): void {
-    const { httpAdapter } = this.httpAdapterHost;
-    const ctx = host.switchToHttp();
-    const path = httpAdapter.getRequestUrl(ctx.getRequest());
-
-    const status =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
-
-    const responseBody =
-      exception instanceof HttpException
-        ? {
-            ...this.extractErrorPayload(exception),
-            path,
-            timestamp: new Date().toISOString(),
-          }
-        : {
-            statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-            message: 'Internal server error',
-            path,
-            timestamp: new Date().toISOString(),
-          };
-
-    const logMsg = this.serializeForLog(responseBody);
-
-    if (status >= 500) {
-      this.logger.error(
-        `HTTP ${status} — ${path}: ${logMsg}`,
-        exception instanceof Error ? exception.stack : undefined,
-      );
-    } else {
-      this.logger.warn(`HTTP ${status} — ${path}: ${logMsg}`);
-    }
-
-    httpAdapter.reply(ctx.getResponse(), responseBody, status);
-  }
-
-  // ── Helpers ───────────────────────────────────────────────
   private extractErrorPayload(exception: HttpException): Record<string, unknown> {
     const response = exception.getResponse();
 

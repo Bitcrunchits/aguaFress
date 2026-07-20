@@ -1,33 +1,38 @@
 # products-service — Notas de implementación
 
-## Qué se implementó
-- `src/main.ts` — bootstrap HTTP (Swagger en `/api/docs`) + TCP (puerto `TCP_PORT`, default `3013`), idéntico patrón a `usuario-service`.
-- `src/products` — `ProductsService` con CRUD completo, paginación estándar, cálculo server-side de `precioFinal`.
-- `src/categories` — `CategoriesService` con listado de categorías y marcas por vendedor.
-- `src/tcp` — `ProductsTcpController` y `CategoriesTcpController`, exponen los `@MessagePattern` que el gateway va a consumir:
-  - `products.list`, `products.get`, `products.search`, `products.create`, `products.update`, `products.delete`
-  - `categories.list`, `brands.list`
-- `src/common` — `PrismaService`, `PricingService` (cálculo de IVA), filtros/interceptors globales, healthcheck HTTP.
-- `prisma/schema.prisma` — modelos `Producto`, `Categoria`, `Marca`.
+## Estado post-review técnico (Emiliano — rama products-service1)
 
-## ⚠️ Asunciones que hay que confirmar con el equipo
+Todo lo que el review marcó como P0/P1 mecánico/técnico ya está corregido:
 
-1. **`vendedorId` = `sub`/`userId` del JWT directamente.**
-   No tuvimos acceso a cómo orders-service/deliveries-service resuelven `vendedorId`, ni si products-service debería llamar a usuario-service (como hace `VendedorResolver` internamente en usuario-service) para traducir `authUserId` → `vendedor.id` interno. Si el resto del sistema usa un `vendedorId` distinto al `sub` del JWT, hay que ajustar `ProductsTcpController` para resolverlo vía TCP a `usuario-service` en vez de usar `user.sub` directo.
+| Ítem del review | Estado |
+|---|---|
+| P0 — HTTP + Swagger en un MS que debe ser TCP-only | ✅ Corregido: `main.ts` ahora usa `NestFactory.createMicroservice()`, se sacó Swagger, `HealthController`, `TransformInterceptor` (dead code sin HTTP) y las deps `@nestjs/platform-express`/`@nestjs/swagger`/`swagger-ui-express` del `package.json`. |
+| P1 — Test falla (`pricing.service.spec.ts`) | ✅ Corregido: se agregó config de Jest (`preset` vía `transform` + `ts-jest`, `testEnvironment: node`) al `package.json`. |
+| Prisma: UUIDs sin `@db.Uuid` | ✅ Corregido en `id`, `vendedorId`, `categoriaId`, `marcaId` de los 3 modelos. |
+| Prisma: falta `@db.VarChar`/`@db.Text` | ✅ Corregido: `nombre` → `VarChar(255)`, `imagen` → `VarChar(500)`, `descripcion` → `Text`. |
+| Prisma: casing de tablas | ✅ Corregido: `@@map("PRODUCTO")`, `@@map("CATEGORIA")`, `@@map("MARCA")`. |
+| Gateway no integrado | ✅ Snippets completos entregados en el chat (`action-registry.ts`, `tcp-clients.module.ts`, `tcp-dispatcher.service.ts`, `docker-compose.yml`) — pendiente que alguien los aplique al repo del gateway. |
+| Tests unitarios faltantes | ✅ Agregados: `ProductsService`, `CategoriesService`, y tests de integración de `ProductsTcpController`/`CategoriesTcpController` (usan `TcpPayloadAdapter` real, no mockeado, para probar roles + validación de punta a punta). |
+| **Verificado corriendo de verdad**: `pnpm test` equivalente | ✅ **24/24 tests pasan** (corridos localmente con un stub de `@agua/contracts`, ver nota abajo). |
 
-2. **No hay guard global de JWT en el contexto TCP de este servicio.**
-   En `usuario-service`, los TCP controllers usan `@Public()` para saltear un guard global — no tuvimos acceso a ese guard ni al `AuthModule`. Acá cada handler valida explícitamente con `TcpPayloadAdapter.requireUser()` / `requireRole()`. Si el patrón real del equipo es tener un guard global también en los microservicios de dominio (no solo en usuario-service), hay que agregarlo.
+## ⚠️ Pendiente — bloqueado por info que falta del equipo
 
-3. **% de IVA fijo vía env (`IVA_PORCENTAJE`, default 21).**
-   `PricingService` es el único lugar que calcula `precioFinal`. Si el IVA debe variar por categoría/vendedor, solo hay que tocar ese archivo.
+1. **`PRODUCTO_IMAGEN` y `DESCUENTO`**: el Jira las pide ("solo modelo, sin lógica") pero no tenemos sus campos. No se agregaron al `schema.prisma` para no inventar la estructura.
+2. **`vendedorId`**: seguimos sin confirmar si `sub` del JWT es `AUTH_USER.id` o `VENDEDOR.id`. Hoy se usa `user.sub` directo.
+3. **`RpcExceptionFilter` real**: el `main.ts` confirmado usa `new RpcExceptionFilter()` sin `HttpAdapterHost`, así que se simplificó la versión propia a un filtro solo-RPC — pero es una versión **inferida**, no la real del equipo. Reemplazar en cuanto la compartan.
+4. **`packages/contracts/src/events.ts`**: no lo vimos todavía. `ProductUpdated`/`ProductDeleted` (contrato: `products-stream` vía Redis Streams) siguen sin implementar — documentado como pendiente explícito, tal como pidió el review.
+5. ~~**Contradicción Jira**~~ ✅ **RESUELTO** — el equipo confirmó: el AC viejo de Sprint 1 (Swagger/HTTP/`/health`) fue un error, quedó desactualizado. TCP-only es la decisión correcta y ya está implementada.
 
-4. **`LoggingInterceptor` y `TimeoutInterceptor` son implementaciones propias**, no los originales del equipo (no tuvimos acceso a esos archivos). Si existen versiones ya usadas en otros microservicios, reemplazar estas por esas para mantener 100% consistencia.
-   El `Dockerfile` en cambio **sí sigue la convención real confirmada** (pnpm workspaces multi-stage, igual al del `gateway`), con el agregado de `postinstall: prisma generate` en `package.json` para que el cliente de Prisma se genere automático en ambos stages del build.
+## Nota sobre la verificación de tests
 
-5. **Prisma schema usa un solo esquema/tablas `productos`, `categorias`, `marcas`** en la misma DB `agua`. Si el equipo usa multi-schema de Prisma (como `usuario-service` con `auth`/`users`), hay que agregar `schemas = ["products"]` en el datasource y prefijar los modelos.
+Se corrieron los tests en un entorno de prueba aislado (no en el repo real, al que no tenemos acceso). Como el monorepo real usa `pnpm workspaces` con `@agua/contracts` como paquete interno, se armó un **stub local mínimo** de ese paquete (solo para poder instalar y correr `jest`) — no reemplaza al paquete real, que ya lo tienen en `packages/contracts`.
+
+También se detectó que en este sandbox no hay acceso de red a `binaries.prisma.sh`, así que `prisma generate` no puede bajar el motor real — esto **no es un bug del código**, es una limitación del entorno de prueba. Los tests igual corrieron bien porque `PrismaService` está mockeado en todos los tests unitarios (no dependen del engine real). En su máquina/CI con acceso normal a internet, `prisma generate` debería funcionar sin problema.
+
+Resultado: **5 test suites, 24 tests, todos en verde.**
 
 ## Falta agregar (fuera de este directorio, en el repo raíz)
-- Bloque de `products-service` en `docker-compose.yml` (con `PRODUCTS_SERVICE_TCP_PORT` en el `gateway`).
-- Variables en `.env` / `.env.example`: `DATABASE_URL` (para products-service), `IVA_PORCENTAJE` (opcional).
-- Migraciones Prisma: correr `npx prisma migrate dev --name init` una vez confirmado el schema.
-- Registrar el `ClientProxy` hacia `products-service` en el `gateway` (`ClientsModule.register(...)`) — no tuvimos ese archivo, así que no se tocó el gateway.
+- Bloque de `products-service` en `docker-compose.yml` (con `PRODUCTS_SERVICE_TCP_PORT` en el `gateway`) — snippet ya entregado en el chat.
+- Variables en `.env`/`.env.example`: `DATABASE_URL`, `IVA_PORCENTAJE` (opcional).
+- Migraciones Prisma: `npx prisma migrate dev --name init` una vez confirmado el schema (incluyendo `PRODUCTO_IMAGEN`/`DESCUENTO` cuando se agreguen).
+- Aplicar los cambios de gateway (`action-registry.ts`, `tcp-clients.module.ts`, `tcp-dispatcher.service.ts`) — snippets ya entregados en el chat.

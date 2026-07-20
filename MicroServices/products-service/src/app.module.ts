@@ -4,7 +4,6 @@ import { CommonModule } from './common/common.module';
 import { ProductsModule } from './products/products.module';
 import { CategoriesModule } from './categories/categories.module';
 import { TcpModule } from './tcp/tcp.module';
-import { HealthController } from './common/health/health.controller';
 import envConfig from './common/config/env.config';
 
 @Module({
@@ -15,6 +14,5 @@ import envConfig from './common/config/env.config';
     CategoriesModule,
     TcpModule,
   ],
-  controllers: [HealthController],
 })
 export class AppModule {}

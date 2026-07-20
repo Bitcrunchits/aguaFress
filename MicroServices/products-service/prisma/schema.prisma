@@ -1,5 +1,7 @@
 // products-service — Prisma schema
 // DB: PostgreSQL (misma instancia "agua", schema propio del servicio)
+// Sin FKs Prisma cruzadas a otros microservicios (usuario-service, etc.):
+// vendedorId es un UUID escalar, ownership se valida por TCP/JWT, no por FK.
 
 generator client {
   provider = "prisma-client-js"
@@ -11,51 +13,50 @@ datasource db {
 }
 
 // ─── Categoría ───
-// nombre único por vendedor (un mismo vendedor no repite categoría)
 model Categoria {
-  id         String   @id @default(uuid())
-  nombre     String
+  id         String   @id @default(uuid()) @db.Uuid
+  nombre     String   @db.VarChar(255)
   orden      Int      @default(0)
-  vendedorId String   @map("vendedor_id")
+  vendedorId String   @map("vendedor_id") @db.Uuid
   productos  Producto[]
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   @@unique([vendedorId, nombre])
   @@index([vendedorId])
-  @@map("categorias")
+  @@map("CATEGORIA")
 }
 
 // ─── Marca ───
 model Marca {
-  id         String     @id @default(uuid())
-  nombre     String
-  vendedorId String     @map("vendedor_id")
+  id         String     @id @default(uuid()) @db.Uuid
+  nombre     String     @db.VarChar(255)
+  vendedorId String     @map("vendedor_id") @db.Uuid
   productos  Producto[]
   createdAt  DateTime   @default(now()) @map("created_at")
   updatedAt  DateTime   @updatedAt @map("updated_at")
 
   @@unique([vendedorId, nombre])
   @@index([vendedorId])
-  @@map("marcas")
+  @@map("MARCA")
 }
 
 // ─── Producto ───
 // precioSinIva: lo manda el vendedor. precioFinal: SIEMPRE calculado server-side.
 model Producto {
-  id            String     @id @default(uuid())
-  nombre        String
-  descripcion   String?
+  id            String     @id @default(uuid()) @db.Uuid
+  nombre        String     @db.VarChar(255)
+  descripcion   String?    @db.Text
   precioSinIva  Decimal    @map("precio_sin_iva") @db.Decimal(10, 2)
   precioFinal   Decimal    @map("precio_final") @db.Decimal(10, 2)
-  imagen        String?
+  imagen        String?    @db.VarChar(500)
   stock         Int        @default(0)
   activo        Boolean    @default(true)
   mostrarPrecio Boolean    @default(true) @map("mostrar_precio")
 
-  vendedorId  String     @map("vendedor_id")
-  categoriaId String?    @map("categoria_id")
-  marcaId     String?    @map("marca_id")
+  vendedorId  String     @map("vendedor_id") @db.Uuid
+  categoriaId String?    @map("categoria_id") @db.Uuid
+  marcaId     String?    @map("marca_id") @db.Uuid
 
   categoria Categoria? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
   marca     Marca?     @relation(fields: [marcaId], references: [id], onDelete: SetNull)
@@ -67,5 +68,10 @@ model Producto {
   @@index([categoriaId])
   @@index([marcaId])
   @@index([vendedorId, activo])
-  @@map("productos")
+  @@map("PRODUCTO")
 }
+
+// ⚠️ PENDIENTE — bloqueado por falta de info del equipo:
+// PRODUCTO_IMAGEN y DESCUENTO están pedidos en el Jira ("solo modelo, sin
+// lógica") pero no tenemos sus campos desde docs/documentación/modelo-datos.md.
+// Agregar acá en cuanto el equipo los comparta.
