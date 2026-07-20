@@ -42,9 +42,9 @@ Chain strategy: feature-branch-chain
 
 ## Phase 3: TCP Bootstrap RED/GREEN/VERIFY (PR 3)
 
-- [ ] 3.1 RED AG-155/159: add TCP controller/payload-adapter tests for `activity_logs.list`, `activity_logs.get-by-id`, super-admin enforcement, and optional trusted `activity_logs.create`.
-- [ ] 3.2 GREEN AG-155/156: create `main.ts`, `app.module.ts`, env config, `src/tcp/*`, activity-logs module/controller, and TCP-only bootstrap on `TCP_PORT`.
-- [ ] 3.3 VERIFY AG-159: run notifications-service unit tests and build; confirm there is no HTTP controller/listener.
+- [x] 3.1 RED AG-155/159: add TCP controller/payload-adapter tests for `activity_logs.list`, `activity_logs.get-by-id`, super-admin enforcement, and optional trusted `activity_logs.create`.
+- [x] 3.2 GREEN AG-155/156: create `main.ts`, `app.module.ts`, env config, `src/tcp/*`, activity-logs module/controller, and TCP-only bootstrap on `TCP_PORT`.
+- [x] 3.3 VERIFY AG-159: run notifications-service unit tests and build; confirm there is no HTTP controller/listener.
 
 ## Phase 4: Gateway Integration RED/GREEN/VERIFY (PR 4)
 
