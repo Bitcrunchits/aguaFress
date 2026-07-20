@@ -33,6 +33,7 @@ describe('notifications-service docker smoke wiring', () => {
     expect(compose).toContain('container_name: agua-notifications-service');
     expect(compose).toContain('TCP_PORT: "3016"');
     expect(compose).toContain('MONGODB_URI: "mongodb://mongo:27017/agua_notifications"');
+    expect(compose).not.toMatch(/notifications-service:[\s\S]*?env_file:[\s\S]*?- \.env[\s\S]*?gateway:/);
     expect(compose).toContain('mongo:');
     expect(compose).toContain('condition: service_healthy');
   });

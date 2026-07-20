@@ -21,6 +21,13 @@ describe('TcpPayloadAdapter', () => {
     expect(() => adapter.requireRole(authenticatedPayload({ role: UserRole.CLIENTE }), UserRole.SUPER_ADMIN)).toThrow(ForbiddenException);
   });
 
+  it('rejects malformed root payloads with controlled exceptions', () => {
+    expect(() => adapter.requireRole(null, UserRole.SUPER_ADMIN)).toThrow(BadRequestException);
+    expect(() => adapter.requireRole('payload', UserRole.SUPER_ADMIN)).toThrow(BadRequestException);
+    expect(() => adapter.requireRole([], UserRole.SUPER_ADMIN)).toThrow(BadRequestException);
+    expect(() => adapter.requireRole({}, UserRole.SUPER_ADMIN)).toThrow(UnauthorizedException);
+  });
+
   it('maps list query strings into a typed request with pagination numbers', () => {
     const payload: TcpPayload = {
       query: {

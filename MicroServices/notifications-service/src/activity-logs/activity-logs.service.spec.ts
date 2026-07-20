@@ -42,6 +42,9 @@ describe('ActivityLogsService', () => {
   it('rejects invalid filters, pagination, ObjectIds, and missing records', async () => {
     const activityLogsService = service(modelMock([], 0, null));
     await expect(activityLogsService.list({ from: 'not-a-date' })).rejects.toThrow(BadRequestException);
+    await expect(activityLogsService.list({ from: '1' })).rejects.toThrow(BadRequestException);
+    await expect(activityLogsService.list({ from: '2026-07-19 10:00:00' })).rejects.toThrow(BadRequestException);
+    await expect(activityLogsService.list({ from: '2026-07-20T00:00:00.000Z', to: '2026-07-19T00:00:00.000Z' })).rejects.toThrow(BadRequestException);
     await expect(activityLogsService.list({ page: 0 })).rejects.toThrow(BadRequestException);
     await expect(activityLogsService.list({ limit: 101 })).rejects.toThrow(BadRequestException);
     await expect(activityLogsService.list({ result: 'unknown' as ActivityLogResult })).rejects.toThrow(BadRequestException);

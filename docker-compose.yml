@@ -145,8 +145,6 @@ services:
       dockerfile: MicroServices/notifications-service/Dockerfile
     container_name: agua-notifications-service
     # No HTTP port — TCP only (internal Docker network)
-    env_file:
-      - .env
     environment:
       TZ: America/Argentina/Buenos_Aires
       TCP_PORT: "3016"

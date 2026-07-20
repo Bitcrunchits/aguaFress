@@ -16,6 +16,7 @@ const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
 const VALID_RESULTS: readonly ActivityLogResult[] = Object.values(ActivityLogResult);
+const ISO_DATE_TIME_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/;
 
 @Injectable()
 export class ActivityLogsService {
@@ -82,10 +83,18 @@ function buildCreatedAtFilter(from?: string, to?: string): DateRangeFilter | und
   if (from !== undefined) dateRange.$gte = parseIsoDate(from, 'from');
   if (to !== undefined) dateRange.$lte = parseIsoDate(to, 'to');
 
+  if (dateRange.$gte !== undefined && dateRange.$lte !== undefined && dateRange.$gte > dateRange.$lte) {
+    throw new BadRequestException('Activity log from date must be before to date');
+  }
+
   return Object.keys(dateRange).length === 0 ? undefined : dateRange;
 }
 
 function parseIsoDate(value: string, fieldName: string): Date {
+  if (!ISO_DATE_TIME_PATTERN.test(value)) {
+    throw new BadRequestException(`Invalid activity log ${fieldName} date`);
+  }
+
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     throw new BadRequestException(`Invalid activity log ${fieldName} date`);

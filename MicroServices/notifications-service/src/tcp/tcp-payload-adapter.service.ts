@@ -1,12 +1,12 @@
 import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ActivityLogResult, UserRole, type GetActivityLogByIdRequestDTO, type ListActivityLogsRequestDTO } from '@agua/contracts';
-import type { TcpAuthenticatedUser, TcpPayload } from './tcp-payload';
+import type { TcpAuthenticatedUser } from './tcp-payload';
 
 const VALID_ACTIVITY_LOG_RESULTS: readonly ActivityLogResult[] = Object.values(ActivityLogResult);
 
 @Injectable()
 export class TcpPayloadAdapter {
-  requireRole(payload: TcpPayload, ...roles: readonly UserRole[]): TcpAuthenticatedUser {
+  requireRole(payload: unknown, ...roles: readonly UserRole[]): TcpAuthenticatedUser {
     const user = this.requireUser(payload);
     if (!roles.includes(user.role)) {
       throw new ForbiddenException('Insufficient role for TCP handler');
@@ -15,8 +15,9 @@ export class TcpPayloadAdapter {
     return user;
   }
 
-  listRequest(payload: TcpPayload): ListActivityLogsRequestDTO {
-    const query = payload.query ?? {};
+  listRequest(payload: unknown): ListActivityLogsRequestDTO {
+    const payloadRecord = this.readPayloadRecord(payload);
+    const query = this.readOptionalRecord(payloadRecord, 'query') ?? {};
     return {
       source: this.readOptionalString(query, 'source'),
       action: this.readOptionalString(query, 'action'),
@@ -29,8 +30,11 @@ export class TcpPayloadAdapter {
     };
   }
 
-  getByIdRequest(payload: TcpPayload): GetActivityLogByIdRequestDTO {
-    const id = payload.params?.id ?? payload.query?.id;
+  getByIdRequest(payload: unknown): GetActivityLogByIdRequestDTO {
+    const payloadRecord = this.readPayloadRecord(payload);
+    const params = this.readOptionalRecord(payloadRecord, 'params');
+    const query = this.readOptionalRecord(payloadRecord, 'query');
+    const id = params?.id ?? query?.id;
     if (id === undefined) {
       throw new BadRequestException('Activity log id is required');
     }
@@ -44,14 +48,16 @@ export class TcpPayloadAdapter {
     return { id };
   }
 
-  private requireUser(payload: TcpPayload): TcpAuthenticatedUser {
-    if (!this.isRecord(payload.user)) {
+  private requireUser(payload: unknown): TcpAuthenticatedUser {
+    const payloadRecord = this.readPayloadRecord(payload);
+    const userRecord = payloadRecord.user;
+    if (!this.isRecord(userRecord)) {
       throw new UnauthorizedException('Authenticated user is required');
     }
 
-    const userId = this.readRequiredString(payload.user, 'sub') ?? this.readRequiredString(payload.user, 'userId');
-    const email = this.readRequiredString(payload.user, 'email');
-    const role = this.readUserRole(payload.user);
+    const userId = this.readRequiredString(userRecord, 'sub') ?? this.readRequiredString(userRecord, 'userId');
+    const email = this.readRequiredString(userRecord, 'email');
+    const role = this.readUserRole(userRecord);
 
     if (!userId || !email || !role) {
       throw new UnauthorizedException('Authenticated user is required');
@@ -67,6 +73,24 @@ export class TcpPayloadAdapter {
     }
 
     return value !== undefined && value.trim() !== '' ? value : undefined;
+  }
+
+  private readPayloadRecord(payload: unknown): Record<string, unknown> {
+    if (!this.isRecord(payload)) {
+      throw new BadRequestException('TCP payload must be an object');
+    }
+
+    return payload;
+  }
+
+  private readOptionalRecord(record: Record<string, unknown>, key: string): Record<string, unknown> | undefined {
+    const value = record[key];
+    if (value === undefined) return undefined;
+    if (!this.isRecord(value)) {
+      throw new BadRequestException(`${key} must be an object`);
+    }
+
+    return value;
   }
 
   private readRequiredString(record: Record<string, unknown>, key: string): string | undefined {
