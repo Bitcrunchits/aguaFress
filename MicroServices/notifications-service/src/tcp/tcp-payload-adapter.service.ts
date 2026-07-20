@@ -31,7 +31,13 @@ export class TcpPayloadAdapter {
 
   getByIdRequest(payload: TcpPayload): GetActivityLogByIdRequestDTO {
     const id = payload.params?.id ?? payload.query?.id;
-    if (id === undefined || id.trim() === '') {
+    if (id === undefined) {
+      throw new BadRequestException('Activity log id is required');
+    }
+    if (typeof id !== 'string') {
+      throw new BadRequestException('Activity log id must be a string');
+    }
+    if (id.trim() === '') {
       throw new BadRequestException('Activity log id is required');
     }
 
@@ -54,8 +60,12 @@ export class TcpPayloadAdapter {
     return { userId, email, role };
   }
 
-  private readOptionalString(record: Record<string, string>, key: string): string | undefined {
+  private readOptionalString(record: Record<string, unknown>, key: string): string | undefined {
     const value = record[key];
+    if (value !== undefined && typeof value !== 'string') {
+      throw new BadRequestException(`${key} must be a string`);
+    }
+
     return value !== undefined && value.trim() !== '' ? value : undefined;
   }
 
@@ -64,7 +74,7 @@ export class TcpPayloadAdapter {
     return typeof value === 'string' && value.trim() !== '' ? value : undefined;
   }
 
-  private readOptionalPositiveInteger(record: Record<string, string>, key: string): number | undefined {
+  private readOptionalPositiveInteger(record: Record<string, unknown>, key: string): number | undefined {
     const value = this.readOptionalString(record, key);
     if (value === undefined) return undefined;
 
@@ -76,7 +86,7 @@ export class TcpPayloadAdapter {
     return parsed;
   }
 
-  private readOptionalResult(record: Record<string, string>, key: string): ActivityLogResult | undefined {
+  private readOptionalResult(record: Record<string, unknown>, key: string): ActivityLogResult | undefined {
     const value = this.readOptionalString(record, key);
     if (value === undefined) return undefined;
     if (!VALID_ACTIVITY_LOG_RESULTS.includes(value as ActivityLogResult)) {

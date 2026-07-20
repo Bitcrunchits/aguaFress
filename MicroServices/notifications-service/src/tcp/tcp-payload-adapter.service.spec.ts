@@ -1,4 +1,4 @@
-import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { ActivityLogResult, UserRole } from '@agua/contracts';
 import { TcpPayloadAdapter } from './tcp-payload-adapter.service';
 import type { TcpPayload } from './tcp-payload';
@@ -50,6 +50,13 @@ describe('TcpPayloadAdapter', () => {
   it('reads get-by-id from params or query without trusting body userId', () => {
     expect(adapter.getByIdRequest({ params: { id: 'log-1' }, body: { userId: 'attacker' } })).toEqual({ id: 'log-1' });
     expect(adapter.getByIdRequest({ query: { id: 'log-2' } })).toEqual({ id: 'log-2' });
+  });
+
+  it('rejects malformed non-string query and id values with controlled bad requests', () => {
+    expect(() => adapter.listRequest({ query: { source: 123 } })).toThrow(BadRequestException);
+    expect(() => adapter.listRequest({ query: { page: 2 } })).toThrow(BadRequestException);
+    expect(() => adapter.getByIdRequest({ params: { id: 123 } })).toThrow(BadRequestException);
+    expect(() => adapter.getByIdRequest({ query: { id: 123 } })).toThrow(BadRequestException);
   });
 });
 

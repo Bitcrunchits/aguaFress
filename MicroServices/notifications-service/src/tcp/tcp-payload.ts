@@ -8,8 +8,8 @@ export interface TcpAuthenticatedUser {
 
 export interface TcpPayload {
   readonly body?: unknown;
-  readonly query?: Record<string, string>;
-  readonly params?: Record<string, string>;
+  readonly query?: Record<string, unknown>;
+  readonly params?: Record<string, unknown>;
   readonly user?: unknown;
   readonly requestId?: string;
 }
