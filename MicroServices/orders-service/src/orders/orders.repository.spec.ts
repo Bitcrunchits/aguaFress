@@ -114,12 +114,29 @@ describe('PrismaOrdersRepository', () => {
     expect(tx.order.findUnique).not.toHaveBeenCalled();
   });
 
-  it('lists all orders for explicit super-admin scope', async () => {
-    const repository = new PrismaOrdersRepository(prismaListService());
+  it('lists orders with filters and pagination metadata', async () => {
+    const prisma = prismaListService();
+    const repository = new PrismaOrdersRepository(prisma as unknown as PrismaService);
 
-    const orders = await repository.findMany();
+    const result = await repository.findMany({
+      page: 2,
+      limit: 10,
+      clienteId,
+      vendedorId,
+      estado: OrderEstado.CONFIRMADO,
+    });
 
-    expect(orders).toEqual([expect.objectContaining({ id: 'order-1' })]);
+    expect(result).toEqual({ orders: [expect.objectContaining({ id: 'order-1' })], total: 21 });
+    expect(prisma.order.findMany).toHaveBeenCalledWith({
+      where: { usuario_id: clienteId, vendedor_id: vendedorId, estado: OrderEstado.CONFIRMADO },
+      include: { items: true },
+      orderBy: { created_at: 'desc' },
+      skip: 10,
+      take: 10,
+    });
+    expect(prisma.order.count).toHaveBeenCalledWith({
+      where: { usuario_id: clienteId, vendedor_id: vendedorId, estado: OrderEstado.CONFIRMADO },
+    });
   });
 
   it('throws controlled request exception when updated order disappears after guarded update', async () => {
@@ -149,12 +166,13 @@ describe('PrismaOrdersRepository', () => {
     } as unknown as PrismaService;
   }
 
-  function prismaListService(): PrismaService {
+  function prismaListService(): PrismaListServiceMock {
     return {
       order: {
         findMany: jest.fn().mockResolvedValue([prismaOrder({})]),
+        count: jest.fn().mockResolvedValue(21),
       },
-    } as unknown as PrismaService;
+    } as unknown as PrismaListServiceMock;
   }
 
   function transactionClient(counterValue: number, activeCart: PrismaCartMock | null = prismaCart()): TransactionClientMock {
@@ -220,6 +238,13 @@ interface TransactionClientMock {
   };
   readonly orderHistory: { readonly create: jest.Mock };
   readonly cart: { readonly findFirst: jest.Mock; readonly delete: jest.Mock };
+}
+
+interface PrismaListServiceMock {
+  readonly order: {
+    readonly findMany: jest.Mock;
+    readonly count: jest.Mock;
+  };
 }
 
 interface PrismaOrderItemMock {

@@ -82,6 +82,19 @@ export interface OrderCommandJobRecord {
   readonly updatedAt: Date;
 }
 
+export interface OrderListQuery {
+  readonly page: number;
+  readonly limit: number;
+  readonly clienteId?: string;
+  readonly vendedorId?: string;
+  readonly estado?: OrderEstado;
+}
+
+export interface OrderListResult {
+  readonly orders: readonly OrderRecord[];
+  readonly total: number;
+}
+
 export interface OrdersRepository {
   createFromCart(input: CreateOrderFromCartInput): Promise<OrderRecord>;
   createOrderCommandJob(input: CreateOrderCommandJobInput): Promise<OrderCommandJobRecord>;
@@ -89,9 +102,7 @@ export interface OrdersRepository {
   findOrderCommandByTrackingId(trackingId: string): Promise<OrderCommandJobRecord | null>;
   updateOrderCommandJobStatus(input: UpdateOrderCommandJobStatusInput): Promise<OrderCommandJobRecord | null>;
   findById(orderId: string): Promise<OrderRecord | null>;
-  findMany(): Promise<readonly OrderRecord[]>;
-  findManyForCliente(clienteId: string): Promise<readonly OrderRecord[]>;
-  findManyForVendedor(vendedorId: string): Promise<readonly OrderRecord[]>;
+  findMany(query: OrderListQuery): Promise<OrderListResult>;
   updateStatus(orderId: string, previous: OrderEstado, next: OrderEstado, notes?: string): Promise<OrderRecord>;
 }
 
@@ -235,33 +246,20 @@ export class PrismaOrdersRepository implements OrdersRepository {
     return order === null ? null : mapOrder(order);
   }
 
-  async findMany(): Promise<readonly OrderRecord[]> {
-    const orders = await this.prisma.order.findMany({
-      include: ORDER_WITH_ITEMS,
-      orderBy: { created_at: 'desc' },
-    });
+  async findMany(query: OrderListQuery): Promise<OrderListResult> {
+    const where = buildOrderListWhere(query);
+    const [orders, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        include: ORDER_WITH_ITEMS,
+        orderBy: { created_at: 'desc' },
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      }),
+      this.prisma.order.count({ where }),
+    ]);
 
-    return orders.map(mapOrder);
-  }
-
-  async findManyForCliente(clienteId: string): Promise<readonly OrderRecord[]> {
-    const orders = await this.prisma.order.findMany({
-      where: { usuario_id: clienteId },
-      include: ORDER_WITH_ITEMS,
-      orderBy: { created_at: 'desc' },
-    });
-
-    return orders.map(mapOrder);
-  }
-
-  async findManyForVendedor(vendedorId: string): Promise<readonly OrderRecord[]> {
-    const orders = await this.prisma.order.findMany({
-      where: { vendedor_id: vendedorId },
-      include: ORDER_WITH_ITEMS,
-      orderBy: { created_at: 'desc' },
-    });
-
-    return orders.map(mapOrder);
+    return { orders: orders.map(mapOrder), total };
   }
 
   async updateStatus(orderId: string, previous: OrderEstado, next: OrderEstado, notes?: string): Promise<OrderRecord> {
@@ -291,6 +289,14 @@ export class PrismaOrdersRepository implements OrdersRepository {
       return mapOrder(order);
     });
   }
+}
+
+function buildOrderListWhere(query: OrderListQuery): Prisma.OrderWhereInput {
+  return cleanUpdateInput({
+    usuario_id: query.clienteId,
+    vendedor_id: query.vendedorId,
+    estado: query.estado,
+  });
 }
 
 function mapCart(cart: Prisma.CartGetPayload<{ include: { items: true } }>): CartRecord {

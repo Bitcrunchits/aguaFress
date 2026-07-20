@@ -1,7 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PATTERN_METADATA } from '@nestjs/microservices/constants';
-import { MetodoPago, OrderEstado, OrderJobStatus, UserRole } from '@agua/contracts';
+import { MetodoPago, OrderEstado, OrderJobStatus, UserRole, type OrderListResponse, type PaginatedResponse } from '@agua/contracts';
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
 import { TcpPayloadAdapter } from '../tcp/tcp-payload-adapter.service';
@@ -25,6 +25,10 @@ describe('OrdersController', () => {
     createdAt: '2026-07-16T10:00:00.000Z',
     updatedAt: '2026-07-16T10:00:00.000Z',
   };
+  const orderListResponse: PaginatedResponse<OrderListResponse> = {
+    data: [{ id: 'order-1', pedidoNumero: '000001', estado: OrderEstado.PENDIENTE, total: 0, createdAt: '2026-07-16T10:00:00.000Z' }],
+    pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+  };
 
   let service: jest.Mocked<Pick<OrdersService, 'create' | 'getById' | 'list' | 'updateStatus' | 'cancel' | 'confirm'>>;
   let trackingService: jest.Mocked<Pick<OrderCommandTrackingService, 'findByTrackingId'>>;
@@ -34,7 +38,7 @@ describe('OrdersController', () => {
     service = {
       create: jest.fn().mockResolvedValue(orderResponse),
       getById: jest.fn().mockResolvedValue(orderResponse),
-      list: jest.fn().mockResolvedValue([orderResponse]),
+      list: jest.fn().mockResolvedValue(orderListResponse),
       updateStatus: jest.fn().mockResolvedValue(orderResponse),
       cancel: jest.fn().mockResolvedValue(orderResponse),
       confirm: jest.fn().mockResolvedValue(orderResponse),
@@ -74,13 +78,19 @@ describe('OrdersController', () => {
   });
 
   it('routes order reads and state mutations through TCP message patterns', async () => {
-    await controller.list(authenticatedPayload());
+    await controller.list(authenticatedPayload({ query: { page: '2', limit: '5', estado: OrderEstado.PENDIENTE, clienteId: 'cliente-2' } }));
     await controller.getById(authenticatedPayload({ query: { id: 'order-1' } }));
     await controller.updateStatus(authenticatedPayload({ body: { id: 'order-1', estado: OrderEstado.EN_CAMINO, notas: 'on route' } }));
     await controller.cancel(authenticatedPayload({ body: { id: 'order-1', motivo: 'customer requested' } }));
     await controller.confirm(authenticatedPayload({ body: { id: 'order-1' } }));
 
-    expect(service.list).toHaveBeenCalledWith(expect.objectContaining({ userId: 'jwt-user' }));
+    expect(service.list).toHaveBeenCalledWith(expect.objectContaining({ userId: 'jwt-user' }), {
+      page: 2,
+      limit: 5,
+      estado: OrderEstado.PENDIENTE,
+      clienteId: 'cliente-2',
+      vendedorId: undefined,
+    });
     expect(service.getById).toHaveBeenCalledWith(expect.objectContaining({ userId: 'jwt-user' }), 'order-1');
     expect(service.updateStatus).toHaveBeenCalledWith(expect.objectContaining({ userId: 'jwt-user' }), 'order-1', OrderEstado.EN_CAMINO, 'on route');
     expect(service.cancel).toHaveBeenCalledWith(expect.objectContaining({ userId: 'jwt-user' }), 'order-1', 'customer requested');

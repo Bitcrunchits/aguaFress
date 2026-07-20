@@ -1,5 +1,5 @@
 import { BadRequestException, Controller, NotFoundException } from '@nestjs/common';
-import { UserRole, type OrderJobStatusResponse } from '@agua/contracts';
+import { UserRole, type OrderJobStatusResponse, type OrderListResponse, type PaginatedResponse } from '@agua/contracts';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { TcpPayloadAdapter } from '../tcp/tcp-payload-adapter.service';
 import type { TcpAuthenticatedUser, TcpPayload } from '../tcp/tcp-payload';
@@ -7,6 +7,7 @@ import {
   parseCancelOrderRequest,
   parseConfirmOrderRequest,
   parseCreateOrderRequest,
+  parseOrderListFilters,
   parseUpdateOrderStatusRequest,
   type OrderResponse,
 } from './orders.dto';
@@ -22,8 +23,8 @@ export class OrdersController {
   ) {}
 
   @MessagePattern('orders.list')
-  list(@Payload() payload: TcpPayload): Promise<readonly OrderResponse[]> {
-    return this.ordersService.list(this.payloadAdapter.requireUser(payload));
+  list(@Payload() payload: TcpPayload): Promise<PaginatedResponse<OrderListResponse>> {
+    return this.ordersService.list(this.payloadAdapter.requireUser(payload), parseOrderListFilters(payload.query));
   }
 
   @MessagePattern('orders.get_by_id')

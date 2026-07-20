@@ -299,13 +299,15 @@ Las tablas se separaron por rol siguiendo SRP: `AUTH_USER` solo tiene datos de l
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | _id | ObjectId | PK |
-| usuario_id | UUID | |
-| accion | STRING | ej: "order.created", "user.registered" |
-| entidad_tipo | STRING | ej: "order", "user" |
-| entidad_id | UUID | |
-| servicio | STRING | ej: "orders-service" |
-| metadata | OBJECT | Datos extra según el evento |
-| created_at | TIMESTAMP | |
+| createdAt | Date | Fecha de creación del registro |
+| source | STRING | Servicio o módulo origen, ej: `orders-service` |
+| action | STRING | Acción registrada, ej: `order.created` |
+| actor | OBJECT | `{ userId?, email?, role? }` |
+| entity | OBJECT | `{ type?, id? }` |
+| result | ENUM(ActivityLogResult) | `success` o `failure` |
+| summary | STRING | Resumen legible de la actividad |
+| metadata | OBJECT | Datos extra del registro |
+| requestId | STRING | Correlación opcional de request |
 
 ---
 

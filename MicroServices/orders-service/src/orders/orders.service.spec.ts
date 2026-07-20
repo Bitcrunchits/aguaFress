@@ -16,8 +16,6 @@ describe('OrdersService', () => {
     | 'createFromCart'
     | 'findById'
     | 'findMany'
-    | 'findManyForCliente'
-    | 'findManyForVendedor'
     | 'updateStatus'
   >>;
   let productCatalog: jest.Mocked<ProductCatalogPort>;
@@ -28,8 +26,6 @@ describe('OrdersService', () => {
       createFromCart: jest.fn(),
       findById: jest.fn(),
       findMany: jest.fn(),
-      findManyForCliente: jest.fn(),
-      findManyForVendedor: jest.fn(),
       updateStatus: jest.fn(),
     };
     productCatalog = {
@@ -94,24 +90,28 @@ describe('OrdersService', () => {
     await expect(service.getById(clienteUser(), 'order-1')).rejects.toThrow(ForbiddenException);
   });
 
-  it('scopes order lists by caller role', async () => {
-    ordersRepository.findManyForCliente.mockResolvedValue([orderRecord({ id: 'cliente-order' })]);
-    ordersRepository.findManyForVendedor.mockResolvedValue([orderRecord({ id: 'vendedor-order' })]);
-    ordersRepository.findMany.mockResolvedValue([orderRecord({ id: 'admin-visible-order' })]);
+  it('scopes paginated order lists by caller role and preserves safe filters', async () => {
+    ordersRepository.findMany
+      .mockResolvedValueOnce({ orders: [orderRecord({ id: 'cliente-order' })], total: 1 })
+      .mockResolvedValueOnce({ orders: [orderRecord({ id: 'vendedor-order' })], total: 1 })
+      .mockResolvedValueOnce({ orders: [orderRecord({ id: 'admin-visible-order' })], total: 25 });
 
-    await expect(service.list(clienteUser())).resolves.toEqual([
-      expect.objectContaining({ id: 'cliente-order', clienteId }),
-    ]);
-    await expect(service.list(vendedorUser())).resolves.toEqual([
-      expect.objectContaining({ id: 'vendedor-order', vendedorId }),
-    ]);
-    await expect(service.list(superAdminUser())).resolves.toEqual([
-      expect.objectContaining({ id: 'admin-visible-order' }),
-    ]);
+    await expect(service.list(clienteUser(), listFilters({ clienteId: 'forged-cliente', vendedorId: 'forged-vendedor' }))).resolves.toEqual({
+      data: [expect.objectContaining({ id: 'cliente-order', pedidoNumero: '000001', estado: OrderEstado.PENDIENTE })],
+      pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+    });
+    await expect(service.list(vendedorUser(), listFilters({ clienteId: 'cliente-2', vendedorId: 'forged-vendedor' }))).resolves.toEqual({
+      data: [expect.objectContaining({ id: 'vendedor-order' })],
+      pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+    });
+    await expect(service.list(superAdminUser(), listFilters({ page: 2, limit: 10, vendedorId: 'vendedor-2' }))).resolves.toEqual({
+      data: [expect.objectContaining({ id: 'admin-visible-order' })],
+      pagination: { page: 2, limit: 10, total: 25, totalPages: 3 },
+    });
 
-    expect(ordersRepository.findManyForCliente).toHaveBeenCalledWith(clienteId);
-    expect(ordersRepository.findManyForVendedor).toHaveBeenCalledWith(vendedorId);
-    expect(ordersRepository.findMany).toHaveBeenCalledWith();
+    expect(ordersRepository.findMany).toHaveBeenNthCalledWith(1, listFilters({ clienteId, vendedorId: undefined }));
+    expect(ordersRepository.findMany).toHaveBeenNthCalledWith(2, listFilters({ clienteId: 'cliente-2', vendedorId }));
+    expect(ordersRepository.findMany).toHaveBeenNthCalledWith(3, listFilters({ page: 2, limit: 10, vendedorId: 'vendedor-2' }));
   });
 
   it('allows super-admin to read any order without lifecycle write access', async () => {
@@ -211,6 +211,10 @@ describe('OrdersService', () => {
 
   function superAdminUser() {
     return { userId: 'admin-1', email: 'admin@test.com', role: UserRole.SUPER_ADMIN };
+  }
+
+  function listFilters(overrides: Partial<Parameters<OrdersService['list']>[1]> = {}): Parameters<OrdersService['list']>[1] {
+    return { page: 1, limit: 20, estado: undefined, clienteId: undefined, vendedorId: undefined, ...overrides };
   }
 
   function cartRecord(): CartRecord {

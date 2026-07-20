@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { MetodoPago, OrderEstado, type DireccionEntrega } from '@agua/contracts';
+import { MetodoPago, OrderEstado, type DireccionEntrega, type OrderListFilters } from '@agua/contracts';
 
 export interface OrderItemResponse {
   readonly productId: string;
@@ -46,6 +46,15 @@ export interface ConfirmOrderRequest extends Record<string, unknown> {
   readonly id: string;
 }
 
+export interface ParsedOrderListFilters extends OrderListFilters {
+  readonly page: number;
+  readonly limit: number;
+}
+
+const DEFAULT_PAGE = 1;
+const DEFAULT_LIMIT = 20;
+const MAX_LIMIT = 100;
+
 export function parseCreateOrderRequest(value: unknown): CreateOrderRequest {
   const record = requireRecord(value);
   const metodoPago = readMetodoPago(record, 'metodoPago');
@@ -75,6 +84,18 @@ export function parseCancelOrderRequest(value: unknown): CancelOrderRequest {
 export function parseConfirmOrderRequest(value: unknown): ConfirmOrderRequest {
   const record = requireRecord(value);
   return { id: readRequiredString(record, 'id') };
+}
+
+export function parseOrderListFilters(query: Record<string, string> | undefined): ParsedOrderListFilters {
+  const record = query ?? {};
+
+  return {
+    page: readOptionalPositiveInteger(record, 'page') ?? DEFAULT_PAGE,
+    limit: readOptionalPositiveInteger(record, 'limit') ?? DEFAULT_LIMIT,
+    clienteId: readOptionalString(record, 'clienteId'),
+    vendedorId: readOptionalString(record, 'vendedorId'),
+    estado: readOptionalOrderEstado(record, 'estado'),
+  };
 }
 
 function requireRecord(value: unknown): Record<string, unknown> {
@@ -123,6 +144,33 @@ function readOrderEstado(record: Record<string, unknown>, key: string): OrderEst
   }
 
   return value as OrderEstado;
+}
+
+function readOptionalOrderEstado(record: Record<string, unknown>, key: string): OrderEstado | undefined {
+  const value = record[key];
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return readOrderEstado(record, key);
+}
+
+function readOptionalPositiveInteger(record: Record<string, unknown>, key: string): number | undefined {
+  const value = record[key];
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const parsed = typeof value === 'string' ? Number(value) : value;
+  if (typeof parsed !== 'number') {
+    throw new BadRequestException(`${key} must be a positive integer`);
+  }
+
+  if (!Number.isInteger(parsed) || parsed < 1 || (key === 'limit' && parsed > MAX_LIMIT)) {
+    throw new BadRequestException(`${key} must be a positive integer`);
+  }
+
+  return parsed;
 }
 
 function readDireccion(record: Record<string, unknown>, key: string): DireccionEntrega {

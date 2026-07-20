@@ -7,15 +7,14 @@ import type { TcpAuthenticatedUser } from '../tcp/tcp-payload';
 import { assertOrderTransition } from './order-state';
 import type { OrderRecord, OrdersRepository } from './orders.repository';
 import { PrismaOrdersRepository } from './orders.repository';
-import type { CreateOrderRequest, OrderResponse } from './orders.dto';
+import type { OrderListResponse, PaginatedResponse } from '@agua/contracts';
+import type { CreateOrderRequest, OrderResponse, ParsedOrderListFilters } from './orders.dto';
 import { toOrderResponse } from './orders.mapper';
 
 type OrdersServiceRepository = Pick<OrdersRepository,
   | 'createFromCart'
   | 'findById'
   | 'findMany'
-  | 'findManyForCliente'
-  | 'findManyForVendedor'
   | 'updateStatus'
 >;
 
@@ -47,20 +46,17 @@ export class OrdersService {
     return toOrderResponse(order);
   }
 
-  async list(user: TcpAuthenticatedUser): Promise<readonly OrderResponse[]> {
+  async list(user: TcpAuthenticatedUser, filters: ParsedOrderListFilters): Promise<PaginatedResponse<OrderListResponse>> {
     if (user.role === UserRole.CLIENTE) {
-      const orders = await this.ordersRepository.findManyForCliente(user.userId);
-      return orders.map(toOrderResponse);
+      return this.listOrders({ ...filters, clienteId: user.userId, vendedorId: undefined });
     }
 
     if (user.role === UserRole.VENDEDOR) {
-      const orders = await this.ordersRepository.findManyForVendedor(user.userId);
-      return orders.map(toOrderResponse);
+      return this.listOrders({ ...filters, vendedorId: user.userId });
     }
 
     if (user.role === UserRole.SUPER_ADMIN) {
-      const orders = await this.ordersRepository.findMany();
-      return orders.map(toOrderResponse);
+      return this.listOrders(filters);
     }
 
     throw new ForbiddenException('Role cannot list orders');
@@ -87,6 +83,20 @@ export class OrdersService {
       const product = await this.productCatalog.getSnapshot(item.productoId);
       this.assertAvailableProduct(product, cart.vendedorId, item.cantidad);
     }
+  }
+
+  private async listOrders(filters: ParsedOrderListFilters): Promise<PaginatedResponse<OrderListResponse>> {
+    const result = await this.ordersRepository.findMany(filters);
+
+    return {
+      data: result.orders.map(toOrderListResponse),
+      pagination: {
+        page: filters.page,
+        limit: filters.limit,
+        total: result.total,
+        totalPages: result.total === 0 ? 0 : Math.ceil(result.total / filters.limit),
+      },
+    };
   }
 
   private async requireOrder(orderId: string): Promise<OrderRecord> {
@@ -153,4 +163,14 @@ export class OrdersService {
       throw new ServiceUnavailableException('Product is unavailable');
     }
   }
+}
+
+function toOrderListResponse(order: OrderRecord): OrderListResponse {
+  return {
+    id: order.id,
+    pedidoNumero: order.pedidoNumero,
+    estado: order.estado,
+    total: order.total,
+    createdAt: order.createdAt.toISOString(),
+  };
 }

@@ -184,9 +184,10 @@ function sanitizeBodyIdentity(body: unknown): unknown {
     return body;
   }
 
-  const bodyWithoutUserId = { ...body };
-  delete bodyWithoutUserId.userId;
-  return bodyWithoutUserId;
+  const bodyWithoutIdentity = { ...body };
+  delete bodyWithoutIdentity.userId;
+  delete bodyWithoutIdentity.clienteId;
+  return bodyWithoutIdentity;
 }
 
 function sanitizeAsyncMetadata(body: unknown): Record<string, unknown> {

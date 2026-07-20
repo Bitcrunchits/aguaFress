@@ -267,6 +267,16 @@ const SHARED_SCHEMAS: Record<string, Schema> = {
     createdAt: str('ISO 8601'),
   }, ['id', 'action', 'createdAt']),
 
+  OrderListItem: obj({
+    id: str('Order ID'),
+    pedidoNumero: str('Número de pedido'),
+    estado: str('Estado del pedido'),
+    total: { type: 'number' },
+    clienteNombre: str('Nombre del cliente'),
+    clienteApellido: str('Apellido del cliente'),
+    createdAt: str('ISO 8601'),
+  }, ['id', 'pedidoNumero', 'estado', 'total', 'createdAt']),
+
   SuperAdminDashboard: obj({
     totalVendedores: { type: 'integer' },
     pendientes: { type: 'integer' },
@@ -296,6 +306,7 @@ interface ActionDoc {
   method: HttpMethod;
   pathParams?: string[];
   queryParams?: string[];
+  requiredQueryParams?: string[];
   bodySchema?: string;
   responseSchema: string;
   isArray?: boolean;
@@ -324,8 +335,8 @@ const ACTIONS_DOC: Record<string, ActionDoc> = {
   'super_admin.profile': { summary: 'Obtener perfil del super admin', method: 'get', responseSchema: 'SuperAdminProfile', roles: ['super_admin'] },
   'super_admin.profile_update': { summary: 'Actualizar perfil del super admin', method: 'patch', bodySchema: 'UpdateSuperAdminRequest', responseSchema: 'SuperAdminProfile', roles: ['super_admin'] },
   'super_admin.audit_log': { summary: 'Obtener logs de auditoría', method: 'get', queryParams: ['page', 'limit'], responseSchema: 'AuditLogItem', isArray: true, paginated: true, roles: ['super_admin'] },
-  'super_admin.qr_codes': { summary: 'Listar QR codes de un vendedor', method: 'get', queryParams: ['vendedorId', 'page', 'limit'], responseSchema: 'QRCodeItem', isArray: true, paginated: true, roles: ['super_admin'] },
-  'super_admin.link_invitacion': { summary: 'Listar links de invitación de un vendedor', method: 'get', queryParams: ['vendedorId', 'page', 'limit'], responseSchema: 'LinkInvitacionItem', isArray: true, paginated: true, roles: ['super_admin'] },
+  'super_admin.qr_codes': { summary: 'Listar QR codes de un vendedor', method: 'get', queryParams: ['vendedorId', 'page', 'limit'], requiredQueryParams: ['vendedorId'], responseSchema: 'QRCodeItem', isArray: true, paginated: true, roles: ['super_admin'] },
+  'super_admin.link_invitacion': { summary: 'Listar links de invitación de un vendedor', method: 'get', queryParams: ['vendedorId', 'page', 'limit'], requiredQueryParams: ['vendedorId'], responseSchema: 'LinkInvitacionItem', isArray: true, paginated: true, roles: ['super_admin'] },
   'super_admin.vendedores': { summary: 'Listar vendedores (admin)', description: 'Alias de vendedores.list', method: 'get', queryParams: ['page', 'limit', 'search', 'estado'], responseSchema: 'VendedorListItem', isArray: true, paginated: true, roles: ['super_admin'] },
 
   'clientes.list': { summary: 'Listar clientes (admin)', method: 'get', queryParams: ['page', 'limit', 'search'], responseSchema: 'ClienteListItem', isArray: true, paginated: true, roles: ['super_admin'] },
@@ -345,6 +356,8 @@ const ACTIONS_DOC: Record<string, ActionDoc> = {
   'link_invitacion.vendor_create': { summary: 'Crear link de invitación', method: 'post', responseSchema: 'CreateLinkResponse', roles: ['vendedor'] },
   'link_invitacion.admin_deactivate': { summary: 'Desactivar link (admin)', method: 'patch', pathParams: ['id'], responseSchema: 'LinkInvitacionItem', roles: ['super_admin'] },
   'link_invitacion.vendor_deactivate': { summary: 'Desactivar link propio', method: 'patch', pathParams: ['id'], responseSchema: 'LinkInvitacionItem', roles: ['vendedor'] },
+
+  'orders.list': { summary: 'Listar pedidos', method: 'get', queryParams: ['page', 'limit', 'clienteId', 'vendedorId', 'estado'], responseSchema: 'OrderListItem', isArray: true, paginated: true },
 };
 
 // ─── Service Family Display Names ───────────────────────────────
@@ -357,6 +370,7 @@ const SERVICE_NAMES: Record<string, string> = {
   clientes: 'Clientes',
   qr: 'Códigos QR',
   'link-invitacion': 'Links de Invitación',
+  orders: 'Pedidos',
 };
 
 // ─── OpenAPI Generator ──────────────────────────────────────────
@@ -450,7 +464,7 @@ Los roles se especifican por endpoint: \`super_admin\`, \`vendedor\`.
       parameters.push({
         name: param,
         in: 'query',
-        required: param === 'vendedorId',
+        required: doc.requiredQueryParams?.includes(param) ?? false,
         schema: isPagination ? { type: 'integer' } : { type: 'string' },
         description: isPagination
           ? param === 'page' ? 'Número de página' : 'Items por página'
