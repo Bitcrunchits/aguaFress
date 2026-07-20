@@ -36,9 +36,9 @@ Chain strategy: feature-branch-chain
 
 ## Phase 2: ActivityLogs Mongo Domain RED/GREEN/VERIFY (PR 2)
 
-- [ ] 2.1 RED AG-156/157: add service tests for newest-first list, filters, pagination, ObjectId validation, missing id, and DTO mapping under `MicroServices/notifications-service/src/activity-logs/`.
-- [ ] 2.2 GREEN AG-156: create Mongoose schema/indexes and `ActivityLogsService` filter builder/list/get-by-id mapper using `@agua/contracts` DTOs.
-- [ ] 2.3 VERIFY AG-165: add/verify boundary test or note that usuario-service `AUDIT_LOG` remains untouched and no migration code exists.
+- [x] 2.1 RED AG-156/157: add service tests for newest-first list, filters, pagination, ObjectId validation, missing id, and DTO mapping under `MicroServices/notifications-service/src/activity-logs/`.
+- [x] 2.2 GREEN AG-156: create Mongoose schema/indexes and `ActivityLogsService` filter builder/list/get-by-id mapper using `@agua/contracts` DTOs.
+- [x] 2.3 VERIFY AG-165: add/verify boundary test or note that usuario-service `AUDIT_LOG` remains untouched and no migration code exists.
 
 ## Phase 3: TCP Bootstrap RED/GREEN/VERIFY (PR 3)
 

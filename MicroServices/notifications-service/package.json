@@ -9,6 +9,19 @@
     "start": "node dist/main",
     "test": "jest"
   },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": ".",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.ts$": "ts-jest"
+    },
+    "testEnvironment": "node"
+  },
   "dependencies": {
     "@agua/contracts": "workspace:*",
     "@nestjs/common": "^10.0.0",
@@ -24,8 +37,10 @@
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
     "@nestjs/testing": "^10.0.0",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.0.0",
     "jest": "^29.0.0",
+    "ts-jest": "^29.4.11",
     "typescript": "^5.5.0"
   }
 }
