@@ -54,6 +54,6 @@ Chain strategy: feature-branch-chain
 
 ## Phase 5: Docker and Manual Verification (PR 5)
 
-- [ ] 5.1 RED AG-154: add expected env/compose assertions or documented smoke checklist for MongoDB and notifications-service startup.
-- [ ] 5.2 GREEN AG-154: add `MicroServices/notifications-service/Dockerfile`, Nest/TS config if missing, `mongo:7`, `agua-mongo-data`, service env, and gateway env in `docker-compose.yml`.
-- [ ] 5.3 VERIFY AG-160: run targeted builds/tests and smoke `docker compose up -d mongo notifications-service gateway`; record commands/results in verify notes.
+- [x] 5.1 RED AG-154: add expected env/compose assertions or documented smoke checklist for MongoDB and notifications-service startup.
+- [x] 5.2 GREEN AG-154: add `MicroServices/notifications-service/Dockerfile`, Nest/TS config if missing, `mongo:7`, `agua-mongo-data`, service env, and gateway env in `docker-compose.yml`.
+- [x] 5.3 VERIFY AG-160: run targeted builds/tests and smoke `docker compose up -d mongo notifications-service gateway`; record commands/results in verify notes.
