@@ -21,6 +21,8 @@ describe('Gateway HTTP routing', () => {
     process.env.USUARIO_SERVICE_TCP_PORT = '3011';
     process.env.ORDERS_SERVICE_HOST = 'orders-service';
     process.env.ORDERS_SERVICE_TCP_PORT = '3014';
+    process.env.NOTIFICATIONS_SERVICE_HOST = 'notifications-service';
+    process.env.NOTIFICATIONS_SERVICE_TCP_PORT = '3016';
 
     mockDispatch = jest.fn();
     mockEnqueueOrderCreate = jest.fn();
@@ -285,6 +287,78 @@ describe('Gateway HTTP routing', () => {
       expect.objectContaining({ tcpPattern: 'orders.job_status', authRequired: true }),
     );
     expect(mockEnqueueOrderCreate).not.toHaveBeenCalled();
+  });
+
+  it('dispatches activity-logs/list to notifications-service for SUPER_ADMIN only', async () => {
+    mockDispatch.mockResolvedValue({ data: [], meta: { page: 1, limit: 20, total: 0, totalPages: 0 } });
+
+    await request(app.getHttpServer())
+      .get('/api/v1/activity-logs/list?source=gateway&limit=20')
+      .set('Authorization', `Bearer ${vendedorToken}`)
+      .expect(403);
+    expect(mockDispatch).not.toHaveBeenCalled();
+
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/activity-logs/list?source=gateway&limit=20')
+      .set('Authorization', `Bearer ${superAdminToken}`)
+      .expect(200);
+
+    expect(response.body).toEqual({ data: [], meta: { page: 1, limit: 20, total: 0, totalPages: 0 } });
+    expect(mockDispatch).toHaveBeenCalledWith(
+      'activity-logs',
+      expect.objectContaining({
+        query: { source: 'gateway', limit: '20' },
+        params: { service: 'activity-logs', action: 'list' },
+        user: expect.objectContaining({ sub: 'admin-user-id', role: 'super_admin' }),
+      }),
+      expect.objectContaining({ tcpPattern: 'activity_logs.list', authRequired: true, roles: ['super_admin'] }),
+    );
+  });
+
+  it('dispatches activity-logs/get-by-id and blocks unauthenticated calls before TCP', async () => {
+    mockDispatch.mockResolvedValue({ id: '507f1f77bcf86cd799439011', summary: 'login ok' });
+
+    await request(app.getHttpServer())
+      .get('/api/v1/activity-logs/get-by-id?id=507f1f77bcf86cd799439011')
+      .expect(401);
+    expect(mockDispatch).not.toHaveBeenCalled();
+
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/activity-logs/get-by-id?id=507f1f77bcf86cd799439011')
+      .set('Authorization', `Bearer ${superAdminToken}`)
+      .expect(200);
+
+    expect(response.body).toEqual({ id: '507f1f77bcf86cd799439011', summary: 'login ok' });
+    expect(mockDispatch).toHaveBeenCalledWith(
+      'activity-logs',
+      expect.objectContaining({
+        query: { id: '507f1f77bcf86cd799439011' },
+        params: { service: 'activity-logs', action: 'get-by-id' },
+      }),
+      expect.objectContaining({ tcpPattern: 'activity_logs.get-by-id', authRequired: true, roles: ['super_admin'] }),
+    );
+  });
+
+  it('keeps audit-log reads on usuario-service and exposes no activity-log mutations', async () => {
+    mockDispatch.mockResolvedValue({ data: [], meta: { page: 1, limit: 20, total: 0, totalPages: 0 } });
+
+    await request(app.getHttpServer())
+      .get('/api/v1/super-admin/audit-log')
+      .set('Authorization', `Bearer ${superAdminToken}`)
+      .expect(200);
+    expect(mockDispatch).toHaveBeenCalledWith(
+      'super-admin',
+      expect.any(Object),
+      expect.objectContaining({ tcpPattern: 'super_admin.audit_log' }),
+    );
+
+    mockDispatch.mockClear();
+    await request(app.getHttpServer())
+      .post('/api/v1/activity-logs/create')
+      .set('Authorization', `Bearer ${superAdminToken}`)
+      .send({ summary: 'forbidden' })
+      .expect(404);
+    expect(mockDispatch).not.toHaveBeenCalled();
   });
 
   it('rejects orders.create without idempotency before TCP fallback', async () => {

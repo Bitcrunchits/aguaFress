@@ -201,4 +201,20 @@ describe('RolesGuard', () => {
 
     expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
   });
+
+  it('allows SUPER_ADMIN activity-logs reads from registry roles', () => {
+    mockReflector.getAllAndOverride.mockReturnValue(undefined);
+    const guard = new RolesGuard(mockReflector);
+    const context = createContextWithUser('super_admin', { service: 'activity-logs', action: 'list' });
+
+    expect(guard.canActivate(context)).toBe(true);
+  });
+
+  it('rejects non-admin activity-logs reads before dispatch', () => {
+    mockReflector.getAllAndOverride.mockReturnValue(undefined);
+    const guard = new RolesGuard(mockReflector);
+    const context = createContextWithUser('vendedor', { service: 'activity-logs', action: 'get-by-id' });
+
+    expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
+  });
 });

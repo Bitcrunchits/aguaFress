@@ -48,9 +48,9 @@ Chain strategy: feature-branch-chain
 
 ## Phase 4: Gateway Integration RED/GREEN/VERIFY (PR 4)
 
-- [ ] 4.1 RED AG-158/159: add gateway tests proving `activity-logs/list` and `get-by-id` dispatch to `NOTIFICATIONS_CLIENT`, while non-admin/unauthenticated requests send no TCP message.
-- [ ] 4.2 GREEN AG-158: update `action-registry.ts`, `src/tcp/tcp-clients.module.ts`, dispatcher routing, config env, and app wiring for notifications-service.
-- [ ] 4.3 VERIFY AG-165: test `/audit-logs` still uses usuario-service `AUDIT_LOG` only and `activity-logs` exposes read-only actions.
+- [x] 4.1 RED AG-158/159: add gateway tests proving `activity-logs/list` and `get-by-id` dispatch to `NOTIFICATIONS_CLIENT`, while non-admin/unauthenticated requests send no TCP message.
+- [x] 4.2 GREEN AG-158: update `action-registry.ts`, `src/tcp/tcp-clients.module.ts`, dispatcher routing, config env, and app wiring for notifications-service.
+- [x] 4.3 VERIFY AG-165: test `/audit-logs` still uses usuario-service `AUDIT_LOG` only and `activity-logs` exposes read-only actions.
 
 ## Phase 5: Docker and Manual Verification (PR 5)
 
