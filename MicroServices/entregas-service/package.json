@@ -25,10 +25,24 @@
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
-    "@nestjs/testing": "^10.0.0",
+    "@nestjs/testing": "^10.4.22",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.0.0",
     "jest": "^29.0.0",
     "prisma": "^5.0.0",
+    "ts-jest": "^29.4.11",
     "typescript": "^5.5.0"
+  },
+"jest": {
+    "moduleFileExtensions": ["js", "json", "ts"],
+    "rootDir": "src",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "moduleNameMapper": {
+      "^@agua/contracts$": "<rootDir>/../../packages/contracts/src/index.ts"
+    },
+    "testEnvironment": "node"
   }
 }
