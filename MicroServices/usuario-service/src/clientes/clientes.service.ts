@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../generated/prisma';
 import { AuditAction } from '@agua/contracts';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { cleanUpdateInput } from '../common/utils/prisma.utils';
@@ -170,13 +170,13 @@ export class ClientesService {
 
   // ─── VENDEDOR-SCOPED METHODS (cartera) ─────────────────────────
 
-  async listOwn(userId: string, params: ListClientesDto = {}) {
+  async listOwn(vendedorId: string, params: ListClientesDto = {}) {
     const page = params.page ?? 1;
     const limit = params.limit ?? 20;
     const skip = (page - 1) * limit;
 
     const where: Prisma.ClienteWhereInput = {
-      ...CARTERA_FILTER(userId),
+      ...CARTERA_FILTER(vendedorId),
     };
 
     if (params.search) {
@@ -208,11 +208,11 @@ export class ClientesService {
     };
   }
 
-  async getOwnById(id: string, userId: string) {
+  async getOwnById(id: string, vendedorId: string) {
     const cliente = await this.prisma.cliente.findFirst({
       where: {
         id,
-        ...CARTERA_FILTER(userId),
+        ...CARTERA_FILTER(vendedorId),
       },
       include: CLIENTE_INCLUDE,
     });
@@ -224,11 +224,11 @@ export class ClientesService {
     return cliente;
   }
 
-  async updateOwn(id: string, userId: string, dto: UpdateClienteVendedorDto) {
+  async updateOwn(id: string, vendedorId: string, dto: UpdateClienteVendedorDto) {
     const existing = await this.prisma.cliente.findFirst({
       where: {
         id,
-        ...CARTERA_FILTER(userId),
+        ...CARTERA_FILTER(vendedorId),
       },
       select: { id: true },
     });

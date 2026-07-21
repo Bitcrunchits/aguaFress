@@ -1,7 +1,7 @@
 import { ConflictException, Inject, Injectable } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { OrderJobStatus, type CreateOrderJobData, type OrderJobStatusResponse } from '@agua/contracts';
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '../../generated/prisma';
 import { PrismaOrdersRepository, type OrderCommandJobRecord, type OrdersRepository } from '../orders.repository';
 
 type OrderCommandTrackingRepository = Pick<OrdersRepository, 'createOrderCommandJob' | 'findOrderCommandByIdempotency' | 'findOrderCommandByTrackingId' | 'updateOrderCommandJobStatus'>;

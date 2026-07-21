@@ -29,8 +29,9 @@ export class OrdersService {
 
   async create(user: TcpAuthenticatedUser, request: CreateOrderRequest): Promise<OrderResponse> {
     this.assertCliente(user);
+    const clienteUserId = user.userId;
     const order = await this.ordersRepository.createFromCart({
-      clienteId: user.userId,
+      clienteId: clienteUserId,
       now: this.clock(),
       validateCartItems: (cart) => this.validateCartItems(cart),
       metodoPago: request.metodoPago,
@@ -49,11 +50,13 @@ export class OrdersService {
 
   async list(user: TcpAuthenticatedUser): Promise<readonly OrderResponse[]> {
     if (user.role === UserRole.CLIENTE) {
-      const orders = await this.ordersRepository.findManyForCliente(user.userId);
+      const clienteUserId = user.userId;
+      const orders = await this.ordersRepository.findManyForCliente(clienteUserId);
       return orders.map(toOrderResponse);
     }
 
     if (user.role === UserRole.VENDEDOR) {
+      // V1 compatibility: order.vendedorId is compared to JWT userId until a profile-id resolver exists in orders-service.
       const orders = await this.ordersRepository.findManyForVendedor(user.userId);
       return orders.map(toOrderResponse);
     }
@@ -103,6 +106,7 @@ export class OrdersService {
       return;
     }
 
+    // V1 compatibility: order.vendedorId currently stores the vendor auth-user id for authorization checks.
     if (user.role === UserRole.VENDEDOR && order.vendedorId === user.userId) {
       return;
     }
@@ -137,6 +141,7 @@ export class OrdersService {
   }
 
   private assertLifecycleWriter(user: TcpAuthenticatedUser, order: OrderRecord): void {
+    // V1 compatibility: order.vendedorId currently stores the vendor auth-user id for authorization checks.
     if (user.role !== UserRole.VENDEDOR || order.vendedorId !== user.userId) {
       throw new ForbiddenException('Order lifecycle access denied');
     }

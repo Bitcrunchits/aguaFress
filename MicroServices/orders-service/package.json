@@ -8,9 +8,9 @@
     "dev": "nest start --watch",
     "start": "node dist/main",
     "test": "jest",
-    "prisma:generate": "prisma generate",
-    "prisma:push": "prisma db push",
-    "prisma:validate": "prisma validate"
+    "prisma:generate": "prisma generate --schema prisma/schema.prisma",
+    "prisma:push": "prisma db push --schema prisma/schema.prisma",
+    "prisma:validate": "prisma validate --schema prisma/schema.prisma"
   },
   "jest": {
     "moduleFileExtensions": [
@@ -23,6 +23,9 @@
     "transform": {
       "^.+\\.ts$": "ts-jest"
     },
+    "modulePathIgnorePatterns": [
+      "<rootDir>/dist/"
+    ],
     "testEnvironment": "node"
   },
   "dependencies": {

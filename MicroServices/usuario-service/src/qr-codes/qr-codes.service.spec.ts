@@ -4,7 +4,8 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../generated/prisma';
+import { AuditAction } from '@agua/contracts';
 import { QrCodesService } from './qr-codes.service';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
@@ -27,15 +28,18 @@ const mockPrisma = {
 describe('QrCodesService', () => {
   let service: QrCodesService;
   let prisma: typeof mockPrisma;
+  let auditLogService: jest.Mocked<Pick<AuditLogService, 'record'>>;
 
   beforeEach(async () => {
     jest.clearAllMocks();
+
+    auditLogService = { record: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         QrCodesService,
         { provide: PrismaService, useValue: mockPrisma },
-        { provide: AuditLogService, useValue: { record: jest.fn() } },
+        { provide: AuditLogService, useValue: auditLogService },
       ],
     }).compile();
 
@@ -65,7 +69,7 @@ describe('QrCodesService', () => {
       };
       prisma.qrCode.create.mockResolvedValue(mockQr);
 
-      const result = await service.create('vendedor-1');
+      const result = await service.create('vendedor-1', 'actor-user-1');
 
       expect(prisma.qrCode.create).toHaveBeenCalledWith({
         data: {
@@ -84,6 +88,7 @@ describe('QrCodesService', () => {
       expect(diffMs).toBeGreaterThan(6.9 * 24 * 60 * 60 * 1000);
       expect(diffMs).toBeLessThan(7.1 * 24 * 60 * 60 * 1000);
       expect(result).toEqual(mockQr);
+      expect(auditLogService.record).toHaveBeenCalledWith(AuditAction.QR_CREATED, 'actor-user-1', { targetId: 'qr-1' });
     });
 
     it('reintenta si hay conflicto de codigo unico (P2002) hasta 3 veces', async () => {
@@ -104,7 +109,7 @@ describe('QrCodesService', () => {
         .mockRejectedValueOnce(uniqueError)
         .mockResolvedValueOnce(mockQr);
 
-      const result = await service.create('vendedor-1');
+      const result = await service.create('vendedor-1', 'actor-user-1');
 
       expect(prisma.qrCode.create).toHaveBeenCalledTimes(2);
       expect(result).toEqual(mockQr);
@@ -118,7 +123,7 @@ describe('QrCodesService', () => {
 
       prisma.qrCode.create.mockRejectedValue(uniqueError);
 
-      await expect(service.create('vendedor-1')).rejects.toThrow(
+      await expect(service.create('vendedor-1', 'actor-user-1')).rejects.toThrow(
         ConflictException,
       );
       expect(prisma.qrCode.create).toHaveBeenCalledTimes(3);
@@ -132,7 +137,7 @@ describe('QrCodesService', () => {
 
       prisma.qrCode.create.mockRejectedValue(uniqueError);
 
-      await expect(service.create('vendedor-1')).rejects.toThrow(
+      await expect(service.create('vendedor-1', 'actor-user-1')).rejects.toThrow(
         'Could not generate unique QR code',
       );
     });
@@ -141,7 +146,7 @@ describe('QrCodesService', () => {
       const otherError = new Error('DB connection lost');
       prisma.qrCode.create.mockRejectedValue(otherError);
 
-      await expect(service.create('vendedor-1')).rejects.toThrow(
+      await expect(service.create('vendedor-1', 'actor-user-1')).rejects.toThrow(
         'DB connection lost',
       );
       expect(prisma.qrCode.create).toHaveBeenCalledTimes(1);
@@ -245,12 +250,13 @@ describe('QrCodesService', () => {
     it('desactiva QrCode propio (con ownership check)', async () => {
       prisma.qrCode.updateMany.mockResolvedValue({ count: 1 });
 
-      await service.deactivate('qr-1', 'vendedor-1');
+      await service.deactivate('qr-1', 'vendedor-1', 'actor-user-1');
 
       expect(prisma.qrCode.updateMany).toHaveBeenCalledWith({
         where: { id: 'qr-1', activo: true, vendedor_id: 'vendedor-1' },
         data: { activo: false },
       });
+      expect(auditLogService.record).toHaveBeenCalledWith(AuditAction.QR_DEACTIVATED, 'actor-user-1', { targetId: 'qr-1' });
     });
 
     it('lanza NotFoundException si el id no existe', async () => {
@@ -258,7 +264,7 @@ describe('QrCodesService', () => {
       prisma.qrCode.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.deactivate('fake-id', 'vendedor-1'),
+        service.deactivate('fake-id', 'vendedor-1', 'actor-user-1'),
       ).rejects.toThrow(NotFoundException);
       expect(prisma.qrCode.findFirst).toHaveBeenCalledWith({
         where: { id: 'fake-id', vendedor_id: 'vendedor-1' },
@@ -270,7 +276,7 @@ describe('QrCodesService', () => {
       prisma.qrCode.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.deactivate('qr-other', 'vendedor-1'),
+        service.deactivate('qr-other', 'vendedor-1', 'actor-user-1'),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -282,10 +288,10 @@ describe('QrCodesService', () => {
       });
 
       await expect(
-        service.deactivate('qr-1', 'vendedor-1'),
+        service.deactivate('qr-1', 'vendedor-1', 'actor-user-1'),
       ).rejects.toThrow(BadRequestException);
       await expect(
-        service.deactivate('qr-1', 'vendedor-1'),
+        service.deactivate('qr-1', 'vendedor-1', 'actor-user-1'),
       ).rejects.toThrow('QR code is already inactive');
     });
   });
@@ -305,19 +311,20 @@ describe('QrCodesService', () => {
     it('desactiva cualquier QrCode sin ownership check', async () => {
       prisma.qrCode.updateMany.mockResolvedValue({ count: 1 });
 
-      await service.deactivateAdmin('qr-1');
+      await service.deactivateAdmin('qr-1', 'admin-user-1');
 
       expect(prisma.qrCode.updateMany).toHaveBeenCalledWith({
         where: { id: 'qr-1', activo: true },
         data: { activo: false },
       });
+      expect(auditLogService.record).toHaveBeenCalledWith(AuditAction.QR_DEACTIVATED, 'admin-user-1', { targetId: 'qr-1' });
     });
 
     it('lanza NotFoundException si el QrCode no existe', async () => {
       prisma.qrCode.updateMany.mockResolvedValue({ count: 0 });
       prisma.qrCode.findUnique.mockResolvedValue(null);
 
-      await expect(service.deactivateAdmin('fake-id')).rejects.toThrow(
+      await expect(service.deactivateAdmin('fake-id', 'admin-user-1')).rejects.toThrow(
         NotFoundException,
       );
       expect(prisma.qrCode.findUnique).toHaveBeenCalledWith({
@@ -332,10 +339,10 @@ describe('QrCodesService', () => {
         activo: false,
       });
 
-      await expect(service.deactivateAdmin('qr-1')).rejects.toThrow(
+      await expect(service.deactivateAdmin('qr-1', 'admin-user-1')).rejects.toThrow(
         BadRequestException,
       );
-      await expect(service.deactivateAdmin('qr-1')).rejects.toThrow(
+      await expect(service.deactivateAdmin('qr-1', 'admin-user-1')).rejects.toThrow(
         'QR code is already inactive',
       );
     });
