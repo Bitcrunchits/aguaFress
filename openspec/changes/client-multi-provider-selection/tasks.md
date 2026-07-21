@@ -43,10 +43,10 @@ Decision resolved before apply: PR1 targets the tracker branch `feat/client-mult
 
 ## Phase 2: usuario-service Provider Membership
 
-- [ ] 2.1 Update `MicroServices/usuario-service/src/clientes/clientes.service.ts` to list providers from active cartera and reject inactive selections.
-- [ ] 2.2 Centralize admin add/default/reassign writes in `clientes.service.ts` so cartera and `CLIENTE.vendedor_id` cannot drift.
-- [ ] 2.3 Update vendedor-facing cliente reads in `MicroServices/usuario-service/src/clientes/clientes.service.ts` to authorize via active cartera, not default pointer.
-- [ ] 2.4 Add TCP patterns in `MicroServices/usuario-service/src/tcp/usuario-domain-tcp.controller.ts` for providers list/select and admin relation/default actions.
+- [x] 2.1 Update `MicroServices/usuario-service/src/clientes/clientes.service.ts` to list providers from active cartera and reject inactive selections.
+- [x] 2.2 Centralize admin add/default/reassign writes in `clientes.service.ts` so cartera and `CLIENTE.vendedor_id` cannot drift.
+- [x] 2.3 Update vendedor-facing cliente reads in `MicroServices/usuario-service/src/clientes/clientes.service.ts` to authorize via active cartera, not default pointer.
+- [x] 2.4 Add TCP patterns in `MicroServices/usuario-service/src/tcp/usuario-domain-tcp.controller.ts` for providers list/select and admin relation/default actions.
 
 ## Phase 3: Gateway and Mobile Context
 
@@ -62,7 +62,7 @@ Decision resolved before apply: PR1 targets the tracker branch `feat/client-mult
 
 ## Phase 5: Tests and Verification
 
-- [ ] 5.1 Add usuario-service Jest tests for active/empty provider list, valid/invalid selection, default drift, and cartera authorization mismatch.
+- [x] 5.1 Add usuario-service Jest tests for active/empty provider list, valid/invalid selection, default drift, and cartera authorization mismatch.
 - [ ] 5.2 Add gateway tests for valid forwarding and unauthorized provider rejection before mutation.
 - [ ] 5.3 Add orders/cart tests for provider-isolated carts, body `userId` ignored, retry identity by cliente/provider/key, and product-missing no-clear.
 - [ ] 5.4 Run `pnpm --filter @agua/contracts build`, affected service tests, and verify `docs/documentacion/modelo-datos.md` identity naming.
