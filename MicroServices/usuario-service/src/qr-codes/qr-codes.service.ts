@@ -6,7 +6,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../generated/prisma';
 import { AuditAction, VendedorEstado } from '@agua/contracts';
 import { PrismaService } from '../common/prisma/prisma.service';
 import type { ListQrCodesDto } from './dto/list-qr-codes.dto';
@@ -23,7 +23,7 @@ export class QrCodesService {
     return crypto.randomUUID().slice(0, 8);
   }
 
-  async create(vendedorId: string, userId?: string) {
+  async create(vendedorId: string, actorUserId: string) {
     const vendedor = await this.prisma.vendedor.findUnique({
       where: { id: vendedorId },
       select: { estado: true },
@@ -47,7 +47,7 @@ export class QrCodesService {
           },
         });
 
-        await this.auditLogService.record(AuditAction.QR_CREATED, userId ?? qr.vendedor_id, {
+        await this.auditLogService.record(AuditAction.QR_CREATED, actorUserId, {
           targetId: qr.id,
         });
 
@@ -102,15 +102,15 @@ export class QrCodesService {
     return this.list(vendedorId, dto);
   }
 
-  async deactivate(id: string, vendedorId: string) {
-    return this.deactivateInternal(id, vendedorId);
+  async deactivate(id: string, vendedorId: string, actorUserId: string) {
+    return this.deactivateInternal(id, actorUserId, vendedorId);
   }
 
-  async deactivateAdmin(id: string) {
-    return this.deactivateInternal(id);
+  async deactivateAdmin(id: string, actorUserId: string) {
+    return this.deactivateInternal(id, actorUserId);
   }
 
-  private async deactivateInternal(id: string, vendedorId?: string): Promise<void> {
+  private async deactivateInternal(id: string, actorUserId: string, vendedorId?: string): Promise<void> {
     const where: Prisma.QrCodeWhereInput = {
       id,
       activo: true,
@@ -131,7 +131,7 @@ export class QrCodesService {
       throw new BadRequestException('QR code is already inactive');
     }
 
-    await this.auditLogService.record(AuditAction.QR_DEACTIVATED, vendedorId ?? 'system', {
+    await this.auditLogService.record(AuditAction.QR_DEACTIVATED, actorUserId, {
       targetId: id,
     });
   }

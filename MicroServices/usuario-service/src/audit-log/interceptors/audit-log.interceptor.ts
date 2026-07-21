@@ -37,17 +37,17 @@ export class AuditLogInterceptor implements NestInterceptor {
     }
 
     const request = context.switchToHttp().getRequest();
-    const userId = request.user?.userId;
+    const actorUserId = request.user?.userId;
     const targetId = request.params?.id;
     const ip = extractIp(request);
 
     return next.handle().pipe(
       tap({
         next: () => {
-          if (!userId) return; // gracefully skip if no user context
+          if (!actorUserId) return; // gracefully skip if no authenticated actor context
 
           this.auditLogService
-            .record(action, userId, {
+            .record(action, actorUserId, {
               targetId,
               ip: ip ?? undefined,
             })

@@ -41,6 +41,7 @@ export class OrderCreateJobProcessor {
 
     try {
       const order = await this.ordersService.create(
+        // V1 compatibility: data.clienteId is the authenticated cliente user id from JWT, not CLIENTE.id.
         { userId: data.clienteId, email: '', role: UserRole.CLIENTE },
         parseCreateOrderRequest(data.body),
       );

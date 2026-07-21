@@ -89,6 +89,10 @@ MUST allow partial profile updates.
 7. JwtStrategy.validate() MUST confirm user `is_active` in DB.
 8. `@Public()` bypasses global AuthGuard. All other endpoints guarded.
 
+## Identity Naming
+
+The canonical authentication identity is `userId = AUTH_USER.id` from JWT `sub`; `role = AUTH_USER.role` from JWT. Domain profile IDs are separate: `clienteId = CLIENTE.id` and `vendedorId = VENDEDOR.id`. Code MUST NOT use `clienteId` or `vendedorId` as JWT identity names unless a V1 public contract documents the compatibility explicitly as `clienteUserId`/`vendedorUserId` semantics.
+
 ## Roles Matrix
 
 | Endpoint | Public | Any Auth | VEND | CLIENTE | SUPER_ADMIN |

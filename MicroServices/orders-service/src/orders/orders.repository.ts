@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { MetodoPago, OrderEstado, OrderJobStatus, type DireccionEntrega } from '@agua/contracts';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../generated/prisma';
 import { PrismaService } from '../common/prisma.service';
 import type { CartRecord } from '../cart/cart.repository';
 import { toDireccionEntrega } from './orders.mapper';
@@ -13,6 +13,7 @@ export interface CreateOrderItemInput {
 }
 
 export interface CreateOrderFromCartInput {
+  /** V1 compatibility: authenticated cliente user id (AUTH_USER.id), not CLIENTE.id. */
   readonly clienteId: string;
   readonly now: Date;
   readonly validateCartItems: (cart: CartRecord) => Promise<void>;
@@ -49,6 +50,7 @@ export interface OrderRecord {
 export interface CreateOrderCommandJobInput {
   readonly trackingId: string;
   readonly jobId: string;
+  /** V1 compatibility: authenticated cliente user id (AUTH_USER.id), not CLIENTE.id. */
   readonly clienteId: string;
   readonly idempotencyKey: string;
   readonly payloadHash: string;
@@ -70,6 +72,7 @@ export interface OrderCommandJobRecord {
   readonly id: string;
   readonly trackingId: string;
   readonly jobId: string;
+  /** V1 compatibility: authenticated cliente user id (AUTH_USER.id), not CLIENTE.id. */
   readonly clienteId: string;
   readonly idempotencyKey: string;
   readonly payloadHash: string;
@@ -85,12 +88,12 @@ export interface OrderCommandJobRecord {
 export interface OrdersRepository {
   createFromCart(input: CreateOrderFromCartInput): Promise<OrderRecord>;
   createOrderCommandJob(input: CreateOrderCommandJobInput): Promise<OrderCommandJobRecord>;
-  findOrderCommandByIdempotency(clienteId: string, idempotencyKey: string): Promise<OrderCommandJobRecord | null>;
+  findOrderCommandByIdempotency(clienteUserId: string, idempotencyKey: string): Promise<OrderCommandJobRecord | null>;
   findOrderCommandByTrackingId(trackingId: string): Promise<OrderCommandJobRecord | null>;
   updateOrderCommandJobStatus(input: UpdateOrderCommandJobStatusInput): Promise<OrderCommandJobRecord | null>;
   findById(orderId: string): Promise<OrderRecord | null>;
   findMany(): Promise<readonly OrderRecord[]>;
-  findManyForCliente(clienteId: string): Promise<readonly OrderRecord[]>;
+  findManyForCliente(clienteUserId: string): Promise<readonly OrderRecord[]>;
   findManyForVendedor(vendedorId: string): Promise<readonly OrderRecord[]>;
   updateStatus(orderId: string, previous: OrderEstado, next: OrderEstado, notes?: string): Promise<OrderRecord>;
 }
@@ -194,9 +197,9 @@ export class PrismaOrdersRepository implements OrdersRepository {
     return mapOrderCommandJob(job);
   }
 
-  async findOrderCommandByIdempotency(clienteId: string, idempotencyKey: string): Promise<OrderCommandJobRecord | null> {
+  async findOrderCommandByIdempotency(clienteUserId: string, idempotencyKey: string): Promise<OrderCommandJobRecord | null> {
     const job = await this.prisma.orderCommandJob.findUnique({
-      where: { cliente_id_idempotency_key: { cliente_id: clienteId, idempotency_key: idempotencyKey } },
+      where: { cliente_id_idempotency_key: { cliente_id: clienteUserId, idempotency_key: idempotencyKey } },
     });
 
     return job === null ? null : mapOrderCommandJob(job);
@@ -244,9 +247,9 @@ export class PrismaOrdersRepository implements OrdersRepository {
     return orders.map(mapOrder);
   }
 
-  async findManyForCliente(clienteId: string): Promise<readonly OrderRecord[]> {
+  async findManyForCliente(clienteUserId: string): Promise<readonly OrderRecord[]> {
     const orders = await this.prisma.order.findMany({
-      where: { usuario_id: clienteId },
+      where: { usuario_id: clienteUserId },
       include: ORDER_WITH_ITEMS,
       orderBy: { created_at: 'desc' },
     });

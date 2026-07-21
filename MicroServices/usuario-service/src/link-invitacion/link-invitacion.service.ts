@@ -6,7 +6,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../generated/prisma';
 import { AuditAction, VendedorEstado } from '@agua/contracts';
 import { PrismaService } from '../common/prisma/prisma.service';
 import type { ListLinkInvitacionDto } from './dto/list-link-invitacion.dto';
@@ -23,7 +23,7 @@ export class LinkInvitacionService {
     return crypto.randomUUID().slice(0, 8);
   }
 
-  async create(vendedorId: string, userId?: string) {
+  async create(vendedorId: string, actorUserId: string) {
     const vendedor = await this.prisma.vendedor.findUnique({
       where: { id: vendedorId },
       select: { estado: true },
@@ -47,7 +47,7 @@ export class LinkInvitacionService {
           },
         });
 
-        await this.auditLogService.record(AuditAction.LINK_CREATED, userId ?? link.vendedor_id, {
+        await this.auditLogService.record(AuditAction.LINK_CREATED, actorUserId, {
           targetId: link.id,
         });
 
@@ -112,16 +112,17 @@ export class LinkInvitacionService {
     return this.list(vendedorId, dto);
   }
 
-  async deactivate(id: string, vendedorId: string) {
-    return this.deactivateInternal(id, vendedorId);
+  async deactivate(id: string, vendedorId: string, actorUserId: string) {
+    return this.deactivateInternal(id, actorUserId, vendedorId);
   }
 
-  async deactivateAdmin(id: string) {
-    return this.deactivateInternal(id);
+  async deactivateAdmin(id: string, actorUserId: string) {
+    return this.deactivateInternal(id, actorUserId);
   }
 
   private async deactivateInternal(
     id: string,
+    actorUserId: string,
     vendedorId?: string,
   ): Promise<void> {
     const where: Prisma.LinkInvitacionWhereInput = {
@@ -146,7 +147,7 @@ export class LinkInvitacionService {
       throw new BadRequestException('LinkInvitacion is already inactive');
     }
 
-    await this.auditLogService.record(AuditAction.LINK_DEACTIVATED, vendedorId ?? 'system', {
+    await this.auditLogService.record(AuditAction.LINK_DEACTIVATED, actorUserId, {
       targetId: id,
     });
   }

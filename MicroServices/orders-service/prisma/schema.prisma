@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -41,7 +42,7 @@ enum OrderJobStatus {
 
 model Cart {
   id         String    @id @default(uuid()) @db.Uuid
-  // Referencia lógica → AUTH_USER/CLIENTE en usuario-service (sin FK)
+  // V1 compatibility: referencia lógica → AUTH_USER.id (clienteUserId), no CLIENTE.id.
   usuario_id String    @db.Uuid
   // Referencia lógica → VENDEDOR en usuario-service (sin FK)
   vendedor_id String   @db.Uuid
@@ -84,7 +85,7 @@ model Order {
   id               String     @id @default(uuid()) @db.Uuid
   // Secuencial por vendedor — generado por la capa de servicio
   pedido_numero    String     @db.VarChar(20)
-  // Referencia lógica → AUTH_USER/CLIENTE en usuario-service (sin FK)
+  // V1 compatibility: referencia lógica → AUTH_USER.id (clienteUserId), no CLIENTE.id.
   usuario_id       String     @db.Uuid
   // Referencia lógica → VENDEDOR en usuario-service (sin FK)
   vendedor_id      String     @db.Uuid
@@ -155,6 +156,7 @@ model OrderCommandJob {
   id              String         @id @default(uuid()) @db.Uuid
   tracking_id     String         @unique @db.Uuid
   job_id          String         @unique @db.VarChar(255)
+  // V1 compatibility: auth-user id (`clienteUserId` / AUTH_USER.id), no CLIENTE.id.
   cliente_id      String         @db.Uuid
   idempotency_key String         @db.VarChar(255)
   payload_hash    String         @db.VarChar(64)

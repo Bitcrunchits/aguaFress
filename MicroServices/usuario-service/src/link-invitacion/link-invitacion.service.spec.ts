@@ -4,7 +4,8 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../generated/prisma';
+import { AuditAction } from '@agua/contracts';
 import { LinkInvitacionService } from './link-invitacion.service';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
@@ -27,15 +28,18 @@ const mockPrisma = {
 describe('LinkInvitacionService', () => {
   let service: LinkInvitacionService;
   let prisma: typeof mockPrisma;
+  let auditLogService: jest.Mocked<Pick<AuditLogService, 'record'>>;
 
   beforeEach(async () => {
     jest.clearAllMocks();
+
+    auditLogService = { record: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         LinkInvitacionService,
         { provide: PrismaService, useValue: mockPrisma },
-        { provide: AuditLogService, useValue: { record: jest.fn() } },
+        { provide: AuditLogService, useValue: auditLogService },
       ],
     }).compile();
 
@@ -65,7 +69,7 @@ describe('LinkInvitacionService', () => {
       };
       prisma.linkInvitacion.create.mockResolvedValue(mockLink);
 
-      const result = await service.create('vendedor-1');
+      const result = await service.create('vendedor-1', 'actor-user-1');
 
       expect(prisma.linkInvitacion.create).toHaveBeenCalledWith({
         data: {
@@ -84,6 +88,7 @@ describe('LinkInvitacionService', () => {
       expect(diffMs).toBeGreaterThan(47.9 * 60 * 60 * 1000);
       expect(diffMs).toBeLessThan(48.1 * 60 * 60 * 1000);
       expect(result).toEqual(mockLink);
+      expect(auditLogService.record).toHaveBeenCalledWith(AuditAction.LINK_CREATED, 'actor-user-1', { targetId: 'link-1' });
     });
 
     it('reintenta si hay conflicto de token unico (P2002) hasta 3 veces', async () => {
@@ -104,7 +109,7 @@ describe('LinkInvitacionService', () => {
         .mockRejectedValueOnce(uniqueError)
         .mockResolvedValueOnce(mockLink);
 
-      const result = await service.create('vendedor-1');
+      const result = await service.create('vendedor-1', 'actor-user-1');
 
       expect(prisma.linkInvitacion.create).toHaveBeenCalledTimes(2);
       expect(result).toEqual(mockLink);
@@ -118,7 +123,7 @@ describe('LinkInvitacionService', () => {
 
       prisma.linkInvitacion.create.mockRejectedValue(uniqueError);
 
-      await expect(service.create('vendedor-1')).rejects.toThrow(
+      await expect(service.create('vendedor-1', 'actor-user-1')).rejects.toThrow(
         ConflictException,
       );
       expect(prisma.linkInvitacion.create).toHaveBeenCalledTimes(3);
@@ -132,7 +137,7 @@ describe('LinkInvitacionService', () => {
 
       prisma.linkInvitacion.create.mockRejectedValue(uniqueError);
 
-      await expect(service.create('vendedor-1')).rejects.toThrow(
+      await expect(service.create('vendedor-1', 'actor-user-1')).rejects.toThrow(
         'Could not generate unique invitation link',
       );
     });
@@ -141,7 +146,7 @@ describe('LinkInvitacionService', () => {
       const otherError = new Error('DB connection lost');
       prisma.linkInvitacion.create.mockRejectedValue(otherError);
 
-      await expect(service.create('vendedor-1')).rejects.toThrow(
+      await expect(service.create('vendedor-1', 'actor-user-1')).rejects.toThrow(
         'DB connection lost',
       );
       expect(prisma.linkInvitacion.create).toHaveBeenCalledTimes(1);
@@ -245,12 +250,13 @@ describe('LinkInvitacionService', () => {
     it('desactiva LinkInvitacion propio (con ownership check)', async () => {
       prisma.linkInvitacion.updateMany.mockResolvedValue({ count: 1 });
 
-      await service.deactivate('link-1', 'vendedor-1');
+      await service.deactivate('link-1', 'vendedor-1', 'actor-user-1');
 
       expect(prisma.linkInvitacion.updateMany).toHaveBeenCalledWith({
         where: { id: 'link-1', activo: true, vendedor_id: 'vendedor-1' },
         data: { activo: false },
       });
+      expect(auditLogService.record).toHaveBeenCalledWith(AuditAction.LINK_DEACTIVATED, 'actor-user-1', { targetId: 'link-1' });
     });
 
     it('lanza NotFoundException si el id no existe', async () => {
@@ -258,7 +264,7 @@ describe('LinkInvitacionService', () => {
       prisma.linkInvitacion.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.deactivate('fake-id', 'vendedor-1'),
+        service.deactivate('fake-id', 'vendedor-1', 'actor-user-1'),
       ).rejects.toThrow(NotFoundException);
       expect(prisma.linkInvitacion.findFirst).toHaveBeenCalledWith({
         where: { id: 'fake-id', vendedor_id: 'vendedor-1' },
@@ -270,7 +276,7 @@ describe('LinkInvitacionService', () => {
       prisma.linkInvitacion.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.deactivate('link-other', 'vendedor-1'),
+        service.deactivate('link-other', 'vendedor-1', 'actor-user-1'),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -282,10 +288,10 @@ describe('LinkInvitacionService', () => {
       });
 
       await expect(
-        service.deactivate('link-1', 'vendedor-1'),
+        service.deactivate('link-1', 'vendedor-1', 'actor-user-1'),
       ).rejects.toThrow(BadRequestException);
       await expect(
-        service.deactivate('link-1', 'vendedor-1'),
+        service.deactivate('link-1', 'vendedor-1', 'actor-user-1'),
       ).rejects.toThrow('LinkInvitacion is already inactive');
     });
   });
@@ -305,19 +311,20 @@ describe('LinkInvitacionService', () => {
     it('desactiva cualquier LinkInvitacion sin ownership check', async () => {
       prisma.linkInvitacion.updateMany.mockResolvedValue({ count: 1 });
 
-      await service.deactivateAdmin('link-1');
+      await service.deactivateAdmin('link-1', 'admin-user-1');
 
       expect(prisma.linkInvitacion.updateMany).toHaveBeenCalledWith({
         where: { id: 'link-1', activo: true },
         data: { activo: false },
       });
+      expect(auditLogService.record).toHaveBeenCalledWith(AuditAction.LINK_DEACTIVATED, 'admin-user-1', { targetId: 'link-1' });
     });
 
     it('lanza NotFoundException si el LinkInvitacion no existe', async () => {
       prisma.linkInvitacion.updateMany.mockResolvedValue({ count: 0 });
       prisma.linkInvitacion.findUnique.mockResolvedValue(null);
 
-      await expect(service.deactivateAdmin('fake-id')).rejects.toThrow(
+      await expect(service.deactivateAdmin('fake-id', 'admin-user-1')).rejects.toThrow(
         NotFoundException,
       );
       expect(prisma.linkInvitacion.findUnique).toHaveBeenCalledWith({
@@ -332,10 +339,10 @@ describe('LinkInvitacionService', () => {
         activo: false,
       });
 
-      await expect(service.deactivateAdmin('link-1')).rejects.toThrow(
+      await expect(service.deactivateAdmin('link-1', 'admin-user-1')).rejects.toThrow(
         BadRequestException,
       );
-      await expect(service.deactivateAdmin('link-1')).rejects.toThrow(
+      await expect(service.deactivateAdmin('link-1', 'admin-user-1')).rejects.toThrow(
         'LinkInvitacion is already inactive',
       );
     });

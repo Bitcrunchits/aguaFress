@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../generated/prisma';
 import { PrismaService } from '../common/prisma.service';
 
 export interface CartItemRecord {
@@ -19,8 +19,10 @@ export interface CartRecord {
 }
 
 export interface CartRepository {
+  // V1 compatibility: clienteId here is the authenticated cliente user id (AUTH_USER.id), not CLIENTE.id.
   findActiveByCliente(clienteId: string, now: Date): Promise<CartRecord | null>;
   findById(cartId: string): Promise<CartRecord | null>;
+  // V1 compatibility: clienteId here is the authenticated cliente user id (AUTH_USER.id), not CLIENTE.id.
   findOrCreateActiveCart(clienteId: string, vendedorId: string, expiresAt: Date, now: Date): Promise<CartRecord>;
   incrementItemQuantity(cartId: string, productoId: string, nombre: string, cantidad: number, precioUnitario: number): Promise<CartRecord>;
   replaceItemQuantity(cartId: string, productoId: string, nombre: string, cantidad: number, precioUnitario: number): Promise<CartRecord>;
@@ -43,11 +45,11 @@ const CART_TTL_HOURS = 24;
 export class PrismaCartRepository implements CartRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findActiveByCliente(clienteId: string, now: Date): Promise<CartRecord | null> {
+  async findActiveByCliente(clienteUserId: string, now: Date): Promise<CartRecord | null> {
     const cart = await this.prisma.cart.findFirst({
       where: {
-        usuario_id: clienteId,
-        active_cart_key: clienteId,
+        usuario_id: clienteUserId,
+        active_cart_key: clienteUserId,
         expires_at: { gt: now },
       },
       include: CART_WITH_ITEMS,
@@ -66,13 +68,13 @@ export class PrismaCartRepository implements CartRepository {
     return cart === null ? null : mapCart(cart);
   }
 
-  async findOrCreateActiveCart(clienteId: string, vendedorId: string, expiresAt: Date, now: Date): Promise<CartRecord> {
+  async findOrCreateActiveCart(clienteUserId: string, vendedorId: string, expiresAt: Date, now: Date): Promise<CartRecord> {
     try {
       return await this.prisma.$transaction(async (tx) => {
         await tx.cart.updateMany({
           where: {
-            usuario_id: clienteId,
-            active_cart_key: clienteId,
+            usuario_id: clienteUserId,
+            active_cart_key: clienteUserId,
             expires_at: { lte: now },
           },
           data: { active_cart_key: null },
@@ -80,8 +82,8 @@ export class PrismaCartRepository implements CartRepository {
 
         const activeCart = await tx.cart.findFirst({
           where: {
-            usuario_id: clienteId,
-            active_cart_key: clienteId,
+            usuario_id: clienteUserId,
+            active_cart_key: clienteUserId,
             expires_at: { gt: now },
           },
           include: CART_WITH_ITEMS,
@@ -94,10 +96,10 @@ export class PrismaCartRepository implements CartRepository {
 
         const cart = await tx.cart.create({
           data: {
-            usuario_id: clienteId,
+            usuario_id: clienteUserId,
             vendedor_id: vendedorId,
             expires_at: expiresAt,
-            active_cart_key: clienteId,
+            active_cart_key: clienteUserId,
           },
           include: CART_WITH_ITEMS,
         });
@@ -109,7 +111,7 @@ export class PrismaCartRepository implements CartRepository {
         throw error;
       }
 
-      const activeCart = await this.findActiveByCliente(clienteId, now);
+      const activeCart = await this.findActiveByCliente(clienteUserId, now);
       if (activeCart === null) {
         throw error;
       }

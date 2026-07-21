@@ -3,9 +3,10 @@
 // Base de datos: PostgreSQL
 // Unifica: carrito + pedidos + facturas
 //
-// ⚠️ REGLA DE SEGURIDAD: userId/clienteId NUNCA viene del body.
-//    Se extrae del token JWT en el middleware. Si un endpoint necesita
-//    el usuario autenticado, lo lee del token, NO del request body.
+// ⚠️ REGLA DE SEGURIDAD: la identidad NUNCA viene del body.
+//    userId = AUTH_USER.id desde JWT sub. En V1, algunos campos públicos
+//    legacy llamados clienteId representan clienteUserId (AUTH_USER.id), no CLIENTE.id.
+//    Mantener compatibilidad hasta una migración V2 explícita.
 
 import { MetodoPago, OrderEstado, OrderJobStatus } from '../enums';
 import type { DireccionEntrega, PaginationRequest } from './common.dto';
@@ -42,6 +43,7 @@ export interface CartItemResponse {
 
 export interface CartResponse {
   id: string;
+  /** V1 compatibility: auth-user id (`clienteUserId` / AUTH_USER.id), not CLIENTE.id. */
   clienteId: string;
   vendedorId: string;
   items: CartItemResponse[];
@@ -71,7 +73,7 @@ export interface DeleteCartItemRequest {
 
 /**
  * Crear un pedido desde el carrito del usuario autenticado.
- * - userId y clienteId se obtienen del token JWT
+ * - userId se obtiene del JWT; V1 usa clienteId con semántica legacy de clienteUserId (AUTH_USER.id)
  * - Los precios se calculan server-side contra products-service
  * - Hasta que exista el adaptador real de productos, puede devolver 503 controlado
  * - No se aceptan otros métodos de pago en MVP V1
@@ -83,6 +85,7 @@ export interface CreateOrderRequest {
 }
 
 export interface OrderCommandIdempotencyMetadata {
+  /** V1 compatibility: auth-user id (`clienteUserId` / AUTH_USER.id), not CLIENTE.id. */
   clienteId: string;
   idempotencyKey: string;
 }
@@ -122,6 +125,7 @@ export interface OrderJobStatusResponse extends OrderCommandIdempotencyMetadata 
 export interface OrderResponse {
   id: string;
   pedidoNumero: string;
+  /** V1 compatibility: auth-user id (`clienteUserId` / AUTH_USER.id), not CLIENTE.id. */
   clienteId: string;
   vendedorId: string;
   items: {

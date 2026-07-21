@@ -1,8 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { AuditAction } from '@agua/contracts';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../generated/prisma';
 import { PrismaService } from '../common/prisma/prisma.service';
-import type { AuditLog } from '@prisma/client';
+import type { AuditLog } from '../generated/prisma';
 
 interface RecordOptions {
   targetId?: string;
@@ -50,7 +50,7 @@ export class AuditLogService {
 
   async record(
     action: AuditAction,
-    userId: string,
+    actorUserId: string,
     opts?: RecordOptions,
   ): Promise<AuditLog> {
     if (!Object.values(AuditAction).includes(action)) {
@@ -61,7 +61,7 @@ export class AuditLogService {
 
     return this.prisma.auditLog.create({
       data: {
-        usuario_id: userId,
+        usuario_id: actorUserId,
         accion: action,
         target_id: opts?.targetId ?? null,
         detalle: opts?.detail !== undefined ? (opts.detail as Prisma.InputJsonValue) : undefined,
