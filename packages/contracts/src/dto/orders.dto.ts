@@ -93,6 +93,8 @@ export interface OrderCommandIdempotencyMetadata {
 export interface AsyncAcceptedResponse {
   jobId: string;
   trackingId: string;
+  /** Selected provider domain ID used to scope the async order command. */
+  vendedorId?: string;
   status: OrderJobStatus.PENDING;
   statusUrl: string;
   /** ISO 8601 */
@@ -102,6 +104,8 @@ export interface AsyncAcceptedResponse {
 export interface CreateOrderJobData extends OrderCommandIdempotencyMetadata {
   jobId: string;
   trackingId: string;
+  /** Selected provider domain ID; validated before gateway enqueue. */
+  vendedorId?: string;
   requestId: string;
   body: Record<string, unknown>;
   /** ISO 8601 */

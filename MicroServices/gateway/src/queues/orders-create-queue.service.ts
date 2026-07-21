@@ -6,6 +6,7 @@ import { ORDERS_CREATE_QUEUE, type OrdersCreateQueuePort } from './orders-queue.
 
 export interface EnqueueOrderCreateInput {
   readonly clienteId: string;
+  readonly vendedorId?: string;
   readonly idempotencyKey: string;
   readonly body: Record<string, unknown>;
   readonly requestId: string;
@@ -48,6 +49,7 @@ export class OrdersCreateQueueService {
       jobId,
       trackingId,
       clienteId: input.clienteId,
+      vendedorId: input.vendedorId,
       idempotencyKey: input.idempotencyKey,
       requestId: input.requestId,
       body: input.body,
@@ -65,6 +67,7 @@ export class OrdersCreateQueueService {
       trackingId,
       status: OrderJobStatus.PENDING,
       statusUrl: `/api/v1/orders/job-status?id=${trackingId}`,
+      vendedorId: input.vendedorId,
       acceptedAt,
     };
   }

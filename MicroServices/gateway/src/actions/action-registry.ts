@@ -66,6 +66,9 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
     actions: {
       list: { tcpPattern: 'clientes.list', transport: 'send', authRequired: true },
       cartera: { tcpPattern: 'clientes.cartera', transport: 'send', authRequired: true },
+      providers: { tcpPattern: 'clientes.providers', transport: 'send', authRequired: true, roles: ['cliente'] },
+      'providers/select': { tcpPattern: 'clientes.providers_select', transport: 'send', authRequired: true, roles: ['cliente'] },
+      'providers/add': { tcpPattern: 'clientes.provider_add', transport: 'send', authRequired: true, roles: ['super_admin'] },
       'get-by-id': { tcpPattern: 'clientes.get_by_id', transport: 'send', authRequired: true, roles: ['super_admin'] },
       update: { tcpPattern: 'clientes.update', transport: 'send', authRequired: true, roles: ['super_admin'] },
       reassign: { tcpPattern: 'clientes.reassign', transport: 'send', authRequired: true, roles: ['super_admin'] },
