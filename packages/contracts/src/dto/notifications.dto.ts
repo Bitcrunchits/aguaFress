@@ -12,6 +12,34 @@ export const ActivityLogResult = {
 export type ActivityLogResult =
   (typeof ActivityLogResult)[keyof typeof ActivityLogResult];
 
+export const ActivityLogSource = {
+  USUARIO_SERVICE: 'usuario-service',
+  GATEWAY: 'gateway',
+  PRODUCTS_SERVICE: 'products-service',
+  ORDERS_SERVICE: 'orders-service',
+  ENTREGAS_SERVICE: 'entregas-service',
+} as const;
+
+export type ActivityLogSource =
+  (typeof ActivityLogSource)[keyof typeof ActivityLogSource];
+
+export const ActivityLogAction = {
+  USER_CREATED: 'USER_CREATED',
+  USER_LOGIN: 'USER_LOGIN',
+  VENDEDOR_STATUS_CHANGED: 'VENDEDOR_STATUS_CHANGED',
+  CARTERA_CLIENTE_ADDED: 'CARTERA_CLIENTE_ADDED',
+  PRODUCT_UPDATED: 'PRODUCT_UPDATED',
+  PRODUCT_DELETED: 'PRODUCT_DELETED',
+  ORDER_CREATED: 'ORDER_CREATED',
+  ORDER_STATUS_CHANGED: 'ORDER_STATUS_CHANGED',
+  DELIVERY_STARTED: 'DELIVERY_STARTED',
+  DELIVERY_COMPLETED: 'DELIVERY_COMPLETED',
+  DELIVERY_STATUS_CHANGED: 'DELIVERY_STATUS_CHANGED',
+} as const;
+
+export type ActivityLogAction =
+  (typeof ActivityLogAction)[keyof typeof ActivityLogAction];
+
 export interface ActivityLogActorDTO {
   userId?: string;
   email?: string;
@@ -34,6 +62,19 @@ export interface ListActivityLogsRequestDTO extends PaginationRequest {
 
 export interface GetActivityLogByIdRequestDTO {
   id: string;
+}
+
+export interface CreateActivityLogRequestDTO {
+  source: ActivityLogSource;
+  action: ActivityLogAction;
+  actor?: ActivityLogActorDTO;
+  entity?: ActivityLogEntityDTO;
+  result: ActivityLogResult;
+  summary: string;
+  metadata?: Record<string, unknown>;
+  createdAt?: string;
+  requestId?: string;
+  eventId?: string;
 }
 
 export interface ActivityLogRowDTO {

@@ -1,8 +1,20 @@
 import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
-import { ActivityLogResult, UserRole, type GetActivityLogByIdRequestDTO, type ListActivityLogsRequestDTO } from '@agua/contracts';
+import {
+  ActivityLogAction,
+  ActivityLogResult,
+  ActivityLogSource,
+  UserRole,
+  type ActivityLogActorDTO,
+  type ActivityLogEntityDTO,
+  type CreateActivityLogRequestDTO,
+  type GetActivityLogByIdRequestDTO,
+  type ListActivityLogsRequestDTO,
+} from '@agua/contracts';
 import type { TcpAuthenticatedUser } from './tcp-payload';
 
 const VALID_ACTIVITY_LOG_RESULTS: readonly ActivityLogResult[] = Object.values(ActivityLogResult);
+const VALID_ACTIVITY_LOG_SOURCES: readonly ActivityLogSource[] = Object.values(ActivityLogSource);
+const VALID_ACTIVITY_LOG_ACTIONS: readonly ActivityLogAction[] = Object.values(ActivityLogAction);
 
 @Injectable()
 export class TcpPayloadAdapter {
@@ -46,6 +58,27 @@ export class TcpPayloadAdapter {
     }
 
     return { id };
+  }
+
+  createRequest(payload: unknown): CreateActivityLogRequestDTO {
+    const payloadRecord = this.readPayloadRecord(payload);
+    const body = this.readOptionalRecord(payloadRecord, 'body');
+    if (body === undefined) {
+      throw new BadRequestException('Activity log create body is required');
+    }
+
+    return {
+      source: this.readRequiredSource(body),
+      action: this.readRequiredAction(body),
+      actor: this.readOptionalActor(body),
+      entity: this.readOptionalEntity(body),
+      result: this.readRequiredResult(body),
+      summary: this.readRequiredBodyString(body, 'summary'),
+      metadata: this.readOptionalRecord(body, 'metadata'),
+      createdAt: this.readOptionalString(body, 'createdAt'),
+      requestId: this.readOptionalString(body, 'requestId'),
+      eventId: this.readOptionalString(body, 'eventId'),
+    };
   }
 
   private requireUser(payload: unknown): TcpAuthenticatedUser {
@@ -118,6 +151,67 @@ export class TcpPayloadAdapter {
     }
 
     return value as ActivityLogResult;
+  }
+
+  private readRequiredResult(record: Record<string, unknown>): ActivityLogResult {
+    const value = this.readRequiredBodyString(record, 'result');
+    if (!VALID_ACTIVITY_LOG_RESULTS.includes(value as ActivityLogResult)) {
+      throw new BadRequestException('Invalid activity log result');
+    }
+
+    return value as ActivityLogResult;
+  }
+
+  private readRequiredSource(record: Record<string, unknown>): ActivityLogSource {
+    const value = this.readRequiredBodyString(record, 'source');
+    if (!VALID_ACTIVITY_LOG_SOURCES.includes(value as ActivityLogSource)) {
+      throw new BadRequestException('Invalid activity log source');
+    }
+
+    return value as ActivityLogSource;
+  }
+
+  private readRequiredAction(record: Record<string, unknown>): ActivityLogAction {
+    const value = this.readRequiredBodyString(record, 'action');
+    if (!VALID_ACTIVITY_LOG_ACTIONS.includes(value as ActivityLogAction)) {
+      throw new BadRequestException('Invalid activity log action');
+    }
+
+    return value as ActivityLogAction;
+  }
+
+  private readRequiredBodyString(record: Record<string, unknown>, key: string): string {
+    const value = record[key];
+    if (typeof value !== 'string' || value.trim() === '') {
+      throw new BadRequestException(`${key} is required`);
+    }
+
+    return value;
+  }
+
+  private readOptionalActor(record: Record<string, unknown>): ActivityLogActorDTO | undefined {
+    const actor = this.readOptionalRecord(record, 'actor');
+    if (actor === undefined) return undefined;
+    const role = this.readOptionalString(actor, 'role');
+    if (role !== undefined && !this.isUserRole(role)) {
+      throw new BadRequestException('Invalid activity log actor role');
+    }
+
+    return {
+      userId: this.readOptionalString(actor, 'userId'),
+      email: this.readOptionalString(actor, 'email'),
+      role: role as UserRole | undefined,
+    };
+  }
+
+  private readOptionalEntity(record: Record<string, unknown>): ActivityLogEntityDTO | undefined {
+    const entity = this.readOptionalRecord(record, 'entity');
+    if (entity === undefined) return undefined;
+
+    return {
+      type: this.readOptionalString(entity, 'type'),
+      id: this.readOptionalString(entity, 'id'),
+    };
   }
 
   private readUserRole(record: Record<string, unknown>): UserRole | undefined {

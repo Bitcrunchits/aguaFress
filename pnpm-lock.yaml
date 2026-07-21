@@ -168,6 +168,9 @@ importers:
       class-validator:
         specifier: ^0.14.0
         version: 0.14.4
+      ioredis:
+        specifier: ^5.11.1
+        version: 5.11.1
       mongoose:
         specifier: ^8.0.0
         version: 8.24.0
