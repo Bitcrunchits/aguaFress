@@ -30,8 +30,15 @@ export interface UserListItem {
 
 export type UserListResponse = PaginatedResponse<UserListItem>;
 
-// ─── Mi vendedor (cliente) ───
+// ─── Proveedores del cliente (mobile/provider selection) ───
 
+/**
+ * V1 compatibility response for the cliente's default vendedor.
+ *
+ * Multi-provider flows MUST NOT treat this DTO as the full provider list.
+ * Use `ClienteProvidersResponse.providers`, sourced from active
+ * `RELACION_CARTERA` rows, when mobile needs provider selection.
+ */
 export interface MiVendedorResponse {
   id: string;
   nombre: string;
@@ -40,6 +47,35 @@ export interface MiVendedorResponse {
   logo?: string;
   telefono?: string;
   ciudad?: string;
+}
+
+/** Provider option available to a cliente through active RELACION_CARTERA. */
+export interface ClienteProviderResponse extends MiVendedorResponse {
+  /** True when this provider matches CLIENTE.vendedor_id default/V1 compatibility pointer. */
+  isDefault: boolean;
+}
+
+/**
+ * Provider list for cliente mobile selection.
+ *
+ * Auth identity remains JWT-derived (`userId`/`role`). The selected provider is
+ * the domain `vendedorId` used to scope catalog, cart, and order flows.
+ */
+export interface ClienteProvidersResponse {
+  providers: readonly ClienteProviderResponse[];
+  /** Default provider pointer from CLIENTE.vendedor_id, when still active. */
+  defaultVendedorId?: string;
+  /** True when multiple active providers exist and mobile must ask the user to choose. */
+  requiresSelection: boolean;
+}
+
+export interface SelectClienteProviderRequest {
+  /** Domain VENDEDOR.id selected by the cliente; never an auth userId. */
+  vendedorId: string;
+}
+
+export interface SelectClienteProviderResponse {
+  selectedProvider: ClienteProviderResponse;
 }
 
 // ─── Perfiles ───

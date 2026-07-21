@@ -8,19 +8,25 @@ Cliente cart behavior.
 
 ### Requirement: Active cart
 
-The system MUST manage one active cart per cliente using JWT identity, never body `userId`.
+The system MUST manage active carts per authenticated cliente and validated `vendedorId`, never body `userId`. Carts MUST NOT mix providers.
 
 #### Scenario: Read
 
-- GIVEN a cliente has a non-expired cart
+- GIVEN a cliente has a non-expired cart for selected provider `v1`
 - WHEN the cliente requests it
-- THEN the system MUST return it with server totals
+- THEN the system MUST return only the `v1` cart with server totals
 
 #### Scenario: userId ignored
 
 - GIVEN the body includes `userId`
 - WHEN JWT context identifies another cliente
 - THEN the system MUST use JWT context only
+
+#### Scenario: Provider switch hides previous cart
+
+- GIVEN a cliente has items in the active cart for provider `v1`
+- WHEN the cliente selects provider `v2`
+- THEN `v1` cart items MUST NOT appear in the `v2` cart
 
 ### Requirement: Item mutations
 

@@ -8,21 +8,21 @@ Order behavior.
 
 ### Requirement: Create from cart
 
-The system MUST accept order creation as an asynchronous command, then create orders from carts using server product data and clear carts only after successful worker processing.
+The system MUST accept order creation as an asynchronous command for the authenticated cliente plus selected provider, then create orders from the matching provider-scoped cart using server product data and clear only that provider cart after successful worker processing.
 
 #### Scenario: Accepted
 
-- GIVEN a cliente has a valid request and idempotency key
+- GIVEN a cliente has selected provider `v1` and has a valid request and idempotency key
 - WHEN the cliente creates an order through the gateway
-- THEN the gateway MUST return `202 Accepted` with `jobId` and `trackingId`
+- THEN the gateway MUST return `202 Accepted` with `jobId`, `trackingId`, and provider context
 - AND the order MUST NOT be considered completed until the async job reaches `COMPLETED`
 
 #### Scenario: Created
 
-- GIVEN a cliente has a valid cart with product data
+- GIVEN a cliente has a valid `v1` cart with product data
 - WHEN the orders-service worker processes the accepted async command
-- THEN the order MUST have enum status and ISO 8601 dates
-- AND the cart MUST be cleared
+- THEN the order MUST have `vendedorId = v1`, enum status, and ISO 8601 dates
+- AND only the `v1` cart MUST be cleared
 
 #### Scenario: Product missing
 
@@ -34,7 +34,7 @@ The system MUST accept order creation as an asynchronous command, then create or
 
 #### Scenario: Idempotent retry
 
-- GIVEN the same cliente retries an async create command with the same idempotency key
+- GIVEN the same cliente retries an async create command for the same provider with the same idempotency key
 - WHEN the original command already exists
 - THEN the system MUST return or preserve the original tracking result
 - AND MUST NOT create duplicate orders
