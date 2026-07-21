@@ -223,6 +223,65 @@ const SHARED_SCHEMAS: Record<string, Schema> = {
     vendedorId: str('ID del nuevo vendedor'),
   }, ['vendedorId']),
 
+  ClienteProviderResponse: obj({
+    id: str('Domain VENDEDOR.id selected by the cliente'),
+    nombre: str(),
+    apellido: str(),
+    empresa: str(),
+    logo: str('URL del logo'),
+    telefono: str(),
+    ciudad: str(),
+    isDefault: { type: 'boolean', description: 'Matches CLIENTE.vendedor_id default/V1 compatibility pointer' },
+  }, ['id', 'nombre', 'isDefault']),
+
+  ClienteProvidersResponse: obj({
+    providers: arr(ref('#/components/schemas/ClienteProviderResponse')),
+    defaultVendedorId: str('Default provider pointer when still active'),
+    requiresSelection: { type: 'boolean', description: 'True when mobile must ask the cliente to choose a provider' },
+  }, ['providers', 'requiresSelection']),
+
+  SelectClienteProviderRequest: obj({
+    vendedorId: str('Domain VENDEDOR.id selected by the cliente; never an auth userId'),
+  }, ['vendedorId']),
+
+  SelectClienteProviderResponse: obj({
+    selectedProvider: ref('#/components/schemas/ClienteProviderResponse'),
+  }, ['selectedProvider']),
+
+  AddClienteProviderRequest: obj({
+    clienteId: str('Domain CLIENTE.id to link'),
+    vendedorId: str('Domain VENDEDOR.id to add as active provider'),
+    makeDefault: { type: 'boolean', description: 'When true, also updates CLIENTE.vendedor_id default pointer' },
+  }, ['clienteId', 'vendedorId']),
+
+  CartResponse: obj({
+    cartId: str('Cart ID'),
+    vendedorId: str('Selected provider scope'),
+    items: arr({ type: 'object' }),
+  }, ['cartId', 'items']),
+
+  CartItemMutationRequest: obj({
+    vendedorId: str('Selected provider scope validated against active RELACION_CARTERA'),
+    productoId: str('Product ID'),
+    cantidad: { type: 'integer', description: 'Item quantity' },
+  }, ['vendedorId', 'productoId']),
+
+  CreateOrderRequest: obj({
+    vendedorId: str('Selected provider scope validated before enqueue'),
+    metodoPago: str('Payment method'),
+    direccion: ref('#/components/schemas/DireccionEntrega'),
+    observaciones: str('Optional notes'),
+  }, ['vendedorId', 'metodoPago']),
+
+  AsyncAcceptedResponse: obj({
+    jobId: str('Async job ID'),
+    trackingId: str('Tracking ID'),
+    vendedorId: str('Selected provider scope'),
+    status: str('PENDING'),
+    statusUrl: str('Polling URL'),
+    acceptedAt: str('ISO 8601'),
+  }, ['jobId', 'trackingId', 'vendedorId', 'status', 'statusUrl', 'acceptedAt']),
+
   UpdateClienteVendedorRequest: obj({
     nombre: str(),
     apellido: str(),
@@ -332,6 +391,9 @@ const ACTIONS_DOC: Record<string, ActionDoc> = {
   'clientes.get_by_id': { summary: 'Obtener cliente por ID', method: 'get', pathParams: ['id'], responseSchema: 'ClienteListItem', roles: ['super_admin'] },
   'clientes.update': { summary: 'Actualizar cliente', method: 'patch', pathParams: ['id'], bodySchema: 'UpdateClienteRequest', responseSchema: 'ClienteListItem', roles: ['super_admin'] },
   'clientes.reassign': { summary: 'Reasignar cliente a otro vendedor', method: 'patch', pathParams: ['id'], bodySchema: 'ReasignarVendedorRequest', responseSchema: 'ClienteListItem', roles: ['super_admin'] },
+  'clientes.providers': { summary: 'Listar proveedores disponibles del cliente', description: 'Lista proveedores desde RELACION_CARTERA activa usando userId/role del JWT.', method: 'get', responseSchema: 'ClienteProvidersResponse', roles: ['cliente'] },
+  'clientes.providers_select': { summary: 'Seleccionar proveedor activo del cliente', description: 'Valida que vendedorId pertenezca a una RELACION_CARTERA activa para el cliente autenticado.', method: 'post', bodySchema: 'SelectClienteProviderRequest', responseSchema: 'SelectClienteProviderResponse', roles: ['cliente'] },
+  'clientes.provider_add': { summary: 'Agregar proveedor activo a cliente', description: 'SUPER_ADMIN agrega una relación CLIENTE↔VENDEDOR activa; actorUserId sale del JWT.', method: 'post', bodySchema: 'AddClienteProviderRequest', responseSchema: 'ClienteProviderResponse', roles: ['super_admin'] },
   'clientes.cartera': { summary: 'Obtener mis clientes (vendedor)', method: 'get', queryParams: ['page', 'limit', 'search'], responseSchema: 'ClienteListItem', isArray: true, paginated: true, roles: ['vendedor'] },
   'clientes.own_get_by_id': { summary: 'Obtener cliente propio por ID', method: 'get', pathParams: ['id'], responseSchema: 'ClienteListItem', roles: ['vendedor'] },
   'clientes.own_update': { summary: 'Actualizar cliente propio', method: 'patch', pathParams: ['id'], bodySchema: 'UpdateClienteVendedorRequest', responseSchema: 'ClienteListItem', roles: ['vendedor'] },
@@ -345,6 +407,14 @@ const ACTIONS_DOC: Record<string, ActionDoc> = {
   'link_invitacion.vendor_create': { summary: 'Crear link de invitación', method: 'post', responseSchema: 'CreateLinkResponse', roles: ['vendedor'] },
   'link_invitacion.admin_deactivate': { summary: 'Desactivar link (admin)', method: 'patch', pathParams: ['id'], responseSchema: 'LinkInvitacionItem', roles: ['super_admin'] },
   'link_invitacion.vendor_deactivate': { summary: 'Desactivar link propio', method: 'patch', pathParams: ['id'], responseSchema: 'LinkInvitacionItem', roles: ['vendedor'] },
+
+  'cart.get': { summary: 'Obtener carrito activo', description: 'Usa userId del JWT y vendedorId seleccionado para scope de proveedor.', method: 'get', queryParams: ['vendedorId'], responseSchema: 'CartResponse', roles: ['cliente'] },
+  'cart.items_add': { summary: 'Agregar item al carrito', description: 'Valida vendedorId contra providers/select antes de despachar mutación.', method: 'post', bodySchema: 'CartItemMutationRequest', responseSchema: 'CartResponse', roles: ['cliente'] },
+  'cart.items_update': { summary: 'Actualizar item del carrito', description: 'Valida vendedorId contra providers/select antes de despachar mutación.', method: 'patch', bodySchema: 'CartItemMutationRequest', responseSchema: 'CartResponse', roles: ['cliente'] },
+  'cart.items_delete': { summary: 'Eliminar item del carrito', description: 'Valida vendedorId contra providers/select antes de despachar mutación.', method: 'delete', bodySchema: 'CartItemMutationRequest', responseSchema: 'CartResponse', roles: ['cliente'] },
+
+  'orders.create': { summary: 'Crear pedido async', description: 'Valida vendedorId seleccionado, ignora body userId y encola con userId JWT + vendedorId.', method: 'post', bodySchema: 'CreateOrderRequest', responseSchema: 'AsyncAcceptedResponse', roles: ['cliente'] },
+  'orders.job_status': { summary: 'Consultar estado de pedido async', method: 'get', queryParams: ['id'], responseSchema: 'AsyncAcceptedResponse' },
 };
 
 // ─── Service Family Display Names ───────────────────────────────

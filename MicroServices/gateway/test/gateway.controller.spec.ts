@@ -86,7 +86,10 @@ describe('GatewayController', () => {
         { headers: {}, user: { sub: 'cliente-1', email: 'c@agua.com', role: 'cliente' } } as never,
       );
 
-      expect(mockOrdersCreateQueue.enqueue).toHaveBeenCalledWith(expect.objectContaining({ idempotencyKey: 'body-key' }));
+      expect(mockDispatcher.dispatch).not.toHaveBeenCalled();
+      expect(mockOrdersCreateQueue.enqueue).toHaveBeenCalledWith(expect.objectContaining({
+        idempotencyKey: 'body-key',
+      }));
     });
 
     it('resolves and dispatches PATCH actions', async () => {

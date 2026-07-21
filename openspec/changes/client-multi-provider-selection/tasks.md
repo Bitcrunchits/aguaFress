@@ -50,9 +50,9 @@ Decision resolved before apply: PR1 targets the tracker branch `feat/client-mult
 
 ## Phase 3: Gateway and Mobile Context
 
-- [ ] 3.1 Register `/api/v1/clientes/providers` and `/api/v1/clientes/providers/select` in `MicroServices/gateway/src/actions/action-registry.ts`.
-- [ ] 3.2 Update `MicroServices/gateway/src/docs/openapi-spec.service.ts` with provider-selection schemas and `vendedorId` scope rules.
-- [ ] 3.3 Ensure gateway forwarding passes trusted `userId`, `role`, and validated `vendedorId`; never body `userId`.
+- [x] 3.1 Register `/api/v1/clientes/providers` and `/api/v1/clientes/providers/select` in `MicroServices/gateway/src/actions/action-registry.ts`.
+- [x] 3.2 Update `MicroServices/gateway/src/docs/openapi-spec.service.ts` with provider-selection schemas and `vendedorId` scope rules.
+- [x] 3.3 Ensure gateway forwarding passes trusted `userId`, `role`, and validated `vendedorId`; never body `userId`.
 
 ## Phase 4: Orders and Cart Provider Scope
 
@@ -63,6 +63,6 @@ Decision resolved before apply: PR1 targets the tracker branch `feat/client-mult
 ## Phase 5: Tests and Verification
 
 - [x] 5.1 Add usuario-service Jest tests for active/empty provider list, valid/invalid selection, default drift, and cartera authorization mismatch.
-- [ ] 5.2 Add gateway tests for valid forwarding and unauthorized provider rejection before mutation.
+- [x] 5.2 Add gateway tests for valid forwarding and unauthorized provider rejection before mutation.
 - [ ] 5.3 Add orders/cart tests for provider-isolated carts, body `userId` ignored, retry identity by cliente/provider/key, and product-missing no-clear.
 - [ ] 5.4 Run `pnpm --filter @agua/contracts build`, affected service tests, and verify `docs/documentacion/modelo-datos.md` identity naming.

@@ -30,6 +30,7 @@ describe('OrdersCreateQueueService', () => {
 
     const response = await service.enqueue({
       clienteId: 'cliente-1',
+      vendedorId: 'vendedor-1',
       idempotencyKey: 'idem-1',
       requestId: 'request-1',
       body: { metodoPago: 'contra_entrega' },
@@ -41,6 +42,7 @@ describe('OrdersCreateQueueService', () => {
       jobId: 'orders.create:cliente-1:idem-1',
       trackingId: expectedTrackingId,
       status: OrderJobStatus.PENDING,
+      vendedorId: 'vendedor-1',
       statusUrl: `/api/v1/orders/job-status?id=${expectedTrackingId}`,
       acceptedAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
     });
@@ -50,6 +52,7 @@ describe('OrdersCreateQueueService', () => {
         jobId: 'orders.create:cliente-1:idem-1',
         trackingId: expectedTrackingId,
         clienteId: 'cliente-1',
+        vendedorId: 'vendedor-1',
         idempotencyKey: 'idem-1',
         requestId: 'request-1',
         body: { metodoPago: 'contra_entrega' },

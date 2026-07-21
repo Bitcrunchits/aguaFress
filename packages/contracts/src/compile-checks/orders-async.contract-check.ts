@@ -8,6 +8,7 @@ import type {
 const acceptedResponseCheck: AsyncAcceptedResponse = {
   jobId: 'orders.create:cliente-1:key-1',
   trackingId: 'tracking-1',
+  vendedorId: 'vendedor-1',
   status: OrderJobStatus.PENDING,
   statusUrl: '/api/v1/orders/job-status?id=tracking-1',
   acceptedAt: '2026-07-17T00:00:00.000Z',
@@ -42,6 +43,7 @@ const createJobDataCheck: CreateOrderJobData = {
   jobId: acceptedResponseCheck.jobId,
   trackingId: acceptedResponseCheck.trackingId,
   clienteId: statusResponseCheck.clienteId,
+  vendedorId: 'vendedor-1',
   idempotencyKey: statusResponseCheck.idempotencyKey,
   requestId: 'request-1',
   body: { metodoPago: 'contra_entrega' },
