@@ -47,10 +47,11 @@ describe('OrdersService', () => {
       });
     });
 
-    const order = await service.create(clienteUser(), { metodoPago: MetodoPago.CONTRA_ENTREGA, direccion });
+    const order = await service.create(clienteUser(), { vendedorId, metodoPago: MetodoPago.CONTRA_ENTREGA, direccion });
 
     expect(ordersRepository.createFromCart).toHaveBeenCalledWith(expect.objectContaining({
       clienteId,
+      vendedorId,
       now: createdAt,
       metodoPago: MetodoPago.CONTRA_ENTREGA,
       direccion,
@@ -78,7 +79,7 @@ describe('OrdersService', () => {
       return orderRecord();
     });
 
-    await expect(service.create(clienteUser(), { metodoPago: MetodoPago.CONTRA_ENTREGA, direccion })).rejects.toThrow(
+    await expect(service.create(clienteUser(), { vendedorId, metodoPago: MetodoPago.CONTRA_ENTREGA, direccion })).rejects.toThrow(
       ServiceUnavailableException,
     );
 

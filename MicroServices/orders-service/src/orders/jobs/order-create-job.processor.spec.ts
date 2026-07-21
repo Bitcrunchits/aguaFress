@@ -10,6 +10,7 @@ type OrdersServiceMock = jest.Mocked<Pick<OrdersService, 'create'>>;
 describe('OrderCreateJobProcessor', () => {
   const createdAt = '2026-07-17T10:00:00.000Z';
   const clienteId = 'cliente-1';
+  const vendedorId = 'vendedor-1';
   const trackingId = 'tracking-1';
   const jobId = `orders.create:${clienteId}:idem-1`;
   let tracking: TrackingMock;
@@ -53,7 +54,7 @@ describe('OrderCreateJobProcessor', () => {
     }));
     expect(ordersService.create).toHaveBeenCalledWith(
       { userId: clienteId, email: '', role: UserRole.CLIENTE },
-      { metodoPago: MetodoPago.CONTRA_ENTREGA, direccion: createJobData().body.direccion, observaciones: undefined },
+      { vendedorId, metodoPago: MetodoPago.CONTRA_ENTREGA, direccion: createJobData().body.direccion, observaciones: undefined },
     );
     expect(tracking.transitionStatus).toHaveBeenNthCalledWith(2, expect.objectContaining({
       previousStatus: OrderJobStatus.PROCESSING,
@@ -113,8 +114,8 @@ describe('OrderCreateJobProcessor', () => {
 
   function createJobData(): CreateOrderJobData {
     return {
-      clienteId, idempotencyKey: 'idem-1', trackingId, jobId, requestId: 'request-1', requestedAt: createdAt,
-      body: { metodoPago: MetodoPago.CONTRA_ENTREGA, direccion: { calle: 'San Martin', numero: '123', ciudad: 'Mendoza', provincia: 'Mendoza' } },
+      clienteId, vendedorId, idempotencyKey: 'idem-1', trackingId, jobId, requestId: 'request-1', requestedAt: createdAt,
+      body: { vendedorId, metodoPago: MetodoPago.CONTRA_ENTREGA, direccion: { calle: 'San Martin', numero: '123', ciudad: 'Mendoza', provincia: 'Mendoza' } },
     };
   }
 

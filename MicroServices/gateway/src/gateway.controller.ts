@@ -96,9 +96,10 @@ export class GatewayController {
 
     if (mapping.asyncQueue === 'orders.create') {
       const vendedorId = readProviderContext(sanitizedBody, query);
-      if (vendedorId !== undefined) {
-        await this.validateProviderContext(req, vendedorId);
+      if (vendedorId === undefined) {
+        throw new BadRequestException('vendedorId is required for orders.create');
       }
+      await this.validateProviderContext(req, vendedorId);
       res?.status(HttpStatus.ACCEPTED);
       return this.ordersCreateQueue.enqueue({
         clienteId: readAuthenticatedClienteId(req),

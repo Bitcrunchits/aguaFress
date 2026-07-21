@@ -6,19 +6,19 @@ import { ORDERS_CREATE_QUEUE, type OrdersCreateQueuePort } from './orders-queue.
 
 export interface EnqueueOrderCreateInput {
   readonly clienteId: string;
-  readonly vendedorId?: string;
+  readonly vendedorId: string;
   readonly idempotencyKey: string;
   readonly body: Record<string, unknown>;
   readonly requestId: string;
 }
 
-export function buildOrdersCreateJobId(clienteId: string, idempotencyKey: string): string {
-  return `orders.create:${clienteId}:${idempotencyKey}`;
+export function buildOrdersCreateJobId(clienteId: string, vendedorId: string, idempotencyKey: string): string {
+  return `orders.create:${clienteId}:${vendedorId}:${idempotencyKey}`;
 }
 
-export function buildOrdersCreateTrackingId(clienteId: string, idempotencyKey: string): string {
+export function buildOrdersCreateTrackingId(clienteId: string, vendedorId: string, idempotencyKey: string): string {
   const digest = createHash('md5')
-    .update(`${clienteId}:${idempotencyKey}`)
+    .update(`${clienteId}:${vendedorId}:${idempotencyKey}`)
     .digest('hex');
 
   // Format as a standard UUID shape: 8-4-4-4-12.
@@ -41,8 +41,8 @@ export class OrdersCreateQueueService {
   }
 
   async enqueue(input: EnqueueOrderCreateInput): Promise<AsyncAcceptedResponse> {
-    const jobId = buildOrdersCreateJobId(input.clienteId, input.idempotencyKey);
-    const trackingId = buildOrdersCreateTrackingId(input.clienteId, input.idempotencyKey);
+    const jobId = buildOrdersCreateJobId(input.clienteId, input.vendedorId, input.idempotencyKey);
+    const trackingId = buildOrdersCreateTrackingId(input.clienteId, input.vendedorId, input.idempotencyKey);
     const acceptedAt = new Date().toISOString();
 
     await this.queue.add('orders.create', {

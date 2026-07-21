@@ -16,8 +16,13 @@ describe('orders Prisma schema', () => {
     expect(schema).toContain('updated_at    DateTime @updatedAt');
   });
 
-  it('supports a database-backed active cart uniqueness invariant per cliente', () => {
-    expect(schema).toContain('active_cart_key  String?   @unique @db.Uuid');
+  it('supports a database-backed active cart uniqueness invariant per cliente and provider', () => {
+    expect(schema).toContain('active_cart_key  String?   @unique @db.VarChar(80)');
+  });
+
+  it('scopes async order idempotency by selected provider', () => {
+    expect(schema).toContain('vendedor_id     String?        @db.Uuid');
+    expect(schema).toContain('@@unique([cliente_id, vendedor_id, idempotency_key])');
   });
 
   it('persists cart item product name snapshots for order checkout', () => {

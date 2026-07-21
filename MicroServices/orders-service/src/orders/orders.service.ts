@@ -32,6 +32,7 @@ export class OrdersService {
     const clienteUserId = user.userId;
     const order = await this.ordersRepository.createFromCart({
       clienteId: clienteUserId,
+      vendedorId: request.vendedorId,
       now: this.clock(),
       validateCartItems: (cart) => this.validateCartItems(cart),
       metodoPago: request.metodoPago,
@@ -56,7 +57,8 @@ export class OrdersService {
     }
 
     if (user.role === UserRole.VENDEDOR) {
-      // V1 compatibility: order.vendedorId is compared to JWT userId until a profile-id resolver exists in orders-service.
+      // V1 compatibility only: legacy orders may store the vendor AUTH_USER.id in vendedor_id.
+      // Provider-scoped PR4 orders store the selected domain vendedorId; a profile-id resolver is required for full vendor reads.
       const orders = await this.ordersRepository.findManyForVendedor(user.userId);
       return orders.map(toOrderResponse);
     }
@@ -106,8 +108,7 @@ export class OrdersService {
       return;
     }
 
-    // V1 compatibility: order.vendedorId currently stores the vendor auth-user id for authorization checks.
-    if (user.role === UserRole.VENDEDOR && order.vendedorId === user.userId) {
+    if (this.isLegacyVendedorAuthUserMatch(user, order)) {
       return;
     }
 
@@ -141,10 +142,15 @@ export class OrdersService {
   }
 
   private assertLifecycleWriter(user: TcpAuthenticatedUser, order: OrderRecord): void {
-    // V1 compatibility: order.vendedorId currently stores the vendor auth-user id for authorization checks.
-    if (user.role !== UserRole.VENDEDOR || order.vendedorId !== user.userId) {
+    if (!this.isLegacyVendedorAuthUserMatch(user, order)) {
       throw new ForbiddenException('Order lifecycle access denied');
     }
+  }
+
+  private isLegacyVendedorAuthUserMatch(user: TcpAuthenticatedUser, order: OrderRecord): boolean {
+    // Temporary V1 compatibility: legacy orders may have stored AUTH_USER.id in vendedor_id.
+    // New PR4 orders use selected domain vendedorId, so this must be replaced by a vendor profile-id resolver.
+    return user.role === UserRole.VENDEDOR && order.vendedorId === user.userId;
   }
 
   private assertCliente(user: TcpAuthenticatedUser): void {
