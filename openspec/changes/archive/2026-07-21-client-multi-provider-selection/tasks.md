@@ -65,4 +65,4 @@ Decision resolved before apply: PR1 targets the tracker branch `feat/client-mult
 - [x] 5.1 Add usuario-service Jest tests for active/empty provider list, valid/invalid selection, default drift, and cartera authorization mismatch.
 - [x] 5.2 Add gateway tests for valid forwarding and unauthorized provider rejection before mutation.
 - [x] 5.3 Add orders/cart tests for provider-isolated carts, body `userId` ignored, retry identity by cliente/provider/key, and product-missing no-clear.
-- [ ] 5.4 Run `pnpm --filter @agua/contracts build`, affected service tests, and verify `docs/documentacion/modelo-datos.md` identity naming.
+- [x] 5.4 Run `pnpm --filter @agua/contracts build`, affected service tests, and verify `docs/documentacion/modelo-datos.md` identity naming.
