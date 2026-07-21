@@ -45,7 +45,7 @@ describe('CartService', () => {
       items: [cartItem({ productoId: 'product-1', cantidad: 2, precioUnitario: 1200 })],
     }));
 
-    await expect(service.getActiveCart(clienteId)).resolves.toEqual({
+    await expect(service.getActiveCart(clienteId, vendedorId)).resolves.toEqual({
       id: 'cart-1',
       clienteId,
       vendedorId,
@@ -67,17 +67,25 @@ describe('CartService', () => {
   it('uses only JWT cliente identity when reading an active cart', async () => {
     repository.findActiveByCliente.mockResolvedValue(cartRecord({ usuarioId: clienteId }));
 
-    await service.getActiveCart(clienteId);
+    await service.getActiveCart(clienteId, vendedorId);
 
-    expect(repository.findActiveByCliente).toHaveBeenCalledWith(clienteId, now);
-    expect(repository.findActiveByCliente).not.toHaveBeenCalledWith('body-user', now);
+    expect(repository.findActiveByCliente).toHaveBeenCalledWith(clienteId, vendedorId, now);
+    expect(repository.findActiveByCliente).not.toHaveBeenCalledWith('body-user', vendedorId, now);
+  });
+
+  it('hides another provider active cart when the cliente switches providers', async () => {
+    repository.findActiveByCliente.mockResolvedValue(null);
+
+    await expect(service.getActiveCart(clienteId, 'vendedor-2')).resolves.toBeNull();
+
+    expect(repository.findActiveByCliente).toHaveBeenCalledWith(clienteId, 'vendedor-2', now);
   });
 
   it('rejects mutations for carts owned by another cliente', async () => {
     repository.findById.mockResolvedValue(cartRecord({ usuarioId: 'cliente-2' }));
 
     await expect(
-      service.updateItem(clienteId, { cartId: 'cart-1', productoId: 'product-1', cantidad: 3 }),
+      service.updateItem(clienteId, { vendedorId, cartId: 'cart-1', productoId: 'product-1', cantidad: 3 }),
     ).rejects.toThrow(ForbiddenException);
 
     expect(repository.replaceItemQuantity).not.toHaveBeenCalled();
@@ -87,7 +95,7 @@ describe('CartService', () => {
     repository.findById.mockResolvedValue(cartRecord({ expiresAt: past }));
 
     await expect(
-      service.deleteItem(clienteId, { cartId: 'cart-1', productoId: 'product-1' }),
+      service.deleteItem(clienteId, { vendedorId, cartId: 'cart-1', productoId: 'product-1' }),
     ).rejects.toThrow(ForbiddenException);
 
     expect(repository.deleteItem).not.toHaveBeenCalled();
@@ -97,7 +105,7 @@ describe('CartService', () => {
     productCatalog.getSnapshot.mockRejectedValue(new ServiceUnavailableException('Product catalog is unavailable'));
 
     await expect(
-      service.addItem(clienteId, { productoId: 'product-1', cantidad: 1, userId: 'body-user' }),
+      service.addItem(clienteId, { vendedorId, productoId: 'product-1', cantidad: 1, userId: 'body-user' }),
     ).rejects.toThrow(ServiceUnavailableException);
 
     expect(repository.findOrCreateActiveCart).not.toHaveBeenCalled();
@@ -112,7 +120,7 @@ describe('CartService', () => {
       items: [cartItem({ cantidad: 1, precioUnitario: 1200 })],
     }));
 
-    await service.addItem(clienteId, { productoId: 'product-1', cantidad: 1 });
+    await service.addItem(clienteId, { vendedorId, productoId: 'product-1', cantidad: 1 });
 
     expect(repository.findOrCreateActiveCart).toHaveBeenCalledWith(clienteId, vendedorId, cartTtlExpiration, now);
     expect(repository.incrementItemQuantity).toHaveBeenCalledWith('cart-1', 'product-1', 'Agua 20L', 1, 1200);
@@ -123,7 +131,7 @@ describe('CartService', () => {
     repository.findActiveByCliente.mockResolvedValue(null);
     repository.findOrCreateActiveCart.mockResolvedValue(cartRecord({ vendedorId: 'vendedor-2' }));
 
-    await expect(service.addItem(clienteId, { productoId: 'product-1', cantidad: 1 })).rejects.toThrow(
+    await expect(service.addItem(clienteId, { vendedorId, productoId: 'product-1', cantidad: 1 })).rejects.toThrow(
       ForbiddenException,
     );
 
@@ -135,7 +143,7 @@ describe('CartService', () => {
     repository.findById.mockResolvedValue(cartRecord({ vendedorId }));
 
     await expect(
-      service.addItem(clienteId, { cartId: 'cart-1', productoId: 'product-1', cantidad: 1 }),
+      service.addItem(clienteId, { vendedorId, cartId: 'cart-1', productoId: 'product-1', cantidad: 1 }),
     ).rejects.toThrow(ForbiddenException);
 
     expect(repository.incrementItemQuantity).not.toHaveBeenCalled();
@@ -149,7 +157,7 @@ describe('CartService', () => {
     }));
 
     await expect(
-      service.updateItem(clienteId, { cartId: 'cart-1', productoId: 'product-1', cantidad: 1 }),
+      service.updateItem(clienteId, { vendedorId, cartId: 'cart-1', productoId: 'product-1', cantidad: 1 }),
     ).rejects.toThrow(ForbiddenException);
 
     expect(repository.replaceItemQuantity).not.toHaveBeenCalled();
@@ -161,7 +169,7 @@ describe('CartService', () => {
       items: [cartItem({ cantidad: 2, precioUnitario: 1200 })],
     }));
 
-    await expect(service.addItem(clienteId, { productoId: 'product-1', cantidad: 3 })).rejects.toThrow(
+    await expect(service.addItem(clienteId, { vendedorId, productoId: 'product-1', cantidad: 3 })).rejects.toThrow(
       ServiceUnavailableException,
     );
 
@@ -175,7 +183,7 @@ describe('CartService', () => {
     }));
 
     await expect(
-      service.updateItem(clienteId, { cartId: 'cart-1', productoId: 'product-1', cantidad: 3 }),
+      service.updateItem(clienteId, { vendedorId, cartId: 'cart-1', productoId: 'product-1', cantidad: 3 }),
     ).rejects.toThrow(ServiceUnavailableException);
 
     expect(repository.replaceItemQuantity).not.toHaveBeenCalled();
@@ -190,7 +198,7 @@ describe('CartService', () => {
       items: [cartItem({ cantidad: 5, precioUnitario: 1200 })],
     }));
 
-    const cart = await service.addItem(clienteId, { productoId: 'product-1', cantidad: 3 });
+    const cart = await service.addItem(clienteId, { vendedorId, productoId: 'product-1', cantidad: 3 });
 
     expect(repository.incrementItemQuantity).toHaveBeenCalledWith('cart-1', 'product-1', 'Agua 20L', 3, 1200);
     expect(cart.items[0]?.cantidad).toBe(5);
@@ -206,7 +214,7 @@ describe('CartService', () => {
       items: [cartItem({ cantidad: 3, precioUnitario: 1200 })],
     }));
 
-    const cart = await service.updateItem(clienteId, { cartId: 'cart-1', productoId: 'product-1', cantidad: 3 });
+    const cart = await service.updateItem(clienteId, { vendedorId, cartId: 'cart-1', productoId: 'product-1', cantidad: 3 });
 
     expect(repository.replaceItemQuantity).toHaveBeenCalledWith('cart-1', 'product-1', 'Agua 20L', 3, 1200);
     expect(cart.items[0]?.cantidad).toBe(3);
@@ -219,7 +227,7 @@ describe('CartService', () => {
     }));
 
     await expect(
-      service.updateItem(clienteId, { cartId: 'cart-1', productoId: 'missing-product', cantidad: 3 }),
+      service.updateItem(clienteId, { vendedorId, cartId: 'cart-1', productoId: 'missing-product', cantidad: 3 }),
     ).rejects.toThrow(NotFoundException);
 
     expect(productCatalog.getSnapshot).not.toHaveBeenCalled();
@@ -230,7 +238,7 @@ describe('CartService', () => {
     repository.findById.mockResolvedValue(null);
 
     await expect(
-      service.updateItem(clienteId, { cartId: 'missing-cart', productoId: 'product-1', cantidad: 3 }),
+      service.updateItem(clienteId, { vendedorId, cartId: 'missing-cart', productoId: 'product-1', cantidad: 3 }),
     ).rejects.toThrow(NotFoundException);
 
     expect(repository.replaceItemQuantity).not.toHaveBeenCalled();

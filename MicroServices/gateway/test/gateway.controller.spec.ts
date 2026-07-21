@@ -76,19 +76,23 @@ describe('GatewayController', () => {
         roles: ['cliente'],
         asyncQueue: 'orders.create',
       });
-      mockOrdersCreateQueue.enqueue.mockResolvedValue({ jobId: 'orders.create:cliente-1:body-key', trackingId: 't-1', status: 'PENDING', statusUrl: '/api/v1/orders/job-status?id=t-1', acceptedAt: '2026-07-17T19:00:00.000Z' });
+      mockDispatcher.dispatch.mockResolvedValue({ selectedProvider: { id: 'vendedor-1' } });
+      mockOrdersCreateQueue.enqueue.mockResolvedValue({ jobId: 'orders.create:cliente-1:vendedor-1:body-key', trackingId: 't-1', status: 'PENDING', vendedorId: 'vendedor-1', statusUrl: '/api/v1/orders/job-status?id=t-1', acceptedAt: '2026-07-17T19:00:00.000Z' });
 
       await controller.handlePostAction(
         'orders',
         'create',
-        { idempotencyKey: 'body-key', metodoPago: 'contra_entrega' },
+        { idempotencyKey: 'body-key', vendedorId: 'vendedor-1', metodoPago: 'contra_entrega' },
         {},
         { headers: {}, user: { sub: 'cliente-1', email: 'c@agua.com', role: 'cliente' } } as never,
       );
 
-      expect(mockDispatcher.dispatch).not.toHaveBeenCalled();
+      expect(mockDispatcher.dispatch).toHaveBeenCalledWith('clientes', expect.objectContaining({
+        body: { vendedorId: 'vendedor-1' },
+      }), expect.objectContaining({ tcpPattern: 'clientes.providers_select' }));
       expect(mockOrdersCreateQueue.enqueue).toHaveBeenCalledWith(expect.objectContaining({
         idempotencyKey: 'body-key',
+        vendedorId: 'vendedor-1',
       }));
     });
 

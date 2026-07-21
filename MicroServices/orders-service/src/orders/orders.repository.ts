@@ -15,6 +15,7 @@ export interface CreateOrderItemInput {
 export interface CreateOrderFromCartInput {
   /** V1 compatibility: authenticated cliente user id (AUTH_USER.id), not CLIENTE.id. */
   readonly clienteId: string;
+  readonly vendedorId: string;
   readonly now: Date;
   readonly validateCartItems: (cart: CartRecord) => Promise<void>;
   readonly metodoPago: MetodoPago.CONTRA_ENTREGA;
@@ -52,6 +53,7 @@ export interface CreateOrderCommandJobInput {
   readonly jobId: string;
   /** V1 compatibility: authenticated cliente user id (AUTH_USER.id), not CLIENTE.id. */
   readonly clienteId: string;
+  readonly vendedorId: string;
   readonly idempotencyKey: string;
   readonly payloadHash: string;
   readonly payloadBody: Prisma.InputJsonObject;
@@ -74,6 +76,7 @@ export interface OrderCommandJobRecord {
   readonly jobId: string;
   /** V1 compatibility: authenticated cliente user id (AUTH_USER.id), not CLIENTE.id. */
   readonly clienteId: string;
+  readonly vendedorId: string | null;
   readonly idempotencyKey: string;
   readonly payloadHash: string;
   readonly status: OrderJobStatus;
@@ -88,7 +91,7 @@ export interface OrderCommandJobRecord {
 export interface OrdersRepository {
   createFromCart(input: CreateOrderFromCartInput): Promise<OrderRecord>;
   createOrderCommandJob(input: CreateOrderCommandJobInput): Promise<OrderCommandJobRecord>;
-  findOrderCommandByIdempotency(clienteUserId: string, idempotencyKey: string): Promise<OrderCommandJobRecord | null>;
+  findOrderCommandByIdempotency(clienteUserId: string, vendedorId: string, idempotencyKey: string): Promise<OrderCommandJobRecord | null>;
   findOrderCommandByTrackingId(trackingId: string): Promise<OrderCommandJobRecord | null>;
   updateOrderCommandJobStatus(input: UpdateOrderCommandJobStatusInput): Promise<OrderCommandJobRecord | null>;
   findById(orderId: string): Promise<OrderRecord | null>;
@@ -119,7 +122,8 @@ export class PrismaOrdersRepository implements OrdersRepository {
       const cart = await tx.cart.findFirst({
         where: {
           usuario_id: input.clienteId,
-          active_cart_key: input.clienteId,
+          vendedor_id: input.vendedorId,
+          active_cart_key: `${input.clienteId}:${input.vendedorId}`,
           expires_at: { gt: input.now },
         },
         include: { items: true },
@@ -187,6 +191,7 @@ export class PrismaOrdersRepository implements OrdersRepository {
         tracking_id: input.trackingId,
         job_id: input.jobId,
         cliente_id: input.clienteId,
+        vendedor_id: input.vendedorId,
         idempotency_key: input.idempotencyKey,
         payload_hash: input.payloadHash,
         payload_body: input.payloadBody,
@@ -197,9 +202,9 @@ export class PrismaOrdersRepository implements OrdersRepository {
     return mapOrderCommandJob(job);
   }
 
-  async findOrderCommandByIdempotency(clienteUserId: string, idempotencyKey: string): Promise<OrderCommandJobRecord | null> {
+  async findOrderCommandByIdempotency(clienteUserId: string, vendedorId: string, idempotencyKey: string): Promise<OrderCommandJobRecord | null> {
     const job = await this.prisma.orderCommandJob.findUnique({
-      where: { cliente_id_idempotency_key: { cliente_id: clienteUserId, idempotency_key: idempotencyKey } },
+      where: { cliente_id_vendedor_id_idempotency_key: { cliente_id: clienteUserId, vendedor_id: vendedorId, idempotency_key: idempotencyKey } },
     });
 
     return job === null ? null : mapOrderCommandJob(job);
@@ -343,6 +348,7 @@ function mapOrderCommandJob(job: Prisma.OrderCommandJobGetPayload<object>): Orde
     trackingId: job.tracking_id,
     jobId: job.job_id,
     clienteId: job.cliente_id,
+    vendedorId: job.vendedor_id,
     idempotencyKey: job.idempotency_key,
     payloadHash: job.payload_hash,
     status: job.status as OrderJobStatus,

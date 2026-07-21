@@ -7,15 +7,19 @@ import {
 } from '../src/queues/orders-create-queue.service';
 
 describe('OrdersCreateQueueService', () => {
-  it('builds deterministic job and tracking ids from cliente plus idempotency key', () => {
-    const firstJobId = buildOrdersCreateJobId('cliente-1', 'idem-1');
-    const secondJobId = buildOrdersCreateJobId('cliente-1', 'idem-1');
-    const firstTrackingId = buildOrdersCreateTrackingId('cliente-1', 'idem-1');
-    const secondTrackingId = buildOrdersCreateTrackingId('cliente-1', 'idem-1');
+  it('builds deterministic job and tracking ids from cliente, provider, plus idempotency key', () => {
+    const firstJobId = buildOrdersCreateJobId('cliente-1', 'vendedor-1', 'idem-1');
+    const secondJobId = buildOrdersCreateJobId('cliente-1', 'vendedor-1', 'idem-1');
+    const otherProviderJobId = buildOrdersCreateJobId('cliente-1', 'vendedor-2', 'idem-1');
+    const firstTrackingId = buildOrdersCreateTrackingId('cliente-1', 'vendedor-1', 'idem-1');
+    const secondTrackingId = buildOrdersCreateTrackingId('cliente-1', 'vendedor-1', 'idem-1');
+    const otherProviderTrackingId = buildOrdersCreateTrackingId('cliente-1', 'vendedor-2', 'idem-1');
 
-    expect(firstJobId).toBe('orders.create:cliente-1:idem-1');
+    expect(firstJobId).toBe('orders.create:cliente-1:vendedor-1:idem-1');
     expect(secondJobId).toBe(firstJobId);
+    expect(otherProviderJobId).toBe('orders.create:cliente-1:vendedor-2:idem-1');
     expect(secondTrackingId).toBe(firstTrackingId);
+    expect(otherProviderTrackingId).not.toBe(firstTrackingId);
     expect(firstTrackingId).toMatch(/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/);
   });
 
@@ -36,10 +40,10 @@ describe('OrdersCreateQueueService', () => {
       body: { metodoPago: 'contra_entrega' },
     });
 
-    const expectedTrackingId = buildOrdersCreateTrackingId('cliente-1', 'idem-1');
+    const expectedTrackingId = buildOrdersCreateTrackingId('cliente-1', 'vendedor-1', 'idem-1');
 
     expect(response).toEqual({
-      jobId: 'orders.create:cliente-1:idem-1',
+      jobId: 'orders.create:cliente-1:vendedor-1:idem-1',
       trackingId: expectedTrackingId,
       status: OrderJobStatus.PENDING,
       vendedorId: 'vendedor-1',
@@ -49,7 +53,7 @@ describe('OrdersCreateQueueService', () => {
     expect(queue.add).toHaveBeenCalledWith(
       'orders.create',
       expect.objectContaining({
-        jobId: 'orders.create:cliente-1:idem-1',
+        jobId: 'orders.create:cliente-1:vendedor-1:idem-1',
         trackingId: expectedTrackingId,
         clienteId: 'cliente-1',
         vendedorId: 'vendedor-1',
@@ -58,7 +62,7 @@ describe('OrdersCreateQueueService', () => {
         body: { metodoPago: 'contra_entrega' },
       }),
       {
-        jobId: 'orders.create:cliente-1:idem-1',
+        jobId: 'orders.create:cliente-1:vendedor-1:idem-1',
         attempts: 5,
         backoff: { type: 'exponential', delay: 2000 },
         removeOnComplete: { count: 20 },

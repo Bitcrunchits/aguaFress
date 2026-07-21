@@ -62,11 +62,12 @@ describe('OrdersController', () => {
   });
 
   it('creates orders using JWT user context and ignoring body userId', async () => {
-    const payload = authenticatedPayload({ body: { userId: 'body-user', metodoPago: MetodoPago.CONTRA_ENTREGA, direccion: orderResponse.direccion } });
+    const payload = authenticatedPayload({ body: { userId: 'body-user', vendedorId: 'vendedor-1', metodoPago: MetodoPago.CONTRA_ENTREGA, direccion: orderResponse.direccion } });
 
     await expect(controller.create(payload)).resolves.toBe(orderResponse);
 
     expect(service.create).toHaveBeenCalledWith(expect.objectContaining({ userId: 'jwt-user' }), {
+      vendedorId: 'vendedor-1',
       metodoPago: MetodoPago.CONTRA_ENTREGA,
       direccion: orderResponse.direccion,
       observaciones: undefined,

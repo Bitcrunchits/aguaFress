@@ -19,14 +19,15 @@ export class CartService {
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
-  async getActiveCart(clienteId: string): Promise<CartResponse | null> {
-    const cart = await this.repository.findActiveByCliente(clienteId, this.clock());
+  async getActiveCart(clienteId: string, vendedorId: string): Promise<CartResponse | null> {
+    const cart = await this.repository.findActiveByCliente(clienteId, vendedorId, this.clock());
     return cart === null ? null : toCartResponse(cart);
   }
 
   async addItem(clienteId: string, request: AddCartItemRequest): Promise<CartResponse> {
     const product = await this.getAvailableProduct(request.productoId);
-    const cart = await this.resolveMutableCart(clienteId, request.cartId, product.vendedorId);
+    this.assertProductBelongsToSelectedProvider(product, request.vendedorId);
+    const cart = await this.resolveMutableCart(clienteId, request.cartId, request.vendedorId);
     this.assertAvailableStock(product, request.cantidad, quantityInCart(cart, product.id));
     const updatedCart = await this.repository.incrementItemQuantity(
       cart.id,
@@ -41,6 +42,7 @@ export class CartService {
 
   async updateItem(clienteId: string, request: UpdateCartItemRequest): Promise<CartResponse> {
     const cart = await this.requireMutableCart(clienteId, request.cartId);
+    this.assertCartBelongsToVendedor(cart, request.vendedorId);
     this.assertCartHasItem(cart, request.productoId);
     const product = await this.getAvailableProduct(request.productoId);
     this.assertCartBelongsToVendedor(cart, product.vendedorId);
@@ -58,6 +60,7 @@ export class CartService {
 
   async deleteItem(clienteId: string, request: DeleteCartItemRequest): Promise<CartResponse> {
     const cart = await this.requireMutableCart(clienteId, request.cartId);
+    this.assertCartBelongsToVendedor(cart, request.vendedorId);
     const updatedCart = await this.repository.deleteItem(cart.id, request.productoId);
     return toCartResponse(updatedCart);
   }
@@ -69,7 +72,7 @@ export class CartService {
       return cart;
     }
 
-    const activeCart = await this.repository.findActiveByCliente(clienteId, this.clock());
+    const activeCart = await this.repository.findActiveByCliente(clienteId, vendedorId, this.clock());
     if (activeCart !== null) {
       this.assertCartBelongsToVendedor(activeCart, vendedorId);
       return activeCart;
@@ -100,6 +103,12 @@ export class CartService {
   private assertCartBelongsToVendedor(cart: CartRecord, vendedorId: string): void {
     if (cart.vendedorId !== vendedorId) {
       throw new ForbiddenException('Cart belongs to another vendedor');
+    }
+  }
+
+  private assertProductBelongsToSelectedProvider(product: ProductSnapshot, vendedorId: string): void {
+    if (product.vendedorId !== vendedorId) {
+      throw new ForbiddenException('Product belongs to another vendedor');
     }
   }
 

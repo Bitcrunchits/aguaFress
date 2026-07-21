@@ -2,7 +2,7 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { TcpPayloadAdapter } from '../tcp/tcp-payload-adapter.service';
 import type { TcpPayload } from '../tcp/tcp-payload';
-import { parseAddCartItemRequest, parseDeleteCartItemRequest, parseUpdateCartItemRequest, type CartResponse } from './cart.dto';
+import { parseAddCartItemRequest, parseDeleteCartItemRequest, parseGetCartRequest, parseUpdateCartItemRequest, type CartResponse } from './cart.dto';
 import { CartService } from './cart.service';
 
 @Controller()
@@ -15,7 +15,7 @@ export class CartController {
   @MessagePattern('cart.get')
   getCart(@Payload() payload: TcpPayload): Promise<CartResponse | null> {
     const user = this.payloadAdapter.requireUser(payload);
-    return this.cartService.getActiveCart(user.userId);
+    return this.cartService.getActiveCart(user.userId, parseGetCartRequest(payload.query ?? payload.body).vendedorId);
   }
 
   @MessagePattern('cart.items_add')

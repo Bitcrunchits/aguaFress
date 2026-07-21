@@ -56,13 +56,13 @@ Decision resolved before apply: PR1 targets the tracker branch `feat/client-mult
 
 ## Phase 4: Orders and Cart Provider Scope
 
-- [ ] 4.1 Update `MicroServices/orders-service/prisma/schema.prisma` for active cart uniqueness by `clienteUserId` plus `vendedorId`.
-- [ ] 4.2 Update `MicroServices/orders-service/src/cart/*` to resolve active carts by authenticated cliente plus selected provider.
-- [ ] 4.3 Update `MicroServices/orders-service/src/orders/*` to create/clear orders only for the selected provider cart.
+- [x] 4.1 Update `MicroServices/orders-service/prisma/schema.prisma` for active cart uniqueness by `clienteUserId` plus `vendedorId`.
+- [x] 4.2 Update `MicroServices/orders-service/src/cart/*` to resolve active carts by authenticated cliente plus selected provider.
+- [x] 4.3 Update `MicroServices/orders-service/src/orders/*` to create/clear orders only for the selected provider cart.
 
 ## Phase 5: Tests and Verification
 
 - [x] 5.1 Add usuario-service Jest tests for active/empty provider list, valid/invalid selection, default drift, and cartera authorization mismatch.
 - [x] 5.2 Add gateway tests for valid forwarding and unauthorized provider rejection before mutation.
-- [ ] 5.3 Add orders/cart tests for provider-isolated carts, body `userId` ignored, retry identity by cliente/provider/key, and product-missing no-clear.
+- [x] 5.3 Add orders/cart tests for provider-isolated carts, body `userId` ignored, retry identity by cliente/provider/key, and product-missing no-clear.
 - [ ] 5.4 Run `pnpm --filter @agua/contracts build`, affected service tests, and verify `docs/documentacion/modelo-datos.md` identity naming.
