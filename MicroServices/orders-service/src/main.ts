@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { Transport, type MicroserviceOptions } from '@nestjs/microservices';
 import { AppModule } from './app.module';
 import { getTcpPort } from './common/config/env.config';
+import { RpcExceptionFilter } from './common/filters/rpc-exception.filter';
 
 async function bootstrap(): Promise<void> {
   const port = getTcpPort();
@@ -17,6 +18,8 @@ async function bootstrap(): Promise<void> {
       },
     },
   );
+
+  app.useGlobalFilters(new RpcExceptionFilter());
 
   await app.listen();
   logger.log(`orders-service TCP running on port ${port}`);
