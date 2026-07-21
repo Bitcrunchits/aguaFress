@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
-import { ActivityLogResult, UserRole } from '@agua/contracts';
+import { ActivityLogAction, ActivityLogResult, ActivityLogSource, UserRole } from '@agua/contracts';
 import { TcpPayloadAdapter } from './tcp-payload-adapter.service';
 import type { TcpPayload } from './tcp-payload';
 
@@ -29,7 +29,7 @@ describe('TcpPayloadAdapter', () => {
   });
 
   it('maps list query strings into a typed request with pagination numbers', () => {
-    const payload: TcpPayload = {
+    const payload: Record<string, unknown> = {
       query: {
         source: 'gateway',
         action: 'LOGIN',
@@ -57,6 +57,39 @@ describe('TcpPayloadAdapter', () => {
   it('reads get-by-id from params or query without trusting body userId', () => {
     expect(adapter.getByIdRequest({ params: { id: 'log-1' }, body: { userId: 'attacker' } })).toEqual({ id: 'log-1' });
     expect(adapter.getByIdRequest({ query: { id: 'log-2' } })).toEqual({ id: 'log-2' });
+  });
+
+  it('maps trusted create payloads only from body and ignores root userId values', () => {
+    const payload: Record<string, unknown> = {
+      userId: 'attacker',
+      body: {
+        source: ActivityLogSource.USUARIO_SERVICE,
+        action: ActivityLogAction.USER_LOGIN,
+        actor: { userId: 'actor-1', email: 'actor@aguafress.test', role: UserRole.SUPER_ADMIN },
+        entity: { type: 'USER', id: 'actor-1' },
+        result: ActivityLogResult.SUCCESS,
+        summary: 'User logged in',
+        metadata: { ip: '127.0.0.1' },
+        requestId: 'request-1',
+      },
+    };
+
+    expect(adapter.createRequest(payload)).toEqual({
+      source: ActivityLogSource.USUARIO_SERVICE,
+      action: ActivityLogAction.USER_LOGIN,
+      actor: { userId: 'actor-1', email: 'actor@aguafress.test', role: UserRole.SUPER_ADMIN },
+      entity: { type: 'USER', id: 'actor-1' },
+      result: ActivityLogResult.SUCCESS,
+      summary: 'User logged in',
+      metadata: { ip: '127.0.0.1' },
+      requestId: 'request-1',
+    });
+  });
+
+  it('rejects malformed trusted create bodies with controlled bad requests', () => {
+    expect(() => adapter.createRequest({})).toThrow(BadRequestException);
+    expect(() => adapter.createRequest({ body: { source: 123 } })).toThrow(BadRequestException);
+    expect(() => adapter.createRequest({ body: { source: ActivityLogSource.USUARIO_SERVICE, action: ActivityLogAction.USER_LOGIN, result: ActivityLogResult.SUCCESS, summary: '' } })).toThrow(BadRequestException);
   });
 
   it('rejects malformed non-string query and id values with controlled bad requests', () => {

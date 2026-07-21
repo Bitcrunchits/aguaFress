@@ -21,8 +21,9 @@ describe('notifications-service bootstrap', () => {
 
   it('starts only a TCP microservice on TCP_PORT', async () => {
     const listen = jest.fn().mockResolvedValue(undefined);
+    const useGlobalFilters = jest.fn();
     const createMicroservice = NestFactory.createMicroservice as unknown as jest.Mock<Promise<MicroserviceAppMock>, [unknown, unknown]>;
-    createMicroservice.mockResolvedValue({ listen });
+    createMicroservice.mockResolvedValue({ listen, useGlobalFilters });
 
     await bootstrap();
 
@@ -30,6 +31,7 @@ describe('notifications-service bootstrap', () => {
       transport: Transport.TCP,
       options: { host: '0.0.0.0', port: 3016 },
     });
+    expect(useGlobalFilters).toHaveBeenCalledWith(expect.objectContaining({ catch: expect.any(Function) }));
     expect(listen).toHaveBeenCalledTimes(1);
     expect(NestFactory).not.toHaveProperty('create');
   });
@@ -37,4 +39,5 @@ describe('notifications-service bootstrap', () => {
 
 interface MicroserviceAppMock {
   readonly listen: jest.Mock<Promise<void>, []>;
+  readonly useGlobalFilters: jest.Mock<void, [unknown]>;
 }

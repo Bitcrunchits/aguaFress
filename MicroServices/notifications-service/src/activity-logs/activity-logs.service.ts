@@ -1,11 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import {
+  ActivityLogAction,
   ActivityLogResult,
+  ActivityLogSource,
   type ActivityLogDetailDTO,
   type ActivityLogDetailResponseDTO,
   type ActivityLogListResponseDTO,
   type ActivityLogRowDTO,
+  type CreateActivityLogRequestDTO,
   type GetActivityLogByIdRequestDTO,
   type ListActivityLogsRequestDTO,
 } from '@agua/contracts';
@@ -15,12 +18,33 @@ import { ACTIVITY_LOG_MODEL, type ActivityLogModelRecord } from './activity-log.
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
+const VALID_SOURCES: readonly ActivityLogSource[] = Object.values(ActivityLogSource);
+const VALID_ACTIONS: readonly ActivityLogAction[] = Object.values(ActivityLogAction);
 const VALID_RESULTS: readonly ActivityLogResult[] = Object.values(ActivityLogResult);
 const ISO_DATE_TIME_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/;
 
 @Injectable()
 export class ActivityLogsService {
   constructor(@InjectModel(ACTIVITY_LOG_MODEL) private readonly activityLogModel: Model<ActivityLogModelRecord>) {}
+
+  async create(request: CreateActivityLogRequestDTO): Promise<ActivityLogDetailResponseDTO> {
+    const dedupeKey = resolveDedupeKey(request);
+    const existingRecord = dedupeKey === undefined ? null : await this.findByDedupeKey(dedupeKey);
+    if (existingRecord !== null) return { data: mapActivityLogDetail(existingRecord) };
+
+    const createInput = buildCreateInput(request, dedupeKey);
+
+    try {
+      const createdRecord = await this.activityLogModel.create(createInput);
+      return { data: mapActivityLogDetail(createdRecord) };
+    } catch (error: unknown) {
+      if (dedupeKey !== undefined && isDuplicateKeyError(error)) {
+        const racedRecord = await this.findByDedupeKey(dedupeKey);
+        if (racedRecord !== null) return { data: mapActivityLogDetail(racedRecord) };
+      }
+      throw error;
+    }
+  }
 
   async list(request: ListActivityLogsRequestDTO): Promise<ActivityLogListResponseDTO> {
     const page = normalizePage(request.page);
@@ -56,6 +80,46 @@ export class ActivityLogsService {
 
     return { data: mapActivityLogDetail(record) };
   }
+
+  private async findByDedupeKey(dedupeKey: string): Promise<ActivityLogModelRecord | null> {
+    return this.activityLogModel.findOne({ dedupeKey }).lean().exec();
+  }
+}
+
+function buildCreateInput(request: CreateActivityLogRequestDTO, dedupeKey: string | undefined): ActivityLogCreateInput {
+  if (!VALID_SOURCES.includes(request.source)) {
+    throw new BadRequestException('Invalid activity log source');
+  }
+  if (!VALID_ACTIONS.includes(request.action)) {
+    throw new BadRequestException('Invalid activity log action');
+  }
+  if (!VALID_RESULTS.includes(request.result)) {
+    throw new BadRequestException('Invalid activity log result');
+  }
+  if (request.summary.trim() === '') {
+    throw new BadRequestException('Activity log summary is required');
+  }
+
+  return {
+    source: request.source,
+    action: request.action,
+    actor: request.actor ?? {},
+    entity: request.entity ?? {},
+    result: request.result,
+    summary: request.summary,
+    metadata: request.metadata ?? {},
+    createdAt: request.createdAt === undefined ? new Date() : parseIsoDate(request.createdAt, 'createdAt'),
+    requestId: request.requestId,
+    dedupeKey,
+  };
+}
+
+function resolveDedupeKey(request: CreateActivityLogRequestDTO): string | undefined {
+  return request.requestId ?? request.eventId;
+}
+
+function isDuplicateKeyError(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === 11000;
 }
 
 export function buildActivityLogFilter(request: ListActivityLogsRequestDTO): ActivityLogMongoFilter {
@@ -125,6 +189,19 @@ function mapActivityLogRow(record: ActivityLogModelRecord): ActivityLogRowDTO {
 
 function mapActivityLogDetail(record: ActivityLogModelRecord): ActivityLogDetailDTO {
   return { ...mapActivityLogRow(record), metadata: record.metadata, requestId: record.requestId };
+}
+
+interface ActivityLogCreateInput {
+  readonly source: ActivityLogSource;
+  readonly action: ActivityLogAction;
+  readonly actor: ActivityLogModelRecord['actor'];
+  readonly entity: ActivityLogModelRecord['entity'];
+  readonly result: ActivityLogResult;
+  readonly summary: string;
+  readonly metadata: Record<string, unknown>;
+  readonly createdAt: Date;
+  readonly requestId?: string;
+  readonly dedupeKey?: string;
 }
 
 interface DateRangeFilter { $gte?: Date; $lte?: Date; }

@@ -4,10 +4,11 @@ import type {
   ActivityLogDetailResponseDTO,
   ActivityLogListResponseDTO,
   ActivityLogRowDTO,
+  CreateActivityLogRequestDTO,
   GetActivityLogByIdRequestDTO,
   ListActivityLogsRequestDTO,
 } from '../index';
-import { ActivityLogResult } from '../index';
+import { ActivityLogAction, ActivityLogResult, ActivityLogSource } from '../index';
 
 const listRequestCheck: ListActivityLogsRequestDTO = {
   source: 'usuario-service',
@@ -47,6 +48,19 @@ const detailCheck: ActivityLogDetailDTO = {
   },
 };
 
+const createRequestCheck: CreateActivityLogRequestDTO = {
+  source: ActivityLogSource.USUARIO_SERVICE,
+  action: ActivityLogAction.USER_LOGIN,
+  actor: rowCheck.actor,
+  entity: rowCheck.entity,
+  result: ActivityLogResult.SUCCESS,
+  summary: 'Super admin logged in',
+  metadata: detailCheck.metadata,
+  createdAt: rowCheck.createdAt,
+  requestId: detailCheck.requestId,
+  eventId: '1753032000000-0',
+};
+
 const getByIdRequestCheck: GetActivityLogByIdRequestDTO = {
   id: detailCheck.id,
 };
@@ -68,6 +82,7 @@ const listResponseCheck: ActivityLogListResponseDTO = {
 void listRequestCheck;
 void rowCheck;
 void detailCheck;
+void createRequestCheck;
 void getByIdRequestCheck;
 void detailResponseCheck;
 void listResponseCheck;

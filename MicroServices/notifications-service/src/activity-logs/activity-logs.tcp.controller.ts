@@ -23,4 +23,9 @@ export class ActivityLogsTcpController {
     this.payloadAdapter.requireRole(payload, UserRole.SUPER_ADMIN);
     return this.activityLogsService.getById(this.payloadAdapter.getByIdRequest(payload));
   }
+
+  @MessagePattern('activity_logs.create')
+  create(@Payload() payload: TcpPayload): Promise<ActivityLogDetailResponseDTO> {
+    return this.activityLogsService.create(this.payloadAdapter.createRequest(payload));
+  }
 }

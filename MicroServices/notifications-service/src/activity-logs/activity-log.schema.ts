@@ -1,4 +1,4 @@
-import { ActivityLogResult, UserRole, type ActivityLogActorDTO, type ActivityLogEntityDTO } from '@agua/contracts';
+import { ActivityLogAction, ActivityLogResult, ActivityLogSource, UserRole, type ActivityLogActorDTO, type ActivityLogEntityDTO } from '@agua/contracts';
 import { Schema, Types } from 'mongoose';
 
 export const ACTIVITY_LOG_MODEL = 'ActivityLog';
@@ -14,6 +14,7 @@ export interface ActivityLogModelRecord {
   readonly summary: string;
   readonly metadata: Record<string, unknown>;
   readonly requestId?: string;
+  readonly dedupeKey?: string;
 }
 
 const ActivityLogActorSchema = new Schema<ActivityLogActorDTO>(
@@ -36,14 +37,15 @@ const ActivityLogEntitySchema = new Schema<ActivityLogEntityDTO>(
 export const ActivityLogSchema = new Schema<ActivityLogModelRecord>(
   {
     createdAt: { type: Date, required: true, default: Date.now },
-    source: { type: String, required: true },
-    action: { type: String, required: true },
+    source: { type: String, enum: Object.values(ActivityLogSource), required: true },
+    action: { type: String, enum: Object.values(ActivityLogAction), required: true },
     actor: { type: ActivityLogActorSchema, required: true, default: {} },
     entity: { type: ActivityLogEntitySchema, required: true, default: {} },
     result: { type: String, enum: Object.values(ActivityLogResult), required: true },
     summary: { type: String, required: true },
     metadata: { type: Schema.Types.Mixed, required: true, default: {} },
     requestId: { type: String, required: false },
+    dedupeKey: { type: String, required: false },
   },
   {
     collection: 'activity_logs',
@@ -55,3 +57,4 @@ ActivityLogSchema.index({ createdAt: -1 });
 ActivityLogSchema.index({ source: 1, action: 1 });
 ActivityLogSchema.index({ 'actor.userId': 1 });
 ActivityLogSchema.index({ result: 1 });
+ActivityLogSchema.index({ dedupeKey: 1 }, { unique: true, sparse: true });
