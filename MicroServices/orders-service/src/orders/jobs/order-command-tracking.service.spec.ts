@@ -13,6 +13,7 @@ type TrackingRepositoryMock = jest.Mocked<Pick<OrdersRepository,
 describe('OrderCommandTrackingService', () => {
   const now = new Date('2026-07-17T10:00:00.000Z');
   const clienteId = '11111111-1111-1111-1111-111111111111';
+  const vendedorId = 'vendor-1';
   const trackingId = '22222222-2222-2222-2222-222222222222';
   const jobId = `orders.create:${clienteId}:key-1`;
   const payloadHash = 'd09deb959babd09f809eb54cfd13ece7cd6677cfa74f0058a9b932817d3b40b1';
@@ -50,6 +51,7 @@ describe('OrderCommandTrackingService', () => {
 
     expect(repository.createOrderCommandJob).toHaveBeenCalledWith(expect.objectContaining({
       clienteId,
+      vendedorId,
       idempotencyKey: 'key-1',
       trackingId,
       jobId,
@@ -118,11 +120,11 @@ describe('OrderCommandTrackingService', () => {
   });
 
   function createJobData(): CreateOrderJobData {
-    return { clienteId, idempotencyKey: 'key-1', trackingId, jobId, requestId: 'request-1', requestedAt: now.toISOString(), body: { amount: 10, vendedorId: 'vendor-1' } };
+    return { clienteId, vendedorId, idempotencyKey: 'key-1', trackingId, jobId, requestId: 'request-1', requestedAt: now.toISOString(), body: { amount: 10, vendedorId } };
   }
 
   function commandRecord(overrides: Partial<OrderCommandJobRecord> = {}): OrderCommandJobRecord {
-    return { id: 'command-1', trackingId, jobId, clienteId, idempotencyKey: 'key-1', payloadHash: 'hash-1', status: OrderJobStatus.PENDING, orderId: null, errorCode: null, errorMessage: null, attempts: 0, createdAt: now, updatedAt: now, ...overrides };
+    return { id: 'command-1', trackingId, jobId, clienteId, vendedorId, idempotencyKey: 'key-1', payloadHash: 'hash-1', status: OrderJobStatus.PENDING, orderId: null, errorCode: null, errorMessage: null, attempts: 0, createdAt: now, updatedAt: now, ...overrides };
   }
 });
 

@@ -1,4 +1,4 @@
-import { ConflictException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject, Injectable } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { OrderJobStatus, type CreateOrderJobData, type OrderJobStatusResponse } from '@agua/contracts';
 import type { Prisma } from '../../generated/prisma';
@@ -21,8 +21,9 @@ export class OrderCommandTrackingService {
   constructor(@Inject(PrismaOrdersRepository) private readonly ordersRepository: OrderCommandTrackingRepository) {}
 
   async registerPending(data: CreateOrderJobData): Promise<OrderJobStatusResponse> {
+    const vendedorId = requireVendedorId(data);
     const payloadHash = hashPayload(data.body);
-    const existing = await this.ordersRepository.findOrderCommandByIdempotency(data.clienteId, data.idempotencyKey);
+    const existing = await this.ordersRepository.findOrderCommandByIdempotency(data.clienteId, vendedorId, data.idempotencyKey);
 
     if (existing !== null) {
       if (existing.payloadHash !== payloadHash) {
@@ -32,7 +33,7 @@ export class OrderCommandTrackingService {
       return toResponse(existing);
     }
 
-    const job = await this.createOrReloadPending(data, payloadHash);
+    const job = await this.createOrReloadPending(data, vendedorId, payloadHash);
 
     return toResponse(job);
   }
@@ -52,12 +53,13 @@ export class OrderCommandTrackingService {
     return toResponse(job);
   }
 
-  private async createOrReloadPending(data: CreateOrderJobData, payloadHash: string): Promise<OrderCommandJobRecord> {
+  private async createOrReloadPending(data: CreateOrderJobData, vendedorId: string, payloadHash: string): Promise<OrderCommandJobRecord> {
     try {
       return await this.ordersRepository.createOrderCommandJob({
         trackingId: data.trackingId,
         jobId: data.jobId,
         clienteId: data.clienteId,
+        vendedorId,
         idempotencyKey: data.idempotencyKey,
         payloadHash,
         payloadBody: toInputJsonObject(data.body),
@@ -68,7 +70,7 @@ export class OrderCommandTrackingService {
         throw error;
       }
 
-      const existing = await this.ordersRepository.findOrderCommandByIdempotency(data.clienteId, data.idempotencyKey);
+      const existing = await this.ordersRepository.findOrderCommandByIdempotency(data.clienteId, vendedorId, data.idempotencyKey);
       if (existing === null) {
         throw error;
       }
@@ -82,6 +84,15 @@ export class OrderCommandTrackingService {
   }
 }
 
+function requireVendedorId(data: CreateOrderJobData): string {
+  const vendedorId = data.vendedorId ?? (typeof data.body.vendedorId === 'string' ? data.body.vendedorId : undefined);
+  if (vendedorId === undefined || vendedorId.trim() === '') {
+    throw new BadRequestException('vendedorId is required for orders.create');
+  }
+
+  return vendedorId;
+}
+
 function isUniqueConstraintError(error: unknown): boolean {
   return isPlainRecord(error) && error.code === 'P2002';
 }
@@ -89,6 +100,7 @@ function isUniqueConstraintError(error: unknown): boolean {
 function toResponse(job: OrderCommandJobRecord): OrderJobStatusResponse {
   return {
     clienteId: job.clienteId,
+    vendedorId: job.vendedorId ?? undefined,
     idempotencyKey: job.idempotencyKey,
     jobId: job.jobId,
     trackingId: job.trackingId,

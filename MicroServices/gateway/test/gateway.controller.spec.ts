@@ -1,4 +1,4 @@
-import { MethodNotAllowedException } from '@nestjs/common';
+import { BadRequestException, MethodNotAllowedException } from '@nestjs/common';
 import { ActionResolverService, ActionNotFoundError, ServiceUnavailable } from '../src/actions/action-resolver.service';
 import { type ActionMapping } from '../src/actions/action-registry';
 import { GatewayController } from '../src/gateway.controller';
@@ -76,17 +76,24 @@ describe('GatewayController', () => {
         roles: ['cliente'],
         asyncQueue: 'orders.create',
       });
-      mockOrdersCreateQueue.enqueue.mockResolvedValue({ jobId: 'orders.create:cliente-1:body-key', trackingId: 't-1', status: 'PENDING', statusUrl: '/api/v1/orders/job-status?id=t-1', acceptedAt: '2026-07-17T19:00:00.000Z' });
+      mockDispatcher.dispatch.mockResolvedValue({ selectedProvider: { id: 'vendedor-1' } });
+      mockOrdersCreateQueue.enqueue.mockResolvedValue({ jobId: 'orders.create:cliente-1:vendedor-1:body-key', trackingId: 't-1', status: 'PENDING', vendedorId: 'vendedor-1', statusUrl: '/api/v1/orders/job-status?id=t-1', acceptedAt: '2026-07-17T19:00:00.000Z' });
 
       await controller.handlePostAction(
         'orders',
         'create',
-        { idempotencyKey: 'body-key', metodoPago: 'contra_entrega' },
+        { idempotencyKey: 'body-key', vendedorId: 'vendedor-1', metodoPago: 'contra_entrega' },
         {},
         { headers: {}, user: { sub: 'cliente-1', email: 'c@agua.com', role: 'cliente' } } as never,
       );
 
-      expect(mockOrdersCreateQueue.enqueue).toHaveBeenCalledWith(expect.objectContaining({ idempotencyKey: 'body-key' }));
+      expect(mockDispatcher.dispatch).toHaveBeenCalledWith('clientes', expect.objectContaining({
+        body: { vendedorId: 'vendedor-1' },
+      }), expect.objectContaining({ tcpPattern: 'clientes.providers_select' }));
+      expect(mockOrdersCreateQueue.enqueue).toHaveBeenCalledWith(expect.objectContaining({
+        idempotencyKey: 'body-key',
+        vendedorId: 'vendedor-1',
+      }));
     });
 
     it('resolves and dispatches PATCH actions', async () => {
@@ -127,6 +134,25 @@ describe('GatewayController', () => {
         body: { id: 'session-1' },
       }), expect.objectContaining({ tcpPattern: 'auth.session' }));
       expect(result).toEqual({ deleted: true });
+    });
+
+    it('rejects provider-scoped cart mutations before dispatch when vendedorId is missing', async () => {
+      mockResolver.resolve.mockReturnValue({
+        tcpPattern: 'cart.items_add',
+        transport: 'send',
+        authRequired: true,
+        roles: ['cliente'],
+      });
+
+      await expect(controller.handlePostAction(
+        'cart',
+        'items/add',
+        { productoId: 'product-1', cantidad: 1 },
+        {},
+        { headers: {}, user: { sub: 'cliente-1', email: 'c@agua.com', role: 'cliente' } } as never,
+      )).rejects.toThrow(BadRequestException);
+
+      expect(mockDispatcher.dispatch).not.toHaveBeenCalled();
     });
 
     it('propagates resolver errors (unknown service)', async () => {

@@ -26,6 +26,7 @@ export interface OrderResponse {
 }
 
 export interface CreateOrderRequest extends Record<string, unknown> {
+  readonly vendedorId: string;
   readonly metodoPago: MetodoPago.CONTRA_ENTREGA;
   readonly direccion: DireccionEntrega;
   readonly observaciones?: string;
@@ -52,7 +53,7 @@ export function parseCreateOrderRequest(value: unknown): CreateOrderRequest {
   const direccion = readDireccion(record, 'direccion');
   const observaciones = readOptionalString(record, 'observaciones');
 
-  return { metodoPago, direccion, observaciones };
+  return { vendedorId: readRequiredString(record, 'vendedorId'), metodoPago, direccion, observaciones };
 }
 
 export function parseUpdateOrderStatusRequest(value: unknown): UpdateOrderStatusRequest {

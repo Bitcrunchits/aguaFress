@@ -200,17 +200,21 @@ describe('Gateway HTTP routing', () => {
   });
 
   it('dispatches protected cart actions to orders-service TCP patterns', async () => {
-    mockDispatch.mockResolvedValue({ cartId: 'cart-1', items: [] });
+    mockDispatch
+      .mockResolvedValueOnce({ selectedProvider: { id: 'vendedor-1' } })
+      .mockResolvedValueOnce({ cartId: 'cart-1', items: [] });
 
     const response = await request(app.getHttpServer())
-      .get('/api/v1/cart/get')
+      .get('/api/v1/cart/get?vendedorId=vendedor-1')
       .set('Authorization', `Bearer ${clienteToken}`)
       .expect(200);
 
     expect(response.body).toEqual({ cartId: 'cart-1', items: [] });
-    expect(mockDispatch).toHaveBeenCalledWith(
+    expect(mockDispatch).toHaveBeenNthCalledWith(
+      2,
       'cart',
       expect.objectContaining({
+        query: { vendedorId: 'vendedor-1' },
         params: { service: 'cart', action: 'get' },
         user: expect.objectContaining({ sub: 'cliente-user-id', role: 'cliente' }),
       }),
@@ -218,19 +222,157 @@ describe('Gateway HTTP routing', () => {
     );
   });
 
+  it('validates selected provider before cart GET and preserves vendedorId query context', async () => {
+    mockDispatch
+      .mockResolvedValueOnce({ selectedProvider: { id: 'vendedor-1', nombre: 'Vendor', isDefault: false } })
+      .mockResolvedValueOnce({ cartId: 'cart-1', vendedorId: 'vendedor-1', items: [] });
+
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/cart/get?vendedorId=vendedor-1')
+      .set('Authorization', `Bearer ${clienteToken}`)
+      .expect(200);
+
+    expect(response.body).toEqual({ cartId: 'cart-1', vendedorId: 'vendedor-1', items: [] });
+    expect(mockDispatch).toHaveBeenNthCalledWith(
+      1,
+      'clientes',
+      expect.objectContaining({
+        body: { vendedorId: 'vendedor-1' },
+        user: expect.objectContaining({ sub: 'cliente-user-id', role: 'cliente' }),
+      }),
+      expect.objectContaining({ tcpPattern: 'clientes.providers_select' }),
+    );
+    expect(mockDispatch).toHaveBeenNthCalledWith(
+      2,
+      'cart',
+      expect.objectContaining({
+        query: { vendedorId: 'vendedor-1' },
+        params: { service: 'cart', action: 'get' },
+        user: expect.objectContaining({ sub: 'cliente-user-id', role: 'cliente' }),
+      }),
+      expect.objectContaining({ tcpPattern: 'cart.get', authRequired: true }),
+    );
+  });
+
+  it('rejects unauthorized provider context before cart GET dispatch', async () => {
+    mockDispatch.mockRejectedValueOnce({ statusCode: 403, message: 'Provider is not active for cliente' });
+
+    await request(app.getHttpServer())
+      .get('/api/v1/cart/get?vendedorId=vendedor-9')
+      .set('Authorization', `Bearer ${clienteToken}`)
+      .expect(403);
+
+    expect(mockDispatch).toHaveBeenCalledTimes(1);
+    expect(mockDispatch).toHaveBeenCalledWith(
+      'clientes',
+      expect.objectContaining({ body: { vendedorId: 'vendedor-9' } }),
+      expect.objectContaining({ tcpPattern: 'clientes.providers_select' }),
+    );
+  });
+
+  it('dispatches cliente provider list and select actions with trusted JWT context', async () => {
+    mockDispatch
+      .mockResolvedValueOnce({ providers: [{ id: 'vendedor-1', nombre: 'Vendor', isDefault: true }], requiresSelection: false })
+      .mockResolvedValueOnce({ selectedProvider: { id: 'vendedor-1', nombre: 'Vendor', isDefault: true } });
+
+    const server = app.getHttpServer();
+    await request(server)
+      .get('/api/v1/clientes/providers')
+      .set('Authorization', `Bearer ${clienteToken}`)
+      .expect(200);
+
+    await request(server)
+      .post('/api/v1/clientes/providers/select')
+      .set('Authorization', `Bearer ${clienteToken}`)
+      .send({ vendedorId: 'vendedor-1', userId: 'forged-user' })
+      .expect(200);
+
+    expect(mockDispatch).toHaveBeenNthCalledWith(
+      1,
+      'clientes',
+      expect.objectContaining({
+        params: { service: 'clientes', action: 'providers' },
+        user: expect.objectContaining({ sub: 'cliente-user-id', role: 'cliente' }),
+      }),
+      expect.objectContaining({ tcpPattern: 'clientes.providers', authRequired: true, roles: ['cliente'] }),
+    );
+    expect(mockDispatch).toHaveBeenNthCalledWith(
+      2,
+      'clientes',
+      expect.objectContaining({
+        body: { vendedorId: 'vendedor-1' },
+        params: { service: 'clientes', action: 'providers/select' },
+        user: expect.objectContaining({ sub: 'cliente-user-id', role: 'cliente' }),
+      }),
+      expect.objectContaining({ tcpPattern: 'clientes.providers_select', authRequired: true, roles: ['cliente'] }),
+    );
+  });
+
+  it('validates selected provider before cart mutation and preserves vendedorId context', async () => {
+    mockDispatch
+      .mockResolvedValueOnce({ selectedProvider: { id: 'vendedor-1', nombre: 'Vendor', isDefault: false } })
+      .mockResolvedValueOnce({ cartId: 'cart-1', vendedorId: 'vendedor-1' });
+
+    await request(app.getHttpServer())
+      .post('/api/v1/cart/items/add')
+      .set('Authorization', `Bearer ${clienteToken}`)
+      .send({ vendedorId: 'vendedor-1', productoId: 'producto-1', cantidad: 2, userId: 'forged-user' })
+      .expect(200);
+
+    expect(mockDispatch).toHaveBeenNthCalledWith(
+      1,
+      'clientes',
+      expect.objectContaining({
+        body: { vendedorId: 'vendedor-1' },
+        user: expect.objectContaining({ sub: 'cliente-user-id', role: 'cliente' }),
+      }),
+      expect.objectContaining({ tcpPattern: 'clientes.providers_select' }),
+    );
+    expect(mockDispatch).toHaveBeenNthCalledWith(
+      2,
+      'cart',
+      expect.objectContaining({
+        body: { vendedorId: 'vendedor-1', productoId: 'producto-1', cantidad: 2 },
+        params: { service: 'cart', action: 'items/add' },
+        user: expect.objectContaining({ sub: 'cliente-user-id', role: 'cliente' }),
+      }),
+      expect.objectContaining({ tcpPattern: 'cart.items_add' }),
+    );
+  });
+
+  it('rejects unauthorized provider context before cart mutation dispatch', async () => {
+    mockDispatch.mockRejectedValueOnce({ statusCode: 403, message: 'Provider is not active for cliente' });
+
+    await request(app.getHttpServer())
+      .post('/api/v1/cart/items/add')
+      .set('Authorization', `Bearer ${clienteToken}`)
+      .send({ vendedorId: 'vendedor-9', productoId: 'producto-1', cantidad: 2 })
+      .expect(403);
+
+    expect(mockDispatch).toHaveBeenCalledTimes(1);
+    expect(mockDispatch).toHaveBeenCalledWith(
+      'clientes',
+      expect.objectContaining({ body: { vendedorId: 'vendedor-9' } }),
+      expect.objectContaining({ tcpPattern: 'clientes.providers_select' }),
+    );
+  });
+
   it('forwards sanitized DELETE body for cart item deletion', async () => {
-    mockDispatch.mockResolvedValue({ cartId: 'cart-1', items: [] });
+    mockDispatch
+      .mockResolvedValueOnce({ selectedProvider: { id: 'vendedor-1' } })
+      .mockResolvedValueOnce({ cartId: 'cart-1', items: [] });
 
     await request(app.getHttpServer())
       .delete('/api/v1/cart/items/delete')
       .set('Authorization', `Bearer ${clienteToken}`)
-      .send({ cartId: 'cart-1', productoId: 'producto-1', userId: 'forged-user' })
+      .send({ vendedorId: 'vendedor-1', cartId: 'cart-1', productoId: 'producto-1', userId: 'forged-user' })
       .expect(200);
 
-    expect(mockDispatch).toHaveBeenCalledWith(
+    expect(mockDispatch).toHaveBeenNthCalledWith(
+      2,
       'cart',
       expect.objectContaining({
-        body: { cartId: 'cart-1', productoId: 'producto-1' },
+        body: { vendedorId: 'vendedor-1', cartId: 'cart-1', productoId: 'producto-1' },
         params: { service: 'cart', action: 'items/delete' },
         user: expect.objectContaining({ sub: 'cliente-user-id', role: 'cliente' }),
       }),
@@ -239,19 +381,21 @@ describe('Gateway HTTP routing', () => {
   });
 
   it('enqueues protected orders.create with 202 and ignores body userId as identity source', async () => {
+    mockDispatch.mockResolvedValue({ selectedProvider: { id: 'vendedor-1', nombre: 'Vendor', isDefault: true } });
     mockEnqueueOrderCreate.mockResolvedValue({
       jobId: 'orders.create:cliente-user-id:http-key',
       trackingId: 'tracking-http',
       status: 'PENDING',
       statusUrl: '/api/v1/orders/job-status?id=tracking-http',
       acceptedAt: '2026-07-17T19:00:00.000Z',
+      vendedorId: 'vendedor-1',
     });
 
     const response = await request(app.getHttpServer())
       .post('/api/v1/orders/create')
       .set('Idempotency-Key', 'http-key')
       .set('Authorization', `Bearer ${clienteToken}`)
-      .send({ userId: 'forged-user', metodoPago: 'contra_entrega' })
+      .send({ userId: 'forged-user', vendedorId: 'vendedor-1', metodoPago: 'contra_entrega' })
       .expect(202);
 
     expect(response.body).toEqual(expect.objectContaining({
@@ -259,13 +403,22 @@ describe('Gateway HTTP routing', () => {
       trackingId: 'tracking-http',
       status: 'PENDING',
       statusUrl: '/api/v1/orders/job-status?id=tracking-http',
+      vendedorId: 'vendedor-1',
     }));
+    expect(mockDispatch).toHaveBeenCalledWith(
+      'clientes',
+      expect.objectContaining({
+        body: { vendedorId: 'vendedor-1' },
+        user: expect.objectContaining({ sub: 'cliente-user-id', role: 'cliente' }),
+      }),
+      expect.objectContaining({ tcpPattern: 'clientes.providers_select' }),
+    );
     expect(mockEnqueueOrderCreate).toHaveBeenCalledWith(expect.objectContaining({
-        body: { metodoPago: 'contra_entrega' },
+        body: { vendedorId: 'vendedor-1', metodoPago: 'contra_entrega' },
         clienteId: 'cliente-user-id',
         idempotencyKey: 'http-key',
+        vendedorId: 'vendedor-1',
     }));
-    expect(mockDispatch).not.toHaveBeenCalled();
   });
 
   it('dispatches orders.job-status through TCP using the action-router shape', async () => {

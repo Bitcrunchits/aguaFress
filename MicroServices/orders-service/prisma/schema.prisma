@@ -48,8 +48,8 @@ model Cart {
   vendedor_id String   @db.Uuid
   // Se setea desde la capa de servicio: created_at + 24hs
   expires_at       DateTime
-  // Null para carritos inactivos/vencidos; usuario_id mientras está activo para asegurar uno por cliente.
-  active_cart_key  String?   @unique @db.Uuid
+  // Null para carritos inactivos/vencidos; `${clienteUserId}:${vendedorId}` mientras está activo.
+  active_cart_key  String?   @unique @db.VarChar(80)
   created_at       DateTime  @default(now())
   updated_at       DateTime  @updatedAt
 
@@ -158,6 +158,7 @@ model OrderCommandJob {
   job_id          String         @unique @db.VarChar(255)
   // V1 compatibility: auth-user id (`clienteUserId` / AUTH_USER.id), no CLIENTE.id.
   cliente_id      String         @db.Uuid
+  vendedor_id     String?        @db.Uuid
   idempotency_key String         @db.VarChar(255)
   payload_hash    String         @db.VarChar(64)
   payload_body    Json
@@ -169,7 +170,7 @@ model OrderCommandJob {
   created_at      DateTime       @default(now())
   updated_at      DateTime       @updatedAt
 
-  @@unique([cliente_id, idempotency_key])
+  @@unique([cliente_id, vendedor_id, idempotency_key])
   @@index([status])
   @@index([created_at])
   @@map("ORDER_COMMAND_JOB")

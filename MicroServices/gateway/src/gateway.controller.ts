@@ -24,6 +24,14 @@ import { ActionResolverService } from './actions/action-resolver.service';
 import { TcpDispatcherService, type TcpCommandPayload } from './tcp/tcp-dispatcher.service';
 import { OrdersCreateQueueService } from './queues/orders-create-queue.service';
 
+const PROVIDER_SELECTION_MAPPING = {
+  tcpPattern: 'clientes.providers_select',
+  transport: 'send',
+  authRequired: true,
+  roles: ['cliente'],
+  retryOnTimeout: false,
+} as const;
+
 @ApiExcludeController()
 @ApiTags('Gateway Actions')
 @ApiBearerAuth()
@@ -61,6 +69,7 @@ export class GatewayController {
   ): Promise<unknown> {
     const mapping = this.resolver.resolve(service, action);
     const payload = this.buildPayload(req, query, { service, action });
+    await this.validateProviderScopedDispatch(service, req, payload);
     return this.dispatcher.dispatch(service, payload, mapping);
   }
 
@@ -86,9 +95,15 @@ export class GatewayController {
     const sanitizedBody = sanitizeBodyIdentity(body);
 
     if (mapping.asyncQueue === 'orders.create') {
+      const vendedorId = readProviderContext(sanitizedBody, query);
+      if (vendedorId === undefined) {
+        throw new BadRequestException('vendedorId is required for orders.create');
+      }
+      await this.validateProviderContext(req, vendedorId);
       res?.status(HttpStatus.ACCEPTED);
       return this.ordersCreateQueue.enqueue({
         clienteId: readAuthenticatedClienteId(req),
+        vendedorId,
         idempotencyKey: readOrdersCreateIdempotencyKey(req, sanitizedBody),
         body: sanitizeAsyncMetadata(sanitizedBody),
         requestId: readRequestId(req),
@@ -96,6 +111,7 @@ export class GatewayController {
     }
 
     const payload = this.buildPayload(req, query, { service, action }, sanitizedBody);
+    await this.validateProviderScopedDispatch(service, req, payload);
     return this.dispatcher.dispatch(service, payload, mapping);
   }
 
@@ -117,6 +133,7 @@ export class GatewayController {
   ): Promise<unknown> {
     const mapping = this.resolver.resolve(service, action);
     const payload = this.buildPayload(req, query, { service, action }, sanitizeBodyIdentity(body));
+    await this.validateProviderScopedDispatch(service, req, payload);
     return this.dispatcher.dispatch(service, payload, mapping);
   }
 
@@ -138,6 +155,7 @@ export class GatewayController {
   ): Promise<unknown> {
     const mapping = this.resolver.resolve(service, action);
     const payload = this.buildPayload(req, query, { service, action }, sanitizeBodyIdentity(body));
+    await this.validateProviderScopedDispatch(service, req, payload);
     return this.dispatcher.dispatch(service, payload, mapping);
   }
 
@@ -177,6 +195,37 @@ export class GatewayController {
   private rejectUnsupportedMethod(): never {
     throw new MethodNotAllowedException('Gateway actions support GET, POST, PATCH, and DELETE only');
   }
+
+  private async validateProviderScopedDispatch(
+    service: string,
+    req: Request,
+    payload: TcpCommandPayload,
+  ): Promise<void> {
+    if (!isProviderScopedService(service)) {
+      return;
+    }
+
+    const vendedorId = readProviderContext(payload.body, payload.query);
+    if (vendedorId === undefined) {
+      if (service === 'cart') {
+        throw new BadRequestException('vendedorId is required for provider-scoped cart actions');
+      }
+
+      return;
+    }
+
+    await this.validateProviderContext(req, vendedorId);
+  }
+
+  private async validateProviderContext(req: Request, vendedorId: string): Promise<void> {
+    await this.dispatcher.dispatch('clientes', {
+      body: { vendedorId },
+      query: {},
+      params: { service: 'clientes', action: 'providers/select' },
+      user: readAuthenticatedUser(req),
+      requestId: readRequestId(req),
+    }, PROVIDER_SELECTION_MAPPING);
+  }
 }
 
 function sanitizeBodyIdentity(body: unknown): unknown {
@@ -199,6 +248,20 @@ function sanitizeAsyncMetadata(body: unknown): Record<string, unknown> {
   return bodyWithoutAsyncMetadata;
 }
 
+function readProviderContext(body: unknown, query?: Record<string, string>): string | undefined {
+  const queryVendedorId = query?.vendedorId?.trim();
+  if (queryVendedorId !== undefined && queryVendedorId.length > 0) {
+    return queryVendedorId;
+  }
+
+  if (!isPlainRecord(body) || typeof body.vendedorId !== 'string') {
+    return undefined;
+  }
+
+  const bodyVendedorId = body.vendedorId.trim();
+  return bodyVendedorId.length > 0 ? bodyVendedorId : undefined;
+}
+
 function readOrdersCreateIdempotencyKey(req: Request, body: unknown): string {
   const headerKey = readStringHeader(req.headers['idempotency-key']);
   const bodyKey = isPlainRecord(body) && typeof body.idempotencyKey === 'string'
@@ -218,13 +281,17 @@ function readOrdersCreateIdempotencyKey(req: Request, body: unknown): string {
 }
 
 function readAuthenticatedClienteId(req: Request): string {
-  const user = (req as unknown as { user?: { sub?: string } }).user;
+  const user = readAuthenticatedUser(req);
 
   if (typeof user?.sub !== 'string' || user.sub.trim().length === 0) {
     throw new BadRequestException('Authenticated cliente id is required for orders.create');
   }
 
   return user.sub;
+}
+
+function readAuthenticatedUser(req: Request): { sub: string; email: string; role: string } | undefined {
+  return (req as unknown as { user?: { sub: string; email: string; role: string } }).user;
 }
 
 function readRequestId(req: Request): string {
@@ -239,4 +306,8 @@ function readStringHeader(header: string | string[] | undefined): string | undef
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isProviderScopedService(service: string): boolean {
+  return service === 'cart' || service === 'orders';
 }

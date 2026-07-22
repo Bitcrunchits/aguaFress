@@ -40,40 +40,41 @@ describe('CartController', () => {
   });
 
   it('handles cart.get using JWT identity and ignores body userId', async () => {
-    const payload = authenticatedPayload({ body: { userId: 'body-user' } });
+    const payload = authenticatedPayload({ body: { userId: 'body-user' }, query: { vendedorId: 'vendedor-1' } });
 
     await expect(controller.getCart(payload)).resolves.toBe(cartResponse);
 
-    expect(service.getActiveCart).toHaveBeenCalledWith('jwt-user');
-    expect(service.getActiveCart).not.toHaveBeenCalledWith('body-user');
+    expect(service.getActiveCart).toHaveBeenCalledWith('jwt-user', 'vendedor-1');
+    expect(service.getActiveCart).not.toHaveBeenCalledWith('body-user', 'vendedor-1');
   });
 
   it('handles cart.items_add with body DTO and JWT identity', async () => {
-    const payload = authenticatedPayload({ body: { productoId: 'product-1', cantidad: 2 } });
+    const payload = authenticatedPayload({ body: { vendedorId: 'vendedor-1', productoId: 'product-1', cantidad: 2 } });
 
     await expect(controller.addItem(payload)).resolves.toBe(cartResponse);
 
-    expect(service.addItem).toHaveBeenCalledWith('jwt-user', { productoId: 'product-1', cantidad: 2 });
+    expect(service.addItem).toHaveBeenCalledWith('jwt-user', { vendedorId: 'vendedor-1', productoId: 'product-1', cantidad: 2 });
   });
 
   it('handles cart.items_update with body DTO and JWT identity', async () => {
-    const payload = authenticatedPayload({ body: { cartId: 'cart-1', productoId: 'product-1', cantidad: 3 } });
+    const payload = authenticatedPayload({ body: { vendedorId: 'vendedor-1', cartId: 'cart-1', productoId: 'product-1', cantidad: 3 } });
 
     await expect(controller.updateItem(payload)).resolves.toBe(cartResponse);
 
     expect(service.updateItem).toHaveBeenCalledWith('jwt-user', {
       cartId: 'cart-1',
+      vendedorId: 'vendedor-1',
       productoId: 'product-1',
       cantidad: 3,
     });
   });
 
   it('handles cart.items_delete with body DTO and JWT identity', async () => {
-    const payload = authenticatedPayload({ body: { cartId: 'cart-1', productoId: 'product-1' } });
+    const payload = authenticatedPayload({ body: { vendedorId: 'vendedor-1', cartId: 'cart-1', productoId: 'product-1' } });
 
     await expect(controller.deleteItem(payload)).resolves.toBe(cartResponse);
 
-    expect(service.deleteItem).toHaveBeenCalledWith('jwt-user', { cartId: 'cart-1', productoId: 'product-1' });
+    expect(service.deleteItem).toHaveBeenCalledWith('jwt-user', { vendedorId: 'vendedor-1', cartId: 'cart-1', productoId: 'product-1' });
   });
 
   it('exposes the required TCP message patterns', () => {

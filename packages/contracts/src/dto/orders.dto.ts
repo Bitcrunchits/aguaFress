@@ -32,6 +32,12 @@ export interface AddCartItemRequest {
   cantidad: number;
 }
 
+/** Provider-scoped cart add request for mobile/gateway V2 flows. */
+export interface AddCartItemV2Request extends AddCartItemRequest {
+  /** Domain VENDEDOR.id selected by the cliente; auth userId still comes from JWT. */
+  vendedorId: string;
+}
+
 export interface CartItemResponse {
   id: string;
   productoId: string;
@@ -62,9 +68,21 @@ export interface UpdateCartItemRequest {
   cantidad: number;
 }
 
+/** Provider-scoped cart update request for mobile/gateway V2 flows. */
+export interface UpdateCartItemV2Request extends UpdateCartItemRequest {
+  /** Domain VENDEDOR.id selected by the cliente; auth userId still comes from JWT. */
+  vendedorId: string;
+}
+
 export interface DeleteCartItemRequest {
   cartId: string;
   productoId: string;
+}
+
+/** Provider-scoped cart delete request for mobile/gateway V2 flows. */
+export interface DeleteCartItemV2Request extends DeleteCartItemRequest {
+  /** Domain VENDEDOR.id selected by the cliente; auth userId still comes from JWT. */
+  vendedorId: string;
 }
 
 // ════════════════════════════════════════════
@@ -84,6 +102,12 @@ export interface CreateOrderRequest {
   observaciones?: string;
 }
 
+/** Provider-scoped order creation request for mobile/gateway V2 flows. */
+export interface CreateOrderV2Request extends CreateOrderRequest {
+  /** Domain VENDEDOR.id selected by the cliente; auth userId still comes from JWT. */
+  vendedorId: string;
+}
+
 export interface OrderCommandIdempotencyMetadata {
   /** V1 compatibility: auth-user id (`clienteUserId` / AUTH_USER.id), not CLIENTE.id. */
   clienteId: string;
@@ -93,6 +117,8 @@ export interface OrderCommandIdempotencyMetadata {
 export interface AsyncAcceptedResponse {
   jobId: string;
   trackingId: string;
+  /** Selected provider domain ID used to scope the async order command. */
+  vendedorId?: string;
   status: OrderJobStatus.PENDING;
   statusUrl: string;
   /** ISO 8601 */
@@ -102,6 +128,8 @@ export interface AsyncAcceptedResponse {
 export interface CreateOrderJobData extends OrderCommandIdempotencyMetadata {
   jobId: string;
   trackingId: string;
+  /** Selected provider domain ID; validated before gateway enqueue. */
+  vendedorId?: string;
   requestId: string;
   body: Record<string, unknown>;
   /** ISO 8601 */
@@ -111,6 +139,8 @@ export interface CreateOrderJobData extends OrderCommandIdempotencyMetadata {
 export interface OrderJobStatusResponse extends OrderCommandIdempotencyMetadata {
   jobId: string;
   trackingId: string;
+  /** Selected provider domain ID when the tracked command persisted provider context. */
+  vendedorId?: string;
   status: OrderJobStatus;
   orderId?: string;
   errorCode?: string;

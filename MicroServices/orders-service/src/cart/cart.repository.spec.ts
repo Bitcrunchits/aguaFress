@@ -8,7 +8,7 @@ describe('PrismaCartRepository', () => {
   const clienteId = '11111111-1111-1111-1111-111111111111';
   const vendedorId = '22222222-2222-2222-2222-222222222222';
 
-  it('creates active carts with a unique active cart key for the cliente', async () => {
+  it('creates active carts with a unique active cart key for the cliente and provider', async () => {
     const tx = transactionClient({
       activeCart: null,
       createdCart: prismaCart({ id: '33333333-3333-3333-3333-333333333333' }),
@@ -20,7 +20,7 @@ describe('PrismaCartRepository', () => {
     expect(tx.cart.updateMany).toHaveBeenCalledWith({
       where: {
         usuario_id: clienteId,
-        active_cart_key: clienteId,
+        active_cart_key: `${clienteId}:${vendedorId}`,
         expires_at: { lte: now },
       },
       data: { active_cart_key: null },
@@ -30,7 +30,7 @@ describe('PrismaCartRepository', () => {
         usuario_id: clienteId,
         vendedor_id: vendedorId,
         expires_at: expiresAt,
-        active_cart_key: clienteId,
+        active_cart_key: `${clienteId}:${vendedorId}`,
       },
       include: { items: true },
     });
@@ -58,12 +58,29 @@ describe('PrismaCartRepository', () => {
     expect(prisma.cart.findFirst).toHaveBeenCalledWith({
       where: {
         usuario_id: clienteId,
-        active_cart_key: clienteId,
+        vendedor_id: vendedorId,
+        active_cart_key: `${clienteId}:${vendedorId}`,
         expires_at: { gt: now },
       },
       include: { items: true },
       orderBy: { updated_at: 'desc' },
     });
+  });
+
+  it('finds active carts only within the selected provider scope', async () => {
+    const prisma = rootPrismaService({ updatedCount: 1, cart: prismaCart({}) });
+    const repository = new PrismaCartRepository(prisma);
+
+    await repository.findActiveByCliente(clienteId, vendedorId, now);
+
+    expect(prisma.cart.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: {
+        usuario_id: clienteId,
+        vendedor_id: vendedorId,
+        active_cart_key: `${clienteId}:${vendedorId}`,
+        expires_at: { gt: now },
+      },
+    }));
   });
 
   it('replaces an existing item quantity without creating a missing item', async () => {
@@ -125,6 +142,7 @@ describe('PrismaCartRepository', () => {
         upsert: jest.fn(),
       },
       cart: {
+        findFirst: jest.fn().mockResolvedValue(options.cart),
         findUnique: jest.fn().mockResolvedValue(options.cart),
       },
     } as unknown as PrismaService & RootPrismaMutationMock;
@@ -190,7 +208,7 @@ interface RootPrismaMock {
 }
 
 interface RootPrismaMutationMock {
-  readonly cart: Pick<CartDelegateMock, 'findUnique'>;
+  readonly cart: Pick<CartDelegateMock, 'findFirst' | 'findUnique'>;
   readonly cartItem: CartItemDelegateMock;
 }
 
