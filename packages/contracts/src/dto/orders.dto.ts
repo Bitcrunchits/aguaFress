@@ -1,13 +1,14 @@
 // ─── Orders Service ───
-// Puerto: 3004
+// Puerto: 3014
 // Base de datos: PostgreSQL
 // Unifica: carrito + pedidos + facturas
 //
-// ⚠️ REGLA DE SEGURIDAD: userId/clienteId NUNCA viene del body.
-//    Se extrae del token JWT en el middleware. Si un endpoint necesita
-//    el usuario autenticado, lo lee del token, NO del request body.
+// ⚠️ REGLA DE SEGURIDAD: la identidad NUNCA viene del body.
+//    userId = AUTH_USER.id desde JWT sub. En V1, algunos campos públicos
+//    legacy llamados clienteId representan clienteUserId (AUTH_USER.id), no CLIENTE.id.
+//    Mantener compatibilidad hasta una migración V2 explícita.
 
-import { MetodoPago, OrderEstado } from '../enums';
+import { MetodoPago, OrderEstado, OrderJobStatus } from '../enums';
 import type { DireccionEntrega, PaginationRequest } from './common.dto';
 
 // ─── OCP-friendly: al agregar un método de pago:
@@ -23,33 +24,65 @@ export type MetodoPagoPermitido = Extract<MetodoPago, MetodoPago.CONTRA_ENTREGA>
 /**
  * Agregar un item al carrito del usuario autenticado.
  * El userId se obtiene del token JWT, no del body.
+ * Puede devolver 503 controlado hasta que exista el adaptador real de productos.
  */
 export interface AddCartItemRequest {
-  productId: string;
+  cartId?: string;
+  productoId: string;
   cantidad: number;
+}
+
+/** Provider-scoped cart add request for mobile/gateway V2 flows. */
+export interface AddCartItemV2Request extends AddCartItemRequest {
+  /** Domain VENDEDOR.id selected by the cliente; auth userId still comes from JWT. */
+  vendedorId: string;
 }
 
 export interface CartItemResponse {
   id: string;
-  productId: string;
+  productoId: string;
   nombre: string;
   cantidad: number;
   precioUnitario: number;
+  subtotal: number;
 }
 
 export interface CartResponse {
-  cartId: string;
+  id: string;
+  /** V1 compatibility: auth-user id (`clienteUserId` / AUTH_USER.id), not CLIENTE.id. */
+  clienteId: string;
   vendedorId: string;
   items: CartItemResponse[];
-  totalSinIva: number;
-  iva: number;
   total: number;
   /** ISO 8601 — el carrito expira 24hs después de creado */
   expiresAt: string;
 }
 
+/**
+ * Actualiza la cantidad de un item existente.
+ * No crea items faltantes y puede devolver 503 controlado hasta que exista el adaptador real de productos.
+ */
 export interface UpdateCartItemRequest {
+  cartId: string;
+  productoId: string;
   cantidad: number;
+}
+
+/** Provider-scoped cart update request for mobile/gateway V2 flows. */
+export interface UpdateCartItemV2Request extends UpdateCartItemRequest {
+  /** Domain VENDEDOR.id selected by the cliente; auth userId still comes from JWT. */
+  vendedorId: string;
+}
+
+export interface DeleteCartItemRequest {
+  cartId: string;
+  productoId: string;
+}
+
+/** Provider-scoped cart delete request for mobile/gateway V2 flows. */
+export interface DeleteCartItemV2Request extends DeleteCartItemRequest {
+  /** Domain VENDEDOR.id selected by the cliente; auth userId still comes from JWT. */
+  vendedorId: string;
 }
 
 // ════════════════════════════════════════════
@@ -58,8 +91,9 @@ export interface UpdateCartItemRequest {
 
 /**
  * Crear un pedido desde el carrito del usuario autenticado.
- * - userId y clienteId se obtienen del token JWT
+ * - userId se obtiene del JWT; V1 usa clienteId con semántica legacy de clienteUserId (AUTH_USER.id)
  * - Los precios se calculan server-side contra products-service
+ * - Hasta que exista el adaptador real de productos, puede devolver 503 controlado
  * - No se aceptan otros métodos de pago en MVP V1
  */
 export interface CreateOrderRequest {
@@ -68,10 +102,62 @@ export interface CreateOrderRequest {
   observaciones?: string;
 }
 
+/** Provider-scoped order creation request for mobile/gateway V2 flows. */
+export interface CreateOrderV2Request extends CreateOrderRequest {
+  /** Domain VENDEDOR.id selected by the cliente; auth userId still comes from JWT. */
+  vendedorId: string;
+}
+
+export interface OrderCommandIdempotencyMetadata {
+  /** V1 compatibility: auth-user id (`clienteUserId` / AUTH_USER.id), not CLIENTE.id. */
+  clienteId: string;
+  idempotencyKey: string;
+}
+
+export interface AsyncAcceptedResponse {
+  jobId: string;
+  trackingId: string;
+  /** Selected provider domain ID used to scope the async order command. */
+  vendedorId?: string;
+  status: OrderJobStatus.PENDING;
+  statusUrl: string;
+  /** ISO 8601 */
+  acceptedAt: string;
+}
+
+export interface CreateOrderJobData extends OrderCommandIdempotencyMetadata {
+  jobId: string;
+  trackingId: string;
+  /** Selected provider domain ID; validated before gateway enqueue. */
+  vendedorId?: string;
+  requestId: string;
+  body: Record<string, unknown>;
+  /** ISO 8601 */
+  requestedAt: string;
+}
+
+export interface OrderJobStatusResponse extends OrderCommandIdempotencyMetadata {
+  jobId: string;
+  trackingId: string;
+  /** Selected provider domain ID when the tracked command persisted provider context. */
+  vendedorId?: string;
+  status: OrderJobStatus;
+  orderId?: string;
+  errorCode?: string;
+  errorMessage?: string;
+  attempts: number;
+  /** ISO 8601 */
+  createdAt: string;
+  /** ISO 8601 */
+  updatedAt: string;
+}
+
 export interface OrderResponse {
   id: string;
   pedidoNumero: string;
-  cliente: { id: string; nombre: string; apellido?: string };
+  /** V1 compatibility: auth-user id (`clienteUserId` / AUTH_USER.id), not CLIENTE.id. */
+  clienteId: string;
+  vendedorId: string;
   items: {
     productId: string;
     nombre: string;
@@ -84,7 +170,9 @@ export interface OrderResponse {
   estado: OrderEstado;
   metodoPago: MetodoPagoPermitido;
   direccion: DireccionEntrega;
+  observaciones?: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface OrderListFilters extends PaginationRequest {
@@ -109,12 +197,10 @@ export interface OrderListResponse {
 // ════════════════════════════════════════════
 
 /**
- * El cliente confirma la visita del vendedor.
- * Puede opcionalmente actualizar la dirección de entrega.
+ * El vendedor confirma el pedido como parte del ciclo de vida operativo.
  */
 export interface ConfirmOrderRequest {
-  /** Opcional — si el cliente quiere cambiar la dirección antes de la visita */
-  direccion?: DireccionEntrega;
+  id: string;
 }
 
 export interface ConfirmOrderResponse {
@@ -128,9 +214,12 @@ export interface ConfirmOrderResponse {
 // ════════════════════════════════════════════
 
 export interface UpdateOrderStatusRequest {
+  id: string;
   estado: OrderEstado;
+  notas?: string;
 }
 
 export interface CancelOrderRequest {
+  id: string;
   motivo?: string;
 }

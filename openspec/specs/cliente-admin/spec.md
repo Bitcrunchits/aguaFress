@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Admin-only cliente management — list, view, update profiles, and reassign vendedor. All endpoints guarded by `RolesGuard(Role.SUPER_ADMIN)`.
+Admin-only cliente management — list, view, update profiles, and manage provider membership/defaults. All endpoints guarded by `RolesGuard(Role.SUPER_ADMIN)`.
 
 ## Requirements
 
@@ -14,7 +14,7 @@ MUST return paginated clientes with optional filters, sorted by `created_at DESC
 |-------|------|----------|-------------|
 | page | number | No | Default 1 |
 | limit | number | No | Default 20, max 100 |
-| vendedor_id | string | No | Filter by assigned vendedor |
+| vendedor_id | string | No | Filter by active cartera provider |
 | search | string | No | Partial match on nombre, apellido, dni |
 
 #### Scenario: List with defaults
@@ -73,9 +73,9 @@ MUST allow partial update of: nombre, apellido, dni, telefono, tipo_factura, dir
 - WHEN SUPER_ADMIN PATCH /clientes/nonexistent with `{ telefono: "11-5555-0100" }`
 - THEN 404
 
-### R4: Reassign Vendedor (SUPER_ADMIN)
+### R4: Reassign Default Vendedor (SUPER_ADMIN)
 
-MUST change `vendedor_id` and upsert the cartera relationship.
+MUST change the default `CLIENTE.vendedor_id` pointer and upsert an active cartera relationship. `CLIENTE.vendedor_id` remains default/V1 compatibility only; active `RELACION_CARTERA` is the canonical membership.
 
 #### Scenario: Valid reassignment
 
@@ -93,5 +93,6 @@ MUST change `vendedor_id` and upsert the cartera relationship.
 ## Business Rules
 
 1. Admin routes at `/clientes` (plural).
-2. Reassign at `/clientes/:id/reasignar`.
+2. Reassign at `/clientes/:id/reasignar` changes the default provider and must keep cartera in sync.
 3. No DELETE endpoint — clientes are persistent.
+4. SUPER_ADMIN provider membership changes MUST be represented by `RELACION_CARTERA` rows; the default pointer alone MUST NOT authorize provider access.

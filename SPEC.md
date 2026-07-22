@@ -7,12 +7,10 @@
 **Equipo:** AguaFress Development (5 personas)
 **Carrera:** Desarrollo Full Stack
 
-> ⚠️ **⚠️⚠️ ATENCIÓN — CAMBIO DE ARQUITECTURA PENDIENTE ⚠️⚠️⚠️**
-> **La comunicación entre microservicios ya NO será Redis Streams + HTTP REST.**
-> Decisión tomada (27/06/2026): **TCP para comunicación sincrónica** + **Kafka para eventos asíncronos**.
-> Redis Streams queda **descartado**. Este SPEC necesita actualizarse en las secciones 3, 4.3 y 7 cuando se implemente.
-> Mientras tanto, **todo el código nuevo debe asumir Kafka + TCP**, no Redis Streams.
-> ⚠️ **⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️**
+> ⚠️ **ATENCIÓN — ARQUITECTURA DE RESILIENCIA VIGENTE**
+> La comunicación usa dos caminos: **TCP sincrónico** para login, perfil, validaciones y lecturas simples; **Redis + BullMQ asíncrono** para comandos críticos que no deben perderse y pueden esperar segundos.
+> **Kafka NO se usa para este problema.** El piloto async aplica primero a `orders-service` + `gateway` + contratos compartidos.
+> El gateway valida/auth/rutea/encola y responde `202 Accepted` con `jobId`/`trackingId`; `orders-service` mantiene la persistencia final y los workers.
 
 > ⚠️ **Este SPEC refleja la arquitectura V1.0 MVP actual.**  
 > Todo el código nuevo debe cumplir **SOLID + Clean Code** (ver sección 9).
@@ -89,7 +87,7 @@ AguaFress es una plataforma marketplace web que conecta directamente vendedores 
 | ORM | Prisma 5 (todos los servicios PostgreSQL) |
 | PostgreSQL 15 | usuario, products, orders, entregas |
 | MongoDB 6 | notifications (activity logs) |
-| Redis 7 | Caché (sesiones JWT, catálogo) |
+| Redis 7 | Caché y colas BullMQ para comandos async críticos |
 | Monorepo | pnpm workspaces (sin Nx/Turborepo) |
 | Docker | Docker por microservicio + Compose local para desarrollo |
 | API Docs | OpenAPI 3.0 generado por gateway + Scalar (`/api/docs`) |
@@ -109,7 +107,7 @@ aguaFress/
 ├── MicroServices/
 │   ├── usuario-service/     # NestJS - TCP 3011 - PostgreSQL propio (sin HTTP público)
 │   ├── products-service/    # NestJS - TCP interno - PostgreSQL propio (stub)
-│   ├── orders-service/      # NestJS - TCP interno - PostgreSQL propio (stub)
+│   ├── orders-service/      # NestJS - TCP interno + workers BullMQ - PostgreSQL propio (stub)
 │   ├── entregas-service/    # NestJS - TCP interno - PostgreSQL propio (stub)
 │   ├── notifications-service/ # NestJS - TCP/eventos internos - MongoDB propio (stub)
 │   └── gateway/             # NestJS - HTTP 3000 - Única entrada HTTP
@@ -129,16 +127,16 @@ aguaFress/
 | API Gateway | **3000** | HTTP | Única entrada — frontend apunta acá |
 | usuario-service | **3011** | TCP | Solo red Docker interna (no expuesto) |
 | PostgreSQL | 5433 | TCP | Datos transaccionales |
-| Redis | 6379 | TCP | Caché (sesiones JWT, catálogo) |
+| Redis | 6379 | TCP | Caché y colas BullMQ |
 | Mailhog | 1025/8025 | TCP | Email test (desarrollo) |
 
 ### 4.3 Comunicación Entre Servicios
 
-- **~~Redis Streams~~ → 🚧 Kafka**: Bus de eventos asíncronos (pendiente implementar)
-- **TCP**: Comunicación sincrónica interna entre gateway y microservicios de dominio
-- **Redis**: Cache de sesiones (JWT) y catálogo de productos
+- **TCP**: Comunicación sincrónica interna entre gateway y microservicios para login, perfil, validaciones, lecturas simples y respuestas inmediatas
+- **Redis + BullMQ**: Comandos críticos asíncronos que no deben perderse, con retries, backoff, failed jobs/DLQ, idempotency keys y tracking
+- **Kafka**: No se usa para la resiliencia actual
 
-> ⚠️ **Decisión tomada 27/06/2026**: Reemplazar Redis Streams con Kafka, y HTTP REST vía Gateway con TCP directo entre MS. Ver banner al inicio del documento.
+> Decisión vigente: no encolar operaciones TCP simples. Si un MS síncrono está caído, devolver error controlado, `503` o timeout. Encolar solo comandos críticos que puedan esperar segundos.
 
 ### 4.4 API Gateway — Fuente de Verdad AG-90 / AG-100 / AG-101
 
@@ -160,9 +158,9 @@ POST /api/v1/auth/login
 |------|----------|
 | Fuente Jira | `AG-90` crea el gateway; `AG-101` define ruteo TCP versionado; `AG-100` define seguridad anti-abuso/anti-DDoS mínima. |
 | Frontera externa | Frontend → Gateway usa HTTP/JSON versionado bajo `/api/v1/{service}/{action}`. |
-| Frontera interna | Gateway → Microservicios usa TCP exclusivamente; no HTTP entre gateway y microservicios. |
+| Frontera interna | Gateway → Microservicios usa TCP para operaciones inmediatas y BullMQ para comandos async críticos; no HTTP entre gateway y microservicios. |
 | Contrato público | Las acciones públicas viven bajo `/api/v1/{service}/{action}`. |
-| Ruteo interno | El gateway traduce `{service, action}` a mappings TCP explícitos/message patterns. |
+| Ruteo interno | El gateway traduce `{service, action}` a mappings TCP explícitos/message patterns o jobs BullMQ explícitos según criticidad. |
 | Proxy HTTP crudo | Prohibido como arquitectura base. El gateway **NO** preserva rutas downstream arbitrarias `/api/*`. |
 | Rutas legacy | `/auth/*`, `/api/auth/*` y proxy genérico `/api/*` no son rutas canónicas del gateway. |
 | Contratos | `contratosDTOs/api-gateway.json` debe alinearse con `/api/v1/{service}/{action}`. |
@@ -328,22 +326,23 @@ ORDER ──1:1──► DELIVERY
 
 ---
 
-## 7. Eventos del Sistema (🚧 Kafka — Pendiente implementar)
+## 7. Eventos y trabajos asíncronos
 
-> ⚠️ Originalmente diseñado con Redis Streams. **Decisión tomada 27/06/2026: migrar a Kafka**. Esta sección se actualizará cuando se implemente la infraestructura de Kafka. Mientras tanto, los topics/eventos conceptuales son:
+La resiliencia actual no usa Kafka. Para comandos críticos que no deben perderse se usa Redis + BullMQ, empezando por `orders-service`. Los eventos de dominio siguen siendo contratos conceptuales hasta que cada microservicio implemente su integración.
 
-| Topic (ex-stream) | Eventos |
-|-------------------|---------|
+| Área | Eventos/jobs |
+|------|--------------|
 | `auth-events` | UserCreated |
 | `user-events` | VendedorStatusChanged, CarteraClienteAdded |
 | `products-events` | ProductUpdated, ProductDeleted |
+| `orders.create` | Job BullMQ de creación de orden con `jobId`, `trackingId`, `idempotencyKey` y estados `PENDING`, `PROCESSING`, `RETRYING`, `COMPLETED`, `FAILED`, `DEAD_LETTER` |
 | `orders-events` | OrderCreated, OrderStatusChanged |
 | `deliveries-events` | DeliveryStarted, DeliveryCompleted, DeliveryStatusChanged |
 
 Todos los eventos extienden `BaseEvent` (garantiza `timestamp` ISO 8601).
 Unión global: `AguaFressEvent`.
 
-🚧 **Pendiente**: Definir topics de Kafka, schema registry, y productores/consumidores por microservicio.
+Pendiente: completar persistencia, worker y consulta `orders.job_status` en `orders-service`; los contratos base de jobs async ya viven en `packages/contracts`.
 
 ---
 

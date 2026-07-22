@@ -60,6 +60,13 @@ export class UsuarioDomainTcpController {
     return this.vendedoresService.updateMyProfile(this.payloadAdapter.userId(payload), dto);
   }
 
+  @MessagePattern('vendedores.resolve_profile_id')
+  async resolveVendedorProfileId(@Payload() payload: TcpPayload): Promise<{ vendedorId: string }> {
+    this.payloadAdapter.requireRole(payload, UserRole.VENDEDOR);
+    const vendedorId = await this.vendedorResolver.resolve(this.payloadAdapter.userId(payload));
+    return { vendedorId };
+  }
+
   @MessagePattern('vendedores.get_by_id')
   async getVendedorById(@Payload() payload: TcpPayload) {
     this.payloadAdapter.requireRole(payload, UserRole.SUPER_ADMIN);
@@ -164,7 +171,27 @@ export class UsuarioDomainTcpController {
   async reassignCliente(@Payload() payload: TcpPayload) {
     this.payloadAdapter.requireRole(payload, UserRole.SUPER_ADMIN);
     const dto = await this.payloadAdapter.body(payload, ReasignarVendedorDto);
-    return this.clientesService.reassign(this.requireParamId(payload), dto);
+    return this.clientesService.reassign(this.requireParamId(payload), dto, this.payloadAdapter.userId(payload));
+  }
+
+  @MessagePattern('clientes.provider_add')
+  async addClienteProvider(@Payload() payload: TcpPayload) {
+    this.payloadAdapter.requireRole(payload, UserRole.SUPER_ADMIN);
+    const dto = await this.payloadAdapter.body(payload, ReasignarVendedorDto);
+    return this.clientesService.addProvider(this.requireParamId(payload), dto, this.payloadAdapter.userId(payload));
+  }
+
+  @MessagePattern('clientes.providers')
+  listClienteProviders(@Payload() payload: TcpPayload) {
+    this.payloadAdapter.requireRole(payload, UserRole.CLIENTE);
+    return this.clientesService.listProvidersForClienteUser(this.payloadAdapter.userId(payload));
+  }
+
+  @MessagePattern('clientes.providers_select')
+  async selectClienteProvider(@Payload() payload: TcpPayload) {
+    this.payloadAdapter.requireRole(payload, UserRole.CLIENTE);
+    const dto = await this.payloadAdapter.body(payload, ReasignarVendedorDto);
+    return this.clientesService.selectProviderForClienteUser(this.payloadAdapter.userId(payload), dto.vendedorId);
   }
 
   // ─── CLIENTES VENDOR-SCOPED ─────────────────────────────────────
@@ -213,15 +240,16 @@ export class UsuarioDomainTcpController {
   @MessagePattern('qr.admin_deactivate')
   async adminDeactivateQr(@Payload() payload: TcpPayload) {
     this.payloadAdapter.requireRole(payload, UserRole.SUPER_ADMIN);
-    return this.qrCodesService.deactivateAdmin(this.requireParamId(payload));
+    const actorUserId = this.payloadAdapter.userId(payload);
+    return this.qrCodesService.deactivateAdmin(this.requireParamId(payload), actorUserId);
   }
 
   @MessagePattern('qr.vendor_deactivate')
   async vendorDeactivateQr(@Payload() payload: TcpPayload) {
     this.payloadAdapter.requireRole(payload, UserRole.VENDEDOR);
-    const userId = this.payloadAdapter.userId(payload);
-    const vendedorId = await this.vendedorResolver.resolve(userId);
-    return this.qrCodesService.deactivate(this.requireParamId(payload), vendedorId);
+    const actorUserId = this.payloadAdapter.userId(payload);
+    const vendedorId = await this.vendedorResolver.resolve(actorUserId);
+    return this.qrCodesService.deactivate(this.requireParamId(payload), vendedorId, actorUserId);
   }
 
   // ─── LINK INVITACION ────────────────────────────────────────────
@@ -251,15 +279,16 @@ export class UsuarioDomainTcpController {
   @MessagePattern('link_invitacion.admin_deactivate')
   async adminDeactivateLink(@Payload() payload: TcpPayload) {
     this.payloadAdapter.requireRole(payload, UserRole.SUPER_ADMIN);
-    return this.linkInvitacionService.deactivateAdmin(this.requireParamId(payload));
+    const actorUserId = this.payloadAdapter.userId(payload);
+    return this.linkInvitacionService.deactivateAdmin(this.requireParamId(payload), actorUserId);
   }
 
   @MessagePattern('link_invitacion.vendor_deactivate')
   async vendorDeactivateLink(@Payload() payload: TcpPayload) {
     this.payloadAdapter.requireRole(payload, UserRole.VENDEDOR);
-    const userId = this.payloadAdapter.userId(payload);
-    const vendedorId = await this.vendedorResolver.resolve(userId);
-    return this.linkInvitacionService.deactivate(this.requireParamId(payload), vendedorId);
+    const actorUserId = this.payloadAdapter.userId(payload);
+    const vendedorId = await this.vendedorResolver.resolve(actorUserId);
+    return this.linkInvitacionService.deactivate(this.requireParamId(payload), vendedorId, actorUserId);
   }
 
   // ─── HELPERS ────────────────────────────────────────────────────

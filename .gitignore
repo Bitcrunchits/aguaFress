@@ -1,7 +1,9 @@
 node_modules/
 dist/
 coverage/
+**/src/generated/prisma/
 .env
+**/.env
 *.log
 .DS_Store
 

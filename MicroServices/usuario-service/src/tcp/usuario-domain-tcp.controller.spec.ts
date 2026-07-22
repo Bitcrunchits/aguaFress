@@ -21,6 +21,9 @@ type ClientesServiceMock = {
   getById: jest.Mock;
   update: jest.Mock;
   reassign: jest.Mock;
+  addProvider: jest.Mock;
+  listProvidersForClienteUser: jest.Mock;
+  selectProviderForClienteUser: jest.Mock;
   getOwnById: jest.Mock;
   updateOwn: jest.Mock;
 };
@@ -78,6 +81,15 @@ function vendedorPayload(overrides: Partial<TcpPayload> = {}): TcpPayload {
   };
 }
 
+function clientePayload(overrides: Partial<TcpPayload> = {}): TcpPayload {
+  return {
+    user: { sub: 'cliente-user-id', email: 'cliente@test.com', role: UserRole.CLIENTE },
+    params: { id: 'entity-id-123' },
+    requestId: 'request-1',
+    ...overrides,
+  };
+}
+
 describe('UsuarioDomainTcpController', () => {
   let controller: UsuarioDomainTcpController;
   let superAdminService: SuperAdminServiceMock;
@@ -95,6 +107,9 @@ describe('UsuarioDomainTcpController', () => {
       getById: jest.fn(),
       update: jest.fn(),
       reassign: jest.fn(),
+      addProvider: jest.fn(),
+      listProvidersForClienteUser: jest.fn(),
+      selectProviderForClienteUser: jest.fn(),
       getOwnById: jest.fn(),
       updateOwn: jest.fn(),
     };
@@ -337,7 +352,69 @@ describe('UsuarioDomainTcpController', () => {
       });
       const result = await controller.reassignCliente(payload);
 
-      expect(clientesService.reassign).toHaveBeenCalledWith('c-1', expect.objectContaining({ vendedorId: UUID }));
+      expect(clientesService.reassign).toHaveBeenCalledWith('c-1', expect.objectContaining({ vendedorId: UUID }), 'admin-user-id');
+      expect(result).toBe(expected);
+    });
+  });
+
+  describe('clientes.provider_add', () => {
+    const UUID = '550e8400-e29b-41d4-a716-446655440000';
+
+    it('requires super_admin role', async () => {
+      const payload = vendedorPayload({ body: { vendedorId: UUID } });
+      await expect(controller.addClienteProvider(payload)).rejects.toBeInstanceOf(ForbiddenException);
+      expect(clientesService.addProvider).not.toHaveBeenCalled();
+    });
+
+    it('validates body and calls ClientesService.addProvider', async () => {
+      const expected = { id: 'c-1', vendedor_id: UUID };
+      clientesService.addProvider.mockResolvedValue(expected);
+
+      const payload = superAdminPayload({ params: { id: 'c-1' }, body: { vendedorId: UUID } });
+      const result = await controller.addClienteProvider(payload);
+
+      expect(clientesService.addProvider).toHaveBeenCalledWith('c-1', expect.objectContaining({ vendedorId: UUID }), 'admin-user-id');
+      expect(result).toBe(expected);
+    });
+  });
+
+  describe('clientes.providers', () => {
+    it('requires cliente role', async () => {
+      const payload = vendedorPayload();
+
+      expect(() => controller.listClienteProviders(payload)).toThrow(ForbiddenException);
+      expect(clientesService.listProvidersForClienteUser).not.toHaveBeenCalled();
+    });
+
+    it('uses JWT userId to list providers for the cliente', async () => {
+      const expected = { providers: [{ id: 'v-1', nombre: 'Proveedor', isDefault: true }], requiresSelection: false };
+      clientesService.listProvidersForClienteUser.mockResolvedValue(expected);
+
+      const result = await controller.listClienteProviders(clientePayload());
+
+      expect(clientesService.listProvidersForClienteUser).toHaveBeenCalledWith('cliente-user-id');
+      expect(result).toBe(expected);
+    });
+  });
+
+  describe('clientes.providers_select', () => {
+    const UUID = '550e8400-e29b-41d4-a716-446655440000';
+
+    it('requires cliente role', async () => {
+      const payload = vendedorPayload({ body: { vendedorId: UUID } });
+
+      await expect(controller.selectClienteProvider(payload)).rejects.toBeInstanceOf(ForbiddenException);
+      expect(clientesService.selectProviderForClienteUser).not.toHaveBeenCalled();
+    });
+
+    it('validates body and selects provider using JWT userId', async () => {
+      const expected = { selectedProvider: { id: UUID, nombre: 'Proveedor', isDefault: false } };
+      clientesService.selectProviderForClienteUser.mockResolvedValue(expected);
+
+      const payload = clientePayload({ body: { vendedorId: UUID } });
+      const result = await controller.selectClienteProvider(payload);
+
+      expect(clientesService.selectProviderForClienteUser).toHaveBeenCalledWith('cliente-user-id', UUID);
       expect(result).toBe(expected);
     });
   });
@@ -362,6 +439,21 @@ describe('UsuarioDomainTcpController', () => {
       expect(vendedorResolver.resolve).toHaveBeenCalledWith('vendor-user-id');
       expect(clientesService.getOwnById).toHaveBeenCalledWith('c-1', 'vendedor-abc');
       expect(result).toBe(expected);
+    });
+  });
+
+  describe('vendedores.resolve_profile_id', () => {
+    it('requires vendedor role', async () => {
+      await expect(controller.resolveVendedorProfileId(superAdminPayload())).rejects.toBeInstanceOf(ForbiddenException);
+      expect(vendedorResolver.resolve).not.toHaveBeenCalled();
+    });
+
+    it('resolves the authenticated vendedor user id to the domain vendedorId', async () => {
+      vendedorResolver.resolve.mockResolvedValue('vendedor-abc');
+
+      await expect(controller.resolveVendedorProfileId(vendedorPayload())).resolves.toEqual({ vendedorId: 'vendedor-abc' });
+
+      expect(vendedorResolver.resolve).toHaveBeenCalledWith('vendor-user-id');
     });
   });
 
@@ -408,7 +500,7 @@ describe('UsuarioDomainTcpController', () => {
       const payload = superAdminPayload({ params: { id: 'qr-1' } });
       await controller.adminDeactivateQr(payload);
 
-      expect(qrCodesService.deactivateAdmin).toHaveBeenCalledWith('qr-1');
+      expect(qrCodesService.deactivateAdmin).toHaveBeenCalledWith('qr-1', 'admin-user-id');
     });
   });
 
@@ -427,7 +519,7 @@ describe('UsuarioDomainTcpController', () => {
       await controller.vendorDeactivateQr(payload);
 
       expect(vendedorResolver.resolve).toHaveBeenCalledWith('vendor-user-id');
-      expect(qrCodesService.deactivate).toHaveBeenCalledWith('qr-1', 'vendedor-abc');
+      expect(qrCodesService.deactivate).toHaveBeenCalledWith('qr-1', 'vendedor-abc', 'vendor-user-id');
     });
   });
 
@@ -446,7 +538,7 @@ describe('UsuarioDomainTcpController', () => {
       const payload = superAdminPayload({ params: { id: 'link-1' } });
       await controller.adminDeactivateLink(payload);
 
-      expect(linkInvitacionService.deactivateAdmin).toHaveBeenCalledWith('link-1');
+      expect(linkInvitacionService.deactivateAdmin).toHaveBeenCalledWith('link-1', 'admin-user-id');
     });
   });
 
@@ -465,7 +557,7 @@ describe('UsuarioDomainTcpController', () => {
       await controller.vendorDeactivateLink(payload);
 
       expect(vendedorResolver.resolve).toHaveBeenCalledWith('vendor-user-id');
-      expect(linkInvitacionService.deactivate).toHaveBeenCalledWith('link-1', 'vendedor-abc');
+      expect(linkInvitacionService.deactivate).toHaveBeenCalledWith('link-1', 'vendedor-abc', 'vendor-user-id');
     });
   });
 

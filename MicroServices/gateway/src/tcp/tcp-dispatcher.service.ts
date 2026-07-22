@@ -1,8 +1,8 @@
-import { Injectable, Inject, GatewayTimeoutException, Logger } from '@nestjs/common';
+import { Injectable, Inject, GatewayTimeoutException, HttpException, Logger } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { catchError, firstValueFrom, throwError, timeout, TimeoutError, type Observable } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
-import { USUARIO_CLIENT } from './tcp-clients.module';
+import { ENTREGAS_CLIENT, NOTIFICATIONS_CLIENT, ORDERS_CLIENT, USUARIO_CLIENT } from './tcp-clients.module';
 import type { ActionMapping } from '../actions/action-registry';
 
 export interface TcpCommandPayload {
@@ -25,6 +25,10 @@ const SERVICE_CLIENT_MAP: Record<string, string> = {
   'super-admin': USUARIO_CLIENT,
   qr: USUARIO_CLIENT,
   'link-invitacion': USUARIO_CLIENT,
+  orders: ORDERS_CLIENT,
+  cart: ORDERS_CLIENT,
+  deliveries: ENTREGAS_CLIENT,
+  'activity-logs': NOTIFICATIONS_CLIENT,
 };
 
 @Injectable()
@@ -34,6 +38,9 @@ export class TcpDispatcherService {
 
   constructor(
     @Inject(USUARIO_CLIENT) private readonly usuarioClient: ClientProxy,
+    @Inject(ORDERS_CLIENT) private readonly ordersClient: ClientProxy,
+    @Inject(NOTIFICATIONS_CLIENT) private readonly notificationsClient: ClientProxy,
+    @Inject(ENTREGAS_CLIENT) private readonly entregasClient: ClientProxy,
     configService: ConfigService,
   ) {
     this.tcpTimeoutMs = configService.get<number>('TCP_TIMEOUT_MS', 5000);
@@ -48,11 +55,23 @@ export class TcpDispatcherService {
       throw new Error(`No TCP client configured for service family "${service}"`);
     }
 
-    if (clientName !== USUARIO_CLIENT) {
-      throw new Error(`TCP client "${clientName}" is not yet available`);
+    if (clientName === USUARIO_CLIENT) {
+      return this.usuarioClient;
     }
 
-    return this.usuarioClient;
+    if (clientName === ORDERS_CLIENT) {
+      return this.ordersClient;
+    }
+
+    if (clientName === NOTIFICATIONS_CLIENT) {
+      return this.notificationsClient;
+    }
+
+    if (clientName === ENTREGAS_CLIENT) {
+      return this.entregasClient;
+    }
+
+    throw new Error(`TCP client "${clientName}" is not configured`);
   }
 
   /**
@@ -60,7 +79,7 @@ export class TcpDispatcherService {
    *
    * - Uses request/response via `send()` for `'send'` transport
    * - Uses fire-and-forget via `emit()` for `'publish'` transport
-   * - Applies timeout and bounded retry (1 retry on timeout only)
+   * - Applies timeout and bounded retry when the action allows it
    */
   async dispatch(
     service: string,
@@ -74,15 +93,16 @@ export class TcpDispatcherService {
       return { queued: true, pattern: mapping.tcpPattern };
     }
 
-    return this.sendWithRetry(client, mapping.tcpPattern, payload);
+    return this.sendWithRetry(client, mapping.tcpPattern, payload, mapping.retryOnTimeout !== false);
   }
 
   private async sendWithRetry(
     client: ClientProxy,
     pattern: string,
     payload: TcpCommandPayload,
+    retryOnTimeout: boolean,
   ): Promise<unknown> {
-    const maxAttempts = 2;
+    const maxAttempts = retryOnTimeout ? 2 : 1;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
@@ -110,13 +130,14 @@ export class TcpDispatcherService {
             );
           }
 
-          // Business logic / validation errors from the microservice — rethrow as-is
-          throw error;
+          // Business logic / validation errors from the microservice arrive over TCP
+          // as plain payloads, so restore their HTTP status before Nest handles them.
+          throw normalizeTcpError(error);
         }
 
         // Only retry on timeouts
         if (!isTimeout) {
-          throw error;
+          throw normalizeTcpError(error);
         }
 
         this.logger.warn(
@@ -128,4 +149,45 @@ export class TcpDispatcherService {
     // Should never reach here
     throw new Error(`Unexpected: dispatch exited loop for pattern "${pattern}"`);
   }
+}
+
+interface TcpErrorPayload {
+  readonly statusCode: number;
+  readonly message?: unknown;
+  readonly error?: unknown;
+}
+
+function normalizeTcpError(error: unknown): unknown {
+  if (error instanceof HttpException) {
+    return error;
+  }
+
+  const tcpErrorPayload = extractTcpErrorPayload(error);
+  if (tcpErrorPayload) {
+    return new HttpException(tcpErrorPayload, tcpErrorPayload.statusCode);
+  }
+
+  return error;
+}
+
+function extractTcpErrorPayload(error: unknown): TcpErrorPayload | undefined {
+  if (isTcpErrorPayload(error)) {
+    return error;
+  }
+
+  if (typeof error !== 'object' || error === null || !('error' in error)) {
+    return undefined;
+  }
+
+  const nestedError = (error as { readonly error?: unknown }).error;
+  return isTcpErrorPayload(nestedError) ? nestedError : undefined;
+}
+
+function isTcpErrorPayload(error: unknown): error is TcpErrorPayload {
+  if (typeof error !== 'object' || error === null) {
+    return false;
+  }
+
+  const statusCode = (error as { readonly statusCode?: unknown }).statusCode;
+  return typeof statusCode === 'number' && statusCode >= 400 && statusCode < 600;
 }

@@ -2,13 +2,13 @@
 
 ## Purpose
 
-Vendedor-scoped cliente management — list own cartera, get/update assigned clients. Guarded by `VendedorGuard`.
+Vendedor-scoped cliente management — list own active cartera, get/update assigned clients. Guarded by `VendedorGuard`.
 
 ## Requirements
 
 ### R1: List Own Clientes (VENDEDOR)
 
-MUST return paginated clientes from the authenticated vendedor's cartera.
+MUST return paginated clientes from the authenticated vendedor's active `RELACION_CARTERA` rows.
 
 | Param | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -36,7 +36,19 @@ MUST return paginated clientes from the authenticated vendedor's cartera.
 
 ### R2: Get Cliente by ID (VENDEDOR)
 
-MUST return profile ONLY if cliente is in the authenticated vendedor's cartera.
+MUST return profile ONLY if cliente is in the authenticated vendedor's active cartera.
+
+#### Scenario: Default pointer mismatch
+
+- GIVEN cliente `c1` has `CLIENTE.vendedor_id = v1` but active cartera only for `(v2, c1)`
+- WHEN vendedor `v1` requests `c1`
+- THEN the system MUST deny access as non-cartera
+
+#### Scenario: Multi-provider cartera
+
+- GIVEN cliente `c1` has active cartera rows for vendedores `v1` and `v2`
+- WHEN vendedor `v2` lists own clientes
+- THEN `c1` MUST appear
 
 #### Scenario: Existing cliente in cartera
 
@@ -83,3 +95,4 @@ MUST allow updating own cartera clientes. Editable: nombre, apellido, telefono, 
 1. Vendedor routes at `/clientes` (same prefix, different guard).
 2. 404 for non-cartera — do not leak existence.
 3. tipo_factura MUST NOT be present in vendedor update DTO.
+4. Vendedor authorization MUST use active `RELACION_CARTERA(vendedorId, clienteId)`, not `CLIENTE.vendedor_id` alone.

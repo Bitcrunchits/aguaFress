@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { AuditAction } from '@agua/contracts';
+import { Prisma } from '../generated/prisma';
+import { AuditAction, type ClienteProviderResponse, type ClienteProvidersResponse, type SelectClienteProviderResponse } from '@agua/contracts';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { cleanUpdateInput } from '../common/utils/prisma.utils';
 import { AuditLogService } from '../audit-log/audit-log.service';
@@ -17,8 +17,31 @@ const CLIENTE_INCLUDE = {
 };
 
 const CARTERA_FILTER = (vendedorId: string) => ({
-  vendedor_id: vendedorId,
+  cartera: { some: { vendedor_id: vendedorId, activo: true } },
 });
+
+const PROVIDER_SELECT = {
+  id: true,
+  nombre: true,
+  apellido: true,
+  empresa: true,
+  logo: true,
+  telefono: true,
+  ciudad_default: true,
+};
+
+interface ProviderSource {
+  vendedor_id: string;
+  vendedor: {
+    id: string;
+    nombre: string;
+    apellido: string;
+    empresa: string | null;
+    logo: string | null;
+    telefono: string;
+    ciudad_default: string;
+  };
+}
 
 @Injectable()
 export class ClientesService {
@@ -37,7 +60,7 @@ export class ClientesService {
     const where: Prisma.ClienteWhereInput = {};
 
     if (params.vendedorId) {
-      where.vendedor_id = params.vendedorId;
+      Object.assign(where, CARTERA_FILTER(params.vendedorId));
     }
 
     if (params.search) {
@@ -108,7 +131,7 @@ export class ClientesService {
     return result;
   }
 
-  async reassign(id: string, dto: ReasignarVendedorDto) {
+  async reassign(id: string, dto: ReasignarVendedorDto, actorUserId?: string) {
     const current = await this.prisma.cliente.findUnique({
       where: { id },
       select: { vendedor_id: true, auth_user_id: true },
@@ -129,12 +152,6 @@ export class ClientesService {
       if (!targetVendedor) {
         throw new NotFoundException('Vendedor not found');
       }
-
-      // Deactivate all current active cartera entries first
-      await tx.cartera.updateMany({
-        where: { cliente_id: id, activo: true },
-        data: { activo: false },
-      });
 
       const updated = await tx.cliente.update({
         where: { id },
@@ -160,7 +177,7 @@ export class ClientesService {
       return updated;
     });
 
-    await this.auditLogService.record(AuditAction.CLIENTE_REASSIGNED, current.auth_user_id, {
+    await this.auditLogService.record(AuditAction.CLIENTE_REASSIGNED, actorUserId ?? current.auth_user_id, {
       targetId: id,
       detail: { vendedorAnteriorId, vendedorNuevoId: dto.vendedorId },
     });
@@ -168,15 +185,105 @@ export class ClientesService {
     return cliente;
   }
 
+  async addProvider(id: string, dto: ReasignarVendedorDto, actorUserId?: string) {
+    const cliente = await this.prisma.cliente.findUnique({
+      where: { id },
+      select: { id: true, auth_user_id: true },
+    });
+
+    if (!cliente) {
+      throw new NotFoundException('Cliente not found');
+    }
+
+    const vendedor = await this.prisma.vendedor.findUnique({
+      where: { id: dto.vendedorId },
+      select: { id: true },
+    });
+
+    if (!vendedor) {
+      throw new NotFoundException('Vendedor not found');
+    }
+
+    await this.prisma.cartera.upsert({
+      where: {
+        vendedor_id_cliente_id: {
+          vendedor_id: dto.vendedorId,
+          cliente_id: id,
+        },
+      },
+      create: { vendedor_id: dto.vendedorId, cliente_id: id, activo: true },
+      update: { activo: true },
+    });
+
+    await this.auditLogService.record(AuditAction.CLIENTE_UPDATED, actorUserId ?? cliente.auth_user_id, {
+      targetId: id,
+      detail: { vendedorId: dto.vendedorId },
+    });
+
+    return this.getById(id);
+  }
+
+  async listProvidersForClienteUser(userId: string): Promise<ClienteProvidersResponse> {
+    const cliente = await this.prisma.cliente.findUnique({
+      where: { auth_user_id: userId },
+      select: {
+        id: true,
+        vendedor_id: true,
+        cartera: {
+          where: { activo: true },
+          orderBy: { created_at: 'asc' },
+          include: { vendedor: { select: PROVIDER_SELECT } },
+        },
+      },
+    });
+
+    if (!cliente) {
+      throw new NotFoundException('Cliente not found');
+    }
+
+    const providers = cliente.cartera.map((relation) => this.toProviderResponse(relation, cliente.vendedor_id));
+    const defaultIsActive = providers.some((provider) => provider.id === cliente.vendedor_id);
+
+    return {
+      providers,
+      defaultVendedorId: defaultIsActive ? cliente.vendedor_id : undefined,
+      requiresSelection: providers.length > 1,
+    };
+  }
+
+  async selectProviderForClienteUser(userId: string, vendedorId: string): Promise<SelectClienteProviderResponse> {
+    const cliente = await this.prisma.cliente.findUnique({
+      where: { auth_user_id: userId },
+      select: { id: true, vendedor_id: true },
+    });
+
+    if (!cliente) {
+      throw new NotFoundException('Cliente not found');
+    }
+
+    const relation = await this.prisma.cartera.findFirst({
+      where: { cliente_id: cliente.id, vendedor_id: vendedorId, activo: true },
+      include: { vendedor: { select: PROVIDER_SELECT } },
+    });
+
+    if (!relation) {
+      throw new NotFoundException('Active provider relation not found');
+    }
+
+    return {
+      selectedProvider: this.toProviderResponse(relation, cliente.vendedor_id),
+    };
+  }
+
   // ─── VENDEDOR-SCOPED METHODS (cartera) ─────────────────────────
 
-  async listOwn(userId: string, params: ListClientesDto = {}) {
+  async listOwn(vendedorId: string, params: ListClientesDto = {}) {
     const page = params.page ?? 1;
     const limit = params.limit ?? 20;
     const skip = (page - 1) * limit;
 
     const where: Prisma.ClienteWhereInput = {
-      ...CARTERA_FILTER(userId),
+      ...CARTERA_FILTER(vendedorId),
     };
 
     if (params.search) {
@@ -208,11 +315,11 @@ export class ClientesService {
     };
   }
 
-  async getOwnById(id: string, userId: string) {
+  async getOwnById(id: string, vendedorId: string) {
     const cliente = await this.prisma.cliente.findFirst({
       where: {
         id,
-        ...CARTERA_FILTER(userId),
+        ...CARTERA_FILTER(vendedorId),
       },
       include: CLIENTE_INCLUDE,
     });
@@ -224,11 +331,11 @@ export class ClientesService {
     return cliente;
   }
 
-  async updateOwn(id: string, userId: string, dto: UpdateClienteVendedorDto) {
+  async updateOwn(id: string, vendedorId: string, dto: UpdateClienteVendedorDto) {
     const existing = await this.prisma.cliente.findFirst({
       where: {
         id,
-        ...CARTERA_FILTER(userId),
+        ...CARTERA_FILTER(vendedorId),
       },
       select: { id: true },
     });
@@ -244,5 +351,18 @@ export class ClientesService {
       data,
       include: CLIENTE_INCLUDE,
     });
+  }
+
+  private toProviderResponse(relation: ProviderSource, defaultVendedorId: string): ClienteProviderResponse {
+    return {
+      id: relation.vendedor.id,
+      nombre: relation.vendedor.nombre,
+      apellido: relation.vendedor.apellido || undefined,
+      empresa: relation.vendedor.empresa ?? undefined,
+      logo: relation.vendedor.logo ?? undefined,
+      telefono: relation.vendedor.telefono || undefined,
+      ciudad: relation.vendedor.ciudad_default || undefined,
+      isDefault: relation.vendedor_id === defaultVendedorId,
+    };
   }
 }

@@ -23,6 +23,7 @@ const mockPrisma = {
     findUnique: jest.fn(),
   },
   cartera: {
+    findFirst: jest.fn(),
     upsert: jest.fn(),
   },
   $transaction: jest.fn(),
@@ -35,9 +36,7 @@ describe('ClientesService', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
 
-    mockPrisma.$transaction.mockImplementation(
-      (cb: (tx: typeof mockTx) => Promise<any>) => cb(mockTx),
-    );
+    mockPrisma.$transaction.mockImplementation((cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx));
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -145,11 +144,11 @@ describe('ClientesService', () => {
 
       expect(prisma.cliente.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { vendedor_id: 'v-1' },
+          where: { cartera: { some: { vendedor_id: 'v-1', activo: true } } },
         }),
       );
       expect(prisma.cliente.count).toHaveBeenCalledWith({
-        where: { vendedor_id: 'v-1' },
+        where: { cartera: { some: { vendedor_id: 'v-1', activo: true } } },
       });
     });
 
@@ -181,7 +180,7 @@ describe('ClientesService', () => {
       expect(prisma.cliente.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {
-            vendedor_id: 'v-1',
+            cartera: { some: { vendedor_id: 'v-1', activo: true } },
             OR: [
               { nombre: { contains: 'Pérez', mode: 'insensitive' } },
               { apellido: { contains: 'Pérez', mode: 'insensitive' } },
@@ -413,6 +412,10 @@ describe('ClientesService', () => {
 
   describe('reassign', () => {
     it('reasigna vendedor y upserta cartera via $transaction', async () => {
+      prisma.cliente.findUnique.mockResolvedValue({
+        vendedor_id: 'v-1',
+        auth_user_id: 'cliente-user-1',
+      });
       mockTx.vendedor.findUnique.mockResolvedValue({ id: 'v-2' });
       mockTx.cliente.update.mockResolvedValue({
         id: 'cliente-1',
@@ -451,6 +454,10 @@ describe('ClientesService', () => {
     });
 
     it('lanza NotFoundException si el nuevo vendedor no existe', async () => {
+      prisma.cliente.findUnique.mockResolvedValue({
+        vendedor_id: 'v-1',
+        auth_user_id: 'cliente-user-1',
+      });
       mockTx.vendedor.findUnique.mockResolvedValue(null);
 
       await expect(
@@ -459,6 +466,123 @@ describe('ClientesService', () => {
 
       expect(mockTx.cliente.update).not.toHaveBeenCalled();
       expect(mockTx.cartera.upsert).not.toHaveBeenCalled();
+    });
+
+    it('preserva otras relaciones activas al cambiar solo el default V1', async () => {
+      prisma.cliente.findUnique.mockResolvedValue({
+        vendedor_id: 'v-1',
+        auth_user_id: 'cliente-user-1',
+      });
+      mockTx.vendedor.findUnique.mockResolvedValue({ id: 'v-2' });
+      mockTx.cliente.update.mockResolvedValue({ id: 'cliente-1', vendedor_id: 'v-2' });
+
+      await service.reassign('cliente-1', { vendedorId: 'v-2' });
+
+      expect(mockTx.cartera.updateMany).not.toHaveBeenCalled();
+      expect(mockTx.cartera.upsert).toHaveBeenCalledWith({
+        where: {
+          vendedor_id_cliente_id: {
+            vendedor_id: 'v-2',
+            cliente_id: 'cliente-1',
+          },
+        },
+        create: { vendedor_id: 'v-2', cliente_id: 'cliente-1', activo: true },
+        update: { activo: true },
+      });
+    });
+  });
+
+  describe('listProvidersForClienteUser', () => {
+    it('lista proveedores desde relaciones de cartera activas y marca default activo', async () => {
+      prisma.cliente.findUnique.mockResolvedValue({
+        id: 'cliente-1',
+        vendedor_id: 'v-2',
+        cartera: [
+          {
+            vendedor_id: 'v-1',
+            vendedor: {
+              id: 'v-1',
+              nombre: 'Proveedor Uno',
+              apellido: 'Norte',
+              empresa: 'Agua Norte',
+              logo: null,
+              telefono: '111',
+              ciudad_default: 'CABA',
+            },
+          },
+          {
+            vendedor_id: 'v-2',
+            vendedor: {
+              id: 'v-2',
+              nombre: 'Proveedor Dos',
+              apellido: '',
+              empresa: null,
+              logo: 'logo.png',
+              telefono: '',
+              ciudad_default: 'La Plata',
+            },
+          },
+        ],
+      });
+
+      const result = await service.listProvidersForClienteUser('cliente-user-1');
+
+      expect(prisma.cliente.findUnique).toHaveBeenCalledWith({
+        where: { auth_user_id: 'cliente-user-1' },
+        select: expect.objectContaining({
+          id: true,
+          vendedor_id: true,
+          cartera: expect.objectContaining({
+            where: { activo: true },
+          }),
+        }),
+      });
+      expect(result.providers).toHaveLength(2);
+      expect(result.providers[0]).toMatchObject({ id: 'v-1', nombre: 'Proveedor Uno', isDefault: false });
+      expect(result.providers[1]).toMatchObject({ id: 'v-2', nombre: 'Proveedor Dos', logo: 'logo.png', ciudad: 'La Plata', isDefault: true });
+      expect(result.defaultVendedorId).toBe('v-2');
+      expect(result.requiresSelection).toBe(true);
+    });
+
+    it('devuelve lista vacía sin default cuando el cliente no tiene cartera activa', async () => {
+      prisma.cliente.findUnique.mockResolvedValue({ id: 'cliente-1', vendedor_id: 'v-1', cartera: [] });
+
+      const result = await service.listProvidersForClienteUser('cliente-user-1');
+
+      expect(result).toEqual({ providers: [], defaultVendedorId: undefined, requiresSelection: false });
+    });
+  });
+
+  describe('selectProviderForClienteUser', () => {
+    it('acepta solo un proveedor activo de cartera del cliente autenticado', async () => {
+      prisma.cliente.findUnique.mockResolvedValue({ id: 'cliente-1', vendedor_id: 'v-2' });
+      prisma.cartera.findFirst.mockResolvedValue({
+        vendedor_id: 'v-2',
+        vendedor: {
+          id: 'v-2',
+          nombre: 'Proveedor Dos',
+          apellido: 'Sur',
+          empresa: 'Agua Sur',
+          logo: null,
+          telefono: '222',
+          ciudad_default: 'Rosario',
+        },
+      });
+
+      const result = await service.selectProviderForClienteUser('cliente-user-1', 'v-2');
+
+      expect(prisma.cartera.findFirst).toHaveBeenCalledWith({
+        where: { cliente_id: 'cliente-1', vendedor_id: 'v-2', activo: true },
+        include: expect.objectContaining({ vendedor: expect.any(Object) }),
+      });
+      expect(result.selectedProvider).toMatchObject({ id: 'v-2', nombre: 'Proveedor Dos', empresa: 'Agua Sur', ciudad: 'Rosario', isDefault: true });
+    });
+
+    it('rechaza selección si no existe relación activa con ese vendedor', async () => {
+      prisma.cliente.findUnique.mockResolvedValue({ id: 'cliente-1', vendedor_id: 'v-1' });
+      prisma.cartera.findFirst.mockResolvedValue(null);
+
+      await expect(service.selectProviderForClienteUser('cliente-user-1', 'v-9')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -491,12 +615,12 @@ describe('ClientesService', () => {
       prisma.cliente.findMany.mockResolvedValue(mockClientesCartera);
       prisma.cliente.count.mockResolvedValue(1);
 
-      const result = await service.listOwn('user-vendedor-1', {});
+      const result = await service.listOwn('vendedor-1', {});
 
       expect(prisma.cliente.findMany).toHaveBeenCalledWith({
         skip: 0,
         take: 20,
-        where: { vendedor_id: 'user-vendedor-1' },
+        where: { cartera: { some: { vendedor_id: 'vendedor-1', activo: true } } },
         orderBy: { created_at: 'desc' },
         include: {
           vendedor: { select: { id: true, nombre: true, apellido: true, empresa: true } },
@@ -504,7 +628,7 @@ describe('ClientesService', () => {
         },
       });
       expect(prisma.cliente.count).toHaveBeenCalledWith({
-        where: { vendedor_id: 'user-vendedor-1' },
+        where: { cartera: { some: { vendedor_id: 'vendedor-1', activo: true } } },
       });
       expect(result.data).toHaveLength(1);
       expect(result.pagination.total).toBe(1);
@@ -514,12 +638,12 @@ describe('ClientesService', () => {
       prisma.cliente.findMany.mockResolvedValue([]);
       prisma.cliente.count.mockResolvedValue(0);
 
-      await service.listOwn('user-vendedor-1', { search: 'Pérez' });
+      await service.listOwn('vendedor-1', { search: 'Pérez' });
 
       expect(prisma.cliente.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {
-            vendedor_id: 'user-vendedor-1',
+            cartera: { some: { vendedor_id: 'vendedor-1', activo: true } },
             OR: [
               { nombre: { contains: 'Pérez', mode: 'insensitive' } },
               { apellido: { contains: 'Pérez', mode: 'insensitive' } },
@@ -533,7 +657,7 @@ describe('ClientesService', () => {
       prisma.cliente.findMany.mockResolvedValue([]);
       prisma.cliente.count.mockResolvedValue(0);
 
-      const result = await service.listOwn('user-vendedor-1', { page: 2, limit: 5 });
+      const result = await service.listOwn('vendedor-1', { page: 2, limit: 5 });
 
       expect(prisma.cliente.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ skip: 5, take: 5 }),
@@ -579,12 +703,12 @@ describe('ClientesService', () => {
     it('devuelve cliente si está en la cartera del vendedor', async () => {
       prisma.cliente.findFirst.mockResolvedValue(clienteEnCartera);
 
-      const result = await service.getOwnById('cliente-1', 'user-vendedor-1');
+      const result = await service.getOwnById('cliente-1', 'vendedor-1');
 
       expect(prisma.cliente.findFirst).toHaveBeenCalledWith({
         where: {
           id: 'cliente-1',
-          vendedor_id: 'user-vendedor-1',
+          cartera: { some: { vendedor_id: 'vendedor-1', activo: true } },
         },
         include: {
           vendedor: { select: { id: true, nombre: true, apellido: true, empresa: true } },
@@ -598,7 +722,7 @@ describe('ClientesService', () => {
       prisma.cliente.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.getOwnById('cliente-no-en-cartera', 'user-vendedor-1'),
+        service.getOwnById('cliente-no-en-cartera', 'vendedor-1'),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -606,7 +730,7 @@ describe('ClientesService', () => {
       prisma.cliente.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.getOwnById('fake-id', 'user-vendedor-1'),
+        service.getOwnById('fake-id', 'vendedor-1'),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -629,14 +753,14 @@ describe('ClientesService', () => {
         telefono: '11-5555-0199',
       });
 
-      const result = await service.updateOwn('cliente-1', 'user-vendedor-1', {
+      const result = await service.updateOwn('cliente-1', 'vendedor-1', {
         telefono: '11-5555-0199',
       });
 
       expect(prisma.cliente.findFirst).toHaveBeenCalledWith({
         where: {
           id: 'cliente-1',
-          vendedor_id: 'user-vendedor-1',
+          cartera: { some: { vendedor_id: 'vendedor-1', activo: true } },
         },
         select: { id: true },
       });
@@ -655,7 +779,7 @@ describe('ClientesService', () => {
       prisma.cliente.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.updateOwn('cliente-no-en-cartera', 'user-vendedor-1', {
+        service.updateOwn('cliente-no-en-cartera', 'vendedor-1', {
           nombre: 'Test',
         }),
       ).rejects.toThrow(NotFoundException);
@@ -670,7 +794,7 @@ describe('ClientesService', () => {
         direccion_provincia: 'Córdoba',
       });
 
-      await service.updateOwn('cliente-1', 'user-vendedor-1', {
+      await service.updateOwn('cliente-1', 'vendedor-1', {
         direccionCiudad: 'Córdoba',
         direccionProvincia: 'Córdoba',
       });
@@ -692,7 +816,7 @@ describe('ClientesService', () => {
         nombre: 'Juan Updated',
       });
 
-      await service.updateOwn('cliente-1', 'user-vendedor-1', {
+      await service.updateOwn('cliente-1', 'vendedor-1', {
         nombre: 'Juan Updated',
       });
 
@@ -707,7 +831,7 @@ describe('ClientesService', () => {
       prisma.cliente.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.updateOwn('fake-id', 'user-vendedor-1', {
+        service.updateOwn('fake-id', 'vendedor-1', {
           nombre: 'Test',
         }),
       ).rejects.toThrow(NotFoundException);

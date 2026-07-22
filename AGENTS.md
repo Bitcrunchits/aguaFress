@@ -40,6 +40,20 @@
 - ✅ **Conventional commits** — `feat(scope): msg`, `fix(scope): msg`, `refactor(scope): msg`.
 - ✅ **Tests** — Unit tests para lógica de negocio. Integration tests para endpoints.
 
+## Identidad — regla fuente de verdad
+
+| Nombre | Significa | Uso correcto |
+|--------|-----------|--------------|
+| `userId` | `AUTH_USER.id`, tomado del JWT `sub` | Autorización operativa y actor autenticado |
+| `role` | `AUTH_USER.role`, tomado del JWT | Autorización por rol |
+| `clienteId` | `CLIENTE.id` | Entidad/perfil de dominio cliente |
+| `vendedorId` | `VENDEDOR.id` | Entidad/perfil de dominio vendedor |
+| `actorUserId` | `AUTH_USER.id` del actor que ejecuta una acción | Auditoría |
+
+- ❌ No usar `clienteId` ni `vendedorId` para identidad JWT.
+- ✅ Si una compatibilidad pública todavía expone identidad JWT con nombre legado, documentar explícitamente `clienteUserId` / `vendedorUserId` o el alcance de compatibilidad.
+- ✅ Los actores de auditoría siempre usan `actorUserId` (`AUTH_USER.id`), nunca IDs de perfil.
+
 ## NestJS específico
 
 - ✅ Usar `ValidationPipe` con `whitelist: true` y `forbidNonWhitelisted: true`.

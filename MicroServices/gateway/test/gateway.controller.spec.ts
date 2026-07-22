@@ -1,13 +1,15 @@
-import { MethodNotAllowedException } from '@nestjs/common';
+import { BadRequestException, MethodNotAllowedException } from '@nestjs/common';
 import { ActionResolverService, ActionNotFoundError, ServiceUnavailable } from '../src/actions/action-resolver.service';
 import { type ActionMapping } from '../src/actions/action-registry';
 import { GatewayController } from '../src/gateway.controller';
+import { OrdersCreateQueueService } from '../src/queues/orders-create-queue.service';
 import { TcpDispatcherService } from '../src/tcp/tcp-dispatcher.service';
 
 describe('GatewayController', () => {
   let controller: GatewayController;
   let mockResolver: jest.Mocked<ActionResolverService>;
   let mockDispatcher: { dispatch: jest.Mock };
+  let mockOrdersCreateQueue: { enqueue: jest.Mock };
 
   const mockMapping: ActionMapping = {
     tcpPattern: 'auth.login',
@@ -24,7 +26,15 @@ describe('GatewayController', () => {
       dispatch: jest.fn(),
     };
 
-    controller = new GatewayController(mockResolver, mockDispatcher as unknown as TcpDispatcherService);
+    mockOrdersCreateQueue = {
+      enqueue: jest.fn(),
+    };
+
+    controller = new GatewayController(
+      mockResolver,
+      mockDispatcher as unknown as TcpDispatcherService,
+      mockOrdersCreateQueue as unknown as OrdersCreateQueueService,
+    );
   });
 
   describe('action routing', () => {
@@ -58,6 +68,34 @@ describe('GatewayController', () => {
       expect(result).toEqual({ token: 'abc' });
     });
 
+    it('accepts body idempotency key for orders.create', async () => {
+      mockResolver.resolve.mockReturnValue({
+        tcpPattern: 'orders.create',
+        transport: 'send',
+        authRequired: true,
+        roles: ['cliente'],
+        asyncQueue: 'orders.create',
+      });
+      mockDispatcher.dispatch.mockResolvedValue({ selectedProvider: { id: 'vendedor-1' } });
+      mockOrdersCreateQueue.enqueue.mockResolvedValue({ jobId: 'orders.create:cliente-1:vendedor-1:body-key', trackingId: 't-1', status: 'PENDING', vendedorId: 'vendedor-1', statusUrl: '/api/v1/orders/job-status?id=t-1', acceptedAt: '2026-07-17T19:00:00.000Z' });
+
+      await controller.handlePostAction(
+        'orders',
+        'create',
+        { idempotencyKey: 'body-key', vendedorId: 'vendedor-1', metodoPago: 'contra_entrega' },
+        {},
+        { headers: {}, user: { sub: 'cliente-1', email: 'c@agua.com', role: 'cliente' } } as never,
+      );
+
+      expect(mockDispatcher.dispatch).toHaveBeenCalledWith('clientes', expect.objectContaining({
+        body: { vendedorId: 'vendedor-1' },
+      }), expect.objectContaining({ tcpPattern: 'clientes.providers_select' }));
+      expect(mockOrdersCreateQueue.enqueue).toHaveBeenCalledWith(expect.objectContaining({
+        idempotencyKey: 'body-key',
+        vendedorId: 'vendedor-1',
+      }));
+    });
+
     it('resolves and dispatches PATCH actions', async () => {
       mockResolver.resolve.mockReturnValue({
         tcpPattern: 'users.profile_update',
@@ -74,7 +112,7 @@ describe('GatewayController', () => {
       expect(result).toEqual({ updated: true });
     });
 
-    it('resolves and dispatches DELETE actions', async () => {
+    it('resolves and dispatches DELETE actions with sanitized body', async () => {
       mockResolver.resolve.mockReturnValue({
         tcpPattern: 'auth.session',
         transport: 'send',
@@ -83,10 +121,38 @@ describe('GatewayController', () => {
       mockDispatcher.dispatch.mockResolvedValue({ deleted: true });
 
       const req = { headers: {} };
-      const result = await controller.handleDeleteAction('auth', 'session', {}, req as never);
+      const result = await controller.handleDeleteAction(
+        'auth',
+        'session',
+        { id: 'session-1', userId: 'forged-user' },
+        {},
+        req as never,
+      );
 
       expect(mockResolver.resolve).toHaveBeenCalledWith('auth', 'session');
+      expect(mockDispatcher.dispatch).toHaveBeenCalledWith('auth', expect.objectContaining({
+        body: { id: 'session-1' },
+      }), expect.objectContaining({ tcpPattern: 'auth.session' }));
       expect(result).toEqual({ deleted: true });
+    });
+
+    it('rejects provider-scoped cart mutations before dispatch when vendedorId is missing', async () => {
+      mockResolver.resolve.mockReturnValue({
+        tcpPattern: 'cart.items_add',
+        transport: 'send',
+        authRequired: true,
+        roles: ['cliente'],
+      });
+
+      await expect(controller.handlePostAction(
+        'cart',
+        'items/add',
+        { productoId: 'product-1', cantidad: 1 },
+        {},
+        { headers: {}, user: { sub: 'cliente-1', email: 'c@agua.com', role: 'cliente' } } as never,
+      )).rejects.toThrow(BadRequestException);
+
+      expect(mockDispatcher.dispatch).not.toHaveBeenCalled();
     });
 
     it('propagates resolver errors (unknown service)', async () => {

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { AuditAction, UserRole } from '@agua/contracts';
+import { $Enums, Prisma } from '../generated/prisma';
+import { AuditAction, TipoFactura, UserRole, VendedorEstado } from '@agua/contracts';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { cleanUpdateInput } from '../common/utils/prisma.utils';
@@ -11,7 +11,7 @@ export interface VendedorProfile {
   apellido: string;
   empresa: string | null;
   logo: string | null;
-  estado: string;
+  estado: VendedorEstado;
   ciudadDefault: string;
   zonaEntrega: string | null;
 }
@@ -21,17 +21,19 @@ export interface ClienteProfile {
   apellido: string;
   telefono: string;
   dni: string;
-  tipoFactura: string;
-  direccionEntrega: {
-    calle: string;
-    numero: string;
-    pisoDepto: string | null;
-    referencia: string | null;
-    barrio: string | null;
-    ciudad: string;
-    provincia: string;
-    codigoPostal: string | null;
-  };
+  tipoFactura: TipoFactura;
+  direccionEntrega: ClienteDireccionEntregaProfile;
+}
+
+export interface ClienteDireccionEntregaProfile {
+  calle: string;
+  numero: string;
+  pisoDepto: string | null;
+  referencia: string | null;
+  barrio: string | null;
+  ciudad: string;
+  provincia: string;
+  codigoPostal: string | null;
 }
 
 const ADDRESS_MAP: Partial<Record<keyof NonNullable<UpdateProfileDto['address']>, string>> = {
@@ -45,6 +47,25 @@ const ADDRESS_MAP: Partial<Record<keyof NonNullable<UpdateProfileDto['address']>
   codigoPostal: 'direccion_cp',
   latitude: 'latitud',
   longitude: 'longitud',
+};
+
+const TIPO_FACTURA_TO_PRISMA: Record<TipoFactura, $Enums.TipoFactura> = {
+  [TipoFactura.A]: $Enums.TipoFactura.A,
+  [TipoFactura.B]: $Enums.TipoFactura.B,
+  [TipoFactura.C]: $Enums.TipoFactura.C,
+};
+
+const VENDEDOR_ESTADO_FROM_PRISMA: Record<$Enums.VendedorEstado, VendedorEstado> = {
+  [$Enums.VendedorEstado.pendiente]: VendedorEstado.PENDIENTE,
+  [$Enums.VendedorEstado.activo]: VendedorEstado.ACTIVO,
+  [$Enums.VendedorEstado.inactivo]: VendedorEstado.INACTIVO,
+  [$Enums.VendedorEstado.bloqueado]: VendedorEstado.BLOQUEADO,
+};
+
+const TIPO_FACTURA_FROM_PRISMA: Record<$Enums.TipoFactura, TipoFactura> = {
+  [$Enums.TipoFactura.A]: TipoFactura.A,
+  [$Enums.TipoFactura.B]: TipoFactura.B,
+  [$Enums.TipoFactura.C]: TipoFactura.C,
 };
 
 @Injectable()
@@ -104,7 +125,7 @@ export class UsersService {
         apellido: user.vendedor.apellido,
         empresa: user.vendedor.empresa,
         logo: user.vendedor.logo,
-        estado: user.vendedor.estado,
+        estado: VENDEDOR_ESTADO_FROM_PRISMA[user.vendedor.estado],
         ciudadDefault: user.vendedor.ciudad_default,
         zonaEntrega: user.vendedor.zona_entrega,
       };
@@ -114,7 +135,7 @@ export class UsersService {
         apellido: user.cliente.apellido,
         telefono: user.cliente.telefono,
         dni: user.cliente.dni,
-        tipoFactura: user.cliente.tipo_factura,
+        tipoFactura: TIPO_FACTURA_FROM_PRISMA[user.cliente.tipo_factura],
         direccionEntrega: {
           calle: user.cliente.direccion_calle,
           numero: user.cliente.direccion_numero,
@@ -149,8 +170,8 @@ export class UsersService {
     if (!user) throw new NotFoundException('User not found');
 
     if (user.role === UserRole.CLIENTE) {
-      const { address, ...dtoFields } = dto;
-      const data = cleanUpdateInput(dtoFields) as Prisma.ClienteUpdateInput;
+      const data: Prisma.ClienteUpdateInput = this.mapClienteProfileUpdate(dto);
+      const { address } = dto;
       if (address) {
         Object.assign(data, cleanUpdateInput(address, ADDRESS_MAP));
       }
@@ -159,7 +180,7 @@ export class UsersService {
         data,
       });
     } else if (user.role === UserRole.VENDEDOR) {
-      const data = cleanUpdateInput(dto) as Prisma.VendedorUpdateInput;
+      const data: Prisma.VendedorUpdateInput = this.mapVendedorProfileUpdate(dto);
       await this.prisma.vendedor.update({
         where: { auth_user_id: userId },
         data,
@@ -169,5 +190,22 @@ export class UsersService {
     await this.auditLogService.record(AuditAction.PROFILE_UPDATED, userId);
 
     return this.getProfile(userId);
+  }
+
+  private mapClienteProfileUpdate(dto: UpdateProfileDto): Prisma.ClienteUpdateInput {
+    return cleanUpdateInput({
+      nombre: dto.nombre,
+      apellido: dto.apellido,
+      telefono: dto.telefono,
+      tipo_factura: dto.tipoFactura === undefined ? undefined : TIPO_FACTURA_TO_PRISMA[dto.tipoFactura],
+    });
+  }
+
+  private mapVendedorProfileUpdate(dto: UpdateProfileDto): Prisma.VendedorUpdateInput {
+    return cleanUpdateInput({
+      nombre: dto.nombre,
+      apellido: dto.apellido,
+      telefono: dto.telefono,
+    });
   }
 }
