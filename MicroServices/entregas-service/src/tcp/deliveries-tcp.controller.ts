@@ -32,17 +32,16 @@ export class DeliveriesTcpController {
 
   @MessagePattern('deliveries.update_status')
   async updateStatus(@Payload() payload: TcpPayload) {
-    const user = this.payloadAdapter.requireUser(payload);
+    const actorUserId = this.payloadAdapter.userId(payload);
     const id = payload.params?.id ?? payload.query?.id ?? '';
     const dto = await this.payloadAdapter.body(payload, UpdateDeliveryStatusDto);
     const vendedorId = await this.resolveVendedorId(payload);
-    return this.deliveriesService.updateStatus(id, dto, vendedorId, user.sub ?? user.userId);
+    return this.deliveriesService.updateStatus(id, dto, vendedorId, actorUserId);
   }
 
   private async resolveVendedorId(payload: TcpPayload): Promise<string> {
-    const user = this.payloadAdapter.requireUser(payload);
     return this.vendedorProfileResolver.resolveVendedorIdByAuthUserId(
-      user.sub ?? user.userId,
+      this.payloadAdapter.userId(payload),
     );
   }
 }

@@ -1,6 +1,6 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
-import { DeliveryEstado } from '@agua/contracts';
+import { DeliveryEstado, UserRole } from '@agua/contracts';
 import { DeliveriesService } from '../deliveries/deliveries.service';
 import { TcpPayloadAdapter } from './tcp-payload-adapter.service';
 import type { TcpPayload } from './tcp-payload';
@@ -38,7 +38,7 @@ describe('DeliveriesTcpController', () => {
   describe('list', () => {
     it('resuelve vendedorId y llama a findAll con el id resuelto', async () => {
       const payload: TcpPayload = {
-        user: { sub: 'vendedor-1', email: 'v@test.com', role: 'vendedor' },
+        user: { sub: 'vendedor-1', email: 'v@test.com', role: UserRole.VENDEDOR },
         query: {},
         requestId: 'req-1',
       };
@@ -64,7 +64,7 @@ describe('DeliveriesTcpController', () => {
   describe('get', () => {
     it('resuelve vendedorId y llama a findOne con el id resuelto', async () => {
       const payload: TcpPayload = {
-        user: { sub: 'vendedor-1', email: 'v@test.com', role: 'vendedor' },
+        user: { sub: 'vendedor-1', email: 'v@test.com', role: UserRole.VENDEDOR },
         params: { id: 'entrega-1' },
         requestId: 'req-1',
       };
@@ -87,7 +87,7 @@ describe('DeliveriesTcpController', () => {
   describe('updateStatus', () => {
     it('resuelve vendedorId y llama a updateStatus con actorUserId', async () => {
       const payload: TcpPayload = {
-        user: { sub: 'vendedor-1', email: 'v@test.com', role: 'vendedor' },
+        user: { sub: 'vendedor-1', email: 'v@test.com', role: UserRole.VENDEDOR },
         params: { id: 'entrega-1' },
         body: { estado: DeliveryEstado.EN_CAMINO },
         requestId: 'req-1',

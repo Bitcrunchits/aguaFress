@@ -32,7 +32,7 @@ export class TcpPayloadAdapter {
 
   requireRole(payload: TcpPayload, ...roles: UserRole[]): TcpAuthenticatedUser {
     const user = this.requireUser(payload);
-    if (!roles.includes(user.role as UserRole)) {
+    if (!roles.includes(user.role)) {
       throw new ForbiddenException('Rol insuficiente para esta operación');
     }
     return user;

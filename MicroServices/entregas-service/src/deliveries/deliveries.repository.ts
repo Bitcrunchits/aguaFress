@@ -110,8 +110,8 @@ function mapDelivery(delivery: {
   direccion_ciudad: string;
   direccion_provincia: string;
   direccion_cp: string | null;
-  latitud: number | null;
-  longitud: number | null;
+  latitud: Prisma.Decimal | null;
+  longitud: Prisma.Decimal | null;
   fecha_asignacion: Date;
   fecha_entrega: Date | null;
   notas: string | null;
