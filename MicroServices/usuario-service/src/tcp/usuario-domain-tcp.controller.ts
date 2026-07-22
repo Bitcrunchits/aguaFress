@@ -60,6 +60,13 @@ export class UsuarioDomainTcpController {
     return this.vendedoresService.updateMyProfile(this.payloadAdapter.userId(payload), dto);
   }
 
+  @MessagePattern('vendedores.resolve_profile_id')
+  async resolveVendedorProfileId(@Payload() payload: TcpPayload): Promise<{ vendedorId: string }> {
+    this.payloadAdapter.requireRole(payload, UserRole.VENDEDOR);
+    const vendedorId = await this.vendedorResolver.resolve(this.payloadAdapter.userId(payload));
+    return { vendedorId };
+  }
+
   @MessagePattern('vendedores.get_by_id')
   async getVendedorById(@Payload() payload: TcpPayload) {
     this.payloadAdapter.requireRole(payload, UserRole.SUPER_ADMIN);

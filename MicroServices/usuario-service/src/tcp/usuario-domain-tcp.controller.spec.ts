@@ -442,6 +442,21 @@ describe('UsuarioDomainTcpController', () => {
     });
   });
 
+  describe('vendedores.resolve_profile_id', () => {
+    it('requires vendedor role', async () => {
+      await expect(controller.resolveVendedorProfileId(superAdminPayload())).rejects.toBeInstanceOf(ForbiddenException);
+      expect(vendedorResolver.resolve).not.toHaveBeenCalled();
+    });
+
+    it('resolves the authenticated vendedor user id to the domain vendedorId', async () => {
+      vendedorResolver.resolve.mockResolvedValue('vendedor-abc');
+
+      await expect(controller.resolveVendedorProfileId(vendedorPayload())).resolves.toEqual({ vendedorId: 'vendedor-abc' });
+
+      expect(vendedorResolver.resolve).toHaveBeenCalledWith('vendor-user-id');
+    });
+  });
+
   describe('clientes.own_update', () => {
     it('requires vendedor role', async () => {
       const payload = superAdminPayload({ body: { nombre: 'New' } });

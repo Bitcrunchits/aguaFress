@@ -207,6 +207,10 @@ export class GatewayController {
 
     const vendedorId = readProviderContext(payload.body, payload.query);
     if (vendedorId === undefined) {
+      if (service === 'cart') {
+        throw new BadRequestException('vendedorId is required for provider-scoped cart actions');
+      }
+
       return;
     }
 
