@@ -1,0 +1,47 @@
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../src/generated/prisma"
+  decimalNumbers  = true
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DeliveryEstado {
+  pendiente
+  en_camino
+  entregada
+}
+
+model Delivery {
+  id                  String         @id @default(uuid()) @db.Uuid
+  order_id            String         @unique @db.Uuid
+  vendedor_id         String         @db.Uuid
+  estado              DeliveryEstado @default(pendiente)
+
+  // Snapshot datos del cliente al momento de asignar la entrega
+  cliente_nombre      String         @db.VarChar(255)
+  cliente_telefono    String?        @db.VarChar(20)
+
+  // Dirección de entrega (snapshot del pedido)
+  direccion_calle       String   @db.VarChar(200)
+  direccion_numero      String   @db.VarChar(20)
+  direccion_piso        String?  @db.VarChar(20)
+  direccion_referencia  String?  @db.VarChar(200)
+  direccion_barrio      String?  @db.VarChar(100)
+  direccion_ciudad      String   @db.VarChar(100)
+  direccion_provincia   String   @db.VarChar(100)
+  direccion_cp          String?  @db.VarChar(20)
+  latitud               Decimal? @db.Decimal(10, 7)
+  longitud              Decimal? @db.Decimal(10, 7)
+
+  fecha_asignacion DateTime  @default(now())
+  fecha_entrega    DateTime?
+  notas            String?   @db.Text
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+
+  @@map("DELIVERY")
+}

@@ -138,6 +138,30 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # ─── entregas-service ──────────────────────────────────────
+  entregas-service:
+    build:
+      context: .
+      dockerfile: MicroServices/entregas-service/Dockerfile
+    container_name: agua-entregas-service
+    # No HTTP port — TCP only (internal Docker network)
+    env_file:
+      - .env
+    environment:
+      TZ: America/Argentina/Buenos_Aires
+      TCP_PORT: "3015"
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/agua_entregas"
+      REDIS_URL: "redis://redis:6379"
+      USUARIO_SERVICE_HOST: usuario-service
+      USUARIO_SERVICE_TCP_PORT: "3011"
+      TCP_TIMEOUT_MS: "5000"
+    depends_on:
+      postgres-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
   # ─── notifications-service ─────────────────────────────────
   notifications-service:
     build:
@@ -178,6 +202,8 @@ services:
       ORDERS_SERVICE_TCP_PORT: "3014"
       NOTIFICATIONS_SERVICE_HOST: notifications-service
       NOTIFICATIONS_SERVICE_TCP_PORT: "3016"
+      ENTREGAS_SERVICE_HOST: entregas-service
+      ENTREGAS_SERVICE_TCP_PORT: "3015"
       REDIS_URL: "redis://redis:6379"
       ORDERS_CREATE_QUEUE_NAME: "orders.create"
       ORDERS_CREATE_QUEUE_ATTEMPTS: "3"
@@ -189,6 +215,8 @@ services:
       orders-service:
         condition: service_started
       notifications-service:
+        condition: service_started
+      entregas-service:
         condition: service_started
     restart: unless-stopped
 

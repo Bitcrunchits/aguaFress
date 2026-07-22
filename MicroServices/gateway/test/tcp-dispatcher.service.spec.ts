@@ -2,7 +2,7 @@ import { GatewayTimeoutException, Logger } from '@nestjs/common';
 import { NEVER, of, throwError } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
 import type { ClientProxy } from '@nestjs/microservices';
-import { NOTIFICATIONS_CLIENT, ORDERS_CLIENT, USUARIO_CLIENT } from '../src/tcp/tcp-clients.module';
+import { ENTREGAS_CLIENT, NOTIFICATIONS_CLIENT, ORDERS_CLIENT, USUARIO_CLIENT } from '../src/tcp/tcp-clients.module';
 import { TcpDispatcherService, type TcpCommandPayload } from '../src/tcp/tcp-dispatcher.service';
 
 describe('TcpDispatcherService', () => {
@@ -18,19 +18,22 @@ describe('TcpDispatcherService', () => {
     usuarioClient: jest.Mocked<Pick<ClientProxy, 'send' | 'emit'>>;
     ordersClient: jest.Mocked<Pick<ClientProxy, 'send' | 'emit'>>;
     notificationsClient: jest.Mocked<Pick<ClientProxy, 'send' | 'emit'>>;
+    entregasClient: jest.Mocked<Pick<ClientProxy, 'send' | 'emit'>>;
   } {
     const usuarioClient = createClient();
     const ordersClient = createClient();
     const notificationsClient = createClient();
+    const entregasClient = createClient();
     const configService = { get: jest.fn().mockReturnValue(tcpTimeoutMs) } as unknown as ConfigService;
     const dispatcher = new TcpDispatcherService(
       usuarioClient as unknown as ClientProxy,
       ordersClient as unknown as ClientProxy,
       notificationsClient as unknown as ClientProxy,
+      entregasClient as unknown as ClientProxy,
       configService,
     );
 
-    return { dispatcher, usuarioClient, ordersClient, notificationsClient };
+    return { dispatcher, usuarioClient, ordersClient, notificationsClient, entregasClient };
   }
 
   const payload: TcpCommandPayload = {
@@ -56,6 +59,13 @@ describe('TcpDispatcherService', () => {
     expect(NOTIFICATIONS_CLIENT).toBe('NOTIFICATIONS_CLIENT');
     expect(NOTIFICATIONS_CLIENT).not.toBe(USUARIO_CLIENT);
     expect(NOTIFICATIONS_CLIENT).not.toBe(ORDERS_CLIENT);
+  });
+
+  it('exports an ENTREGAS_CLIENT token separate from existing TCP clients', () => {
+    expect(ENTREGAS_CLIENT).toBe('ENTREGAS_CLIENT');
+    expect(ENTREGAS_CLIENT).not.toBe(USUARIO_CLIENT);
+    expect(ENTREGAS_CLIENT).not.toBe(ORDERS_CLIENT);
+    expect(ENTREGAS_CLIENT).not.toBe(NOTIFICATIONS_CLIENT);
   });
 
   it('routes orders actions to ORDERS_CLIENT', async () => {
@@ -97,6 +107,22 @@ describe('TcpDispatcherService', () => {
     expect(notificationsClient.send).toHaveBeenCalledWith('activity_logs.list', payload);
     expect(usuarioClient.send).not.toHaveBeenCalled();
     expect(ordersClient.send).not.toHaveBeenCalled();
+  });
+
+  it('routes deliveries actions to ENTREGAS_CLIENT', async () => {
+    const { dispatcher, usuarioClient, ordersClient, notificationsClient, entregasClient } = createDispatcher();
+
+    await dispatcher.dispatch('deliveries', payload, {
+      tcpPattern: 'deliveries.list',
+      transport: 'send',
+      authRequired: true,
+      roles: ['vendedor'],
+    });
+
+    expect(entregasClient.send).toHaveBeenCalledWith('deliveries.list', payload);
+    expect(usuarioClient.send).not.toHaveBeenCalled();
+    expect(ordersClient.send).not.toHaveBeenCalled();
+    expect(notificationsClient.send).not.toHaveBeenCalled();
   });
 
   it('does not retry mutating send actions on timeout', async () => {

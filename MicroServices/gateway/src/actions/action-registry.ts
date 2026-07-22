@@ -138,7 +138,14 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
       'items/delete': { tcpPattern: 'cart.items_delete', transport: 'send', authRequired: true, roles: ['cliente'], retryOnTimeout: false },
     },
   },
-  deliveries: { status: 'unavailable', actions: {} },
+  deliveries: {
+    status: 'available',
+    actions: {
+      list: { tcpPattern: 'deliveries.list', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      get: { tcpPattern: 'deliveries.get', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      'update-status': { tcpPattern: 'deliveries.update_status', transport: 'send', authRequired: true, roles: ['vendedor'] },
+    },
+  },
   'activity-logs': {
     status: 'available',
     actions: {

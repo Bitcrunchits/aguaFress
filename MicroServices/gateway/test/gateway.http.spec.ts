@@ -23,6 +23,8 @@ describe('Gateway HTTP routing', () => {
     process.env.ORDERS_SERVICE_TCP_PORT = '3014';
     process.env.NOTIFICATIONS_SERVICE_HOST = 'notifications-service';
     process.env.NOTIFICATIONS_SERVICE_TCP_PORT = '3016';
+    process.env.ENTREGAS_SERVICE_HOST = 'entregas-service';
+    process.env.ENTREGAS_SERVICE_TCP_PORT = '3015';
 
     mockDispatch = jest.fn();
     mockEnqueueOrderCreate = jest.fn();
