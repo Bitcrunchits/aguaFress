@@ -149,9 +149,8 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
   'activity-logs': {
     status: 'available',
     actions: {
-      list: { tcpPattern: 'deliveries.list', transport: 'send', authRequired: true, roles: ['vendedor'] },
-      get: { tcpPattern: 'deliveries.get', transport: 'send', authRequired: true, roles: ['vendedor'] },
-      'update-status': { tcpPattern: 'deliveries.update_status', transport: 'send', authRequired: true, roles: ['vendedor'] },
+        list: { tcpPattern: 'activity_logs.list', transport: 'send', authRequired: true, roles: ['super_admin'] },
+      'get-by-id': { tcpPattern: 'activity_logs.get-by-id', transport: 'send', authRequired: true, roles: ['super_admin'] },
     },
   },
 };
