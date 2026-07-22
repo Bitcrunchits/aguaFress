@@ -132,6 +132,8 @@ export interface DeliveryStartedEvent extends BaseEvent {
   deliveryId: string;
   orderId: string;
   vendedorId: string;
+  clienteId: string;
+  actorUserId: string;
 }
 
 export interface DeliveryCompletedEvent extends BaseEvent {
@@ -139,6 +141,8 @@ export interface DeliveryCompletedEvent extends BaseEvent {
   deliveryId: string;
   orderId: string;
   vendedorId: string;
+  clienteId: string;
+  actorUserId: string;
 }
 
 export interface DeliveryStatusChangedEvent extends BaseEvent {

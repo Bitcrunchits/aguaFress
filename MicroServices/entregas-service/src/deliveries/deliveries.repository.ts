@@ -8,6 +8,7 @@ export interface DeliveryRecord {
   readonly id: string;
   readonly orderId: string;
   readonly vendedorId: string;
+  readonly clienteId: string;
   readonly estado: $Enums.DeliveryEstado;
   readonly clienteNombre: string;
   readonly clienteTelefono: string | null;
@@ -99,6 +100,7 @@ function mapDelivery(delivery: {
   id: string;
   order_id: string;
   vendedor_id: string;
+  cliente_id: string;
   estado: $Enums.DeliveryEstado;
   cliente_nombre: string;
   cliente_telefono: string | null;
@@ -120,6 +122,7 @@ function mapDelivery(delivery: {
     id: delivery.id,
     orderId: delivery.order_id,
     vendedorId: delivery.vendedor_id,
+    clienteId: delivery.cliente_id,
     estado: delivery.estado,
     clienteNombre: delivery.cliente_nombre,
     clienteTelefono: delivery.cliente_telefono,

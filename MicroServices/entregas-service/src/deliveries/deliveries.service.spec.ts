@@ -20,6 +20,7 @@ const entregaBaseRecord: DeliveryRecord = {
   id: 'entrega-1',
   orderId: 'order-1',
   vendedorId: 'vendedor-1',
+  clienteId: 'cli-1',
   estado: 'pendiente' as $Enums.DeliveryEstado,
   clienteNombre: 'Juan Pérez',
   clienteTelefono: null,

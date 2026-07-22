@@ -7,6 +7,7 @@ export function toDeliveryResponse(record: DeliveryRecord): DeliveryResponse {
     id: record.id,
     orderId: record.orderId,
     vendedorId: record.vendedorId,
+    clienteId: record.clienteId,
     estado: toContractDeliveryEstado(record.estado),
     cliente: {
       nombre: record.clienteNombre,

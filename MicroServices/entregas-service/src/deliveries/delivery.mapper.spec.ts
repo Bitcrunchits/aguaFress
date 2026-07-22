@@ -10,6 +10,7 @@ describe('DeliveryMapper', () => {
         id: 'entrega-1',
         orderId: 'order-1',
         vendedorId: 'vendedor-1',
+        clienteId: 'cli-1',
         estado: 'pendiente' as $Enums.DeliveryEstado,
         clienteNombre: 'Juan Pérez',
         clienteTelefono: '555-1234',
@@ -33,6 +34,7 @@ describe('DeliveryMapper', () => {
       expect(result.id).toBe('entrega-1');
       expect(result.orderId).toBe('order-1');
       expect(result.vendedorId).toBe('vendedor-1');
+      expect(result.clienteId).toBe('cli-1');
       expect(result.estado).toBe(DeliveryEstado.PENDIENTE);
       expect(result.cliente).toEqual({
         nombre: 'Juan Pérez',
@@ -60,6 +62,7 @@ describe('DeliveryMapper', () => {
         id: 'entrega-2',
         orderId: 'order-2',
         vendedorId: 'vendedor-1',
+        clienteId: 'cli-2',
         estado: 'entregada' as $Enums.DeliveryEstado,
         clienteNombre: 'María',
         clienteTelefono: null,
