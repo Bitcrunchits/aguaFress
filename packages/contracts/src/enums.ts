@@ -33,6 +33,16 @@ export enum OrderJobStatus {
   DEAD_LETTER = 'DEAD_LETTER',
 }
 
+// ─── Estados de comandos asíncronos de entregas ───
+export enum DeliveryJobStatus {
+  PENDING = 'PENDING',
+  PROCESSING = 'PROCESSING',
+  RETRYING = 'RETRYING',
+  COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED',
+  DEAD_LETTER = 'DEAD_LETTER',
+}
+
 // ─── Estados de una entrega / reparto ───
 export enum DeliveryEstado {
   PENDIENTE = 'pendiente',
