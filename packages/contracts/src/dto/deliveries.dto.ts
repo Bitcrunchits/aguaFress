@@ -26,7 +26,6 @@ export interface DeliveryResponse {
 export interface DeliveryListFilters extends PaginationRequest {
   /** Fecha ISO (YYYY-MM-DD) */
   fecha?: string;
-  vendedorId: string;
 }
 
 export interface UpdateDeliveryStatusRequest {

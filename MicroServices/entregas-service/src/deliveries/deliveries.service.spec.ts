@@ -1,38 +1,40 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { DeliveryEstado } from '@agua/contracts';
+import { $Enums } from '../generated/prisma';
 import { DeliveriesService } from './deliveries.service';
-import { PrismaService } from '../common/prisma/prisma.service';
+import { DELIVERY_REPOSITORY, type DeliveryRecord, type DeliveriesRepository } from './deliveries.repository';
+import { DELIVERY_EVENT_PUBLISHER, type DeliveryEventPublisher } from './delivery-event-publisher.port';
 
-const mockPrisma = {
-  delivery: {
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    update: jest.fn(),
-    count: jest.fn(),
-  },
-  $transaction: jest.fn(),
+const mockRepository: jest.Mocked<DeliveriesRepository> = {
+  findAll: jest.fn(),
+  findById: jest.fn(),
+  updateStatus: jest.fn(),
 };
 
-const entregaBase = {
+const mockPublisher: jest.Mocked<DeliveryEventPublisher> = {
+  publishStatusChanged: jest.fn(),
+};
+
+const entregaBaseRecord: DeliveryRecord = {
   id: 'entrega-1',
-  order_id: 'order-1',
-  vendedor_id: 'vendedor-1',
-  estado: DeliveryEstado.PENDIENTE,
-  cliente_nombre: 'Juan Pérez',
-  cliente_telefono: null,
-  direccion_calle: 'Calle Falsa',
-  direccion_numero: '1234',
-  direccion_piso: null,
-  direccion_referencia: null,
-  direccion_barrio: null,
-  direccion_ciudad: null,
-  direccion_provincia: null,
-  direccion_cp: null,
+  orderId: 'order-1',
+  vendedorId: 'vendedor-1',
+  estado: 'pendiente' as $Enums.DeliveryEstado,
+  clienteNombre: 'Juan Pérez',
+  clienteTelefono: null,
+  direccionCalle: 'Calle Falsa',
+  direccionNumero: '1234',
+  direccionPiso: null,
+  direccionReferencia: null,
+  direccionBarrio: null,
+  direccionCiudad: 'Ciudad',
+  direccionProvincia: 'Provincia',
+  direccionCp: null,
   latitud: null,
   longitud: null,
-  fecha_asignacion: new Date('2026-07-07'),
-  fecha_entrega: null,
+  fechaAsignacion: new Date('2026-07-07'),
+  fechaEntrega: null,
   notas: null,
 };
 
@@ -45,7 +47,8 @@ describe('DeliveriesService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DeliveriesService,
-        { provide: PrismaService, useValue: mockPrisma },
+        { provide: DELIVERY_REPOSITORY, useValue: mockRepository },
+        { provide: DELIVERY_EVENT_PUBLISHER, useValue: mockPublisher },
       ],
     }).compile();
 
@@ -56,7 +59,7 @@ describe('DeliveriesService', () => {
 
   describe('findOne', () => {
     it('devuelve la entrega si pertenece al vendedor', async () => {
-      mockPrisma.delivery.findUnique.mockResolvedValue(entregaBase);
+      mockRepository.findById.mockResolvedValue(entregaBaseRecord);
 
       const result = await service.findOne('entrega-1', 'vendedor-1');
 
@@ -65,13 +68,13 @@ describe('DeliveriesService', () => {
     });
 
     it('lanza NotFoundException si la entrega no existe', async () => {
-      mockPrisma.delivery.findUnique.mockResolvedValue(null);
+      mockRepository.findById.mockResolvedValue(null);
 
       await expect(service.findOne('fake-id', 'vendedor-1')).rejects.toThrow(NotFoundException);
     });
 
     it('lanza ForbiddenException si la entrega pertenece a otro vendedor', async () => {
-      mockPrisma.delivery.findUnique.mockResolvedValue(entregaBase);
+      mockRepository.findById.mockResolvedValue(entregaBaseRecord);
 
       await expect(service.findOne('entrega-1', 'otro-vendedor')).rejects.toThrow(ForbiddenException);
     });
@@ -80,75 +83,109 @@ describe('DeliveriesService', () => {
   //  updateStatus — transiciones válidas
 
   describe('updateStatus — transiciones válidas', () => {
-    it('PENDIENTE → EN_CAMINO es válida', async () => {
-      mockPrisma.delivery.findUnique.mockResolvedValue(entregaBase);
-      mockPrisma.delivery.update.mockResolvedValue({
-        ...entregaBase,
-        estado: DeliveryEstado.EN_CAMINO,
+    it('PENDIENTE → EN_CAMINO es válida y publica evento', async () => {
+      mockRepository.findById.mockResolvedValue(entregaBaseRecord);
+      mockRepository.updateStatus.mockResolvedValue({
+        ...entregaBaseRecord,
+        estado: 'en_camino' as $Enums.DeliveryEstado,
       });
 
-      const result = await service.updateStatus('entrega-1', { estado: DeliveryEstado.EN_CAMINO }, 'vendedor-1');
+      const result = await service.updateStatus(
+        'entrega-1',
+        { estado: DeliveryEstado.EN_CAMINO },
+        'vendedor-1',
+        'user-abc',
+      );
 
-      expect(mockPrisma.delivery.update).toHaveBeenCalled();
+      expect(mockRepository.updateStatus).toHaveBeenCalled();
       expect(result.estado).toBe(DeliveryEstado.EN_CAMINO);
+      expect(mockPublisher.publishStatusChanged).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'DeliveryStatusChanged',
+          deliveryId: 'entrega-1',
+          orderId: 'order-1',
+          estadoAnterior: DeliveryEstado.PENDIENTE,
+          estadoNuevo: DeliveryEstado.EN_CAMINO,
+          actorUserId: 'user-abc',
+        }),
+      );
     });
 
-    it('EN_CAMINO → ENTREGADA es válida', async () => {
-      mockPrisma.delivery.findUnique.mockResolvedValue({
-        ...entregaBase,
-        estado: DeliveryEstado.EN_CAMINO,
+    it('EN_CAMINO → ENTREGADA es válida y publica evento', async () => {
+      mockRepository.findById.mockResolvedValue({
+        ...entregaBaseRecord,
+        estado: 'en_camino' as $Enums.DeliveryEstado,
       });
-      mockPrisma.delivery.update.mockResolvedValue({
-        ...entregaBase,
-        estado: DeliveryEstado.ENTREGADA,
-        fecha_entrega: new Date(),
+      mockRepository.updateStatus.mockResolvedValue({
+        ...entregaBaseRecord,
+        estado: 'entregada' as $Enums.DeliveryEstado,
+        fechaEntrega: new Date(),
       });
 
-      const result = await service.updateStatus('entrega-1', { estado: DeliveryEstado.ENTREGADA }, 'vendedor-1');
+      const result = await service.updateStatus(
+        'entrega-1',
+        { estado: DeliveryEstado.ENTREGADA },
+        'vendedor-1',
+        'user-abc',
+      );
 
       expect(result.estado).toBe(DeliveryEstado.ENTREGADA);
+      expect(mockPublisher.publishStatusChanged).toHaveBeenCalledWith(
+        expect.objectContaining({
+          deliveryId: 'entrega-1',
+          estadoAnterior: DeliveryEstado.EN_CAMINO,
+          estadoNuevo: DeliveryEstado.ENTREGADA,
+          actorUserId: 'user-abc',
+        }),
+      );
     });
   });
-
 
   //  updateStatus — transiciones inválidas
 
   describe('updateStatus — transiciones inválidas', () => {
-    it('PENDIENTE → ENTREGADA lanza 400', async () => {
-      mockPrisma.delivery.findUnique.mockResolvedValue(entregaBase);
+    it('PENDIENTE → ENTREGADA lanza 400 y no publica evento', async () => {
+      mockRepository.findById.mockResolvedValue(entregaBaseRecord);
 
       await expect(
-        service.updateStatus('entrega-1', { estado: DeliveryEstado.ENTREGADA }, 'vendedor-1'),
+        service.updateStatus('entrega-1', { estado: DeliveryEstado.ENTREGADA }, 'vendedor-1', 'user-abc'),
       ).rejects.toThrow(BadRequestException);
 
-      expect(mockPrisma.delivery.update).not.toHaveBeenCalled();
+      expect(mockRepository.updateStatus).not.toHaveBeenCalled();
+      expect(mockPublisher.publishStatusChanged).not.toHaveBeenCalled();
     });
 
-    it('ENTREGADA → EN_CAMINO lanza 400', async () => {
-      mockPrisma.delivery.findUnique.mockResolvedValue({
-        ...entregaBase,
-        estado: DeliveryEstado.ENTREGADA,
+    it('ENTREGADA → EN_CAMINO lanza 400 y no publica evento', async () => {
+      mockRepository.findById.mockResolvedValue({
+        ...entregaBaseRecord,
+        estado: 'entregada' as $Enums.DeliveryEstado,
       });
 
       await expect(
-        service.updateStatus('entrega-1', { estado: DeliveryEstado.EN_CAMINO }, 'vendedor-1'),
+        service.updateStatus('entrega-1', { estado: DeliveryEstado.EN_CAMINO }, 'vendedor-1', 'user-abc'),
       ).rejects.toThrow(BadRequestException);
+
+      expect(mockPublisher.publishStatusChanged).not.toHaveBeenCalled();
     });
 
     it('lanza NotFoundException si la entrega no existe', async () => {
-      mockPrisma.delivery.findUnique.mockResolvedValue(null);
+      mockRepository.findById.mockResolvedValue(null);
 
       await expect(
-        service.updateStatus('fake-id', { estado: DeliveryEstado.EN_CAMINO }, 'vendedor-1'),
+        service.updateStatus('fake-id', { estado: DeliveryEstado.EN_CAMINO }, 'vendedor-1', 'user-abc'),
       ).rejects.toThrow(NotFoundException);
+
+      expect(mockPublisher.publishStatusChanged).not.toHaveBeenCalled();
     });
 
     it('lanza ForbiddenException si la entrega pertenece a otro vendedor', async () => {
-      mockPrisma.delivery.findUnique.mockResolvedValue(entregaBase);
+      mockRepository.findById.mockResolvedValue(entregaBaseRecord);
 
       await expect(
-        service.updateStatus('entrega-1', { estado: DeliveryEstado.EN_CAMINO }, 'otro-vendedor'),
+        service.updateStatus('entrega-1', { estado: DeliveryEstado.EN_CAMINO }, 'otro-vendedor', 'user-abc'),
       ).rejects.toThrow(ForbiddenException);
+
+      expect(mockPublisher.publishStatusChanged).not.toHaveBeenCalled();
     });
   });
 });

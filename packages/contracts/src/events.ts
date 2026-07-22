@@ -147,6 +147,7 @@ export interface DeliveryStatusChangedEvent extends BaseEvent {
   orderId: string;
   estadoAnterior: DeliveryEstado;
   estadoNuevo: DeliveryEstado;
+  actorUserId: string;
 }
 
 export type DeliveryEvent =
