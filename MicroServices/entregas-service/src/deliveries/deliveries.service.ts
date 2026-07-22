@@ -75,6 +75,30 @@ export class DeliveriesService {
       fecha_entrega: dto.estado === DeliveryEstado.ENTREGADA ? new Date() : undefined,
     });
 
+    if (dto.estado === DeliveryEstado.EN_CAMINO) {
+      await this.eventPublisher.publishStarted({
+        type: 'DeliveryStarted',
+        deliveryId: id,
+        orderId: entrega.orderId,
+        vendedorId,
+        clienteId: entrega.clienteId,
+        actorUserId,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    if (dto.estado === DeliveryEstado.ENTREGADA) {
+      await this.eventPublisher.publishCompleted({
+        type: 'DeliveryCompleted',
+        deliveryId: id,
+        orderId: entrega.orderId,
+        vendedorId,
+        clienteId: entrega.clienteId,
+        actorUserId,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     await this.eventPublisher.publishStatusChanged({
       type: 'DeliveryStatusChanged',
       deliveryId: id,

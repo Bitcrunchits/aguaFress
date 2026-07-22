@@ -494,6 +494,103 @@ describe('Gateway HTTP routing', () => {
     );
   });
 
+  // ─── Deliveries ────────────────────────────────────────
+
+  it('dispatches deliveries/list for vendedor only', async () => {
+    mockDispatch.mockResolvedValue({ data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } });
+
+    await request(app.getHttpServer())
+      .get('/api/v1/deliveries/list')
+      .expect(401);
+    expect(mockDispatch).not.toHaveBeenCalled();
+
+    await request(app.getHttpServer())
+      .get('/api/v1/deliveries/list')
+      .set('Authorization', `Bearer ${clienteToken}`)
+      .expect(403);
+    expect(mockDispatch).not.toHaveBeenCalled();
+
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/deliveries/list')
+      .set('Authorization', `Bearer ${vendedorToken}`)
+      .expect(200);
+
+    expect(response.body).toEqual({ data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } });
+    expect(mockDispatch).toHaveBeenCalledWith(
+      'deliveries',
+      expect.objectContaining({
+        params: { service: 'deliveries', action: 'list' },
+        user: expect.objectContaining({ sub: 'test-user-id', role: 'vendedor' }),
+      }),
+      expect.objectContaining({ tcpPattern: 'deliveries.list', authRequired: true, roles: ['vendedor'] }),
+    );
+  });
+
+  it('dispatches deliveries/get for vendedor only', async () => {
+    mockDispatch.mockResolvedValue({ id: 'del-1', orderId: 'order-1', estado: 'pendiente' });
+
+    await request(app.getHttpServer())
+      .get('/api/v1/deliveries/get?id=del-1')
+      .expect(401);
+    expect(mockDispatch).not.toHaveBeenCalled();
+
+    await request(app.getHttpServer())
+      .get('/api/v1/deliveries/get?id=del-1')
+      .set('Authorization', `Bearer ${clienteToken}`)
+      .expect(403);
+    expect(mockDispatch).not.toHaveBeenCalled();
+
+    const response = await request(app.getHttpServer())
+      .get('/api/v1/deliveries/get?id=del-1')
+      .set('Authorization', `Bearer ${vendedorToken}`)
+      .expect(200);
+
+    expect(response.body).toEqual({ id: 'del-1', orderId: 'order-1', estado: 'pendiente' });
+    expect(mockDispatch).toHaveBeenCalledWith(
+      'deliveries',
+      expect.objectContaining({
+        query: { id: 'del-1' },
+        params: { service: 'deliveries', action: 'get' },
+        user: expect.objectContaining({ sub: 'test-user-id', role: 'vendedor' }),
+      }),
+      expect.objectContaining({ tcpPattern: 'deliveries.get', authRequired: true, roles: ['vendedor'] }),
+    );
+  });
+
+  it('dispatches deliveries/update-status for vendedor only', async () => {
+    mockDispatch.mockResolvedValue({ id: 'del-1', orderId: 'order-1', estado: 'en_camino' });
+
+    await request(app.getHttpServer())
+      .patch('/api/v1/deliveries/update-status')
+      .send({ estado: 'EN_CAMINO' })
+      .expect(401);
+    expect(mockDispatch).not.toHaveBeenCalled();
+
+    await request(app.getHttpServer())
+      .patch('/api/v1/deliveries/update-status')
+      .set('Authorization', `Bearer ${clienteToken}`)
+      .send({ estado: 'EN_CAMINO' })
+      .expect(403);
+    expect(mockDispatch).not.toHaveBeenCalled();
+
+    const response = await request(app.getHttpServer())
+      .patch('/api/v1/deliveries/update-status')
+      .set('Authorization', `Bearer ${vendedorToken}`)
+      .send({ estado: 'EN_CAMINO' })
+      .expect(200);
+
+    expect(response.body).toEqual({ id: 'del-1', orderId: 'order-1', estado: 'en_camino' });
+    expect(mockDispatch).toHaveBeenCalledWith(
+      'deliveries',
+      expect.objectContaining({
+        body: { estado: 'EN_CAMINO' },
+        params: { service: 'deliveries', action: 'update-status' },
+        user: expect.objectContaining({ sub: 'test-user-id', role: 'vendedor' }),
+      }),
+      expect.objectContaining({ tcpPattern: 'deliveries.update_status', authRequired: true, roles: ['vendedor'] }),
+    );
+  });
+
   it('keeps audit-log reads on usuario-service and exposes no activity-log mutations', async () => {
     mockDispatch.mockResolvedValue({ data: [], meta: { page: 1, limit: 20, total: 0, totalPages: 0 } });
 

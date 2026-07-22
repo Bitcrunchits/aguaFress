@@ -1,53 +1,10 @@
 # Delivery Events Specification
 
-## Purpose
+## Delta: DeliveryStarted + DeliveryCompleted
 
-Define typed event publishing for delivery status transitions, enabling downstream consumers (notifications, audit, analytics) to react to delivery lifecycle changes.
+> **Context**: The main `openspec/specs/delivery-events/spec.md` already covers `DeliveryStatusChangedEvent`. This delta adds event publishing for `DeliveryStartedEvent` and `DeliveryCompletedEvent` — both exist in `@agua/contracts` but are never published by `DeliveriesService.updateStatus`.
 
-## Requirements
-
-### Requirement: Publish DeliveryStatusChangedEvent on valid transitions
-
-When a delivery status transitions through a valid path (PENDIENTE → EN_CAMINO, EN_CAMINO → ENTREGADA), the system MUST publish a `DeliveryStatusChangedEvent` to the `deliveries-stream`.
-
-The event MUST include these fields:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `type` | `"DeliveryStatusChanged"` | Discriminant |
-| `deliveryId` | `string` | Delivery entity ID |
-| `orderId` | `string` | Associated order ID |
-| `estadoAnterior` | `DeliveryEstado` | Previous state |
-| `estadoNuevo` | `DeliveryEstado` | New state |
-| `actorUserId` | `string` | `AUTH_USER.id` who triggered the transition |
-| `timestamp` | `string` (ISO 8601) | When the transition occurred |
-
-#### Scenario: Happy path — delivery goes EN_CAMINO
-
-- GIVEN a delivery with estado `PENDIENTE`
-- WHEN `updateStatus` is called with estado `EN_CAMINO` by an authenticated vendedor
-- THEN the delivery estado is updated to `EN_CAMINO`
-- AND a `DeliveryStatusChangedEvent` is published with `estadoAnterior: PENDIENTE`, `estadoNuevo: EN_CAMINO`, and `actorUserId` matching the authenticated user
-
-#### Scenario: Happy path — delivery completes
-
-- GIVEN a delivery with estado `EN_CAMINO`
-- WHEN `updateStatus` is called with estado `ENTREGADA` by an authenticated vendedor
-- THEN the delivery estado is updated to `ENTREGADA`
-- AND a `DeliveryStatusChangedEvent` is published with `estadoAnterior: EN_CAMINO`, `estadoNuevo: ENTREGADA`, and `actorUserId` matching the authenticated user
-
-#### Scenario: Invalid transition does NOT publish
-
-- GIVEN a delivery with estado `ENTREGADA`
-- WHEN `updateStatus` is called with any estado
-- THEN the service throws `BadRequestException`
-- AND no `DeliveryStatusChangedEvent` is published
-
-#### Scenario: actorUserId matches authenticated user
-
-- GIVEN a vendedor with `AUTH_USER.id = "user-abc"`
-- WHEN they trigger a valid status transition
-- THEN the published event's `actorUserId` equals `"user-abc"`
+The existing event (`DeliveryStatusChangedEvent`) continues to be published alongside these new events. They are complementary, not mutually exclusive.
 
 ### Requirement: Publish DeliveryStartedEvent on PENDIENTE → EN_CAMINO
 
@@ -129,25 +86,21 @@ The concrete `RedisDeliveryEventPublisher` MUST implement both by publishing to 
 
 ### Requirement: Events extend BaseEvent and are part of DeliveryEvent union
 
-`DeliveryStatusChangedEvent`, `DeliveryStartedEvent`, and `DeliveryCompletedEvent` MUST all extend `BaseEvent` (inherit `timestamp`). All three MUST be part of the `DeliveryEvent` union type in `@agua/contracts`.
+Both `DeliveryStartedEvent` and `DeliveryCompletedEvent` MUST extend `BaseEvent` (inherit `timestamp`). They MUST be part of the `DeliveryEvent` union type in `@agua/contracts`.
 
-#### Scenario: Event satisfies union narrowing for all event types
+#### Scenario: Event satisfies union narrowing
 
 - GIVEN a `DeliveryEvent` type
-- WHEN narrowed on `type === "DeliveryStatusChanged"`
-- THEN the resulting type includes `deliveryId`, `orderId`, `estadoAnterior`, `estadoNuevo`, and `actorUserId`
 - WHEN narrowed on `type === "DeliveryStarted"`
 - THEN the resulting type includes `deliveryId`, `orderId`, `vendedorId`, `clienteId`, and `actorUserId`
-- WHEN narrowed on `type === "DeliveryCompleted"`
-- THEN the resulting type includes `deliveryId`, `orderId`, `vendedorId`, `clienteId`, and `actorUserId`
 
-### Requirement: Events are published after successful persistence
+### Requirement: Events are published after successful persistence (same rule)
 
-All delivery events SHALL be published AFTER the database update commits. If any event publishing fails, the status transition SHALL NOT be rolled back — the delivery is already updated, and the failure is logged. This applies to all three event types: `DeliveryStatusChangedEvent`, `DeliveryStartedEvent`, and `DeliveryCompletedEvent`.
+The new events follow the same non-blocking rule as `DeliveryStatusChangedEvent`: published AFTER the database update commits, with failure logged but NOT rolled back.
 
-#### Scenario: Event publish failure is non-blocking (all event types)
+#### Scenario: New event publish failure is also non-blocking
 
-- GIVEN a delivery status transition succeeds in the database
-- WHEN any event publishing throws an error (but others succeed)
-- THEN the delivery status remains updated
+- GIVEN a PENDIENTE → EN_CAMINO transition succeeds in the database
+- WHEN `publishStarted` throws an error (but `publishStatusChanged` succeeds)
+- THEN the delivery status remains `EN_CAMINO`
 - AND the error is logged but NOT propagated to the caller

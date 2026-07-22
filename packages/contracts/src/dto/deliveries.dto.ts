@@ -12,6 +12,7 @@ export interface DeliveryResponse {
   id: string;
   orderId: string;
   vendedorId: string;
+  clienteId: string;
   estado: DeliveryEstado;
   cliente: {
     nombre: string;

@@ -14,12 +14,15 @@ const mockRepository: jest.Mocked<DeliveriesRepository> = {
 
 const mockPublisher: jest.Mocked<DeliveryEventPublisher> = {
   publishStatusChanged: jest.fn(),
+  publishStarted: jest.fn(),
+  publishCompleted: jest.fn(),
 };
 
 const entregaBaseRecord: DeliveryRecord = {
   id: 'entrega-1',
   orderId: 'order-1',
   vendedorId: 'vendedor-1',
+  clienteId: 'cli-1',
   estado: 'pendiente' as $Enums.DeliveryEstado,
   clienteNombre: 'Juan Pérez',
   clienteTelefono: null,
@@ -83,7 +86,7 @@ describe('DeliveriesService', () => {
   //  updateStatus — transiciones válidas
 
   describe('updateStatus — transiciones válidas', () => {
-    it('PENDIENTE → EN_CAMINO es válida y publica evento', async () => {
+    it('PENDIENTE → EN_CAMINO es válida y publica DeliveryStarted + DeliveryStatusChanged', async () => {
       mockRepository.findById.mockResolvedValue(entregaBaseRecord);
       mockRepository.updateStatus.mockResolvedValue({
         ...entregaBaseRecord,
@@ -99,6 +102,16 @@ describe('DeliveriesService', () => {
 
       expect(mockRepository.updateStatus).toHaveBeenCalled();
       expect(result.estado).toBe(DeliveryEstado.EN_CAMINO);
+      expect(mockPublisher.publishStarted).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'DeliveryStarted',
+          deliveryId: 'entrega-1',
+          orderId: 'order-1',
+          vendedorId: 'vendedor-1',
+          clienteId: 'cli-1',
+          actorUserId: 'user-abc',
+        }),
+      );
       expect(mockPublisher.publishStatusChanged).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'DeliveryStatusChanged',
@@ -111,7 +124,7 @@ describe('DeliveriesService', () => {
       );
     });
 
-    it('EN_CAMINO → ENTREGADA es válida y publica evento', async () => {
+    it('EN_CAMINO → ENTREGADA es válida y publica DeliveryCompleted + DeliveryStatusChanged', async () => {
       mockRepository.findById.mockResolvedValue({
         ...entregaBaseRecord,
         estado: 'en_camino' as $Enums.DeliveryEstado,
@@ -130,6 +143,16 @@ describe('DeliveriesService', () => {
       );
 
       expect(result.estado).toBe(DeliveryEstado.ENTREGADA);
+      expect(mockPublisher.publishCompleted).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'DeliveryCompleted',
+          deliveryId: 'entrega-1',
+          orderId: 'order-1',
+          vendedorId: 'vendedor-1',
+          clienteId: 'cli-1',
+          actorUserId: 'user-abc',
+        }),
+      );
       expect(mockPublisher.publishStatusChanged).toHaveBeenCalledWith(
         expect.objectContaining({
           deliveryId: 'entrega-1',
@@ -153,6 +176,8 @@ describe('DeliveriesService', () => {
 
       expect(mockRepository.updateStatus).not.toHaveBeenCalled();
       expect(mockPublisher.publishStatusChanged).not.toHaveBeenCalled();
+      expect(mockPublisher.publishStarted).not.toHaveBeenCalled();
+      expect(mockPublisher.publishCompleted).not.toHaveBeenCalled();
     });
 
     it('ENTREGADA → EN_CAMINO lanza 400 y no publica evento', async () => {
@@ -166,6 +191,8 @@ describe('DeliveriesService', () => {
       ).rejects.toThrow(BadRequestException);
 
       expect(mockPublisher.publishStatusChanged).not.toHaveBeenCalled();
+      expect(mockPublisher.publishStarted).not.toHaveBeenCalled();
+      expect(mockPublisher.publishCompleted).not.toHaveBeenCalled();
     });
 
     it('lanza NotFoundException si la entrega no existe', async () => {
@@ -176,6 +203,8 @@ describe('DeliveriesService', () => {
       ).rejects.toThrow(NotFoundException);
 
       expect(mockPublisher.publishStatusChanged).not.toHaveBeenCalled();
+      expect(mockPublisher.publishStarted).not.toHaveBeenCalled();
+      expect(mockPublisher.publishCompleted).not.toHaveBeenCalled();
     });
 
     it('lanza ForbiddenException si la entrega pertenece a otro vendedor', async () => {
@@ -186,6 +215,8 @@ describe('DeliveriesService', () => {
       ).rejects.toThrow(ForbiddenException);
 
       expect(mockPublisher.publishStatusChanged).not.toHaveBeenCalled();
+      expect(mockPublisher.publishStarted).not.toHaveBeenCalled();
+      expect(mockPublisher.publishCompleted).not.toHaveBeenCalled();
     });
   });
 });
