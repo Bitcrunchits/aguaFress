@@ -1,8 +1,8 @@
 # Archive Report: client-multi-provider-selection
 
-**Archived**: 2026-07-21  
-**Mode**: hybrid (OpenSpec + Engram)  
-**Status**: Complete with verify warnings  
+**Archived**: 2026-07-21
+**Mode**: hybrid (OpenSpec + Engram)
+**Status**: Complete with verify warnings
 **Verdict**: PASS_WITH_WARNINGS
 
 ## Change Summary

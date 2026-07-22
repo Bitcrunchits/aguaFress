@@ -200,17 +200,21 @@ describe('Gateway HTTP routing', () => {
   });
 
   it('dispatches protected cart actions to orders-service TCP patterns', async () => {
-    mockDispatch.mockResolvedValue({ cartId: 'cart-1', items: [] });
+    mockDispatch
+      .mockResolvedValueOnce({ selectedProvider: { id: 'vendedor-1' } })
+      .mockResolvedValueOnce({ cartId: 'cart-1', items: [] });
 
     const response = await request(app.getHttpServer())
-      .get('/api/v1/cart/get')
+      .get('/api/v1/cart/get?vendedorId=vendedor-1')
       .set('Authorization', `Bearer ${clienteToken}`)
       .expect(200);
 
     expect(response.body).toEqual({ cartId: 'cart-1', items: [] });
-    expect(mockDispatch).toHaveBeenCalledWith(
+    expect(mockDispatch).toHaveBeenNthCalledWith(
+      2,
       'cart',
       expect.objectContaining({
+        query: { vendedorId: 'vendedor-1' },
         params: { service: 'cart', action: 'get' },
         user: expect.objectContaining({ sub: 'cliente-user-id', role: 'cliente' }),
       }),
@@ -354,18 +358,21 @@ describe('Gateway HTTP routing', () => {
   });
 
   it('forwards sanitized DELETE body for cart item deletion', async () => {
-    mockDispatch.mockResolvedValue({ cartId: 'cart-1', items: [] });
+    mockDispatch
+      .mockResolvedValueOnce({ selectedProvider: { id: 'vendedor-1' } })
+      .mockResolvedValueOnce({ cartId: 'cart-1', items: [] });
 
     await request(app.getHttpServer())
       .delete('/api/v1/cart/items/delete')
       .set('Authorization', `Bearer ${clienteToken}`)
-      .send({ cartId: 'cart-1', productoId: 'producto-1', userId: 'forged-user' })
+      .send({ vendedorId: 'vendedor-1', cartId: 'cart-1', productoId: 'producto-1', userId: 'forged-user' })
       .expect(200);
 
-    expect(mockDispatch).toHaveBeenCalledWith(
+    expect(mockDispatch).toHaveBeenNthCalledWith(
+      2,
       'cart',
       expect.objectContaining({
-        body: { cartId: 'cart-1', productoId: 'producto-1' },
+        body: { vendedorId: 'vendedor-1', cartId: 'cart-1', productoId: 'producto-1' },
         params: { service: 'cart', action: 'items/delete' },
         user: expect.objectContaining({ sub: 'cliente-user-id', role: 'cliente' }),
       }),

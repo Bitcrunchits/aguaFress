@@ -1,4 +1,4 @@
-import { MethodNotAllowedException } from '@nestjs/common';
+import { BadRequestException, MethodNotAllowedException } from '@nestjs/common';
 import { ActionResolverService, ActionNotFoundError, ServiceUnavailable } from '../src/actions/action-resolver.service';
 import { type ActionMapping } from '../src/actions/action-registry';
 import { GatewayController } from '../src/gateway.controller';
@@ -134,6 +134,25 @@ describe('GatewayController', () => {
         body: { id: 'session-1' },
       }), expect.objectContaining({ tcpPattern: 'auth.session' }));
       expect(result).toEqual({ deleted: true });
+    });
+
+    it('rejects provider-scoped cart mutations before dispatch when vendedorId is missing', async () => {
+      mockResolver.resolve.mockReturnValue({
+        tcpPattern: 'cart.items_add',
+        transport: 'send',
+        authRequired: true,
+        roles: ['cliente'],
+      });
+
+      await expect(controller.handlePostAction(
+        'cart',
+        'items/add',
+        { productoId: 'product-1', cantidad: 1 },
+        {},
+        { headers: {}, user: { sub: 'cliente-1', email: 'c@agua.com', role: 'cliente' } } as never,
+      )).rejects.toThrow(BadRequestException);
+
+      expect(mockDispatcher.dispatch).not.toHaveBeenCalled();
     });
 
     it('propagates resolver errors (unknown service)', async () => {

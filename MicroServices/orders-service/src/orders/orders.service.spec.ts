@@ -4,6 +4,7 @@ import type { ProductCatalogPort, ProductSnapshot } from '../products/product-ca
 import type { CartRecord } from '../cart/cart.repository';
 import type { OrderRecord, OrdersRepository } from './orders.repository';
 import { OrdersService } from './orders.service';
+import type { VendedorProfileResolverPort } from './vendedor-profile-resolver.port';
 
 describe('OrdersService', () => {
   const createdAt = new Date('2026-07-16T10:00:00.000Z');
@@ -21,6 +22,7 @@ describe('OrdersService', () => {
     | 'updateStatus'
   >>;
   let productCatalog: jest.Mocked<ProductCatalogPort>;
+  let vendedorProfileResolver: jest.Mocked<VendedorProfileResolverPort>;
   let service: OrdersService;
 
   beforeEach(() => {
@@ -35,7 +37,10 @@ describe('OrdersService', () => {
     productCatalog = {
       getSnapshot: jest.fn(),
     };
-    service = new OrdersService(ordersRepository, productCatalog, () => createdAt);
+    vendedorProfileResolver = {
+      resolveVendedorIdByAuthUserId: jest.fn().mockResolvedValue(vendedorId),
+    };
+    service = new OrdersService(ordersRepository, productCatalog, () => createdAt, vendedorProfileResolver);
   });
 
   it('creates an order from persisted cart item snapshots while product lookup only validates availability', async () => {
@@ -112,7 +117,25 @@ describe('OrdersService', () => {
 
     expect(ordersRepository.findManyForCliente).toHaveBeenCalledWith(clienteId);
     expect(ordersRepository.findManyForVendedor).toHaveBeenCalledWith(vendedorId);
+    expect(vendedorProfileResolver.resolveVendedorIdByAuthUserId).toHaveBeenCalledWith(vendedorId);
     expect(ordersRepository.findMany).toHaveBeenCalledWith();
+  });
+
+  it('resolves vendedor AUTH_USER.id to domain vendedorId before vendedor reads when identities differ', async () => {
+    vendedorProfileResolver.resolveVendedorIdByAuthUserId.mockResolvedValue('domain-vendedor-1');
+    ordersRepository.findManyForVendedor.mockResolvedValue([orderRecord({ id: 'domain-scoped-order', vendedorId: 'domain-vendedor-1' })]);
+    ordersRepository.findById.mockResolvedValue(orderRecord({ id: 'domain-scoped-order', vendedorId: 'domain-vendedor-1' }));
+
+    await expect(service.list(vendedorUser({ userId: 'auth-user-1' }))).resolves.toEqual([
+      expect.objectContaining({ id: 'domain-scoped-order', vendedorId: 'domain-vendedor-1' }),
+    ]);
+    await expect(service.getById(vendedorUser({ userId: 'auth-user-1' }), 'domain-scoped-order')).resolves.toMatchObject({
+      id: 'domain-scoped-order',
+      vendedorId: 'domain-vendedor-1',
+    });
+
+    expect(vendedorProfileResolver.resolveVendedorIdByAuthUserId).toHaveBeenCalledWith('auth-user-1');
+    expect(ordersRepository.findManyForVendedor).toHaveBeenCalledWith('domain-vendedor-1');
   });
 
   it('allows super-admin to read any order without lifecycle write access', async () => {
@@ -183,6 +206,19 @@ describe('OrdersService', () => {
     await expect(service.updateStatus(vendedorUser(), 'order-1', OrderEstado.CONFIRMADO)).rejects.toThrow(ForbiddenException);
   });
 
+  it('resolves vendedor AUTH_USER.id to domain vendedorId before lifecycle writes when identities differ', async () => {
+    vendedorProfileResolver.resolveVendedorIdByAuthUserId.mockResolvedValue('domain-vendedor-1');
+    ordersRepository.findById.mockResolvedValue(orderRecord({ estado: OrderEstado.PENDIENTE, vendedorId: 'domain-vendedor-1' }));
+    ordersRepository.updateStatus.mockResolvedValue(orderRecord({ estado: OrderEstado.CONFIRMADO, vendedorId: 'domain-vendedor-1' }));
+
+    await expect(service.updateStatus(vendedorUser({ userId: 'auth-user-1' }), 'order-1', OrderEstado.CONFIRMADO)).resolves.toMatchObject({
+      estado: OrderEstado.CONFIRMADO,
+      vendedorId: 'domain-vendedor-1',
+    });
+
+    expect(ordersRepository.updateStatus).toHaveBeenCalledWith('order-1', OrderEstado.PENDIENTE, OrderEstado.CONFIRMADO, undefined);
+  });
+
   it('returns a controlled request exception when a concurrent status update sees stale state', async () => {
     ordersRepository.findById.mockResolvedValue(orderRecord({ estado: OrderEstado.PENDIENTE }));
     ordersRepository.updateStatus.mockRejectedValue(new BadRequestException('Order status changed before update'));
@@ -206,8 +242,8 @@ describe('OrdersService', () => {
     return { userId: clienteId, email: 'cliente@test.com', role: UserRole.CLIENTE };
   }
 
-  function vendedorUser() {
-    return { userId: vendedorId, email: 'vendedor@test.com', role: UserRole.VENDEDOR };
+  function vendedorUser(overrides: Partial<{ userId: string }> = {}) {
+    return { userId: overrides.userId ?? vendedorId, email: 'vendedor@test.com', role: UserRole.VENDEDOR };
   }
 
   function superAdminUser() {

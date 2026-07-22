@@ -100,6 +100,7 @@ function isUniqueConstraintError(error: unknown): boolean {
 function toResponse(job: OrderCommandJobRecord): OrderJobStatusResponse {
   return {
     clienteId: job.clienteId,
+    vendedorId: job.vendedorId ?? undefined,
     idempotencyKey: job.idempotencyKey,
     jobId: job.jobId,
     trackingId: job.trackingId,

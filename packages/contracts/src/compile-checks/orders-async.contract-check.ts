@@ -1,9 +1,14 @@
 import { OrderJobStatus } from '../enums';
 import type {
   AsyncAcceptedResponse,
+  AddCartItemV2Request,
   CreateOrderJobData,
+  CreateOrderV2Request,
+  DeleteCartItemV2Request,
   OrderJobStatusResponse,
+  UpdateCartItemV2Request,
 } from '../dto/orders.dto';
+import { MetodoPago } from '../enums';
 
 const acceptedResponseCheck: AsyncAcceptedResponse = {
   jobId: 'orders.create:cliente-1:key-1',
@@ -18,6 +23,7 @@ const statusResponseCheck: OrderJobStatusResponse = {
   jobId: acceptedResponseCheck.jobId,
   trackingId: acceptedResponseCheck.trackingId,
   clienteId: 'cliente-1',
+  vendedorId: 'vendedor-1',
   idempotencyKey: 'key-1',
   status: OrderJobStatus.COMPLETED,
   orderId: 'order-1',
@@ -50,7 +56,36 @@ const createJobDataCheck: CreateOrderJobData = {
   requestedAt: acceptedResponseCheck.acceptedAt,
 };
 
+const addCartItemV2Check: AddCartItemV2Request = {
+  vendedorId: 'vendedor-1',
+  productoId: 'product-1',
+  cantidad: 2,
+};
+
+const updateCartItemV2Check: UpdateCartItemV2Request = {
+  vendedorId: 'vendedor-1',
+  cartId: 'cart-1',
+  productoId: 'product-1',
+  cantidad: 3,
+};
+
+const deleteCartItemV2Check: DeleteCartItemV2Request = {
+  vendedorId: 'vendedor-1',
+  cartId: 'cart-1',
+  productoId: 'product-1',
+};
+
+const createOrderV2Check: CreateOrderV2Request = {
+  vendedorId: 'vendedor-1',
+  metodoPago: MetodoPago.CONTRA_ENTREGA,
+  direccion: { calle: 'San Martin', numero: '123', ciudad: 'Mendoza', provincia: 'Mendoza' },
+};
+
 void acceptedResponseCheck;
 void statusResponseCheck;
 void failedStatusResponseCheck;
 void createJobDataCheck;
+void addCartItemV2Check;
+void updateCartItemV2Check;
+void deleteCartItemV2Check;
+void createOrderV2Check;
