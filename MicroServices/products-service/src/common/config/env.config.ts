@@ -7,7 +7,7 @@ export default () => ({
 });
 
 export function validateEnv() {
-  const required = ['DATABASE_URL'];
+  const required = ['DATABASE_URL', 'USUARIO_SERVICE_HOST', 'USUARIO_SERVICE_TCP_PORT'];
   for (const key of required) {
     if (!process.env[key]) throw new Error(`${key} is required`);
   }

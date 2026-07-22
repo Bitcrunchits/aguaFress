@@ -1,4 +1,4 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Inject } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { UserRole } from '@agua/contracts';
 import { ProductsService } from '../products/products.service';
@@ -7,6 +7,10 @@ import { UpdateProductDto } from '../products/dto/update-product.dto';
 import { ListProductsDto, IdQueryDto } from '../products/dto/list-products.dto';
 import { SearchProductDto } from '../products/dto/search-product.dto';
 import { TcpPayloadAdapter } from './tcp-payload-adapter.service';
+import {
+  VENDEDOR_PROFILE_RESOLVER_PORT,
+  type VendedorProfileResolverPort,
+} from '../common/usuario-client/vendedor-profile-resolver.port';
 import type { TcpPayload } from './tcp-payload';
 
 /**
@@ -22,24 +26,33 @@ import type { TcpPayload } from './tcp-payload';
  * `params` que arma el gateway siempre es { service, action } — nunca trae
  * el id del recurso. Por eso get/update/delete leen `id` desde `query`,
  * ej. GET /v1/products/get?id=xxx — no /v1/products/xxx.
+ *
+ * NOTA sobre vendedorId: modelo-datos.md v1.4 confirma que `vendedor_id`
+ * debe ser `VENDEDOR.id`, no `AUTH_USER.id` (el `sub` del JWT). Se resuelve
+ * vía VendedorProfileResolverPort (mismo patrón puerto/adaptador que usa
+ * orders-service), cuyo adaptador TCP concreto llama al pattern confirmado
+ * 'vendedores.resolve_profile_id' de usuario-domain-tcp.controller.ts.
  */
 @Controller()
 export class ProductsTcpController {
   constructor(
     private readonly productsService: ProductsService,
     private readonly payloadAdapter: TcpPayloadAdapter,
+    @Inject(VENDEDOR_PROFILE_RESOLVER_PORT)
+    private readonly vendedorResolver: VendedorProfileResolverPort,
   ) {}
 
   // GET /v1/products/list — auth: VENDEDOR|Público.
-  // Si viene user autenticado y no se pasó vendedorId explícito, se filtra
-  // por el vendedor autenticado. Si es público, se usa el vendedorId del query.
+  // Si viene user autenticado con rol VENDEDOR y no se pasó vendedorId
+  // explícito, se resuelve el vendedorId real. Si es público (o cliente sin
+  // vendedorId), se usa el vendedorId del query tal cual (o queda sin filtrar).
   @MessagePattern('products.list')
   async list(@Payload() payload: TcpPayload) {
     const filters = await this.payloadAdapter.query(payload, ListProductsDto);
 
-    if (!filters.vendedorId && payload.user) {
-      const user = this.payloadAdapter.requireUser(payload);
-      filters.vendedorId = user.sub ?? user.userId;
+    if (!filters.vendedorId && payload.user?.role === UserRole.VENDEDOR) {
+      const authUserId = this.payloadAdapter.userId(payload);
+      filters.vendedorId = await this.vendedorResolver.resolveVendedorIdByAuthUserId(authUserId);
     }
 
     return this.productsService.list(filters);
@@ -60,31 +73,34 @@ export class ProductsTcpController {
   }
 
   // POST /v1/products/create — auth: VENDEDOR
-  // vendedorId NUNCA viene del body: se extrae del JWT (regla de seguridad).
+  // vendedorId NUNCA viene del body: se resuelve del JWT vía usuario-service.
   @MessagePattern('products.create')
   async create(@Payload() payload: TcpPayload) {
-    const user = this.payloadAdapter.requireRole(payload, UserRole.VENDEDOR);
+    this.payloadAdapter.requireRole(payload, UserRole.VENDEDOR);
     const dto = await this.payloadAdapter.body(payload, CreateProductDto);
-    const vendedorId = user.sub ?? user.userId!;
+    const authUserId = this.payloadAdapter.userId(payload);
+    const vendedorId = await this.vendedorResolver.resolveVendedorIdByAuthUserId(authUserId);
     return this.productsService.create(vendedorId, dto);
   }
 
   // PATCH /v1/products/update?id=xxx — auth: VENDEDOR
   @MessagePattern('products.update')
   async update(@Payload() payload: TcpPayload) {
-    const user = this.payloadAdapter.requireRole(payload, UserRole.VENDEDOR);
+    this.payloadAdapter.requireRole(payload, UserRole.VENDEDOR);
     const { id } = await this.payloadAdapter.query(payload, IdQueryDto);
     const dto = await this.payloadAdapter.body(payload, UpdateProductDto);
-    const vendedorId = user.sub ?? user.userId!;
+    const authUserId = this.payloadAdapter.userId(payload);
+    const vendedorId = await this.vendedorResolver.resolveVendedorIdByAuthUserId(authUserId);
     return this.productsService.update(vendedorId, id, dto);
   }
 
   // DELETE /v1/products/delete?id=xxx — auth: VENDEDOR
   @MessagePattern('products.delete')
   async remove(@Payload() payload: TcpPayload) {
-    const user = this.payloadAdapter.requireRole(payload, UserRole.VENDEDOR);
+    this.payloadAdapter.requireRole(payload, UserRole.VENDEDOR);
     const { id } = await this.payloadAdapter.query(payload, IdQueryDto);
-    const vendedorId = user.sub ?? user.userId!;
+    const authUserId = this.payloadAdapter.userId(payload);
+    const vendedorId = await this.vendedorResolver.resolveVendedorIdByAuthUserId(authUserId);
     return this.productsService.remove(vendedorId, id);
   }
 }

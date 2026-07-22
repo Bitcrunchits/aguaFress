@@ -9,7 +9,7 @@ const mockCategoriesService = {
   listMarcas: jest.fn(),
 };
 
-const VENDEDOR_ID = '11111111-1111-1111-1111-111111111111';
+const VENDEDOR_ID = 'cf4439a6-395e-4b52-b33e-82ccbb6f123f';
 
 function basePayload(overrides: Partial<TcpPayload> = {}): TcpPayload {
   return {
