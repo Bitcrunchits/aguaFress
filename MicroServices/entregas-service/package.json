@@ -7,7 +7,10 @@
     "build": "nest build",
     "dev": "nest start --watch",
     "start": "node dist/main",
-    "test": "jest"
+    "test": "jest",
+    "prisma:generate": "prisma generate --schema prisma/schema.prisma",
+    "prisma:push": "prisma db push --schema prisma/schema.prisma",
+    "prisma:validate": "prisma validate --schema prisma/schema.prisma"
   },
   "dependencies": {
     "@agua/contracts": "workspace:*",
@@ -38,10 +41,10 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.ts$": "ts-jest"
     },
     "moduleNameMapper": {
-      "^@agua/contracts$": "<rootDir>/../../packages/contracts/src/index.ts"
+      "^@agua/contracts$": "<rootDir>/../../../packages/contracts/src/index.ts"
     },
     "testEnvironment": "node"
   }

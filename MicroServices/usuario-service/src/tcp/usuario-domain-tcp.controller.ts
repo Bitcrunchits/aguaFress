@@ -60,6 +60,13 @@ export class UsuarioDomainTcpController {
     return this.vendedoresService.updateMyProfile(this.payloadAdapter.userId(payload), dto);
   }
 
+  @MessagePattern('vendedores.resolve_profile_id')
+  async resolveVendedorProfileId(@Payload() payload: TcpPayload): Promise<{ vendedorId: string }> {
+    this.payloadAdapter.requireRole(payload, UserRole.VENDEDOR);
+    const vendedorId = await this.vendedorResolver.resolve(this.payloadAdapter.userId(payload));
+    return { vendedorId };
+  }
+
   @MessagePattern('vendedores.get_by_id')
   async getVendedorById(@Payload() payload: TcpPayload) {
     this.payloadAdapter.requireRole(payload, UserRole.SUPER_ADMIN);
@@ -164,7 +171,27 @@ export class UsuarioDomainTcpController {
   async reassignCliente(@Payload() payload: TcpPayload) {
     this.payloadAdapter.requireRole(payload, UserRole.SUPER_ADMIN);
     const dto = await this.payloadAdapter.body(payload, ReasignarVendedorDto);
-    return this.clientesService.reassign(this.requireParamId(payload), dto);
+    return this.clientesService.reassign(this.requireParamId(payload), dto, this.payloadAdapter.userId(payload));
+  }
+
+  @MessagePattern('clientes.provider_add')
+  async addClienteProvider(@Payload() payload: TcpPayload) {
+    this.payloadAdapter.requireRole(payload, UserRole.SUPER_ADMIN);
+    const dto = await this.payloadAdapter.body(payload, ReasignarVendedorDto);
+    return this.clientesService.addProvider(this.requireParamId(payload), dto, this.payloadAdapter.userId(payload));
+  }
+
+  @MessagePattern('clientes.providers')
+  listClienteProviders(@Payload() payload: TcpPayload) {
+    this.payloadAdapter.requireRole(payload, UserRole.CLIENTE);
+    return this.clientesService.listProvidersForClienteUser(this.payloadAdapter.userId(payload));
+  }
+
+  @MessagePattern('clientes.providers_select')
+  async selectClienteProvider(@Payload() payload: TcpPayload) {
+    this.payloadAdapter.requireRole(payload, UserRole.CLIENTE);
+    const dto = await this.payloadAdapter.body(payload, ReasignarVendedorDto);
+    return this.clientesService.selectProviderForClienteUser(this.payloadAdapter.userId(payload), dto.vendedorId);
   }
 
   // ─── CLIENTES VENDOR-SCOPED ─────────────────────────────────────

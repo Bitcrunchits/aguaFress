@@ -19,26 +19,34 @@ export interface CartResponse {
 }
 
 export interface AddCartItemRequest extends Record<string, unknown> {
+  readonly vendedorId: string;
   readonly cartId?: string;
   readonly productoId: string;
   readonly cantidad: number;
 }
 
 export interface UpdateCartItemRequest extends Record<string, unknown> {
+  readonly vendedorId: string;
   readonly cartId: string;
   readonly productoId: string;
   readonly cantidad: number;
 }
 
 export interface DeleteCartItemRequest extends Record<string, unknown> {
+  readonly vendedorId: string;
   readonly cartId: string;
   readonly productoId: string;
+}
+
+export interface GetCartRequest {
+  readonly vendedorId: string;
 }
 
 export function parseAddCartItemRequest(value: unknown): AddCartItemRequest {
   const record = requireRecord(value);
   return {
     cartId: readOptionalString(record, 'cartId'),
+    vendedorId: readRequiredString(record, 'vendedorId'),
     productoId: readRequiredString(record, 'productoId'),
     cantidad: readPositiveInteger(record, 'cantidad'),
   };
@@ -48,6 +56,7 @@ export function parseUpdateCartItemRequest(value: unknown): UpdateCartItemReques
   const record = requireRecord(value);
   return {
     cartId: readRequiredString(record, 'cartId'),
+    vendedorId: readRequiredString(record, 'vendedorId'),
     productoId: readRequiredString(record, 'productoId'),
     cantidad: readPositiveInteger(record, 'cantidad'),
   };
@@ -57,8 +66,14 @@ export function parseDeleteCartItemRequest(value: unknown): DeleteCartItemReques
   const record = requireRecord(value);
   return {
     cartId: readRequiredString(record, 'cartId'),
+    vendedorId: readRequiredString(record, 'vendedorId'),
     productoId: readRequiredString(record, 'productoId'),
   };
+}
+
+export function parseGetCartRequest(value: unknown): GetCartRequest {
+  const record = requireRecord(value);
+  return { vendedorId: readRequiredString(record, 'vendedorId') };
 }
 
 function requireRecord(value: unknown): Record<string, unknown> {

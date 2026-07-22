@@ -53,6 +53,22 @@ Protected actions MUST require JWT and forward trusted context, never body `user
 - WHEN the gateway dispatches
 - THEN authenticated context MUST be the identity source
 
+### Requirement: Provider context forwarding
+
+Provider-scoped cart/order actions MUST forward trusted `userId`, `role`, and validated `vendedorId`. The gateway MUST NOT trust body `userId` or unauthorized provider IDs.
+
+#### Scenario: Valid provider context
+
+- GIVEN cliente `c1` selected authorized provider `v1`
+- WHEN the gateway dispatches a provider-scoped cart or order action
+- THEN orders-service MUST receive authenticated context plus `vendedorId = v1`
+
+#### Scenario: Unauthorized provider
+
+- GIVEN cliente `c1` has no active cartera row for `v9`
+- WHEN the request includes `vendedorId = v9`
+- THEN the gateway MUST reject before mutation dispatch
+
 ### Requirement: Controlled failures
 
 Unmapped/unavailable actions MUST fail predictably and MUST NOT call arbitrary targets.

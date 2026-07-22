@@ -15,6 +15,7 @@ describe('PrismaOrdersRepository', () => {
 
     await repository.createFromCart({
       clienteId,
+      vendedorId,
       now: createdAt,
       validateCartItems: jest.fn().mockResolvedValue(undefined),
       metodoPago: MetodoPago.CONTRA_ENTREGA,
@@ -23,7 +24,7 @@ describe('PrismaOrdersRepository', () => {
     });
 
     expect(tx.cart.findFirst).toHaveBeenCalledWith(expect.objectContaining({
-      where: { usuario_id: clienteId, active_cart_key: clienteId, expires_at: { gt: createdAt } },
+      where: { usuario_id: clienteId, vendedor_id: vendedorId, active_cart_key: `${clienteId}:${vendedorId}`, expires_at: { gt: createdAt } },
     }));
     expect(tx.orderCounter.upsert).toHaveBeenCalledWith({
       where: { vendedor_id: vendedorId },
@@ -135,6 +136,7 @@ describe('PrismaOrdersRepository', () => {
   function createInput(now: Date = createdAt) {
     return {
       clienteId,
+      vendedorId,
       now,
       validateCartItems: jest.fn().mockResolvedValue(undefined),
       metodoPago: MetodoPago.CONTRA_ENTREGA,

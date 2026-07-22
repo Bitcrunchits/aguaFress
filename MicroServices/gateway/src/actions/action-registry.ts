@@ -1,5 +1,3 @@
-import { get } from "node:http";
-
 export type TcpTransport = 'send' | 'publish';
 
 export const ASYNC_QUEUE_NAMES = {
@@ -68,6 +66,9 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
     actions: {
       list: { tcpPattern: 'clientes.list', transport: 'send', authRequired: true },
       cartera: { tcpPattern: 'clientes.cartera', transport: 'send', authRequired: true },
+      providers: { tcpPattern: 'clientes.providers', transport: 'send', authRequired: true, roles: ['cliente'] },
+      'providers/select': { tcpPattern: 'clientes.providers_select', transport: 'send', authRequired: true, roles: ['cliente'] },
+      'providers/add': { tcpPattern: 'clientes.provider_add', transport: 'send', authRequired: true, roles: ['super_admin'] },
       'get-by-id': { tcpPattern: 'clientes.get_by_id', transport: 'send', authRequired: true, roles: ['super_admin'] },
       update: { tcpPattern: 'clientes.update', transport: 'send', authRequired: true, roles: ['super_admin'] },
       reassign: { tcpPattern: 'clientes.reassign', transport: 'send', authRequired: true, roles: ['super_admin'] },
@@ -137,7 +138,15 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
       'items/delete': { tcpPattern: 'cart.items_delete', transport: 'send', authRequired: true, roles: ['cliente'], retryOnTimeout: false },
     },
   },
-   deliveries: {
+  deliveries: {
+    status: 'available',
+    actions: {
+      list: { tcpPattern: 'deliveries.list', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      get: { tcpPattern: 'deliveries.get', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      'update-status': { tcpPattern: 'deliveries.update_status', transport: 'send', authRequired: true, roles: ['vendedor'] },
+    },
+  },
+  'activity-logs': {
     status: 'available',
     actions: {
       list: { tcpPattern: 'deliveries.list', transport: 'send', authRequired: true, roles: ['vendedor'] },

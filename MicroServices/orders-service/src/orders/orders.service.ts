@@ -9,6 +9,7 @@ import type { OrderRecord, OrdersRepository } from './orders.repository';
 import { PrismaOrdersRepository } from './orders.repository';
 import type { CreateOrderRequest, OrderResponse } from './orders.dto';
 import { toOrderResponse } from './orders.mapper';
+import { VENDEDOR_PROFILE_RESOLVER_PORT, type VendedorProfileResolverPort } from './vendedor-profile-resolver.port';
 
 type OrdersServiceRepository = Pick<OrdersRepository,
   | 'createFromCart'
@@ -25,6 +26,7 @@ export class OrdersService {
     @Inject(PrismaOrdersRepository) private readonly ordersRepository: OrdersServiceRepository,
     @Inject(PRODUCT_CATALOG_PORT) private readonly productCatalog: ProductCatalogPort,
     @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(VENDEDOR_PROFILE_RESOLVER_PORT) private readonly vendedorProfileResolver: VendedorProfileResolverPort,
   ) {}
 
   async create(user: TcpAuthenticatedUser, request: CreateOrderRequest): Promise<OrderResponse> {
@@ -32,6 +34,7 @@ export class OrdersService {
     const clienteUserId = user.userId;
     const order = await this.ordersRepository.createFromCart({
       clienteId: clienteUserId,
+      vendedorId: request.vendedorId,
       now: this.clock(),
       validateCartItems: (cart) => this.validateCartItems(cart),
       metodoPago: request.metodoPago,
@@ -44,7 +47,7 @@ export class OrdersService {
 
   async getById(user: TcpAuthenticatedUser, orderId: string): Promise<OrderResponse> {
     const order = await this.requireOrder(orderId);
-    this.assertCanRead(user, order);
+    await this.assertCanRead(user, order);
     return toOrderResponse(order);
   }
 
@@ -56,8 +59,8 @@ export class OrdersService {
     }
 
     if (user.role === UserRole.VENDEDOR) {
-      // V1 compatibility: order.vendedorId is compared to JWT userId until a profile-id resolver exists in orders-service.
-      const orders = await this.ordersRepository.findManyForVendedor(user.userId);
+      const vendedorId = await this.resolveDomainVendedorId(user);
+      const orders = await this.ordersRepository.findManyForVendedor(vendedorId);
       return orders.map(toOrderResponse);
     }
 
@@ -71,7 +74,7 @@ export class OrdersService {
 
   async updateStatus(user: TcpAuthenticatedUser, orderId: string, next: OrderEstado, notes?: string): Promise<OrderResponse> {
     const order = await this.requireOrder(orderId);
-    this.assertLifecycleWriter(user, order);
+    await this.assertLifecycleWriter(user, order);
     assertOrderTransition(order.estado, next);
     const updatedOrder = await this.ordersRepository.updateStatus(orderId, order.estado, next, notes);
     return toOrderResponse(updatedOrder);
@@ -101,13 +104,12 @@ export class OrdersService {
     return order;
   }
 
-  private assertCanRead(user: TcpAuthenticatedUser, order: OrderRecord): void {
+  private async assertCanRead(user: TcpAuthenticatedUser, order: OrderRecord): Promise<void> {
     if (user.role === UserRole.CLIENTE && order.usuarioId === user.userId) {
       return;
     }
 
-    // V1 compatibility: order.vendedorId currently stores the vendor auth-user id for authorization checks.
-    if (user.role === UserRole.VENDEDOR && order.vendedorId === user.userId) {
+    if (await this.isVendedorDomainMatch(user, order)) {
       return;
     }
 
@@ -140,11 +142,23 @@ export class OrdersService {
     throw new ForbiddenException('Order cancellation access denied');
   }
 
-  private assertLifecycleWriter(user: TcpAuthenticatedUser, order: OrderRecord): void {
-    // V1 compatibility: order.vendedorId currently stores the vendor auth-user id for authorization checks.
-    if (user.role !== UserRole.VENDEDOR || order.vendedorId !== user.userId) {
+  private async assertLifecycleWriter(user: TcpAuthenticatedUser, order: OrderRecord): Promise<void> {
+    if (!await this.isVendedorDomainMatch(user, order)) {
       throw new ForbiddenException('Order lifecycle access denied');
     }
+  }
+
+  private async isVendedorDomainMatch(user: TcpAuthenticatedUser, order: OrderRecord): Promise<boolean> {
+    if (user.role !== UserRole.VENDEDOR) {
+      return false;
+    }
+
+    const vendedorId = await this.resolveDomainVendedorId(user);
+    return order.vendedorId === vendedorId;
+  }
+
+  private resolveDomainVendedorId(user: TcpAuthenticatedUser): Promise<string> {
+    return this.vendedorProfileResolver.resolveVendedorIdByAuthUserId(user.userId);
   }
 
   private assertCliente(user: TcpAuthenticatedUser): void {

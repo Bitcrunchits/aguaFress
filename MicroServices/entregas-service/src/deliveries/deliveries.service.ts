@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from "@nestjs/common";
-import { Delivery } from '@prisma/client';
-import { DeliveryEstado, DeliveryResponse } from "@agua/contracts";
+import { DeliveryEstado as PrismaDeliveryEstado, type Delivery } from '../generated/prisma';
+import { DeliveryEstado, type DeliveryResponse } from "@agua/contracts";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { UpdateDeliveryStatusDto } from "./dto/update-delivery-status.dto";
 import { QueryDeliveriesDto } from "./dto/query-deliveries.dto";
@@ -17,7 +17,7 @@ export class DeliveriesService {
     inicioDia.setHours(0, 0, 0, 0);
     const finDia = new Date(dia);
     finDia.setHours(23, 59, 59, 999);
-  
+
     const where = {
       vendedor_id:vendedorId,
       fecha_asignacion: {
@@ -25,7 +25,7 @@ export class DeliveriesService {
         lte: finDia,
       },
     };
-  
+
     const [ entregas, total ] = await this.prisma.$transaction([
       this.prisma.delivery.findMany({
         where,
@@ -66,7 +66,7 @@ export class DeliveriesService {
           throw new ForbiddenException(`No tiene acceso a esta entrega`)
         }
     //Manejo de estados
-    const transicionesValidas: Record<string, DeliveryEstado[]> = {
+    const transicionesValidas: Record<PrismaDeliveryEstado, readonly DeliveryEstado[]> = {
       [DeliveryEstado.PENDIENTE]: [DeliveryEstado.EN_CAMINO],
       [DeliveryEstado.EN_CAMINO]: [DeliveryEstado.ENTREGADA],
       [DeliveryEstado.ENTREGADA]: [],
@@ -76,8 +76,8 @@ export class DeliveriesService {
     }
      const actualizada = await this.prisma.delivery.update({
         where: { id },
-        data: { 
-            estado: dto.estado,
+        data: {
+            estado: toPrismaDeliveryEstado(dto.estado),
             notas: dto.notas ?? undefined,
             fecha_entrega: dto.estado === DeliveryEstado.ENTREGADA ? new Date() : undefined,
         },
@@ -91,7 +91,7 @@ export class DeliveriesService {
         id: entrega.id,
         orderId: entrega.order_id,
         vendedorId: entrega.vendedor_id,
-        estado: entrega.estado as DeliveryEstado,
+        estado: toContractDeliveryEstado(entrega.estado),
         cliente: {
           nombre: entrega.cliente_nombre,
           telefono: entrega.cliente_telefono ?? undefined,
@@ -113,4 +113,26 @@ export class DeliveriesService {
         notas: entrega.notas ?? undefined,
       };
     }
+}
+
+function toPrismaDeliveryEstado(estado: DeliveryEstado): PrismaDeliveryEstado {
+  switch (estado) {
+    case DeliveryEstado.PENDIENTE:
+      return PrismaDeliveryEstado.pendiente;
+    case DeliveryEstado.EN_CAMINO:
+      return PrismaDeliveryEstado.en_camino;
+    case DeliveryEstado.ENTREGADA:
+      return PrismaDeliveryEstado.entregada;
+  }
+}
+
+function toContractDeliveryEstado(estado: PrismaDeliveryEstado): DeliveryEstado {
+  switch (estado) {
+    case PrismaDeliveryEstado.pendiente:
+      return DeliveryEstado.PENDIENTE;
+    case PrismaDeliveryEstado.en_camino:
+      return DeliveryEstado.EN_CAMINO;
+    case PrismaDeliveryEstado.entregada:
+      return DeliveryEstado.ENTREGADA;
+  }
 }

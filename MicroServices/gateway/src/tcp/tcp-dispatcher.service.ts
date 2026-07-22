@@ -2,7 +2,7 @@ import { Injectable, Inject, GatewayTimeoutException, HttpException, Logger } fr
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { catchError, firstValueFrom, throwError, timeout, TimeoutError, type Observable } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
-import { NOTIFICATIONS_CLIENT, ORDERS_CLIENT, USUARIO_CLIENT } from './tcp-clients.module';
+import { ENTREGAS_CLIENT, NOTIFICATIONS_CLIENT, ORDERS_CLIENT, USUARIO_CLIENT } from './tcp-clients.module';
 import type { ActionMapping } from '../actions/action-registry';
 
 export interface TcpCommandPayload {
@@ -27,6 +27,7 @@ const SERVICE_CLIENT_MAP: Record<string, string> = {
   'link-invitacion': USUARIO_CLIENT,
   orders: ORDERS_CLIENT,
   cart: ORDERS_CLIENT,
+  deliveries: ENTREGAS_CLIENT,
   'activity-logs': NOTIFICATIONS_CLIENT,
 };
 
@@ -39,6 +40,7 @@ export class TcpDispatcherService {
     @Inject(USUARIO_CLIENT) private readonly usuarioClient: ClientProxy,
     @Inject(ORDERS_CLIENT) private readonly ordersClient: ClientProxy,
     @Inject(NOTIFICATIONS_CLIENT) private readonly notificationsClient: ClientProxy,
+    @Inject(ENTREGAS_CLIENT) private readonly entregasClient: ClientProxy,
     configService: ConfigService,
   ) {
     this.tcpTimeoutMs = configService.get<number>('TCP_TIMEOUT_MS', 5000);
@@ -63,6 +65,10 @@ export class TcpDispatcherService {
 
     if (clientName === NOTIFICATIONS_CLIENT) {
       return this.notificationsClient;
+    }
+
+    if (clientName === ENTREGAS_CLIENT) {
+      return this.entregasClient;
     }
 
     throw new Error(`TCP client "${clientName}" is not configured`);

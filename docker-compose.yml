@@ -178,6 +178,8 @@ services:
       ORDERS_SERVICE_TCP_PORT: "3014"
       NOTIFICATIONS_SERVICE_HOST: notifications-service
       NOTIFICATIONS_SERVICE_TCP_PORT: "3016"
+      ENTREGAS_SERVICE_HOST: entregas-service
+      ENTREGAS_SERVICE_TCP_PORT: "3015"
       REDIS_URL: "redis://redis:6379"
       ORDERS_CREATE_QUEUE_NAME: "orders.create"
       ORDERS_CREATE_QUEUE_ATTEMPTS: "3"
