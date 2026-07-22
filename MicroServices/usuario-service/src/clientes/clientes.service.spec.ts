@@ -491,12 +491,12 @@ describe('ClientesService', () => {
       prisma.cliente.findMany.mockResolvedValue(mockClientesCartera);
       prisma.cliente.count.mockResolvedValue(1);
 
-      const result = await service.listOwn('user-vendedor-1', {});
+      const result = await service.listOwn('vendedor-1', {});
 
       expect(prisma.cliente.findMany).toHaveBeenCalledWith({
         skip: 0,
         take: 20,
-        where: { vendedor_id: 'user-vendedor-1' },
+        where: { vendedor_id: 'vendedor-1' },
         orderBy: { created_at: 'desc' },
         include: {
           vendedor: { select: { id: true, nombre: true, apellido: true, empresa: true } },
@@ -504,7 +504,7 @@ describe('ClientesService', () => {
         },
       });
       expect(prisma.cliente.count).toHaveBeenCalledWith({
-        where: { vendedor_id: 'user-vendedor-1' },
+        where: { vendedor_id: 'vendedor-1' },
       });
       expect(result.data).toHaveLength(1);
       expect(result.pagination.total).toBe(1);
@@ -514,12 +514,12 @@ describe('ClientesService', () => {
       prisma.cliente.findMany.mockResolvedValue([]);
       prisma.cliente.count.mockResolvedValue(0);
 
-      await service.listOwn('user-vendedor-1', { search: 'Pérez' });
+      await service.listOwn('vendedor-1', { search: 'Pérez' });
 
       expect(prisma.cliente.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {
-            vendedor_id: 'user-vendedor-1',
+            vendedor_id: 'vendedor-1',
             OR: [
               { nombre: { contains: 'Pérez', mode: 'insensitive' } },
               { apellido: { contains: 'Pérez', mode: 'insensitive' } },
@@ -533,7 +533,7 @@ describe('ClientesService', () => {
       prisma.cliente.findMany.mockResolvedValue([]);
       prisma.cliente.count.mockResolvedValue(0);
 
-      const result = await service.listOwn('user-vendedor-1', { page: 2, limit: 5 });
+      const result = await service.listOwn('vendedor-1', { page: 2, limit: 5 });
 
       expect(prisma.cliente.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ skip: 5, take: 5 }),
@@ -579,12 +579,12 @@ describe('ClientesService', () => {
     it('devuelve cliente si está en la cartera del vendedor', async () => {
       prisma.cliente.findFirst.mockResolvedValue(clienteEnCartera);
 
-      const result = await service.getOwnById('cliente-1', 'user-vendedor-1');
+      const result = await service.getOwnById('cliente-1', 'vendedor-1');
 
       expect(prisma.cliente.findFirst).toHaveBeenCalledWith({
         where: {
           id: 'cliente-1',
-          vendedor_id: 'user-vendedor-1',
+          vendedor_id: 'vendedor-1',
         },
         include: {
           vendedor: { select: { id: true, nombre: true, apellido: true, empresa: true } },
@@ -598,7 +598,7 @@ describe('ClientesService', () => {
       prisma.cliente.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.getOwnById('cliente-no-en-cartera', 'user-vendedor-1'),
+        service.getOwnById('cliente-no-en-cartera', 'vendedor-1'),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -606,7 +606,7 @@ describe('ClientesService', () => {
       prisma.cliente.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.getOwnById('fake-id', 'user-vendedor-1'),
+        service.getOwnById('fake-id', 'vendedor-1'),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -629,14 +629,14 @@ describe('ClientesService', () => {
         telefono: '11-5555-0199',
       });
 
-      const result = await service.updateOwn('cliente-1', 'user-vendedor-1', {
+      const result = await service.updateOwn('cliente-1', 'vendedor-1', {
         telefono: '11-5555-0199',
       });
 
       expect(prisma.cliente.findFirst).toHaveBeenCalledWith({
         where: {
           id: 'cliente-1',
-          vendedor_id: 'user-vendedor-1',
+          vendedor_id: 'vendedor-1',
         },
         select: { id: true },
       });
@@ -655,7 +655,7 @@ describe('ClientesService', () => {
       prisma.cliente.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.updateOwn('cliente-no-en-cartera', 'user-vendedor-1', {
+        service.updateOwn('cliente-no-en-cartera', 'vendedor-1', {
           nombre: 'Test',
         }),
       ).rejects.toThrow(NotFoundException);
@@ -670,7 +670,7 @@ describe('ClientesService', () => {
         direccion_provincia: 'Córdoba',
       });
 
-      await service.updateOwn('cliente-1', 'user-vendedor-1', {
+      await service.updateOwn('cliente-1', 'vendedor-1', {
         direccionCiudad: 'Córdoba',
         direccionProvincia: 'Córdoba',
       });
@@ -692,7 +692,7 @@ describe('ClientesService', () => {
         nombre: 'Juan Updated',
       });
 
-      await service.updateOwn('cliente-1', 'user-vendedor-1', {
+      await service.updateOwn('cliente-1', 'vendedor-1', {
         nombre: 'Juan Updated',
       });
 
@@ -707,7 +707,7 @@ describe('ClientesService', () => {
       prisma.cliente.findFirst.mockResolvedValue(null);
 
       await expect(
-        service.updateOwn('fake-id', 'user-vendedor-1', {
+        service.updateOwn('fake-id', 'vendedor-1', {
           nombre: 'Test',
         }),
       ).rejects.toThrow(NotFoundException);

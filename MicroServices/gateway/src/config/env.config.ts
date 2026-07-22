@@ -8,12 +8,21 @@ export const GATEWAY_ENV_DEFAULTS = {
   RATE_LIMIT_PUBLIC_TTL_MS: 60000,
   RATE_LIMIT_PUBLIC_MAX: 300,
   PAYLOAD_LIMIT: '1mb',
+  REDIS_URL: 'redis://localhost:6379',
+  ORDERS_CREATE_QUEUE_NAME: 'orders.create',
+  ORDERS_CREATE_QUEUE_ATTEMPTS: 3,
+  ORDERS_CREATE_QUEUE_BACKOFF_MS: 1000,
+  ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE: 1000,
 } as const;
 
 const REQUIRED_ENV_KEYS = {
   JWT_SECRET: 'JWT_SECRET',
   USUARIO_SERVICE_HOST: 'USUARIO_SERVICE_HOST',
   USUARIO_SERVICE_TCP_PORT: 'USUARIO_SERVICE_TCP_PORT',
+  ORDERS_SERVICE_HOST: 'ORDERS_SERVICE_HOST',
+  ORDERS_SERVICE_TCP_PORT: 'ORDERS_SERVICE_TCP_PORT',
+  NOTIFICATIONS_SERVICE_HOST: 'NOTIFICATIONS_SERVICE_HOST',
+  NOTIFICATIONS_SERVICE_TCP_PORT: 'NOTIFICATIONS_SERVICE_TCP_PORT',
 } as const;
 
 type RequiredEnvKey = (typeof REQUIRED_ENV_KEYS)[keyof typeof REQUIRED_ENV_KEYS];
@@ -30,6 +39,10 @@ export interface GatewayEnv {
   readonly JWT_SECRET: string;
   readonly USUARIO_SERVICE_HOST: string;
   readonly USUARIO_SERVICE_TCP_PORT: number;
+  readonly ORDERS_SERVICE_HOST: string;
+  readonly ORDERS_SERVICE_TCP_PORT: number;
+  readonly NOTIFICATIONS_SERVICE_HOST: string;
+  readonly NOTIFICATIONS_SERVICE_TCP_PORT: number;
   readonly TCP_TIMEOUT_MS: number;
   readonly RATE_LIMIT_TTL_MS: number;
   readonly RATE_LIMIT_MAX: number;
@@ -38,6 +51,11 @@ export interface GatewayEnv {
   readonly RATE_LIMIT_PUBLIC_TTL_MS: number;
   readonly RATE_LIMIT_PUBLIC_MAX: number;
   readonly PAYLOAD_LIMIT: string;
+  readonly REDIS_URL: string;
+  readonly ORDERS_CREATE_QUEUE_NAME: string;
+  readonly ORDERS_CREATE_QUEUE_ATTEMPTS: number;
+  readonly ORDERS_CREATE_QUEUE_BACKOFF_MS: number;
+  readonly ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE: number;
 }
 
 type GatewayEnvInput = Record<string, string | undefined>;
@@ -49,6 +67,14 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
   const usuarioServiceTcpPort = readRequiredPort(
     envInput.USUARIO_SERVICE_TCP_PORT,
     'USUARIO_SERVICE_TCP_PORT',
+  );
+  const ordersServiceTcpPort = readRequiredPort(
+    envInput.ORDERS_SERVICE_TCP_PORT,
+    'ORDERS_SERVICE_TCP_PORT',
+  );
+  const notificationsServiceTcpPort = readRequiredPort(
+    envInput.NOTIFICATIONS_SERVICE_TCP_PORT,
+    'NOTIFICATIONS_SERVICE_TCP_PORT',
   );
   const tcpTimeoutMs = readOptionalPositiveInteger(
     envInput.TCP_TIMEOUT_MS,
@@ -85,10 +111,27 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
     GATEWAY_ENV_DEFAULTS.RATE_LIMIT_PUBLIC_MAX,
     'RATE_LIMIT_PUBLIC_MAX',
   );
+  const ordersCreateQueueAttempts = readOptionalPositiveInteger(
+    envInput.ORDERS_CREATE_QUEUE_ATTEMPTS,
+    GATEWAY_ENV_DEFAULTS.ORDERS_CREATE_QUEUE_ATTEMPTS,
+    'ORDERS_CREATE_QUEUE_ATTEMPTS',
+  );
+  const ordersCreateQueueBackoffMs = readOptionalPositiveInteger(
+    envInput.ORDERS_CREATE_QUEUE_BACKOFF_MS,
+    GATEWAY_ENV_DEFAULTS.ORDERS_CREATE_QUEUE_BACKOFF_MS,
+    'ORDERS_CREATE_QUEUE_BACKOFF_MS',
+  );
+  const ordersCreateQueueRemoveOnComplete = readOptionalPositiveInteger(
+    envInput.ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE,
+    GATEWAY_ENV_DEFAULTS.ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE,
+    'ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE',
+  );
 
   const invalidMessages = [
     port.error,
     usuarioServiceTcpPort.error,
+    ordersServiceTcpPort.error,
+    notificationsServiceTcpPort.error,
     tcpTimeoutMs.error,
     rateLimitTtlMs.error,
     rateLimitMax.error,
@@ -96,6 +139,9 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
     rateLimitAuthSensitiveMax.error,
     rateLimitPublicTtlMs.error,
     rateLimitPublicMax.error,
+    ordersCreateQueueAttempts.error,
+    ordersCreateQueueBackoffMs.error,
+    ordersCreateQueueRemoveOnComplete.error,
   ].filter(isString);
 
   if (invalidMessages.length > 0) {
@@ -107,6 +153,10 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
     JWT_SECRET: envInput.JWT_SECRET as string,
     USUARIO_SERVICE_HOST: envInput.USUARIO_SERVICE_HOST as string,
     USUARIO_SERVICE_TCP_PORT: usuarioServiceTcpPort.value,
+    ORDERS_SERVICE_HOST: envInput.ORDERS_SERVICE_HOST as string,
+    ORDERS_SERVICE_TCP_PORT: ordersServiceTcpPort.value,
+    NOTIFICATIONS_SERVICE_HOST: envInput.NOTIFICATIONS_SERVICE_HOST as string,
+    NOTIFICATIONS_SERVICE_TCP_PORT: notificationsServiceTcpPort.value,
     TCP_TIMEOUT_MS: tcpTimeoutMs.value,
     RATE_LIMIT_TTL_MS: rateLimitTtlMs.value,
     RATE_LIMIT_MAX: rateLimitMax.value,
@@ -115,6 +165,11 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
     RATE_LIMIT_PUBLIC_TTL_MS: rateLimitPublicTtlMs.value,
     RATE_LIMIT_PUBLIC_MAX: rateLimitPublicMax.value,
     PAYLOAD_LIMIT: envInput.PAYLOAD_LIMIT ?? GATEWAY_ENV_DEFAULTS.PAYLOAD_LIMIT,
+    REDIS_URL: envInput.REDIS_URL ?? GATEWAY_ENV_DEFAULTS.REDIS_URL,
+    ORDERS_CREATE_QUEUE_NAME: envInput.ORDERS_CREATE_QUEUE_NAME ?? GATEWAY_ENV_DEFAULTS.ORDERS_CREATE_QUEUE_NAME,
+    ORDERS_CREATE_QUEUE_ATTEMPTS: ordersCreateQueueAttempts.value,
+    ORDERS_CREATE_QUEUE_BACKOFF_MS: ordersCreateQueueBackoffMs.value,
+    ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE: ordersCreateQueueRemoveOnComplete.value,
   };
 }
 

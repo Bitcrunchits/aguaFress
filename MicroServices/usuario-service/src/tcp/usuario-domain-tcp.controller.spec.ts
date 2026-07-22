@@ -408,7 +408,7 @@ describe('UsuarioDomainTcpController', () => {
       const payload = superAdminPayload({ params: { id: 'qr-1' } });
       await controller.adminDeactivateQr(payload);
 
-      expect(qrCodesService.deactivateAdmin).toHaveBeenCalledWith('qr-1');
+      expect(qrCodesService.deactivateAdmin).toHaveBeenCalledWith('qr-1', 'admin-user-id');
     });
   });
 
@@ -427,7 +427,7 @@ describe('UsuarioDomainTcpController', () => {
       await controller.vendorDeactivateQr(payload);
 
       expect(vendedorResolver.resolve).toHaveBeenCalledWith('vendor-user-id');
-      expect(qrCodesService.deactivate).toHaveBeenCalledWith('qr-1', 'vendedor-abc');
+      expect(qrCodesService.deactivate).toHaveBeenCalledWith('qr-1', 'vendedor-abc', 'vendor-user-id');
     });
   });
 
@@ -446,7 +446,7 @@ describe('UsuarioDomainTcpController', () => {
       const payload = superAdminPayload({ params: { id: 'link-1' } });
       await controller.adminDeactivateLink(payload);
 
-      expect(linkInvitacionService.deactivateAdmin).toHaveBeenCalledWith('link-1');
+      expect(linkInvitacionService.deactivateAdmin).toHaveBeenCalledWith('link-1', 'admin-user-id');
     });
   });
 
@@ -465,7 +465,7 @@ describe('UsuarioDomainTcpController', () => {
       await controller.vendorDeactivateLink(payload);
 
       expect(vendedorResolver.resolve).toHaveBeenCalledWith('vendor-user-id');
-      expect(linkInvitacionService.deactivate).toHaveBeenCalledWith('link-1', 'vendedor-abc');
+      expect(linkInvitacionService.deactivate).toHaveBeenCalledWith('link-1', 'vendedor-abc', 'vendor-user-id');
     });
   });
 

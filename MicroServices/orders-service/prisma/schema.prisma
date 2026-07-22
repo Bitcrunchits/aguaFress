@@ -1,0 +1,176 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ENUMS DEL SISTEMA
+// ═══════════════════════════════════════════════════════════════
+
+enum OrderEstado {
+  pendiente
+  confirmado
+  en_camino
+  entregado
+  cancelado
+  vencido
+}
+
+enum MetodoPago {
+  contra_entrega
+}
+
+enum OrderJobStatus {
+  PENDING
+  PROCESSING
+  RETRYING
+  COMPLETED
+  FAILED
+  DEAD_LETTER
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  orders-service — Carrito + Pedidos
+// ═══════════════════════════════════════════════════════════════
+
+// ── CARRITO ───────────────────────────────────────────────────
+
+model Cart {
+  id         String    @id @default(uuid()) @db.Uuid
+  // V1 compatibility: referencia lógica → AUTH_USER.id (clienteUserId), no CLIENTE.id.
+  usuario_id String    @db.Uuid
+  // Referencia lógica → VENDEDOR en usuario-service (sin FK)
+  vendedor_id String   @db.Uuid
+  // Se setea desde la capa de servicio: created_at + 24hs
+  expires_at       DateTime
+  // Null para carritos inactivos/vencidos; usuario_id mientras está activo para asegurar uno por cliente.
+  active_cart_key  String?   @unique @db.Uuid
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+
+  items CartItem[]
+
+  @@index([usuario_id])
+  @@index([vendedor_id])
+  @@index([expires_at])
+  @@map("CART")
+}
+
+model CartItem {
+  id             String   @id @default(uuid()) @db.Uuid
+  cart_id        String   @db.Uuid
+  cart           Cart     @relation(fields: [cart_id], references: [id], onDelete: Cascade)
+  // Referencia lógica → PRODUCTO en products-service (sin FK)
+  producto_id    String   @db.Uuid
+  // Snapshot del nombre del producto al momento de agregar al carrito
+  nombre         String   @db.VarChar(255)
+  cantidad       Int
+  precio_unitario Decimal @db.Decimal(10, 2)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  @@unique([cart_id, producto_id])
+  @@index([producto_id])
+  @@map("CART_ITEM")
+}
+
+// ── PEDIDO ────────────────────────────────────────────────────
+
+model Order {
+  id               String     @id @default(uuid()) @db.Uuid
+  // Secuencial por vendedor — generado por la capa de servicio
+  pedido_numero    String     @db.VarChar(20)
+  // V1 compatibility: referencia lógica → AUTH_USER.id (clienteUserId), no CLIENTE.id.
+  usuario_id       String     @db.Uuid
+  // Referencia lógica → VENDEDOR en usuario-service (sin FK)
+  vendedor_id      String     @db.Uuid
+  // Snapshot de DireccionEntrega al crear el pedido
+  direccion_entrega Json
+  estado           OrderEstado
+  metodo_pago      MetodoPago
+  total_sin_iva    Decimal    @db.Decimal(10, 2)
+  iva              Decimal    @db.Decimal(10, 2)
+  total            Decimal    @db.Decimal(10, 2)
+  observaciones    String?    @db.Text
+  created_at       DateTime   @default(now())
+  updated_at       DateTime   @updatedAt
+
+  items   OrderItem[]
+  history OrderHistory[]
+
+  @@unique([vendedor_id, pedido_numero])
+  @@index([usuario_id])
+  @@index([vendedor_id])
+  @@index([estado])
+  @@index([created_at])
+  @@map("ORDER")
+}
+
+model OrderItem {
+  id             String   @id @default(uuid()) @db.Uuid
+  order_id       String   @db.Uuid
+  order          Order    @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  // Referencia lógica → PRODUCTO en products-service (sin FK)
+  producto_id    String   @db.Uuid
+  // Snapshot del nombre del producto al momento del pedido
+  nombre         String   @db.VarChar(255)
+  cantidad       Int
+  precio_unitario Decimal  @db.Decimal(10, 2)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  @@index([producto_id])
+  @@map("ORDER_ITEM")
+}
+
+model OrderHistory {
+  id             String       @id @default(uuid()) @db.Uuid
+  order_id       String       @db.Uuid
+  order          Order        @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  estado_anterior OrderEstado?
+  estado_nuevo   OrderEstado
+  notas          String?      @db.Text
+  created_at     DateTime     @default(now())
+  updated_at     DateTime     @updatedAt
+
+  @@index([estado_nuevo])
+  @@index([created_at])
+  @@map("ORDER_HISTORY")
+}
+
+model OrderCounter {
+  vendedor_id   String   @id @db.Uuid
+  current_value Int      @default(0)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  @@map("PEDIDO_COUNTER")
+}
+
+model OrderCommandJob {
+  id              String         @id @default(uuid()) @db.Uuid
+  tracking_id     String         @unique @db.Uuid
+  job_id          String         @unique @db.VarChar(255)
+  // V1 compatibility: auth-user id (`clienteUserId` / AUTH_USER.id), no CLIENTE.id.
+  cliente_id      String         @db.Uuid
+  idempotency_key String         @db.VarChar(255)
+  payload_hash    String         @db.VarChar(64)
+  payload_body    Json
+  status          OrderJobStatus @default(PENDING)
+  order_id        String?        @db.Uuid
+  error_code      String?        @db.VarChar(100)
+  error_message   String?        @db.Text
+  attempts        Int            @default(0)
+  created_at      DateTime       @default(now())
+  updated_at      DateTime       @updatedAt
+
+  @@unique([cliente_id, idempotency_key])
+  @@index([status])
+  @@index([created_at])
+  @@map("ORDER_COMMAND_JOB")
+}

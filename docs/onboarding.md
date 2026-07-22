@@ -12,7 +12,7 @@ Plataforma de pedidos para distribuidores de agua y soda. Sistema multi-tenant c
 | Framework | NestJS 10 |
 | ORM | Prisma 5 |
 | DB | PostgreSQL 15 |
-| Cache | Redis 7 |
+| Cache/colas | Redis 7 + BullMQ para comandos async críticos |
 | Auth | JWT (access + refresh, con rotación) |
 | Monorepo | pnpm workspaces |
 
@@ -76,9 +76,18 @@ curl http://localhost:3000/api/v1/auth/login -X POST \
 
 ## API pública — Gateway
 
-El gateway es la única entrada HTTP pública. Los microservicios de dominio no exponen endpoints HTTP; reciben comandos TCP internos desde el gateway.
+El gateway es la única entrada HTTP pública. Los microservicios de dominio no exponen endpoints HTTP; reciben comandos TCP internos desde el gateway o jobs BullMQ cuando el comando debe sobrevivir a la caída temporal del microservicio.
 
 Patrón canónico: `/{method} /api/v1/{service}/{action}`. Autenticación via `Authorization: Bearer <token>` cuando la acción no sea pública.
+
+### Resiliencia de microservicios
+
+| Camino | Uso | Falla esperada |
+|--------|-----|----------------|
+| TCP síncrono | Login, perfil, validaciones, lecturas simples y acciones inmediatas. | Error controlado, `503` o timeout. No se encola. |
+| Redis + BullMQ async | Operaciones críticas que no deben perder datos y pueden esperar segundos. Piloto: creación de órdenes. | El job queda en Redis y el worker lo procesa cuando el MS vuelve. |
+
+No se usa Kafka para este problema. La decisión vigente es Redis + BullMQ para durabilidad operacional, retries, backoff, failed jobs/DLQ, idempotency keys y tracking de jobs.
 
 ### Auth (público)
 
@@ -170,6 +179,9 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5433/agua"
 # Redis
 REDIS_URL="redis://localhost:6379"
 
+# BullMQ / jobs async críticos
+REDIS_URL="redis://localhost:6379"
+
 # JWT
 JWT_SECRET="auth-dev-secret-min-32-chars-long!!"
 JWT_REFRESH_SECRET="auth-dev-refresh-secret-min-32!!"
@@ -213,3 +225,5 @@ bash /tmp/api-test.sh
 - Estados con **enums**, no strings
 - Endpoints protegidos con guards (`JwtAuthGuard` global, `RolesGuard`, `VendedorGuard`)
 - Cada microservicio mantiene su propia DB y Prisma schema; referencias a entidades de otro MS son UUID escalares lógicos
+- Gateway no es dueño de datos de negocio; para async valida/enruta/encola y responde `202 Accepted` con `jobId`/`trackingId`
+- `orders-service` es el piloto de BullMQ y mantiene la persistencia final de pedidos y estados de jobs

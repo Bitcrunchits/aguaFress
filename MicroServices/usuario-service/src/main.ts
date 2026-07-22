@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common';
 import { Transport, type MicroserviceOptions } from '@nestjs/microservices';
 import { AppModule } from './app.module';
 import { validateEnv } from './common/config/env.config';
+import { RpcExceptionFilter } from './common/filters/rpc-exception.filter';
 
 export function getTcpPort(): number {
   return parseInt(process.env.TCP_PORT ?? '', 10) || 3011;
@@ -23,6 +24,8 @@ async function bootstrap() {
       },
     },
   );
+
+  app.useGlobalFilters(new RpcExceptionFilter());
 
   await app.listen();
   logger.log(`usuario-service TCP running on port ${getTcpPort()}`);

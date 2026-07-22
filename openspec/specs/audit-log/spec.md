@@ -10,7 +10,7 @@ Provide a consistent, centralized audit trail for all 7 business domains. Every 
 
 ### R1: AuditLogService.record()
 
-The service **MUST** expose a `record(action, userId, opts?)` method that inserts one `AUDIT_LOG` row.
+The service **MUST** expose a `record(action, actorUserId, opts?)` method that inserts one `AUDIT_LOG` row. `actorUserId` is always `AUTH_USER.id` from the authenticated actor, never `CLIENTE.id` or `VENDEDOR.id`.
 
 **Mandatory fields**: `usuario_id`, `accion` (from `AuditAction` enum).
 
@@ -22,14 +22,14 @@ The service **MUST** expose a `record(action, userId, opts?)` method that insert
 
 #### Scenario: Record full audit entry
 
-- GIVEN a valid `AuditAction.USER_REGISTERED`, a userId, a targetId, a detail payload, and an IP string
+- GIVEN a valid `AuditAction.USER_REGISTERED`, an actorUserId, a targetId, a detail payload, and an IP string
 - WHEN `record()` is called with all optional fields populated
 - THEN a row is inserted in `AUDIT_LOG` with all fields set to the provided values AND an auto-generated UUID and ISO timestamp
 
 #### Scenario: Record minimal audit entry
 
-- GIVEN a valid `AuditAction.QR_CREATED`, a userId, and no other optional params
-- WHEN `record()` is called with only `action` and `userId`
+- GIVEN a valid `AuditAction.QR_CREATED`, an actorUserId, and no other optional params
+- WHEN `record()` is called with only `action` and `actorUserId`
 - THEN a row is inserted with `target_id`, `detalle`, and `ip` as NULL
 
 #### Scenario: Invalid action string
@@ -42,17 +42,17 @@ The service **MUST** expose a `record(action, userId, opts?)` method that insert
 
 ### R2: @AuditLog(action) Decorator
 
-The decorator **MUST** auto-log audit entries for controller handler methods by extracting `userId` from the request's `@CurrentUser()` decorator and injecting metadata at execution time.
+The decorator **MUST** auto-log audit entries for controller handler methods by extracting `actorUserId` (`AUTH_USER.id`) from the request's `@CurrentUser()` decorator and injecting metadata at execution time.
 
-**Behavior**: When the decorated handler completes without error, `AuditLogService.record(action, userId, opts)` **MUST** be called automatically. The `target_id` **SHOULD** be resolved from the handler's first route parameter named `id` when present.
+**Behavior**: When the decorated handler completes without error, `AuditLogService.record(action, actorUserId, opts)` **MUST** be called automatically. The `target_id` **SHOULD** be resolved from the handler's first route parameter named `id` when present.
 
 **IP extraction** (shared utility): `x-forwarded-for` header first, fallback to `req.ip`. Both **MAY** be null (for internal calls or edge cases).
 
 #### Scenario: Decorator logs after successful handler
 
-- GIVEN a controller handler decorated with `@AuditLog(AuditAction.VENDEDOR_UPDATED)` and a valid request with `@CurrentUser()` providing userId
+- GIVEN a controller handler decorated with `@AuditLog(AuditAction.VENDEDOR_UPDATED)` and a valid request with `@CurrentUser()` providing actorUserId
 - WHEN the handler executes successfully (returns 2xx)
-- THEN `record()` is called with the correct action, userId, and the `id` route param as target_id
+- THEN `record()` is called with the correct action, actorUserId, and the `id` route param as target_id
 
 #### Scenario: Decorator does NOT log on exception
 

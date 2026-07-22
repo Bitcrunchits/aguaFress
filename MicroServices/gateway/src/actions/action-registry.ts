@@ -2,11 +2,19 @@ import { get } from "node:http";
 
 export type TcpTransport = 'send' | 'publish';
 
+export const ASYNC_QUEUE_NAMES = {
+  ORDERS_CREATE: 'orders.create',
+} as const;
+
+export type AsyncQueueName = (typeof ASYNC_QUEUE_NAMES)[keyof typeof ASYNC_QUEUE_NAMES];
+
 export interface ActionMapping {
   readonly tcpPattern: string;
   readonly transport: TcpTransport;
   readonly authRequired: boolean;
   readonly roles?: readonly string[];
+  readonly retryOnTimeout?: boolean;
+  readonly asyncQueue?: AsyncQueueName;
 }
 
 export type ServiceFamilyStatus = 'available' | 'unavailable';
@@ -101,41 +109,40 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
   products: { status: 'unavailable', actions: {} },
   categories: { status: 'unavailable', actions: {} },
   brands: { status: 'unavailable', actions: {} },
-  orders: { status: 'unavailable', actions: {} },
-  cart: { status: 'unavailable', actions: {} },
-  deliveries: { 
+  orders: {
     status: 'available',
     actions: {
-      list: { tcpPattern: 'deliveries.list', transport: 'send', authRequired: true, roles:['vendedor']},
-      get: {tcpPattern: 'deliveries.get', transport: 'send', authRequired: true, roles:['vendedor']},
-      'update-status': { tcpPattern: 'deliveries.update_status', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      list: { tcpPattern: 'orders.list', transport: 'send', authRequired: true },
+      'get-by-id': { tcpPattern: 'orders.get_by_id', transport: 'send', authRequired: true },
+      'job-status': { tcpPattern: 'orders.job_status', transport: 'send', authRequired: true },
+      create: {
+        tcpPattern: 'orders.create',
+        transport: 'send',
+        authRequired: true,
+        roles: ['cliente'],
+        retryOnTimeout: false,
+        asyncQueue: ASYNC_QUEUE_NAMES.ORDERS_CREATE,
+      },
+      'status/update': { tcpPattern: 'orders.status_update', transport: 'send', authRequired: true, roles: ['vendedor'], retryOnTimeout: false },
+      cancel: { tcpPattern: 'orders.cancel', transport: 'send', authRequired: true, roles: ['cliente'], retryOnTimeout: false },
+      confirm: { tcpPattern: 'orders.confirm', transport: 'send', authRequired: true, roles: ['vendedor'], retryOnTimeout: false },
+    },
   },
-},
-  'activity-logs': { status: 'unavailable', actions: {} },
+  cart: {
+    status: 'available',
+    actions: {
+      get: { tcpPattern: 'cart.get', transport: 'send', authRequired: true, roles: ['cliente'] },
+      'items/add': { tcpPattern: 'cart.items_add', transport: 'send', authRequired: true, roles: ['cliente'], retryOnTimeout: false },
+      'items/update': { tcpPattern: 'cart.items_update', transport: 'send', authRequired: true, roles: ['cliente'], retryOnTimeout: false },
+      'items/delete': { tcpPattern: 'cart.items_delete', transport: 'send', authRequired: true, roles: ['cliente'], retryOnTimeout: false },
+    },
+  },
+   deliveries: {
+    status: 'available',
+    actions: {
+      list: { tcpPattern: 'deliveries.list', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      get: { tcpPattern: 'deliveries.get', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      'update-status': { tcpPattern: 'deliveries.update_status', transport: 'send', authRequired: true, roles: ['vendedor'] },
+    },
+  },
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
