@@ -7,6 +7,8 @@ import { RegisterDto } from '../auth/dto/register.dto';
 import { RefreshTokenDto } from '../auth/dto/refresh-token.dto';
 import { ValidateTokenDto } from '../auth/dto/validate-token.dto';
 import { ChangePasswordDto } from '../auth/dto/change-password.dto';
+import { AdminGenerateResetTokenDto } from '../auth/dto/admin-generate-reset-token.dto';
+import { ResetPasswordDto } from '../auth/dto/reset-password.dto';
 import { TcpPayloadAdapter } from './tcp-payload-adapter.service';
 import type { TcpPayload } from './tcp-payload';
 
@@ -40,6 +42,19 @@ export class AuthTcpController {
   async validate(@Payload() payload: TcpPayload) {
     const dto = await this.payloadAdapter.body(payload, ValidateTokenDto);
     return this.authService.validate(dto.token);
+  }
+
+  @MessagePattern('auth.admin_generate_reset_token')
+  async adminGenerateResetToken(@Payload() payload: TcpPayload) {
+    const adminUserId = this.payloadAdapter.userId(payload);
+    const dto = await this.payloadAdapter.body(payload, AdminGenerateResetTokenDto);
+    return this.authService.adminGenerateResetToken(adminUserId, dto);
+  }
+
+  @MessagePattern('auth.reset_password')
+  async resetPassword(@Payload() payload: TcpPayload) {
+    const dto = await this.payloadAdapter.body(payload, ResetPasswordDto);
+    return this.authService.resetPassword(dto);
   }
 
   @MessagePattern('auth.change_password')
