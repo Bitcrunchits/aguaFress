@@ -13,6 +13,10 @@ export const GATEWAY_ENV_DEFAULTS = {
   ORDERS_CREATE_QUEUE_ATTEMPTS: 3,
   ORDERS_CREATE_QUEUE_BACKOFF_MS: 1000,
   ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE: 1000,
+  DELIVERIES_QUEUE_NAME: 'deliveries.update_status',
+  DELIVERIES_QUEUE_ATTEMPTS: 3,
+  DELIVERIES_QUEUE_BACKOFF_MS: 1000,
+  DELIVERIES_QUEUE_REMOVE_ON_COMPLETE: 1000,
 } as const;
 
 const REQUIRED_ENV_KEYS = {
@@ -60,6 +64,10 @@ export interface GatewayEnv {
   readonly ORDERS_CREATE_QUEUE_ATTEMPTS: number;
   readonly ORDERS_CREATE_QUEUE_BACKOFF_MS: number;
   readonly ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE: number;
+  readonly DELIVERIES_QUEUE_NAME: string;
+  readonly DELIVERIES_QUEUE_ATTEMPTS: number;
+  readonly DELIVERIES_QUEUE_BACKOFF_MS: number;
+  readonly DELIVERIES_QUEUE_REMOVE_ON_COMPLETE: number;
 }
 
 type GatewayEnvInput = Record<string, string | undefined>;
@@ -134,6 +142,21 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
     GATEWAY_ENV_DEFAULTS.ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE,
     'ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE',
   );
+  const deliveriesQueueAttempts = readOptionalPositiveInteger(
+    envInput.DELIVERIES_QUEUE_ATTEMPTS,
+    GATEWAY_ENV_DEFAULTS.DELIVERIES_QUEUE_ATTEMPTS,
+    'DELIVERIES_QUEUE_ATTEMPTS',
+  );
+  const deliveriesQueueBackoffMs = readOptionalPositiveInteger(
+    envInput.DELIVERIES_QUEUE_BACKOFF_MS,
+    GATEWAY_ENV_DEFAULTS.DELIVERIES_QUEUE_BACKOFF_MS,
+    'DELIVERIES_QUEUE_BACKOFF_MS',
+  );
+  const deliveriesQueueRemoveOnComplete = readOptionalPositiveInteger(
+    envInput.DELIVERIES_QUEUE_REMOVE_ON_COMPLETE,
+    GATEWAY_ENV_DEFAULTS.DELIVERIES_QUEUE_REMOVE_ON_COMPLETE,
+    'DELIVERIES_QUEUE_REMOVE_ON_COMPLETE',
+  );
 
   const invalidMessages = [
     port.error,
@@ -151,6 +174,9 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
     ordersCreateQueueAttempts.error,
     ordersCreateQueueBackoffMs.error,
     ordersCreateQueueRemoveOnComplete.error,
+    deliveriesQueueAttempts.error,
+    deliveriesQueueBackoffMs.error,
+    deliveriesQueueRemoveOnComplete.error,
   ].filter(isString);
 
   if (invalidMessages.length > 0) {
@@ -181,6 +207,10 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
     ORDERS_CREATE_QUEUE_ATTEMPTS: ordersCreateQueueAttempts.value,
     ORDERS_CREATE_QUEUE_BACKOFF_MS: ordersCreateQueueBackoffMs.value,
     ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE: ordersCreateQueueRemoveOnComplete.value,
+    DELIVERIES_QUEUE_NAME: envInput.DELIVERIES_QUEUE_NAME ?? GATEWAY_ENV_DEFAULTS.DELIVERIES_QUEUE_NAME,
+    DELIVERIES_QUEUE_ATTEMPTS: deliveriesQueueAttempts.value,
+    DELIVERIES_QUEUE_BACKOFF_MS: deliveriesQueueBackoffMs.value,
+    DELIVERIES_QUEUE_REMOVE_ON_COMPLETE: deliveriesQueueRemoveOnComplete.value,
   };
 }
 

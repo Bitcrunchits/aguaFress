@@ -15,6 +15,15 @@ enum DeliveryEstado {
   entregada
 }
 
+enum DeliveryJobStatus {
+  PENDING
+  PROCESSING
+  RETRYING
+  COMPLETED
+  FAILED
+  DEAD_LETTER
+}
+
 model Delivery {
   id                  String         @id @default(uuid()) @db.Uuid
   order_id            String         @unique @db.Uuid
@@ -45,4 +54,29 @@ model Delivery {
   updated_at       DateTime  @updatedAt
 
   @@map("DELIVERY")
+}
+
+model DeliveryCommandJob {
+  id                  String           @id @default(uuid()) @db.Uuid
+  tracking_id         String           @unique @db.Uuid
+  job_id              String           @unique @db.VarChar(255)
+  delivery_id         String           @db.Uuid
+  vendedor_id         String           @db.Uuid
+  actor_user_id       String           @db.Uuid
+  estado              DeliveryEstado
+  notas               String?          @db.Text
+  estado_anterior     DeliveryEstado?
+  status              DeliveryJobStatus @default(PENDING)
+  idempotency_key     String           @db.VarChar(255)
+  payload_fingerprint String           @db.VarChar(64)
+  error_code          String?          @db.VarChar(100)
+  error_message       String?          @db.Text
+  attempts            Int              @default(0)
+  created_at          DateTime         @default(now())
+  updated_at          DateTime         @updatedAt
+
+  @@unique([delivery_id, idempotency_key])
+  @@index([status])
+  @@index([created_at])
+  @@map("DELIVERY_COMMAND_JOB")
 }

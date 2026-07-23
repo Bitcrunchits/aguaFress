@@ -10,6 +10,10 @@ const mockRepository: jest.Mocked<DeliveriesRepository> = {
   findAll: jest.fn(),
   findById: jest.fn(),
   updateStatus: jest.fn(),
+  createDeliveryCommandJob: jest.fn(),
+  findDeliveryCommandByIdempotency: jest.fn(),
+  findDeliveryCommandByTrackingId: jest.fn(),
+  updateDeliveryCommandJobStatus: jest.fn(),
 };
 
 const mockPublisher: jest.Mocked<DeliveryEventPublisher> = {

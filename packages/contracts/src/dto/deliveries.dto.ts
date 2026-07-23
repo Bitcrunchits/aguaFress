@@ -5,7 +5,7 @@
 // ⚠️ El vendedor autenticado se obtiene del token JWT.
 //    Los endpoints usan ese ID para filtrar sus entregas.
 
-import { DeliveryEstado } from '../enums';
+import { DeliveryEstado, DeliveryJobStatus } from '../enums';
 import type { DireccionEntrega, PaginationRequest } from './common.dto';
 
 export interface DeliveryResponse {
@@ -32,4 +32,27 @@ export interface DeliveryListFilters extends PaginationRequest {
 export interface UpdateDeliveryStatusRequest {
   estado: DeliveryEstado.EN_CAMINO | DeliveryEstado.ENTREGADA;
   notas?: string;
+}
+
+// ─── Async Job Tracking ───
+
+export interface DeliveryJobStatusResponse {
+  trackingId: string;
+  deliveryId: string;
+  status: DeliveryJobStatus;
+  errorCode?: string;
+  errorMessage?: string;
+  attempts: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateDeliveryStatusJobData {
+  deliveryId: string;
+  vendedorId: string;
+  actorUserId: string;
+  estado: DeliveryEstado.EN_CAMINO | DeliveryEstado.ENTREGADA;
+  notas?: string;
+  idempotencyKey: string;
+  requestId: string;
 }
