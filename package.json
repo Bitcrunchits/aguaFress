@@ -5,6 +5,7 @@
   "description": "AguaFress — Plataforma de pedidos para distribuidores de agua y soda",
   "scripts": {
     "build:contracts": "pnpm --filter @agua/contracts build",
-    "build": "pnpm run build:contracts"
+    "build": "pnpm run build:contracts",
+    "seed:test": "pnpm --filter @agua/usuario-service seed:test"
   }
 }
