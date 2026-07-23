@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Apunta directamente al puerto del Gateway (3000)
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';[cite: 1]
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -13,9 +13,9 @@ export const api = axios.create({
 // Adjuntar automáticamente el JWT obtenido tras el Login
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('aguaFress_token');[cite: 1]
+    const token = localStorage.getItem('aguaFress_token');
     if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;[cite: 1]
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
@@ -27,7 +27,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      localStorage.removeItem('aguaFress_token');[cite: 1]
+      localStorage.removeItem('aguaFress_token');
       localStorage.removeItem('aguaFress_user');
       window.location.href = '/login';
     }

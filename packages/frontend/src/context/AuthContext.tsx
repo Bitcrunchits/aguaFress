@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { UserRole } from '@agua/contracts'; // Importado de los contratos compartidos[cite: 2]
+import { UserRole } from '@agua/contracts';
 
 interface User {
   id: string;
   email: string;
-  role: UserRole; // SUPER ADMIN, VENDEDOR, CLIENTE
+  role: UserRole;
   name?: string;
-  vendedor_id?: string; // Esencial para el aislamiento de cartera
+  vendedor_id?: string;
 }
 
 interface AuthContextType {
@@ -25,33 +25,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('aguaFress_token');[cite: 1]
+    const storedToken = localStorage.getItem('aguaFress_token');
     const storedUser = localStorage.getItem('aguaFress_user');
     
     if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      try {
+        setToken(storedToken);
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error('Error al parsear el usuario del localStorage', error);
+        localStorage.removeItem('aguaFress_token');
+        localStorage.removeItem('aguaFress_user');
+      }
     }
     setLoading(false);
   }, []);
 
   const login = (newToken: string, newUser: User) => {
-    localStorage.setItem('aguaFress_token', newToken);[cite: 1]
+    localStorage.setItem('aguaFress_token', newToken);
     localStorage.setItem('aguaFress_user', JSON.stringify(newUser));
     setToken(newToken);
     setUser(newUser);
   };
 
   const logout = () => {
-    localStorage.removeItem('aguaFress_token');[cite: 1]
+    localStorage.removeItem('aguaFress_token');
     localStorage.removeItem('aguaFress_user');
     setToken(null);
     setUser(null);
   };
 
+  // Solución P2 (#8): Mostrar un indicador explícito mientras carga
+  if (loading) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        backgroundColor: '#f3f4f6',
+        fontFamily: 'sans-serif',
+        color: '#2563eb',
+        fontSize: '18px',
+        fontWeight: 'bold'
+      }}>
+        Cargando sesión...
+      </div>
+    );
+  }
+
   return (
     <AuthContext.Provider value={{ user, token, login, logout, loading }}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
