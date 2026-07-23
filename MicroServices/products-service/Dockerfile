@@ -1,8 +1,13 @@
 # ─── Build ───────────────────────────────────────────────────
 FROM node:22-alpine AS build
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN apk add --no-cache openssl && \
+    corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
+
+# Placeholder requerido por Prisma durante generate en build.
+# La URL real la inyecta docker-compose/runtime.
+ENV DATABASE_URL="postgresql://postgres:postgres@postgres:5432/agua"
 
 # Copiar config del monorepo
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
@@ -24,7 +29,8 @@ RUN pnpm --filter @agua/products-service build
 # ─── Run ─────────────────────────────────────────────────────
 FROM node:22-alpine AS run
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN apk add --no-cache openssl && \
+    corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
 # Copiar config
@@ -33,8 +39,9 @@ COPY packages/contracts/package.json ./packages/contracts/
 COPY MicroServices/products-service/package.json ./MicroServices/products-service/
 COPY MicroServices/products-service/prisma ./MicroServices/products-service/prisma
 
-# Instalar solo dependencias de producción (dispara "postinstall": "prisma generate")
-RUN pnpm install --frozen-lockfile --filter @agua/products-service --prod
+# Instalar todo (incluye prisma CLI para db push en desarrollo)
+# --ignore-scripts porque postinstall falla (prisma generate necesita el schema ya copiado)
+RUN pnpm install --frozen-lockfile --filter @agua/products-service --ignore-scripts
 
 # Copiar artifacts compilados
 COPY --from=build /app/packages/contracts/dist ./packages/contracts/dist
@@ -42,5 +49,5 @@ COPY --from=build /app/MicroServices/products-service/dist ./MicroServices/produ
 
 EXPOSE 3003 3013
 
-WORKDIR /app/MicroServices/products-service
-CMD ["node", "dist/main.js"]
+# db push auto + arranque
+CMD cd MicroServices/products-service && npx prisma generate && npx prisma db push --accept-data-loss && node dist/main.js

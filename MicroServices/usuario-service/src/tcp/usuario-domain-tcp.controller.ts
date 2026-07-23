@@ -296,7 +296,7 @@ export class UsuarioDomainTcpController {
   private requireParamId(payload: TcpPayload): string {
     const id = payload.params?.id;
     if (!id) {
-      throw new BadRequestException('Entity id is required in payload.params');
+      throw new BadRequestException('Entity id is required in URL path: /api/v1/:service/:action/:id');
     }
 
     return id;

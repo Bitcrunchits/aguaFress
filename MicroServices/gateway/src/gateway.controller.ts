@@ -56,7 +56,7 @@ export class GatewayController {
   @Get(':action(.*)')
   @ApiOperation({ summary: 'Execute a GET action', description: 'Dispatches a read-only action to the target microservice via TCP.' })
   @ApiParam({ name: 'service', description: 'Service family (auth, users, vendedores, clientes, etc.)' })
-  @ApiParam({ name: 'action', description: 'Action to execute within the service family' })
+  @ApiParam({ name: 'action', description: 'Action to execute within the service family. Append /:id for entity-specific operations.' })
   @ApiQuery({ name: 'query', required: false, description: 'Query parameters forwarded to the microservice' })
   @ApiResponse({ status: 200, description: 'Action executed successfully' })
   @ApiResponse({ status: 401, description: 'Missing or invalid JWT' })
@@ -70,8 +70,9 @@ export class GatewayController {
     @Query() query: Record<string, string>,
     @Req() req: Request,
   ): Promise<unknown> {
-    const mapping = this.resolver.resolve(service, action);
-    const payload = this.buildPayload(req, query, { service, action });
+    const { action: resolvedAction, params } = this.resolver.parseActionPath(service, action);
+    const mapping = this.resolver.resolve(service, resolvedAction);
+    const payload = this.buildPayload(req, query, params);
     await this.validateProviderScopedDispatch(service, req, payload);
     return this.dispatcher.dispatch(service, payload, mapping);
   }
@@ -80,7 +81,7 @@ export class GatewayController {
   @HttpCode(200)
   @ApiOperation({ summary: 'Execute a POST action', description: 'Dispatches a mutating action to the target microservice via TCP.' })
   @ApiParam({ name: 'service', description: 'Service family' })
-  @ApiParam({ name: 'action', description: 'Action to execute' })
+  @ApiParam({ name: 'action', description: 'Action to execute. Append /:id for entity-specific operations.' })
   @ApiResponse({ status: 200, description: 'Action executed successfully' })
   @ApiResponse({ status: 401, description: 'Missing or invalid JWT' })
   @ApiResponse({ status: 403, description: 'Insufficient role' })
@@ -94,7 +95,8 @@ export class GatewayController {
     @Req() req: Request,
     @Res({ passthrough: true }) res?: Response,
   ): Promise<unknown> {
-    const mapping = this.resolver.resolve(service, action);
+    const { action: resolvedAction, params } = this.resolver.parseActionPath(service, action);
+    const mapping = this.resolver.resolve(service, resolvedAction);
     const sanitizedBody = sanitizeBodyIdentity(body);
 
     if (mapping.asyncQueue === 'orders.create') {
@@ -113,7 +115,7 @@ export class GatewayController {
       });
     }
 
-    const payload = this.buildPayload(req, query, { service, action }, sanitizedBody);
+    const payload = this.buildPayload(req, query, params, sanitizedBody);
     await this.validateProviderScopedDispatch(service, req, payload);
     return this.dispatcher.dispatch(service, payload, mapping);
   }
@@ -121,7 +123,7 @@ export class GatewayController {
   @Patch(':action(.*)')
   @ApiOperation({ summary: 'Execute a PATCH action', description: 'Dispatches a partial update action to the target microservice via TCP.' })
   @ApiParam({ name: 'service', description: 'Service family' })
-  @ApiParam({ name: 'action', description: 'Action to execute' })
+  @ApiParam({ name: 'action', description: 'Action to execute. Append /:id for entity-specific operations.' })
   @ApiResponse({ status: 200, description: 'Action executed successfully' })
   @ApiResponse({ status: 401, description: 'Missing or invalid JWT' })
   @ApiResponse({ status: 403, description: 'Insufficient role' })
@@ -135,7 +137,8 @@ export class GatewayController {
     @Req() req: Request,
     @Res({ passthrough: true }) res?: Response,
   ): Promise<unknown> {
-    const mapping = this.resolver.resolve(service, action);
+    const { action: resolvedAction, params } = this.resolver.parseActionPath(service, action);
+    const mapping = this.resolver.resolve(service, resolvedAction);
     const sanitizedBody = sanitizeBodyIdentity(body);
 
     if (mapping.asyncQueue === 'deliveries.update_status') {
@@ -163,7 +166,7 @@ export class GatewayController {
       });
     }
 
-    const payload = this.buildPayload(req, query, { service, action }, sanitizedBody);
+    const payload = this.buildPayload(req, query, params, sanitizedBody);
     await this.validateProviderScopedDispatch(service, req, payload);
     return this.dispatcher.dispatch(service, payload, mapping);
   }
@@ -171,7 +174,7 @@ export class GatewayController {
   @Delete(':action(.*)')
   @ApiOperation({ summary: 'Execute a DELETE action', description: 'Dispatches a delete action to the target microservice via TCP.' })
   @ApiParam({ name: 'service', description: 'Service family' })
-  @ApiParam({ name: 'action', description: 'Action to execute' })
+  @ApiParam({ name: 'action', description: 'Action to execute. Append /:id for entity-specific operations.' })
   @ApiResponse({ status: 200, description: 'Action executed successfully' })
   @ApiResponse({ status: 401, description: 'Missing or invalid JWT' })
   @ApiResponse({ status: 403, description: 'Insufficient role' })
@@ -184,8 +187,9 @@ export class GatewayController {
     @Query() query: Record<string, string>,
     @Req() req: Request,
   ): Promise<unknown> {
-    const mapping = this.resolver.resolve(service, action);
-    const payload = this.buildPayload(req, query, { service, action }, sanitizeBodyIdentity(body));
+    const { action: resolvedAction, params } = this.resolver.parseActionPath(service, action);
+    const mapping = this.resolver.resolve(service, resolvedAction);
+    const payload = this.buildPayload(req, query, params, sanitizeBodyIdentity(body));
     await this.validateProviderScopedDispatch(service, req, payload);
     return this.dispatcher.dispatch(service, payload, mapping);
   }
@@ -374,3 +378,5 @@ function readDeliveriesIdempotencyKey(req: Request, body: unknown): string {
 
   return idempotencyKey;
 }
+
+
