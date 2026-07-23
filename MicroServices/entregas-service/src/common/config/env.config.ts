@@ -4,6 +4,6 @@ export function validateEnv() {
     'DATABASE_URL',
     'TCP_PORT',];
     for (const key of requiredEnvVars) {
-        if (!process.env[key]) throw new Error(`Se requiere: ${key}`);
+        if (!env[key]) throw new Error(`Se requiere: ${key}`);
     }
 }

@@ -1,6 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
+  provider        = "prisma-client-js"
+  output          = "../src/generated/prisma"
+  decimalNumbers  = true
 }
 
 datasource db {
@@ -18,6 +19,7 @@ model Delivery {
   id                  String         @id @default(uuid()) @db.Uuid
   order_id            String         @unique @db.Uuid
   vendedor_id         String         @db.Uuid
+  cliente_id          String         @db.Uuid
   estado              DeliveryEstado @default(pendiente)
 
   // Snapshot datos del cliente al momento de asignar la entrega
