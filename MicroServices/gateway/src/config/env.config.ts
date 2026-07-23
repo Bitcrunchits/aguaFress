@@ -29,6 +29,8 @@ const REQUIRED_ENV_KEYS = {
   NOTIFICATIONS_SERVICE_TCP_PORT: 'NOTIFICATIONS_SERVICE_TCP_PORT',
   ENTREGAS_SERVICE_HOST: 'ENTREGAS_SERVICE_HOST',
   ENTREGAS_SERVICE_TCP_PORT: 'ENTREGAS_SERVICE_TCP_PORT',
+  PRODUCTS_SERVICE_HOST: 'PRODUCTS_SERVICE_HOST',
+  PRODUCTS_SERVICE_TCP_PORT: 'PRODUCTS_SERVICE_TCP_PORT',
 } as const;
 
 type RequiredEnvKey = (typeof REQUIRED_ENV_KEYS)[keyof typeof REQUIRED_ENV_KEYS];
@@ -51,6 +53,8 @@ export interface GatewayEnv {
   readonly NOTIFICATIONS_SERVICE_TCP_PORT: number;
   readonly ENTREGAS_SERVICE_HOST: string;
   readonly ENTREGAS_SERVICE_TCP_PORT: number;
+  readonly PRODUCTS_SERVICE_HOST: string;
+  readonly PRODUCTS_SERVICE_TCP_PORT: number;
   readonly TCP_TIMEOUT_MS: number;
   readonly RATE_LIMIT_TTL_MS: number;
   readonly RATE_LIMIT_MAX: number;
@@ -91,6 +95,10 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
   const entregasServiceTcpPort = readRequiredPort(
     envInput.ENTREGAS_SERVICE_TCP_PORT,
     'ENTREGAS_SERVICE_TCP_PORT',
+  );
+  const productsServiceTcpPort = readRequiredPort(
+    envInput.PRODUCTS_SERVICE_TCP_PORT,
+    'PRODUCTS_SERVICE_TCP_PORT',
   );
   const tcpTimeoutMs = readOptionalPositiveInteger(
     envInput.TCP_TIMEOUT_MS,
@@ -164,6 +172,7 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
     ordersServiceTcpPort.error,
     notificationsServiceTcpPort.error,
     entregasServiceTcpPort.error,
+    productsServiceTcpPort.error,
     tcpTimeoutMs.error,
     rateLimitTtlMs.error,
     rateLimitMax.error,
@@ -194,6 +203,8 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
     NOTIFICATIONS_SERVICE_TCP_PORT: notificationsServiceTcpPort.value,
     ENTREGAS_SERVICE_HOST: envInput.ENTREGAS_SERVICE_HOST as string,
     ENTREGAS_SERVICE_TCP_PORT: entregasServiceTcpPort.value,
+    PRODUCTS_SERVICE_HOST: envInput.PRODUCTS_SERVICE_HOST as string,
+    PRODUCTS_SERVICE_TCP_PORT: productsServiceTcpPort.value,
     TCP_TIMEOUT_MS: tcpTimeoutMs.value,
     RATE_LIMIT_TTL_MS: rateLimitTtlMs.value,
     RATE_LIMIT_MAX: rateLimitMax.value,

@@ -107,10 +107,29 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
       'vendor/deactivate': { tcpPattern: 'link_invitacion.vendor_deactivate', transport: 'send', authRequired: true, roles: ['vendedor'] },
     },
   },
-  // Planned service families — not deployed yet
-  products: { status: 'unavailable', actions: {} },
-  categories: { status: 'unavailable', actions: {} },
-  brands: { status: 'unavailable', actions: {} },
+  products: {
+    status: 'available',
+    actions: {
+      list: { tcpPattern: 'products.list', transport: 'send', authRequired: false },
+      get: { tcpPattern: 'products.get', transport: 'send', authRequired: false },
+      search: { tcpPattern: 'products.search', transport: 'send', authRequired: false },
+      create: { tcpPattern: 'products.create', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      update: { tcpPattern: 'products.update', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      delete: { tcpPattern: 'products.delete', transport: 'send', authRequired: true, roles: ['vendedor'] },
+    },
+  },
+  categories: {
+    status: 'available',
+    actions: {
+      list: { tcpPattern: 'categories.list', transport: 'send', authRequired: false },
+    },
+  },
+  brands: {
+    status: 'available',
+    actions: {
+      list: { tcpPattern: 'brands.list', transport: 'send', authRequired: false },
+    },
+  },
   orders: {
     status: 'available',
     actions: {
