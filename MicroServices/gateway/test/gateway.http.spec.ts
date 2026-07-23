@@ -5,6 +5,7 @@ import { json } from 'express';
 import request from 'supertest';
 import { UserRole } from '@agua/contracts';
 import { OrdersCreateQueueService } from '../src/queues/orders-create-queue.service';
+import { DeliveriesQueueService } from '../src/queues/deliveries-queue.service';
 import { TcpDispatcherService } from '../src/tcp/tcp-dispatcher.service';
 
 describe('Gateway HTTP routing', () => {
@@ -14,6 +15,7 @@ describe('Gateway HTTP routing', () => {
   let superAdminToken: string;
   let mockDispatch: jest.Mock;
   let mockEnqueueOrderCreate: jest.Mock;
+  let mockEnqueueDeliveryUpdate: jest.Mock;
 
   beforeAll(async () => {
     process.env.JWT_SECRET = 'test-secret';
@@ -28,6 +30,7 @@ describe('Gateway HTTP routing', () => {
 
     mockDispatch = jest.fn();
     mockEnqueueOrderCreate = jest.fn();
+    mockEnqueueDeliveryUpdate = jest.fn();
 
     const { AppModule } = await import('../src/app.module');
 
@@ -38,6 +41,8 @@ describe('Gateway HTTP routing', () => {
       .useValue({ dispatch: mockDispatch })
       .overrideProvider(OrdersCreateQueueService)
       .useValue({ enqueue: mockEnqueueOrderCreate })
+      .overrideProvider(DeliveriesQueueService)
+      .useValue({ enqueue: mockEnqueueDeliveryUpdate })
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -79,6 +84,7 @@ describe('Gateway HTTP routing', () => {
   beforeEach(() => {
     mockDispatch.mockReset();
     mockEnqueueOrderCreate.mockReset();
+    mockEnqueueDeliveryUpdate.mockReset();
   });
 
   it('serves GET /api/health publicly with sanitized output', async () => {
@@ -557,38 +563,140 @@ describe('Gateway HTTP routing', () => {
     );
   });
 
-  it('dispatches deliveries/update-status for vendedor only', async () => {
-    mockDispatch.mockResolvedValue({ id: 'del-1', orderId: 'order-1', estado: 'en_camino' });
+  // ─── Deliveries Async Update-Status ────────────────────
 
+  it('rejects deliveries/update-status without JWT with 401 before enqueue', async () => {
     await request(app.getHttpServer())
-      .patch('/api/v1/deliveries/update-status')
+      .patch('/api/v1/deliveries/update-status?id=del-1')
       .send({ estado: 'EN_CAMINO' })
       .expect(401);
     expect(mockDispatch).not.toHaveBeenCalled();
+    expect(mockEnqueueDeliveryUpdate).not.toHaveBeenCalled();
+  });
 
+  it('rejects deliveries/update-status with wrong role (cliente) before enqueue', async () => {
     await request(app.getHttpServer())
-      .patch('/api/v1/deliveries/update-status')
+      .patch('/api/v1/deliveries/update-status?id=del-1')
       .set('Authorization', `Bearer ${clienteToken}`)
       .send({ estado: 'EN_CAMINO' })
       .expect(403);
     expect(mockDispatch).not.toHaveBeenCalled();
+    expect(mockEnqueueDeliveryUpdate).not.toHaveBeenCalled();
+  });
+
+  it('enqueues deliveries/update-status with 202 and Idempotency-Key header', async () => {
+    mockEnqueueDeliveryUpdate.mockResolvedValue({
+      jobId: 'deliveries.update_status:del-1:http-key',
+      trackingId: 'tracking-del-http',
+      status: 'PENDING',
+      statusUrl: '/api/v1/deliveries/job-status?id=tracking-del-http',
+      acceptedAt: '2026-07-22T12:00:00.000Z',
+    });
 
     const response = await request(app.getHttpServer())
-      .patch('/api/v1/deliveries/update-status')
+      .patch('/api/v1/deliveries/update-status?id=del-1')
+      .set('Idempotency-Key', 'http-key')
+      .set('Authorization', `Bearer ${vendedorToken}`)
+      .send({ estado: 'EN_CAMINO', userId: 'forged-user' })
+      .expect(202);
+
+    expect(response.body).toEqual(expect.objectContaining({
+      jobId: 'deliveries.update_status:del-1:http-key',
+      trackingId: 'tracking-del-http',
+      status: 'PENDING',
+      statusUrl: '/api/v1/deliveries/job-status?id=tracking-del-http',
+    }));
+    expect(mockEnqueueDeliveryUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      deliveryId: 'del-1',
+      idempotencyKey: 'http-key',
+    }));
+    expect(mockDispatch).not.toHaveBeenCalled();
+  });
+
+  it('enqueues deliveries/update-status with 202 and body idempotencyKey', async () => {
+    mockEnqueueDeliveryUpdate.mockResolvedValue({
+      jobId: 'deliveries.update_status:del-1:body-key',
+      trackingId: 'tracking-del-body',
+      status: 'PENDING',
+      statusUrl: '/api/v1/deliveries/job-status?id=tracking-del-body',
+      acceptedAt: '2026-07-22T12:00:00.000Z',
+    });
+
+    const response = await request(app.getHttpServer())
+      .patch('/api/v1/deliveries/update-status?id=del-1')
+      .set('Authorization', `Bearer ${vendedorToken}`)
+      .send({ estado: 'EN_CAMINO', idempotencyKey: 'body-key' })
+      .expect(202);
+
+    expect(response.body).toEqual(expect.objectContaining({
+      jobId: 'deliveries.update_status:del-1:body-key',
+      trackingId: 'tracking-del-body',
+      status: 'PENDING',
+    }));
+    expect(mockEnqueueDeliveryUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      deliveryId: 'del-1',
+      idempotencyKey: 'body-key',
+    }));
+  });
+
+  it('rejects deliveries/update-status with 400 when idempotency key is missing', async () => {
+    await request(app.getHttpServer())
+      .patch('/api/v1/deliveries/update-status?id=del-1')
       .set('Authorization', `Bearer ${vendedorToken}`)
       .send({ estado: 'EN_CAMINO' })
-      .expect(200);
+      .expect(400);
+    expect(mockEnqueueDeliveryUpdate).not.toHaveBeenCalled();
+  });
 
-    expect(response.body).toEqual({ id: 'del-1', orderId: 'order-1', estado: 'en_camino' });
+  it('rejects deliveries/update-status with 400 when header and body idempotency keys mismatch', async () => {
+    await request(app.getHttpServer())
+      .patch('/api/v1/deliveries/update-status?id=del-1')
+      .set('Idempotency-Key', 'header-key')
+      .set('Authorization', `Bearer ${vendedorToken}`)
+      .send({ estado: 'EN_CAMINO', idempotencyKey: 'body-key' })
+      .expect(400);
+    expect(mockEnqueueDeliveryUpdate).not.toHaveBeenCalled();
+  });
+
+  it('rejects deliveries/update-status with 400 when delivery id is missing', async () => {
+    await request(app.getHttpServer())
+      .patch('/api/v1/deliveries/update-status')
+      .set('Idempotency-Key', 'key-1')
+      .set('Authorization', `Bearer ${vendedorToken}`)
+      .send({ estado: 'EN_CAMINO' })
+      .expect(400);
+    expect(mockEnqueueDeliveryUpdate).not.toHaveBeenCalled();
+  });
+
+  it('keeps deliveries/list and deliveries/get on TCP when update-status is async', async () => {
+    mockDispatch.mockResolvedValue({ data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } });
+
+    const listResponse = await request(app.getHttpServer())
+      .get('/api/v1/deliveries/list')
+      .set('Authorization', `Bearer ${vendedorToken}`)
+      .expect(200);
+    expect(listResponse.body).toEqual({ data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } });
     expect(mockDispatch).toHaveBeenCalledWith(
       'deliveries',
-      expect.objectContaining({
-        body: { estado: 'EN_CAMINO' },
-        params: { service: 'deliveries', action: 'update-status' },
-        user: expect.objectContaining({ sub: 'test-user-id', role: 'vendedor' }),
-      }),
-      expect.objectContaining({ tcpPattern: 'deliveries.update_status', authRequired: true, roles: ['vendedor'] }),
+      expect.objectContaining({ params: { service: 'deliveries', action: 'list' } }),
+      expect.objectContaining({ tcpPattern: 'deliveries.list' }),
     );
+    expect(mockEnqueueDeliveryUpdate).not.toHaveBeenCalled();
+
+    mockDispatch.mockClear();
+    mockDispatch.mockResolvedValue({ id: 'del-1', orderId: 'order-1', estado: 'pendiente' });
+
+    const getResponse = await request(app.getHttpServer())
+      .get('/api/v1/deliveries/get?id=del-1')
+      .set('Authorization', `Bearer ${vendedorToken}`)
+      .expect(200);
+    expect(getResponse.body).toEqual({ id: 'del-1', orderId: 'order-1', estado: 'pendiente' });
+    expect(mockDispatch).toHaveBeenCalledWith(
+      'deliveries',
+      expect.objectContaining({ params: { service: 'deliveries', action: 'get' } }),
+      expect.objectContaining({ tcpPattern: 'deliveries.get' }),
+    );
+    expect(mockEnqueueDeliveryUpdate).not.toHaveBeenCalled();
   });
 
   it('keeps audit-log reads on usuario-service and exposes no activity-log mutations', async () => {

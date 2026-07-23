@@ -23,6 +23,8 @@ import type { Request, Response } from 'express';
 import { ActionResolverService } from './actions/action-resolver.service';
 import { TcpDispatcherService, type TcpCommandPayload } from './tcp/tcp-dispatcher.service';
 import { OrdersCreateQueueService } from './queues/orders-create-queue.service';
+import { DeliveriesQueueService } from './queues/deliveries-queue.service';
+import type { UpdateDeliveryStatusJobData } from '@agua/contracts';
 
 const PROVIDER_SELECTION_MAPPING = {
   tcpPattern: 'clientes.providers_select',
@@ -41,6 +43,7 @@ export class GatewayController {
     private readonly resolver: ActionResolverService,
     private readonly dispatcher: TcpDispatcherService,
     private readonly ordersCreateQueue: OrdersCreateQueueService,
+    private readonly deliveriesQueue: DeliveriesQueueService,
   ) {}
 
   @Head(':action(.*)')
@@ -130,9 +133,37 @@ export class GatewayController {
     @Body() body: unknown,
     @Query() query: Record<string, string>,
     @Req() req: Request,
+    @Res({ passthrough: true }) res?: Response,
   ): Promise<unknown> {
     const mapping = this.resolver.resolve(service, action);
-    const payload = this.buildPayload(req, query, { service, action }, sanitizeBodyIdentity(body));
+    const sanitizedBody = sanitizeBodyIdentity(body);
+
+    if (mapping.asyncQueue === 'deliveries.update_status') {
+      const deliveryId = readDeliveryId(query, sanitizedBody);
+      if (deliveryId === undefined) {
+        throw new BadRequestException('delivery id is required for deliveries.update-status');
+      }
+
+      const user = readAuthenticatedUser(req);
+      const idempotencyKey = readDeliveriesIdempotencyKey(req, sanitizedBody);
+      const vendedorId = user?.sub ?? '';
+      const actorUserId = user?.sub ?? '';
+      const requestId = readRequestId(req);
+      const parsedBody = isPlainRecord(sanitizedBody) ? sanitizedBody as Record<string, unknown> : {};
+
+      res?.status(HttpStatus.ACCEPTED);
+      return this.deliveriesQueue.enqueue({
+        deliveryId,
+        vendedorId,
+        actorUserId,
+        estado: parsedBody.estado as UpdateDeliveryStatusJobData['estado'],
+        notas: typeof parsedBody.notas === 'string' ? parsedBody.notas : undefined,
+        idempotencyKey,
+        requestId,
+      });
+    }
+
+    const payload = this.buildPayload(req, query, { service, action }, sanitizedBody);
     await this.validateProviderScopedDispatch(service, req, payload);
     return this.dispatcher.dispatch(service, payload, mapping);
   }
@@ -310,4 +341,36 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 
 function isProviderScopedService(service: string): boolean {
   return service === 'cart' || service === 'orders';
+}
+
+function readDeliveryId(query: Record<string, string>, body: unknown): string | undefined {
+  const queryId = query.id?.trim();
+  if (queryId !== undefined && queryId.length > 0) {
+    return queryId;
+  }
+
+  if (!isPlainRecord(body) || typeof body.id !== 'string') {
+    return undefined;
+  }
+
+  const bodyId = body.id.trim();
+  return bodyId.length > 0 ? bodyId : undefined;
+}
+
+function readDeliveriesIdempotencyKey(req: Request, body: unknown): string {
+  const headerKey = readStringHeader(req.headers['idempotency-key']);
+  const bodyKey = isPlainRecord(body) && typeof body.idempotencyKey === 'string'
+    ? body.idempotencyKey.trim()
+    : undefined;
+
+  if (headerKey !== undefined && bodyKey !== undefined && headerKey !== bodyKey) {
+    throw new BadRequestException('Idempotency-Key header must match body idempotencyKey');
+  }
+
+  const idempotencyKey = headerKey ?? bodyKey;
+  if (idempotencyKey === undefined || idempotencyKey.length === 0) {
+    throw new BadRequestException('Idempotency key is required for deliveries.update-status');
+  }
+
+  return idempotencyKey;
 }

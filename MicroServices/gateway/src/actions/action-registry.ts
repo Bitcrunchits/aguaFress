@@ -2,6 +2,7 @@ export type TcpTransport = 'send' | 'publish';
 
 export const ASYNC_QUEUE_NAMES = {
   ORDERS_CREATE: 'orders.create',
+  DELIVERIES_UPDATE_STATUS: 'deliveries.update_status',
 } as const;
 
 export type AsyncQueueName = (typeof ASYNC_QUEUE_NAMES)[keyof typeof ASYNC_QUEUE_NAMES];
@@ -143,7 +144,8 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
     actions: {
       list: { tcpPattern: 'deliveries.list', transport: 'send', authRequired: true, roles: ['vendedor'] },
       get: { tcpPattern: 'deliveries.get', transport: 'send', authRequired: true, roles: ['vendedor'] },
-      'update-status': { tcpPattern: 'deliveries.update_status', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      'update-status': { tcpPattern: 'deliveries.update_status', transport: 'send', authRequired: true, roles: ['vendedor'], asyncQueue: ASYNC_QUEUE_NAMES.DELIVERIES_UPDATE_STATUS },
+      'job-status': { tcpPattern: 'deliveries.job_status', transport: 'send', authRequired: true, roles: ['vendedor'] },
     },
   },
   'activity-logs': {
