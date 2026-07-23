@@ -1,10 +1,10 @@
-import { Controller, Inject } from '@nestjs/common';
+import { Controller, Inject, NotFoundException } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { DeliveriesService } from '../deliveries/deliveries.service';
 import { TcpPayloadAdapter } from '../tcp/tcp-payload-adapter.service';
 import { QueryDeliveriesDto } from '../deliveries/dto/query-deliveries.dto';
-import { UpdateDeliveryStatusDto } from '../deliveries/dto/update-delivery-status.dto';
 import { VENDEDOR_PROFILE_RESOLVER_PORT, type VendedorProfileResolverPort } from '../deliveries/vendedor-profile-resolver.port';
+import { DELIVERY_REPOSITORY, type DeliveriesRepository } from '../deliveries/deliveries.repository';
 import type { TcpPayload } from './tcp-payload';
 
 @Controller()
@@ -14,6 +14,8 @@ export class DeliveriesTcpController {
     private readonly payloadAdapter: TcpPayloadAdapter,
     @Inject(VENDEDOR_PROFILE_RESOLVER_PORT)
     private readonly vendedorProfileResolver: VendedorProfileResolverPort,
+    @Inject(DELIVERY_REPOSITORY)
+    private readonly deliveryRepository: DeliveriesRepository,
   ) {}
 
   @MessagePattern('deliveries.list')
@@ -30,13 +32,19 @@ export class DeliveriesTcpController {
     return this.deliveriesService.findOne(id, vendedorId);
   }
 
-  @MessagePattern('deliveries.update_status')
-  async updateStatus(@Payload() payload: TcpPayload) {
-    const actorUserId = this.payloadAdapter.userId(payload);
-    const id = payload.params?.id ?? payload.query?.id ?? '';
-    const dto = await this.payloadAdapter.body(payload, UpdateDeliveryStatusDto);
-    const vendedorId = await this.resolveVendedorId(payload);
-    return this.deliveriesService.updateStatus(id, dto, vendedorId, actorUserId);
+  @MessagePattern('deliveries.job_status')
+  async jobStatus(@Payload() payload: TcpPayload) {
+    const trackingId = payload.query?.id ?? payload.params?.id ?? '';
+    if (!trackingId) {
+      throw new NotFoundException('Tracking id is required');
+    }
+
+    const record = await this.deliveryRepository.findDeliveryCommandByTrackingId(trackingId);
+    if (record === null) {
+      throw new NotFoundException('Delivery job was not found');
+    }
+
+    return record;
   }
 
   private async resolveVendedorId(payload: TcpPayload): Promise<string> {
