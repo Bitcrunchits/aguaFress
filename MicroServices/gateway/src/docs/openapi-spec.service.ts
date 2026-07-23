@@ -123,6 +123,33 @@ const SHARED_SCHEMAS: Record<string, Schema> = {
     message: str('Mensaje de confirmación'),
   }, ['message']),
 
+  ChangePasswordRequest: obj({
+    currentPassword: str('Contraseña actual', '********'),
+    newPassword: str('Contraseña nueva', '********'),
+  }, ['currentPassword', 'newPassword']),
+
+  ChangePasswordResponse: obj({
+    message: str('Mensaje de confirmación'),
+  }, ['message']),
+
+  AdminGenerateResetTokenRequest: obj({
+    userId: str('UUID del usuario a resetear'),
+  }, ['userId']),
+
+  AdminGenerateResetTokenResponse: obj({
+    resetToken: str('Token de un solo uso (mostrar una vez)'),
+    expiresAt: str('ISO 8601 — vence en 30 min'),
+  }, ['resetToken', 'expiresAt']),
+
+  ResetPasswordRequest: obj({
+    token: str('Token de reset recibido'),
+    newPassword: str('Nueva contraseña', '********'),
+  }, ['token', 'newPassword']),
+
+  ResetPasswordResponse: obj({
+    message: str('Mensaje de confirmación'),
+  }, ['message']),
+
   UserProfile: obj({
     id: str('User ID'),
     email: str('Email'),
@@ -368,6 +395,9 @@ const ACTIONS_DOC: Record<string, ActionDoc> = {
   'auth.refresh': { summary: 'Refrescar token', method: 'post', bodySchema: 'RefreshTokenRequest', responseSchema: 'RefreshTokenResponse' },
   'auth.validate': { summary: 'Validar token', method: 'post', bodySchema: 'ValidateTokenRequest', responseSchema: 'ValidateTokenResponse' },
   'auth.logout': { summary: 'Cerrar sesión', description: 'Invalida el refresh token del usuario autenticado', method: 'post', responseSchema: 'LogoutResponse', roles: ['auth'] },
+  'auth.change_password': { summary: 'Cambiar contraseña', description: 'Cambia la contraseña del usuario autenticado. Invalida todos los refresh tokens existentes.', method: 'post', bodySchema: 'ChangePasswordRequest', responseSchema: 'ChangePasswordResponse' },
+  'auth.admin_generate_reset_token': { summary: 'Generar token de reset (admin)', description: 'SUPER_ADMIN genera un token de un solo uso para que un usuario reseteé su contraseña. El token dura 30 min. Compartilo con el usuario por WhatsApp o llamada.', method: 'post', bodySchema: 'AdminGenerateResetTokenRequest', responseSchema: 'AdminGenerateResetTokenResponse', roles: ['super_admin'] },
+  'auth.reset_password': { summary: 'Resetear contraseña con token', description: 'Público. Usa el token generado por el admin para cambiar la contraseña. Invalida refresh tokens existentes.', method: 'post', bodySchema: 'ResetPasswordRequest', responseSchema: 'ResetPasswordResponse' },
 
   'users.profile': { summary: 'Obtener perfil propio', method: 'get', responseSchema: 'UserProfile' },
   'users.profile_update': { summary: 'Actualizar perfil propio', method: 'patch', bodySchema: 'UpdateProfileRequest', responseSchema: 'UserProfile' },

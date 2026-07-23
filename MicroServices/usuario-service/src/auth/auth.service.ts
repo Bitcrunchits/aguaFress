@@ -1,11 +1,14 @@
 import * as crypto from 'crypto';
-import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { TokenService } from './token.service';
 import * as bcrypt from 'bcrypt';
 import { UserRole, VendedorEstado, AuditAction } from '@agua/contracts';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { AdminGenerateResetTokenDto } from './dto/admin-generate-reset-token.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuditLogService } from '../audit-log/audit-log.service';
 
 @Injectable()
@@ -161,6 +164,114 @@ export class AuthService {
 
   // TODO: Replace with Redis-backed blacklist for production
   private readonly tokenBlacklist = new Set<string>();
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.prisma.authUser.findUnique({
+      where: { id: userId },
+      select: { id: true, password: true },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const isCurrentValid = await bcrypt.compare(dto.currentPassword, user.password);
+    if (!isCurrentValid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    const hashedNewPassword = await bcrypt.hash(dto.newPassword, this.SALT_ROUNDS);
+
+    await this.prisma.authUser.update({
+      where: { id: userId },
+      data: {
+        password: hashedNewPassword,
+        // Invalidate all refresh tokens on password change
+        refresh_token_hash: null,
+      },
+    });
+
+    await this.auditLogService.record(AuditAction.PASSWORD_CHANGED, userId);
+
+    return { message: 'Password changed successfully' };
+  }
+
+  /**
+   * SUPER_ADMIN generates a one-time reset token for a target user.
+   * Returns the raw token (only shown once) — the admin shares it with the user.
+   */
+  async adminGenerateResetToken(adminUserId: string, dto: AdminGenerateResetTokenDto) {
+    const user = await this.prisma.authUser.findUnique({
+      where: { id: dto.userId },
+      select: { id: true, email: true },
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+
+    // Generate a random token and hash it for storage
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = this.hashToken(rawToken);
+
+    // Token expires in 30 minutes
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+
+    await this.prisma.authUser.update({
+      where: { id: dto.userId },
+      data: {
+        reset_token_hash: tokenHash,
+        reset_token_expires: expiresAt,
+      },
+    });
+
+    await this.auditLogService.record(
+      AuditAction.PASSWORD_RESET_INITIATED,
+      adminUserId,
+      { targetId: dto.userId },
+    );
+
+    return {
+      resetToken: rawToken,
+      expiresAt: expiresAt.toISOString(),
+    };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    // Search for user with a matching reset token
+    // We need to check all users that have a non-null reset_token_hash
+    // and an unexpired reset_token_expires
+    const users = await this.prisma.authUser.findMany({
+      where: {
+        reset_token_hash: { not: null },
+        reset_token_expires: { gt: new Date() },
+      },
+      select: { id: true, reset_token_hash: true, reset_token_expires: true },
+    });
+
+    // Find the user whose hashed token matches
+    const tokenHash = this.hashToken(dto.token);
+    const match = users.find(u => u.reset_token_hash === tokenHash);
+
+    if (!match) {
+      throw new UnauthorizedException('Invalid or expired reset token');
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.newPassword, this.SALT_ROUNDS);
+
+    await this.prisma.authUser.update({
+      where: { id: match.id },
+      data: {
+        password: hashedPassword,
+        // Clear reset token (one-time use) and invalidate refresh tokens
+        reset_token_hash: null,
+        reset_token_expires: null,
+        refresh_token_hash: null,
+      },
+    });
+
+    await this.auditLogService.record(AuditAction.PASSWORD_RESET_COMPLETED, match.id);
+
+    return { message: 'Password reset successfully' };
+  }
 
   async logout(userId?: string) {
     if (userId) {
