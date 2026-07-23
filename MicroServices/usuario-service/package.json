@@ -10,7 +10,8 @@
     "test": "jest",
     "prisma:generate": "prisma generate --schema prisma/schema.prisma",
     "prisma:validate": "prisma validate --schema prisma/schema.prisma",
-    "prisma:push": "prisma db push --schema prisma/schema.prisma"
+    "prisma:push": "prisma db push --schema prisma/schema.prisma",
+    "seed:test": "DATABASE_URL=postgresql://postgres:postgres@localhost:5433/agua node prisma/seed.cjs"
   },
   "dependencies": {
     "@agua/contracts": "workspace:*",
