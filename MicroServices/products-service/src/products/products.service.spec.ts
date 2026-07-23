@@ -5,6 +5,13 @@ import { ProductsService } from './products.service';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { PricingService } from '../common/prisma/pricing.service';
 
+const mockTx = {
+  producto: {
+    findUnique: jest.fn(),
+    update: jest.fn(),
+  },
+};
+
 const mockPrisma = {
   producto: {
     findMany: jest.fn(),
@@ -12,7 +19,7 @@ const mockPrisma = {
     count: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
-    delete: jest.fn(),
+    deleteMany: jest.fn(),
   },
   $transaction: jest.fn(),
 };
@@ -55,7 +62,7 @@ describe('ProductsService', () => {
 
   describe('list', () => {
     it('devuelve data paginada con el shape { data, pagination }', async () => {
-      mockPrisma.$transaction.mockResolvedValue([[baseProducto], 1]);
+      (mockPrisma.$transaction as jest.Mock).mockResolvedValue([[baseProducto], 1]);
 
       const result = await service.list({ page: 1, limit: 20 });
 
@@ -64,7 +71,7 @@ describe('ProductsService', () => {
     });
 
     it('usa page=1 y limit=20 por defecto si no se pasan', async () => {
-      mockPrisma.$transaction.mockResolvedValue([[], 0]);
+      (mockPrisma.$transaction as jest.Mock).mockResolvedValue([[], 0]);
 
       const result = await service.list({});
 
@@ -112,8 +119,15 @@ describe('ProductsService', () => {
   });
 
   describe('update', () => {
+    beforeEach(() => {
+      // Configurar $transaction para ejecutar callbacks con un proxy transaccional
+      (mockPrisma.$transaction as jest.Mock).mockImplementation(
+        (cb: (tx: typeof mockTx) => unknown) => cb(mockTx),
+      );
+    });
+
     it('lanza ForbiddenException si el producto no pertenece al vendedor', async () => {
-      mockPrisma.producto.findUnique.mockResolvedValue({ vendedorId: 'otro-vendedor' });
+      mockTx.producto.findUnique.mockResolvedValue({ vendedorId: 'otro-vendedor' });
 
       await expect(
         service.update('vendedor-1', 'prod-1', { nombre: 'Nuevo nombre' }),
@@ -121,7 +135,7 @@ describe('ProductsService', () => {
     });
 
     it('lanza NotFoundException si el producto no existe', async () => {
-      mockPrisma.producto.findUnique.mockResolvedValue(null);
+      mockTx.producto.findUnique.mockResolvedValue(null);
 
       await expect(
         service.update('vendedor-1', 'no-existe', { nombre: 'x' }),
@@ -129,9 +143,9 @@ describe('ProductsService', () => {
     });
 
     it('recalcula precioFinal solo si viene precioSinIva en el update', async () => {
-      mockPrisma.producto.findUnique.mockResolvedValue({ vendedorId: 'vendedor-1' });
+      mockTx.producto.findUnique.mockResolvedValue({ vendedorId: 'vendedor-1' });
       mockPricing.calcularPrecioFinal.mockReturnValue(new Prisma.Decimal(60.5));
-      mockPrisma.producto.update.mockResolvedValue({});
+      mockTx.producto.update.mockResolvedValue({});
 
       await service.update('vendedor-1', 'prod-1', { precioSinIva: 50 });
 
@@ -141,14 +155,21 @@ describe('ProductsService', () => {
 
   describe('remove', () => {
     it('lanza ForbiddenException si el producto no pertenece al vendedor', async () => {
-      mockPrisma.producto.findUnique.mockResolvedValue({ vendedorId: 'otro-vendedor' });
+      mockPrisma.producto.deleteMany.mockResolvedValue({ count: 0 });
+      mockPrisma.producto.findUnique.mockResolvedValue({ id: 'prod-1' }); // existe pero no es suyo
 
       await expect(service.remove('vendedor-1', 'prod-1')).rejects.toThrow(ForbiddenException);
     });
 
+    it('lanza NotFoundException si el producto no existe', async () => {
+      mockPrisma.producto.deleteMany.mockResolvedValue({ count: 0 });
+      mockPrisma.producto.findUnique.mockResolvedValue(null);
+
+      await expect(service.remove('vendedor-1', 'no-existe')).rejects.toThrow(NotFoundException);
+    });
+
     it('borra el producto si pertenece al vendedor', async () => {
-      mockPrisma.producto.findUnique.mockResolvedValue({ vendedorId: 'vendedor-1' });
-      mockPrisma.producto.delete.mockResolvedValue({});
+      mockPrisma.producto.deleteMany.mockResolvedValue({ count: 1 });
 
       const result = await service.remove('vendedor-1', 'prod-1');
 
