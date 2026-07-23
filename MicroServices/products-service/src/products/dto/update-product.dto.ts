@@ -6,6 +6,7 @@ import {
   IsPositive,
   IsString,
   IsUrl,
+  IsUUID,
   MaxLength,
   Min,
 } from 'class-validator';
@@ -42,4 +43,12 @@ export class UpdateProductDto implements UpdateProductRequest {
   @IsOptional()
   @IsBoolean()
   mostrarPrecio?: boolean;
+
+  @IsOptional()
+  @IsUUID()
+  categoriaId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  marcaId?: string;
 }

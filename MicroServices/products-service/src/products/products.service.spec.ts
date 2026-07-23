@@ -9,6 +9,7 @@ const mockTx = {
   producto: {
     findUnique: jest.fn(),
     update: jest.fn(),
+    deleteMany: jest.fn(),
   },
 };
 
@@ -154,22 +155,29 @@ describe('ProductsService', () => {
   });
 
   describe('remove', () => {
+    beforeEach(() => {
+      // remove usa $transaction con callback (heredado del describe('update'))
+      (mockPrisma.$transaction as jest.Mock).mockImplementation(
+        (cb: (tx: typeof mockTx) => unknown) => cb(mockTx),
+      );
+    });
+
     it('lanza ForbiddenException si el producto no pertenece al vendedor', async () => {
-      mockPrisma.producto.deleteMany.mockResolvedValue({ count: 0 });
-      mockPrisma.producto.findUnique.mockResolvedValue({ id: 'prod-1' }); // existe pero no es suyo
+      mockTx.producto.deleteMany.mockResolvedValue({ count: 0 });
+      mockTx.producto.findUnique.mockResolvedValue({ id: 'prod-1' }); // existe pero no es suyo
 
       await expect(service.remove('vendedor-1', 'prod-1')).rejects.toThrow(ForbiddenException);
     });
 
     it('lanza NotFoundException si el producto no existe', async () => {
-      mockPrisma.producto.deleteMany.mockResolvedValue({ count: 0 });
-      mockPrisma.producto.findUnique.mockResolvedValue(null);
+      mockTx.producto.deleteMany.mockResolvedValue({ count: 0 });
+      mockTx.producto.findUnique.mockResolvedValue(null);
 
       await expect(service.remove('vendedor-1', 'no-existe')).rejects.toThrow(NotFoundException);
     });
 
     it('borra el producto si pertenece al vendedor', async () => {
-      mockPrisma.producto.deleteMany.mockResolvedValue({ count: 1 });
+      mockTx.producto.deleteMany.mockResolvedValue({ count: 1 });
 
       const result = await service.remove('vendedor-1', 'prod-1');
 

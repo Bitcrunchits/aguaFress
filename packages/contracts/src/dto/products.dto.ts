@@ -54,6 +54,8 @@ export interface UpdateProductRequest {
   imagen?: string;
   activo?: boolean;
   mostrarPrecio?: boolean;
+  categoriaId?: string;
+  marcaId?: string;
 }
 
 // ─── Filtros y búsqueda ───
@@ -68,6 +70,8 @@ export interface ProductListFilters extends PaginationRequest {
 export interface SearchProductQuery {
   q: string;
   vendedorId?: string;
+  page?: number;
+  limit?: number;
 }
 
 // ─── Marcas y Categorías ───

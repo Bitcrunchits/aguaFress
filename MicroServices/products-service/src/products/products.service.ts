@@ -1,5 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import type { PaginatedResponse, ProductResponse } from '@agua/contracts';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { PricingService } from '../common/prisma/pricing.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -44,7 +45,7 @@ export class ProductsService {
         page,
         limit,
         total,
-        totalPages: Math.ceil(total / limit) || 1,
+        totalPages: Math.ceil(total / limit) || 0,
       },
     };
   }
@@ -62,19 +63,36 @@ export class ProductsService {
     return this.toResponse(producto);
   }
 
-  async search(query: SearchProductDto): Promise<ProductResponse[]> {
-    const items = await this.prisma.producto.findMany({
-      where: {
-        activo: true,
-        nombre: { contains: query.q, mode: 'insensitive' },
-        ...(query.vendedorId ? { vendedorId: query.vendedorId } : {}),
-      },
-      include: { categoria: true, marca: true },
-      take: 20,
-      orderBy: { nombre: 'asc' },
-    });
+  async search(query: SearchProductDto): Promise<PaginatedResponse<ProductResponse>> {
+    const page = query.page ?? DEFAULT_PAGE;
+    const limit = query.limit ?? DEFAULT_LIMIT;
 
-    return items.map((p) => this.toResponse(p));
+    const where = {
+      activo: true,
+      nombre: { contains: query.q, mode: Prisma.QueryMode.insensitive },
+      ...(query.vendedorId ? { vendedorId: query.vendedorId } : {}),
+    };
+
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.producto.findMany({
+        where,
+        include: { categoria: true, marca: true },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { nombre: 'asc' },
+      }),
+      this.prisma.producto.count({ where }),
+    ]);
+
+    return {
+      data: items.map((p) => this.toResponse(p)),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit) || 0,
+      },
+    };
   }
 
   async create(vendedorId: string, dto: CreateProductDto): Promise<{ id: string; created: boolean }> {
@@ -128,6 +146,8 @@ export class ProductsService {
           ...(dto.imagen !== undefined ? { imagen: dto.imagen } : {}),
           ...(dto.activo !== undefined ? { activo: dto.activo } : {}),
           ...(dto.mostrarPrecio !== undefined ? { mostrarPrecio: dto.mostrarPrecio } : {}),
+          ...(dto.categoriaId !== undefined ? { categoriaId: dto.categoriaId } : {}),
+          ...(dto.marcaId !== undefined ? { marcaId: dto.marcaId } : {}),
         },
       });
     });
@@ -136,23 +156,25 @@ export class ProductsService {
   }
 
   async remove(vendedorId: string, id: string): Promise<{ deleted: boolean }> {
-    // deleteMany con id + vendedorId: ownership check y borrado en un solo
-    // query atómico, sin condición de carrera.
-    const { count } = await this.prisma.producto.deleteMany({
-      where: { id, vendedorId },
-    });
-
-    if (count === 0) {
-      // Determinar si falló por inexistencia o por ownership
-      const exists = await this.prisma.producto.findUnique({
-        where: { id },
-        select: { id: true },
+    // Transacción: deleteMany atómico + diagnóstico en un solo paso,
+    // elimina la ventana TOCTOU residual entre deleteMany y el findUnique
+    // del bloque catch.
+    return await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.producto.deleteMany({
+        where: { id, vendedorId },
       });
-      if (!exists) throw new NotFoundException('Producto no encontrado');
-      throw new ForbiddenException('No tenés permiso sobre este producto');
-    }
 
-    return { deleted: true };
+      if (count === 0) {
+        const exists = await tx.producto.findUnique({
+          where: { id },
+          select: { id: true },
+        });
+        if (!exists) throw new NotFoundException('Producto no encontrado');
+        throw new ForbiddenException('No tenés permiso sobre este producto');
+      }
+
+      return { deleted: true };
+    });
   }
 
   private toResponse(producto: {
