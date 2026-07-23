@@ -42,6 +42,7 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
       refresh: { tcpPattern: 'auth.refresh', transport: 'send', authRequired: false },
       validate: { tcpPattern: 'auth.validate', transport: 'send', authRequired: false },
       logout: { tcpPattern: 'auth.logout', transport: 'send', authRequired: true },
+      'change-password': { tcpPattern: 'auth.change_password', transport: 'send', authRequired: true },
     },
   },
   users: {

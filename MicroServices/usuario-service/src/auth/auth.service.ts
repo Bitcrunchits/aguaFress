@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { UserRole, VendedorEstado, AuditAction } from '@agua/contracts';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { AuditLogService } from '../audit-log/audit-log.service';
 
 @Injectable()
@@ -161,6 +162,37 @@ export class AuthService {
 
   // TODO: Replace with Redis-backed blacklist for production
   private readonly tokenBlacklist = new Set<string>();
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.prisma.authUser.findUnique({
+      where: { id: userId },
+      select: { id: true, password: true },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const isCurrentValid = await bcrypt.compare(dto.currentPassword, user.password);
+    if (!isCurrentValid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    const hashedNewPassword = await bcrypt.hash(dto.newPassword, this.SALT_ROUNDS);
+
+    await this.prisma.authUser.update({
+      where: { id: userId },
+      data: {
+        password: hashedNewPassword,
+        // Invalidate all refresh tokens on password change
+        refresh_token_hash: null,
+      },
+    });
+
+    await this.auditLogService.record(AuditAction.PASSWORD_CHANGED, userId);
+
+    return { message: 'Password changed successfully' };
+  }
 
   async logout(userId?: string) {
     if (userId) {

@@ -123,6 +123,15 @@ const SHARED_SCHEMAS: Record<string, Schema> = {
     message: str('Mensaje de confirmación'),
   }, ['message']),
 
+  ChangePasswordRequest: obj({
+    currentPassword: str('Contraseña actual', '********'),
+    newPassword: str('Contraseña nueva', '********'),
+  }, ['currentPassword', 'newPassword']),
+
+  ChangePasswordResponse: obj({
+    message: str('Mensaje de confirmación'),
+  }, ['message']),
+
   UserProfile: obj({
     id: str('User ID'),
     email: str('Email'),
@@ -368,6 +377,7 @@ const ACTIONS_DOC: Record<string, ActionDoc> = {
   'auth.refresh': { summary: 'Refrescar token', method: 'post', bodySchema: 'RefreshTokenRequest', responseSchema: 'RefreshTokenResponse' },
   'auth.validate': { summary: 'Validar token', method: 'post', bodySchema: 'ValidateTokenRequest', responseSchema: 'ValidateTokenResponse' },
   'auth.logout': { summary: 'Cerrar sesión', description: 'Invalida el refresh token del usuario autenticado', method: 'post', responseSchema: 'LogoutResponse', roles: ['auth'] },
+  'auth.change_password': { summary: 'Cambiar contraseña', description: 'Cambia la contraseña del usuario autenticado. Invalida todos los refresh tokens existentes.', method: 'post', bodySchema: 'ChangePasswordRequest', responseSchema: 'ChangePasswordResponse' },
 
   'users.profile': { summary: 'Obtener perfil propio', method: 'get', responseSchema: 'UserProfile' },
   'users.profile_update': { summary: 'Actualizar perfil propio', method: 'patch', bodySchema: 'UpdateProfileRequest', responseSchema: 'UserProfile' },

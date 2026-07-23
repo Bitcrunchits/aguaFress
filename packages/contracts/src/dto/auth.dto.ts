@@ -81,6 +81,17 @@ export interface GoogleLoginResponse {
   user: { id: string; email: string; role: UserRole };
 }
 
+// ─── Change Password ───
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface ChangePasswordResponse {
+  message: string;
+}
+
 // ─── Refresh / Validate ───
 
 export interface RefreshTokenRequest {

@@ -6,6 +6,7 @@ import { LoginDto } from '../auth/dto/login.dto';
 import { RegisterDto } from '../auth/dto/register.dto';
 import { RefreshTokenDto } from '../auth/dto/refresh-token.dto';
 import { ValidateTokenDto } from '../auth/dto/validate-token.dto';
+import { ChangePasswordDto } from '../auth/dto/change-password.dto';
 import { TcpPayloadAdapter } from './tcp-payload-adapter.service';
 import type { TcpPayload } from './tcp-payload';
 
@@ -39,6 +40,13 @@ export class AuthTcpController {
   async validate(@Payload() payload: TcpPayload) {
     const dto = await this.payloadAdapter.body(payload, ValidateTokenDto);
     return this.authService.validate(dto.token);
+  }
+
+  @MessagePattern('auth.change_password')
+  async changePassword(@Payload() payload: TcpPayload) {
+    const userId = this.payloadAdapter.userId(payload);
+    const dto = await this.payloadAdapter.body(payload, ChangePasswordDto);
+    return this.authService.changePassword(userId, dto);
   }
 
   @MessagePattern('auth.logout')
