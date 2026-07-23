@@ -2,7 +2,12 @@ export default () => ({
   iva: {
     // Alícuota de IVA usada para calcular precioFinal a partir de precioSinIva.
     // TODO(equipo): confirmar si esto debe ser configurable por vendedor o fijo.
-    porcentaje: parseFloat(process.env.IVA_PORCENTAJE ?? '') || 21,
+    // Usar ?? NOT || para que IVA_PORCENTAJE=0 sea válido.
+    porcentaje: (() => {
+      const raw = process.env.IVA_PORCENTAJE;
+      if (raw === undefined || raw === '') return 21;
+      return Number(raw);
+    })(),
   },
 });
 

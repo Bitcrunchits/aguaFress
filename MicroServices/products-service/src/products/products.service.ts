@@ -103,49 +103,56 @@ export class ProductsService {
     id: string,
     dto: UpdateProductDto,
   ): Promise<{ id: string; updated: boolean }> {
-    await this.assertOwnership(vendedorId, id);
-
     const precioFinal =
       dto.precioSinIva !== undefined
         ? this.pricing.calcularPrecioFinal(dto.precioSinIva)
         : undefined;
 
-    await this.prisma.producto.update({
-      where: { id },
-      data: {
-        ...(dto.nombre !== undefined ? { nombre: dto.nombre } : {}),
-        ...(dto.descripcion !== undefined ? { descripcion: dto.descripcion } : {}),
-        ...(dto.precioSinIva !== undefined ? { precioSinIva: dto.precioSinIva, precioFinal } : {}),
-        ...(dto.stock !== undefined ? { stock: dto.stock } : {}),
-        ...(dto.imagen !== undefined ? { imagen: dto.imagen } : {}),
-        ...(dto.activo !== undefined ? { activo: dto.activo } : {}),
-        ...(dto.mostrarPrecio !== undefined ? { mostrarPrecio: dto.mostrarPrecio } : {}),
-      },
+    // Transacción: ownership check + update atómicos, elimina
+    // condición de carrera entre ambas operaciones.
+    await this.prisma.$transaction(async (tx) => {
+      const producto = await tx.producto.findUnique({
+        where: { id },
+        select: { vendedorId: true },
+      });
+      if (!producto) throw new NotFoundException('Producto no encontrado');
+      if (producto.vendedorId !== vendedorId) throw new ForbiddenException('No tenés permiso sobre este producto');
+
+      await tx.producto.update({
+        where: { id },
+        data: {
+          ...(dto.nombre !== undefined ? { nombre: dto.nombre } : {}),
+          ...(dto.descripcion !== undefined ? { descripcion: dto.descripcion } : {}),
+          ...(dto.precioSinIva !== undefined ? { precioSinIva: dto.precioSinIva, precioFinal } : {}),
+          ...(dto.stock !== undefined ? { stock: dto.stock } : {}),
+          ...(dto.imagen !== undefined ? { imagen: dto.imagen } : {}),
+          ...(dto.activo !== undefined ? { activo: dto.activo } : {}),
+          ...(dto.mostrarPrecio !== undefined ? { mostrarPrecio: dto.mostrarPrecio } : {}),
+        },
+      });
     });
 
     return { id, updated: true };
   }
 
   async remove(vendedorId: string, id: string): Promise<{ deleted: boolean }> {
-    await this.assertOwnership(vendedorId, id);
-    await this.prisma.producto.delete({ where: { id } });
-    return { deleted: true };
-  }
-
-  /** Verifica que el producto exista y pertenezca al vendedor autenticado. */
-  private async assertOwnership(vendedorId: string, productoId: string): Promise<void> {
-    const producto = await this.prisma.producto.findUnique({
-      where: { id: productoId },
-      select: { vendedorId: true },
+    // deleteMany con id + vendedorId: ownership check y borrado en un solo
+    // query atómico, sin condición de carrera.
+    const { count } = await this.prisma.producto.deleteMany({
+      where: { id, vendedorId },
     });
 
-    if (!producto) {
-      throw new NotFoundException('Producto no encontrado');
-    }
-
-    if (producto.vendedorId !== vendedorId) {
+    if (count === 0) {
+      // Determinar si falló por inexistencia o por ownership
+      const exists = await this.prisma.producto.findUnique({
+        where: { id },
+        select: { id: true },
+      });
+      if (!exists) throw new NotFoundException('Producto no encontrado');
       throw new ForbiddenException('No tenés permiso sobre este producto');
     }
+
+    return { deleted: true };
   }
 
   private toResponse(producto: {

@@ -33,7 +33,7 @@ export class TcpVendedorProfileResolverAdapter implements VendedorProfileResolve
 
   async resolveVendedorIdByAuthUserId(authUserId: string): Promise<string> {
     const payload = {
-      user: { sub: authUserId, userId: authUserId, email: '', role: UserRole.VENDEDOR },
+      user: { sub: authUserId, userId: authUserId, role: UserRole.VENDEDOR },
       body: {},
       query: {},
       params: {},

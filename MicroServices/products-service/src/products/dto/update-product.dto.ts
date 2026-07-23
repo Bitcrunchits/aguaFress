@@ -6,12 +6,14 @@ import {
   IsPositive,
   IsString,
   IsUrl,
+  MaxLength,
   Min,
 } from 'class-validator';
 
 export class UpdateProductDto implements UpdateProductRequest {
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   nombre?: string;
 
   @IsOptional()
@@ -30,6 +32,7 @@ export class UpdateProductDto implements UpdateProductRequest {
 
   @IsOptional()
   @IsUrl()
+  @MaxLength(500)
   imagen?: string;
 
   @IsOptional()

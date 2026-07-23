@@ -7,6 +7,7 @@ import {
   IsString,
   IsUrl,
   IsUUID,
+  MaxLength,
   Min,
 } from 'class-validator';
 
@@ -15,6 +16,7 @@ import {
 // del contrato) — se inyecta server-side desde el JWT (payload.user, vía TCP).
 export class CreateProductDto implements CreateProductRequest {
   @IsString()
+  @MaxLength(255)
   nombre!: string;
 
   @IsOptional()
@@ -26,6 +28,8 @@ export class CreateProductDto implements CreateProductRequest {
   precioSinIva!: number;
 
   @IsUUID()
+  // categoriaId es required en la API, pero nullable en Prisma (String?)
+  // para soportar onDelete: SetNull cuando se elimina una categoría.
   categoriaId!: string;
 
   @IsOptional()
@@ -34,6 +38,7 @@ export class CreateProductDto implements CreateProductRequest {
 
   @IsOptional()
   @IsUrl()
+  @MaxLength(500)
   imagen?: string;
 
   @IsNumber()

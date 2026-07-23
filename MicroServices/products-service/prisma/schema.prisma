@@ -55,6 +55,7 @@ model Producto {
   mostrarPrecio Boolean    @default(true) @map("mostrar_precio")
 
   vendedorId  String     @map("vendedor_id") @db.Uuid
+  // Nullable intencional: soporta onDelete: SetNull. En API es required.
   categoriaId String?    @map("categoria_id") @db.Uuid
   marcaId     String?    @map("marca_id") @db.Uuid
 

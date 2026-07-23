@@ -15,18 +15,17 @@ import { tap } from 'rxjs/operators';
  */
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
-  private readonly logger = new Logger('HTTP');
-
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const contextType = typeof context.getType === 'function' ? context.getType() : 'http';
+    const logger = new Logger(contextType === 'rpc' ? 'TCP' : 'HTTP');
     const start = Date.now();
 
     if (contextType === 'rpc') {
       const pattern = context.getHandler().name;
       return next.handle().pipe(
         tap({
-          next: () => this.logger.log(`TCP ${pattern} — ${Date.now() - start}ms`),
-          error: () => this.logger.warn(`TCP ${pattern} — error — ${Date.now() - start}ms`),
+          next: () => logger.log(`TCP ${pattern} — ${Date.now() - start}ms`),
+          error: () => logger.warn(`TCP ${pattern} — error — ${Date.now() - start}ms`),
         }),
       );
     }
