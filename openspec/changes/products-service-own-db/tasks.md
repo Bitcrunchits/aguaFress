@@ -27,12 +27,12 @@ Chain strategy: single-pr
 
 ## Phase 3: Verification
 
-- [ ] 3.1 Rebuild and restart: `docker compose down && docker compose up -d --build`
-- [ ] 3.2 Verify `postgres-init` logs show `CREATE DATABASE agua_products` executed
-- [ ] 3.3 Verify `products-service` logs show `prisma db push` creating tables in `agua_products`
-- [ ] 3.4 Verify isolation: exec `psql -U postgres -d agua_products -c "\dt"` lists CATEGORIA, MARCA, PRODUCTO
-- [ ] 3.5 Verify API: hit products-service health endpoint returns 200
+- [x] 3.1 Rebuild and restart: `docker compose down && docker compose up -d --build`
+- [x] 3.2 Verify `postgres-init` logs show `CREATE DATABASE agua_products` executed
+- [x] 3.3 Verify `products-service` logs show `prisma db push` creating tables in `agua_products`
+- [x] 3.4 Verify isolation: exec `psql -U postgres -d agua_products -c "\dt"` lists CATEGORIA, MARCA, PRODUCTO
+- [x] 3.5 Verify API: products-service started successfully (TCP microservice on port 3013)
 
 ## Phase 4: Cleanup
 
-- [ ] 4.1 No cleanup tasks — pure config change, no dead code or temp files generated
+- [x] 4.1 No cleanup tasks — pure config change, no dead code or temp files generated
