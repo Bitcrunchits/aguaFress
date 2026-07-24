@@ -44,7 +44,7 @@ const SHARED_SCHEMAS: Record<string, Schema> = {
     codigoPostal: str('Código postal'),
     latitude: { type: 'number', description: 'Latitud' },
     longitude: { type: 'number', description: 'Longitud' },
-  }),
+  }, ['calle', 'numero', 'ciudad']),
 
   PaginationRequest: obj({
     page: { type: 'integer', description: 'Número de página' },
@@ -91,11 +91,14 @@ const SHARED_SCHEMAS: Record<string, Schema> = {
 
   RegisterRequest: obj({
     email: str('Email', 'vendedor@email.com'),
+    emailConfirmation: str('Confirmación de email'),
     password: str('Contraseña', '********'),
-    nombre: str('Nombre completo'),
+    nombre: str('Nombre'),
+    apellido: str('Apellido'),
+    dni: str('DNI (7 a 9 dígitos)'),
     telefono: str('Teléfono'),
     ciudad: str('Ciudad'),
-  }, ['email', 'password', 'nombre', 'telefono']),
+  }, ['email', 'emailConfirmation', 'password', 'nombre', 'apellido', 'dni', 'telefono']),
 
   RegisterResponse: obj({
     status: str('Siempre "pendiente"', 'pendiente'),
@@ -150,6 +153,24 @@ const SHARED_SCHEMAS: Record<string, Schema> = {
     message: str('Mensaje de confirmación'),
   }, ['message']),
 
+  RegisterClientRequest: obj({
+    token: str('Token del link de invitación (requerido para auto-registro)'),
+    nombre: str('Nombre'),
+    apellido: str('Apellido'),
+    email: str('Email', 'cliente@email.com'),
+    emailConfirmation: str('Confirmación de email'),
+    password: str('Contraseña', '********'),
+    telefono: str('Teléfono'),
+    dni: str('DNI (7 a 9 dígitos)'),
+    direccionEntrega: ref('#/components/schemas/DireccionEntrega'),
+  }, ['nombre', 'email', 'emailConfirmation', 'password', 'telefono', 'dni', 'direccionEntrega']),
+
+  RegisterClientResponse: obj({
+    token: str('JWT access token'),
+    refreshToken: str('JWT refresh token'),
+    clienteId: str('ID del cliente creado'),
+  }, ['token', 'refreshToken', 'clienteId']),
+
   UserProfile: obj({
     id: str('User ID'),
     email: str('Email'),
@@ -202,12 +223,29 @@ const SHARED_SCHEMAS: Record<string, Schema> = {
   }, ['id', 'nombre', 'email', 'estado', 'createdAt']),
 
   UpdateVendedorRequest: obj({
-    nombre: str(),
-    apellido: str(),
-    empresa: str(),
-    telefono: str(),
-    ciudad: str(),
+    nombre: str('Nombre'),
+    apellido: str('Apellido'),
+    empresa: str('Nombre del emprendimiento'),
+    telefono: str('Teléfono'),
+    dni: str('DNI (8 dígitos)'),
+    cuil: str('CUIL'),
+    cuit: str('CUIT'),
     logo: str('URL del logo'),
+    ciudadDefault: str('Ciudad/localidad principal'),
+    zonaEntrega: str('Zona/sector de entrega'),
+  }),
+
+  UpdateVendedorProfileRequest: obj({
+    nombre: str('Nombre'),
+    apellido: str('Apellido'),
+    dni: str('DNI (8 dígitos)'),
+    cuil: str('CUIL'),
+    cuit: str('CUIT'),
+    telefono: str('Teléfono'),
+    empresa: str('Nombre del emprendimiento'),
+    logo: str('URL del logo'),
+    ciudadDefault: str('Ciudad/localidad principal'),
+    zonaEntrega: str('Zona/sector de entrega'),
   }),
 
   ChangeEstadoRequest: obj({
@@ -360,6 +398,68 @@ const SHARED_SCHEMAS: Record<string, Schema> = {
     totalClientes: { type: 'integer' },
     ultimosRegistros: arr(ref('#/components/schemas/VendedorListItem')),
   }, ['totalVendedores', 'pendientes', 'activos', 'totalClientes']),
+
+  // ─── Productos ───────────────────────────────────────────────────
+
+  ProductResponse: obj({
+    id: str('Product ID'),
+    nombre: str('Nombre del producto'),
+    descripcion: str('Descripción'),
+    precioSinIva: { type: 'number', description: 'Precio sin IVA' },
+    precioFinal: { type: 'number', description: 'Precio final con IVA' },
+    imagen: str('URL de imagen'),
+    stock: { type: 'integer', description: 'Stock disponible' },
+    marca: str('Nombre de la marca'),
+    categoria: str('Nombre de la categoría'),
+    vendedorId: str('ID del vendedor'),
+    activo: { type: 'boolean', description: 'Producto activo' },
+    mostrarPrecio: { type: 'boolean', description: 'Mostrar precio al cliente' },
+  }, ['id', 'nombre', 'precioSinIva', 'precioFinal', 'stock', 'vendedorId', 'activo']),
+
+  CreateProductRequest: obj({
+    nombre: str('Nombre del producto'),
+    descripcion: str('Descripción'),
+    precioSinIva: { type: 'number', description: 'Monto SIN IVA — el service calcula precioFinal automáticamente' },
+    categoriaId: str('ID de la categoría (UUID)'),
+    marcaId: str('ID de la marca (UUID, opcional)'),
+    imagen: str('URL de imagen'),
+    stock: { type: 'integer', description: 'Stock inicial' },
+    mostrarPrecio: { type: 'boolean', description: 'Mostrar precio al cliente (default true)' },
+  }, ['nombre', 'precioSinIva', 'categoriaId', 'stock']),
+
+  UpdateProductRequest: obj({
+    nombre: str('Nombre del producto'),
+    descripcion: str('Descripción'),
+    precioSinIva: { type: 'number', description: 'Monto SIN IVA' },
+    stock: { type: 'integer', description: 'Stock' },
+    imagen: str('URL de imagen'),
+    activo: { type: 'boolean', description: 'Activar/desactivar producto' },
+    mostrarPrecio: { type: 'boolean', description: 'Mostrar precio al cliente' },
+    categoriaId: str('ID de la categoría (UUID)'),
+    marcaId: str('ID de la marca (UUID)'),
+  }),
+
+  ProductCreatedResponse: obj({
+    id: str('ID del producto creado'),
+    created: { type: 'boolean' },
+  }, ['id', 'created']),
+
+  ProductDeletedResponse: obj({
+    deleted: { type: 'boolean' },
+  }, ['deleted']),
+
+  CategoriaResponse: obj({
+    id: str('Categoría ID'),
+    nombre: str('Nombre'),
+    orden: { type: 'integer', description: 'Orden de visualización' },
+    vendedorId: str('ID del vendedor'),
+  }, ['id', 'nombre', 'vendedorId']),
+
+  MarcaResponse: obj({
+    id: str('Marca ID'),
+    nombre: str('Nombre'),
+    vendedorId: str('ID del vendedor'),
+  }, ['id', 'nombre', 'vendedorId']),
 };
 
 // ─── Action → HTTP method mapping ──────────────────────────────
@@ -398,16 +498,18 @@ const ACTIONS_DOC: Record<string, ActionDoc> = {
   'auth.change_password': { summary: 'Cambiar contraseña', description: 'Cambia la contraseña del usuario autenticado. Invalida todos los refresh tokens existentes.', method: 'post', bodySchema: 'ChangePasswordRequest', responseSchema: 'ChangePasswordResponse' },
   'auth.admin_generate_reset_token': { summary: 'Generar token de reset (admin)', description: 'SUPER_ADMIN genera un token de un solo uso para que un usuario reseteé su contraseña. El token dura 30 min. Compartilo con el usuario por WhatsApp o llamada.', method: 'post', bodySchema: 'AdminGenerateResetTokenRequest', responseSchema: 'AdminGenerateResetTokenResponse', roles: ['super_admin'] },
   'auth.reset_password': { summary: 'Resetear contraseña con token', description: 'Público. Usa el token generado por el admin para cambiar la contraseña. Invalida refresh tokens existentes.', method: 'post', bodySchema: 'ResetPasswordRequest', responseSchema: 'ResetPasswordResponse' },
+  'auth.register_client': { summary: 'Registrarse como cliente vía link de invitación', description: 'Público. Usa el token del link que el vendedor compartió. Crea el usuario, perfil CLIENTE, RELACION_CARTERA activa y devuelve JWT.', method: 'post', bodySchema: 'RegisterClientRequest', responseSchema: 'RegisterClientResponse' },
+  'auth.register_client_by_vendor': { summary: 'Registrar cliente directamente (vendedor)', description: 'El vendedor crea un cliente manualmente sin link de invitación. El cliente queda vinculado automáticamente al vendedor.', method: 'post', bodySchema: 'RegisterClientRequest', responseSchema: 'RegisterClientResponse', roles: ['vendedor'] },
 
   'users.profile': { summary: 'Obtener perfil propio', method: 'get', responseSchema: 'UserProfile' },
   'users.profile_update': { summary: 'Actualizar perfil propio', method: 'patch', bodySchema: 'UpdateProfileRequest', responseSchema: 'UserProfile' },
 
   'vendedores.list': { summary: 'Listar vendedores (admin)', method: 'get', queryParams: ['page', 'limit', 'search', 'estado'], responseSchema: 'VendedorListItem', isArray: true, paginated: true, roles: ['super_admin'] },
   'vendedores.get_by_id': { summary: 'Obtener vendedor por ID', method: 'get', pathParams: ['id'], responseSchema: 'VendedorListItem', roles: ['super_admin'] },
-  'vendedores.update': { summary: 'Actualizar vendedor', method: 'patch', pathParams: ['id'], bodySchema: 'UpdateVendedorRequest', responseSchema: 'VendedorListItem', roles: ['super_admin'] },
+  // 'vendedores.update': { summary: 'Actualizar vendedor', method: 'patch', pathParams: ['id'], bodySchema: 'UpdateVendedorRequest', responseSchema: 'VendedorListItem', roles: ['super_admin'] }, // deprecated: vendor self-manages via profile/update
   'vendedores.change_estado': { summary: 'Cambiar estado de vendedor', method: 'patch', pathParams: ['id'], bodySchema: 'ChangeEstadoRequest', responseSchema: 'VendedorListItem', roles: ['super_admin'] },
   'vendedores.profile': { summary: 'Obtener mi perfil (vendedor)', method: 'get', responseSchema: 'VendedorProfile', roles: ['vendedor'] },
-  'vendedores.profile_update': { summary: 'Actualizar mi perfil (vendedor)', method: 'patch', bodySchema: 'UpdateProfileRequest', responseSchema: 'VendedorProfile', roles: ['vendedor'] },
+  'vendedores.profile_update': { summary: 'Actualizar mi perfil (vendedor)', description: 'El vendedor actualiza sus propios datos: nombre, apellido, dni, cuil, cuit, teléfono, empresa, logo, ciudad, zona de entrega.', method: 'patch', bodySchema: 'UpdateVendedorProfileRequest', responseSchema: 'VendedorProfile', roles: ['vendedor'] },
 
   'super_admin.dashboard': { summary: 'Dashboard del super admin', method: 'get', responseSchema: 'SuperAdminDashboard', roles: ['super_admin'] },
   'super_admin.profile': { summary: 'Obtener perfil del super admin', method: 'get', responseSchema: 'SuperAdminProfile', roles: ['super_admin'] },
@@ -443,6 +545,18 @@ const ACTIONS_DOC: Record<string, ActionDoc> = {
   'cart.items_update': { summary: 'Actualizar item del carrito', description: 'Valida vendedorId contra providers/select antes de despachar mutación.', method: 'patch', bodySchema: 'CartItemMutationRequest', responseSchema: 'CartResponse', roles: ['cliente'] },
   'cart.items_delete': { summary: 'Eliminar item del carrito', description: 'Valida vendedorId contra providers/select antes de despachar mutación.', method: 'delete', bodySchema: 'CartItemMutationRequest', responseSchema: 'CartResponse', roles: ['cliente'] },
 
+  // ─── Productos ───────────────────────────────────────────────────
+
+  'products.list': { summary: 'Listar productos', description: 'Público. Lista productos con filtros. Si el usuario autenticado es vendedor, se resuelve su vendedorId automáticamente.', method: 'get', queryParams: ['vendedorId', 'categoria', 'disponibles', 'page', 'limit'], responseSchema: 'ProductResponse', isArray: true, paginated: true },
+  'products.get': { summary: 'Obtener producto por ID', method: 'get', queryParams: ['id'], responseSchema: 'ProductResponse' },
+  'products.search': { summary: 'Buscar productos', description: 'Público. Busca productos por texto libre.', method: 'get', queryParams: ['q', 'vendedorId', 'page', 'limit'], responseSchema: 'ProductResponse', isArray: true, paginated: true },
+  'products.create': { summary: 'Crear producto', description: 'El vendedor crea un producto. vendedorId se resuelve del JWT automáticamente.', method: 'post', bodySchema: 'CreateProductRequest', responseSchema: 'ProductCreatedResponse', roles: ['vendedor'] },
+  'products.update': { summary: 'Actualizar producto', description: 'El vendedor actualiza un producto propio. id se pasa por query string.', method: 'patch', queryParams: ['id'], bodySchema: 'UpdateProductRequest', responseSchema: 'ProductResponse', roles: ['vendedor'] },
+  'products.delete': { summary: 'Eliminar producto', description: 'El vendedor elimina un producto propio. id se pasa por query string.', method: 'delete', queryParams: ['id'], responseSchema: 'ProductDeletedResponse', roles: ['vendedor'] },
+
+  'categories.list': { summary: 'Listar categorías', description: 'Público. Lista categorías de un vendedor.', method: 'get', queryParams: ['vendedorId'], responseSchema: 'CategoriaResponse', isArray: true },
+  'brands.list': { summary: 'Listar marcas', description: 'Público. Lista marcas de un vendedor.', method: 'get', queryParams: ['vendedorId'], responseSchema: 'MarcaResponse', isArray: true },
+
   'orders.create': { summary: 'Crear pedido async', description: 'Valida vendedorId seleccionado, ignora body userId y encola con userId JWT + vendedorId.', method: 'post', bodySchema: 'CreateOrderRequest', responseSchema: 'AsyncAcceptedResponse', roles: ['cliente'] },
   'orders.job_status': { summary: 'Consultar estado de pedido async', method: 'get', queryParams: ['id'], responseSchema: 'AsyncAcceptedResponse' },
 };
@@ -457,6 +571,9 @@ const SERVICE_NAMES: Record<string, string> = {
   clientes: 'Clientes',
   qr: 'Códigos QR',
   'link-invitacion': 'Links de Invitación',
+  products: 'Productos',
+  categories: 'Catálogo',
+  brands: 'Catálogo',
 };
 
 // ─── OpenAPI Generator ──────────────────────────────────────────
@@ -478,7 +595,8 @@ export class OpenApiSpecService {
         const doc = ACTIONS_DOC[tcpPattern];
         if (!doc) continue;
 
-        const path = `/api/v1/${service}/${actionName}`;
+        const pathParamsSuffix = doc.pathParams?.length ? `/{${doc.pathParams.join('/}{')}}` : '';
+        const path = `/api/v1/${service}/${actionName}${pathParamsSuffix}`;
         const method = doc.method;
         const operation = this.buildOperation(tcpPattern, mapping, doc, tagName);
 
@@ -533,11 +651,11 @@ Los roles se especifican por endpoint: \`super_admin\`, \`vendedor\`.
       security.push({ bearerAuth: [] });
     }
 
-    // Path params as query params
+    // Path params
     for (const param of doc.pathParams ?? []) {
       parameters.push({
         name: param,
-        in: 'query',
+        in: 'path',
         required: true,
         schema: { type: 'string', format: 'uuid' },
         description: `ID del recurso`,

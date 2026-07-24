@@ -7,7 +7,7 @@ WORKDIR /app
 
 # Placeholder requerido por Prisma durante generate en build.
 # La URL real la inyecta docker-compose/runtime.
-ENV DATABASE_URL="postgresql://postgres:postgres@postgres:5432/agua"
+ENV DATABASE_URL="postgresql://postgres:postgres@postgres:5432/agua_products"
 
 # Copiar config del monorepo
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./

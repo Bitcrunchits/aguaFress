@@ -66,6 +66,7 @@ describe('AuthService', () => {
   describe('register', () => {
     const registerDto = {
       email: 'vendedor@test.com',
+      emailConfirmation: 'vendedor@test.com',
       password: 'password123',
       nombre: 'Vendedor',
       apellido: 'Test',

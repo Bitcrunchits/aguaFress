@@ -7,3 +7,8 @@ SELECT 'CREATE DATABASE agua_entregas'
 WHERE NOT EXISTS (
   SELECT FROM pg_database WHERE datname = 'agua_entregas'
 )\gexec
+
+SELECT 'CREATE DATABASE agua_products'
+WHERE NOT EXISTS (
+  SELECT FROM pg_database WHERE datname = 'agua_products'
+)\gexec
