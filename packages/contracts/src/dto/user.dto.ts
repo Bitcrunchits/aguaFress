@@ -179,6 +179,28 @@ export interface VendedorResponse {
   estado?: VendedorEstado;
 }
 
+// ─── Registro de clientes ───
+
+export interface RegisterClientRequest {
+  /** Token del link de invitación (solo para registro vía link) */
+  token?: string;
+  nombre: string;
+  apellido?: string;
+  email: string;
+  /** Confirmación de email — debe coincidir con email */
+  emailConfirmation: string;
+  password: string;
+  telefono: string;
+  dni: string;
+  direccionEntrega: DireccionEntrega;
+}
+
+export interface RegisterClientResponse {
+  token: string;
+  refreshToken: string;
+  clienteId: string;
+}
+
 // ─── QR / Link de invitación ───
 
 export interface GenerarQRResponse {

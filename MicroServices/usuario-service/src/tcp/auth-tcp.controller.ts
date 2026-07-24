@@ -4,11 +4,13 @@ import { AuthService } from '../auth/auth.service';
 import { Public } from '../auth/decorators/public.decorator';
 import { LoginDto } from '../auth/dto/login.dto';
 import { RegisterDto } from '../auth/dto/register.dto';
+import { RegisterClientDto } from '../auth/dto/register-client.dto';
 import { RefreshTokenDto } from '../auth/dto/refresh-token.dto';
 import { ValidateTokenDto } from '../auth/dto/validate-token.dto';
 import { ChangePasswordDto } from '../auth/dto/change-password.dto';
 import { AdminGenerateResetTokenDto } from '../auth/dto/admin-generate-reset-token.dto';
 import { ResetPasswordDto } from '../auth/dto/reset-password.dto';
+import { UserRole } from '@agua/contracts';
 import { TcpPayloadAdapter } from './tcp-payload-adapter.service';
 import type { TcpPayload } from './tcp-payload';
 
@@ -55,6 +57,20 @@ export class AuthTcpController {
   async resetPassword(@Payload() payload: TcpPayload) {
     const dto = await this.payloadAdapter.body(payload, ResetPasswordDto);
     return this.authService.resetPassword(dto);
+  }
+
+  @MessagePattern('auth.register_client')
+  async registerClient(@Payload() payload: TcpPayload) {
+    const dto = await this.payloadAdapter.body(payload, RegisterClientDto);
+    return this.authService.registerViaLink(dto);
+  }
+
+  @MessagePattern('auth.register_client_by_vendor')
+  async registerClientByVendor(@Payload() payload: TcpPayload) {
+    this.payloadAdapter.requireRole(payload, UserRole.VENDEDOR);
+    const userId = this.payloadAdapter.userId(payload);
+    const dto = await this.payloadAdapter.body(payload, RegisterClientDto);
+    return this.authService.registerByVendor(dto, userId);
   }
 
   @MessagePattern('auth.change_password')

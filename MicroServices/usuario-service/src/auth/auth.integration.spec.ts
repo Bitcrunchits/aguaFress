@@ -110,6 +110,7 @@ describe('Auth Integration: register → login → refresh → profile', () => {
 
       const registerResult = await authService.register({
         email: 'vendedor@test.com',
+        emailConfirmation: 'vendedor@test.com',
         password: 'VendorPass1',
         nombre: 'Carlos',
         apellido: 'García',

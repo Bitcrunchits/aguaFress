@@ -18,7 +18,7 @@ import { SuperAdminService } from '../super-admin/super-admin.service';
 import { UpdateSuperAdminProfileDto } from '../super-admin/dto/update-super-admin.dto';
 import { ChangeEstadoDto } from '../vendedores/dto/change-estado.dto';
 import { ListVendedoresDto } from '../vendedores/dto/list-vendedores.dto';
-import { UpdateVendedorDto } from '../vendedores/dto/update-vendedor.dto';
+// import { UpdateVendedorDto } from '../vendedores/dto/update-vendedor.dto'; // deprecated: vendor self-manages via profile/update
 import { UpdateVendedorProfileDto } from '../vendedores/dto/update-vendedor-profile.dto';
 import { VendedoresService } from '../vendedores/vendedores.service';
 import { TcpPayloadAdapter } from './tcp-payload-adapter.service';
@@ -73,12 +73,12 @@ export class UsuarioDomainTcpController {
     return this.vendedoresService.getById(this.requireParamId(payload));
   }
 
-  @MessagePattern('vendedores.update')
-  async updateVendedor(@Payload() payload: TcpPayload) {
-    this.payloadAdapter.requireRole(payload, UserRole.SUPER_ADMIN);
-    const dto = await this.payloadAdapter.body(payload, UpdateVendedorDto);
-    return this.vendedoresService.update(this.requireParamId(payload), dto);
-  }
+  // @MessagePattern('vendedores.update') // deprecated: vendor self-manages via profile/update
+  // async updateVendedor(@Payload() payload: TcpPayload) {
+  //   this.payloadAdapter.requireRole(payload, UserRole.SUPER_ADMIN);
+  //   const dto = await this.payloadAdapter.body(payload, UpdateVendedorDto);
+  //   return this.vendedoresService.update(this.requireParamId(payload), dto);
+  // }
 
   @MessagePattern('vendedores.change_estado')
   async changeVendedorEstado(@Payload() payload: TcpPayload) {
