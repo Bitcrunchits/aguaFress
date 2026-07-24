@@ -1,0 +1,10 @@
+node_modules
+dist
+.env
+**/.env
+.git
+*.log
+.DS_Store
+docs
+contratosDTOs
+mcp

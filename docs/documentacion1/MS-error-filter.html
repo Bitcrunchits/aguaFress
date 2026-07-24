@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MS Error Filter — RpcExceptionFilter | AguaFress</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface-2: #242838;
+      --border: #2e3348;
+      --text: #e1e4ed;
+      --text-muted: #8b90a5;
+      --accent: #6c8cff;
+      --accent-dim: #4a6adf;
+      --green: #4caf7f;
+      --orange: #e8a54a;
+      --red: #e5555a;
+      --code-bg: #151821;
+      --inline-code: #c9a0ff;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      padding: 0;
+    }
+
+    /* ── Header ── */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 2.5rem 2rem 2rem;
+      background: var(--surface);
+    }
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    header .meta {
+      margin-top: 0.5rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    header .meta span { margin-right: 1.5rem; }
+
+    /* ── Layout ── */
+    .wrapper { display: flex; max-width: 1280px; margin: 0 auto; }
+    nav.toc {
+      width: 260px;
+      flex-shrink: 0;
+      padding: 2rem 1.5rem 2rem 2rem;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+    }
+    nav.toc h3 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+    nav.toc a {
+      display: block;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      padding: 0.3rem 0;
+      border-left: 2px solid transparent;
+      padding-left: 0.75rem;
+      transition: 0.15s;
+    }
+    nav.toc a:hover, nav.toc a:focus { color: var(--accent); border-color: var(--accent); }
+    nav.toc a.section { margin-top: 0.8rem; font-weight: 600; color: var(--text); }
+
+    main {
+      flex: 1;
+      min-width: 0;
+      padding: 2rem 2.5rem 4rem;
+    }
+
+    /* ── Content ── */
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 2.5rem 0 1rem;
+      color: #fff;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h2:first-of-type { margin-top: 0; }
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 1.8rem 0 0.6rem;
+      color: var(--accent);
+    }
+    h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 1.2rem 0 0.4rem;
+      color: var(--text);
+    }
+    p { margin: 0.6rem 0; }
+    ul, ol { margin: 0.6rem 0 0.6rem 1.5rem; }
+    li { margin: 0.3rem 0; }
+
+    code {
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.85em;
+      background: var(--code-bg);
+      padding: 0.15em 0.45em;
+      border-radius: 4px;
+      color: var(--inline-code);
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      overflow-x: auto;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      margin: 0.8rem 0;
+    }
+    pre code {
+      background: none;
+      padding: 0;
+      color: var(--text);
+    }
+
+    /* ── Callouts ── */
+    .callout {
+      border-left: 4px solid;
+      border-radius: 6px;
+      padding: 0.8rem 1rem;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    .callout.info    { background: #1a2450; border-color: var(--accent); }
+    .callout.warn    { background: #2a2018; border-color: var(--orange); }
+    .callout.success { background: #14281e; border-color: var(--green); }
+    .callout.err     { background: #2a1416; border-color: var(--red); }
+
+    /* ── Tables ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.88rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.55rem 0.8rem;
+      text-align: left;
+    }
+    th {
+      background: var(--surface-2);
+      color: var(--text);
+      font-weight: 600;
+    }
+    td { background: var(--surface); }
+
+    /* ── Diagram ── */
+    .diagram {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      white-space: pre;
+      overflow-x: auto;
+      margin: 0.8rem 0;
+    }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .badge.ok  { background: #14281e; color: var(--green); }
+    .badge.warn { background: #2a2018; color: var(--orange); }
+    .badge.err { background: #2a1416; color: var(--red); }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    @media (max-width: 860px) {
+      nav.toc { display: none; }
+      main { padding: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🛡️ RpcExceptionFilter — Manejo Global de Errores</h1>
+  <div class="meta">
+    <span>📁 <code>usuario-service/src/common/filters/</code></span>
+    <span>📅 Junio 2026</span>
+    <span>🏷️ <span class="badge ok">v2.0</span></span>
+  </div>
+</header>
+
+<div class="wrapper">
+  <nav class="toc">
+    <h3>Contenido</h3>
+    <a href="#intro" class="section">1. Introducción</a>
+    <a href="#flujo">2. Flujo de errores</a>
+    <a href="#casos">3. Casos prácticos</a>
+    <a href="#respuestas">4. Respuestas HTTP</a>
+    <a href="#logging">5. Logging</a>
+    <a href="#mejoras">6. Mejoras aplicadas</a>
+    <a href="#solido">7. SOLID compliance</a>
+    <a href="#referencias">8. Referencias NestJS</a>
+    <a href="#codigo">9. Código fuente</a>
+  </nav>
+
+  <main>
+
+    <!-- ──────── 1 ──────── -->
+    <h2 id="intro">1. Introducción</h2>
+    <p>
+      El <code>RpcExceptionFilter</code> es un filtro global que captura <strong>todas</strong>
+      las excepciones lanzadas en <code>usuario-service</code>, tanto en contexto
+      <strong>HTTP</strong> (REST) como <strong>RPC</strong> (TCP para microservicios).
+    </p>
+    <div class="callout info">
+      📖 <strong>Filosofía:</strong> El cliente siempre recibe una respuesta JSON consistente
+      con <code>statusCode</code>, <code>message</code>, <code>path</code> y <code>timestamp</code>.
+      Los errores inesperados (500) nunca filtran detalles internos al cliente,
+      pero se loguean con stack trace completo para debuggear.
+    </div>
+
+    <!-- ──────── 2 ──────── -->
+    <h2 id="flujo">2. Flujo de errores</h2>
+
+    <div class="diagram">
+Request ──► NestJS ──► ValidationPipe ──► Guard ──► Controller ──► Service
+                                                                    │
+                                                              ❌ Error
+                                                                    │
+                                                    ┌───────────────┴──────────────┐
+                                                    │   RpcExceptionFilter.catch() │
+                                                    │   host.getType()             │
+                                                    └───────────────┬──────────────┘
+                                                                    │
+                                              ┌─────────────────────┴─────────────────────┐
+                                              ↓                                           ↓
+                                        "http"                                       "rpc"
+                                              ↓                                           ↓
+                                  handleHttpError()                             handleRpcError()
+                                              ↓                                           ↓
+                              ┌──────────────────────────┐              ┌──────────────────────────┐
+                              │  exception               │              │  exception               │
+                              │  instanceof HttpException│              │  instanceof HttpException│
+                              │  ? getResponse()         │              │  ? RpcException(getResp)│
+                              │  : body genérico 500     │              │  instanceof RpcException │
+                              └──────────────────────────┘              │  ? pasa directo          │
+                                                                        │  : 500 genérico         │
+                                                                        └──────────────────────────┘
+    </div>
+
+    <h3>2.1 HTTP — request/respone</h3>
+    <pre><code>@Catch()
+export class RpcExceptionFilter implements ExceptionFilter {
+  catch(exception: unknown, host: ArgumentsHost) {
+    if (host.getType() === 'rpc') return this.handleRpcError(exception);
+    this.handleHttpError(exception, host);
+  }
+}</code></pre>
+
+    <h3>2.2 RPC — comunicación entre microservicios (TCP)</h3>
+    <p>
+      Cuando un microservicio llama a otro por TCP y este tira un error,
+      NestJS por defecto lo reemplaza por <em>"Internal server error"</em>.
+      Nuestro filter preserva el mensaje original antes de que eso pase.
+    </p>
+
+    <!-- ──────── 3 ──────── -->
+    <h2 id="casos">3. Casos prácticos</h2>
+
+    <h3>3.1 Error controlado del negocio</h3>
+    <pre><code>throw new ConflictException('El email ya está registrado');</code></pre>
+    <table>
+      <tr><th>Qué recibe el cliente</th><th>Qué se loguea</th></tr>
+      <tr>
+        <td><code>409 + "El email ya está registrado"</code></td>
+        <td><span class="badge warn">WARN</span> <code>HTTP 409 — /api/auth/register: El email ya está registrado</code></td>
+      </tr>
+    </table>
+    <p>➡️ El mensaje se preserva. Sin stack trace (es un error esperado).</p>
+
+    <h3>3.2 Error de validación (ValidationPipe)</h3>
+    <pre><code>// Body inválido automáticamente detectado por ValidationPipe</code></pre>
+    <table>
+      <tr><th>Qué recibe el cliente</th><th>Qué se loguea</th></tr>
+      <tr>
+        <td><code>400 + ["email inválido", "contraseña muy corta"]</code></td>
+        <td><span class="badge warn">WARN</span> <code>HTTP 400 — /api/auth/register: email inválido; contraseña muy corta</code></td>
+      </tr>
+    </table>
+
+    <div class="callout success">
+      ✅ <strong>Mejora clave:</strong> La versión anterior usaba <code>exception.message</code> que
+      devolvía solo <code>"Bad Request"</code> — perdiendo los detalles de validación.
+      Ahora usamos <code>exception.getResponse()</code> que preserva el array completo.
+    </div>
+
+    <h3>3.3 Error inesperado (bug, DB caída)</h3>
+    <pre><code>// Prisma lanza un error de conexión (no es HttpException)</code></pre>
+    <table>
+      <tr><th>Qué recibe el cliente</th><th>Qué se loguea</th></tr>
+      <tr>
+        <td><code>500 + "Internal server error"</code></td>
+        <td><span class="badge err">ERROR</span> <code>HTTP 500 — /api/auth/login: Internal server error</code><br>➕ <strong>Stack trace completo</strong></td>
+      </tr>
+    </table>
+
+    <div class="callout err">
+      ⚠️ <strong>Seguridad:</strong> El cliente nunca ve el stack trace ni
+      detalles internos. Solo el equipo de desarrollo los ve en los logs.
+    </div>
+
+    <h3>3.4 Error RPC entre microservicios</h3>
+    <pre><code>// auth-service llama a user-service por TCP
+// user-service tira: new BadRequestException('Usuario no encontrado')</code></pre>
+    <table>
+      <tr><th>Qué recibe auth-service</th><th>Qué se loguea en user-service</th></tr>
+      <tr>
+        <td><code>RpcException con { statusCode: 400, message: "Usuario no encontrado" }</code></td>
+        <td><span class="badge warn">WARN</span> <code>RPC — Usuario no encontrado</code></td>
+      </tr>
+    </table>
+
+    <!-- ──────── 4 ──────── -->
+    <h2 id="respuestas">4. Respuestas HTTP — antes vs después</h2>
+
+    <h3>Antes (perdía detalles de validación)</h3>
+    <pre><code>{
+  "statusCode": 400,
+  "message": "Bad Request",           // ← PERDISTE los detalles
+  "path": "/api/auth/register",
+  "timestamp": "2026-06-27T..."
+}</code></pre>
+
+    <h3>Después (preserva todo)</h3>
+    <pre><code>{
+  "message": ["email inválido", "contraseña muy corta"],  // ← array completo
+  "statusCode": 400,
+  "error": "Bad Request",
+  "path": "/api/auth/register",
+  "timestamp": "2026-06-27T..."
+}</code></pre>
+
+    <!-- ──────── 5 ──────── -->
+    <h2 id="logging">5. Logging por nivel</h2>
+    <table>
+      <tr><th>Rango HTTP</th><th>Tipo</th><th>Nivel</th><th>Stack trace</th></tr>
+      <tr><td>400–499</td><td>Error del cliente (validación, auth, etc.)</td><td><span class="badge warn">WARN</span></td><td>❌ No</td></tr>
+      <tr><td>500+</td><td>Error interno (bug, DB caída)</td><td><span class="badge err">ERROR</span></td><td>✅ Sí</td></tr>
+      <tr><td>RPC 4xx</td><td>HttpException en contexto RPC</td><td><span class="badge warn">WARN</span></td><td>❌ No</td></tr>
+      <tr><td>RPC 5xx</td><td>Error interno en contexto RPC</td><td><span class="badge err">ERROR</span></td><td>✅ Sí</td></tr>
+      <tr><td>RPC inesperado</td><td>Error no HttpException ni RpcException</td><td><span class="badge err">ERROR</span></td><td>✅ Sí</td></tr>
+    </table>
+
+    <p>Ejemplo de log para un error 500:</p>
+    <pre><code>[Nest] 12345  - 26/06/2026, 09:28:15   ERROR [RpcExceptionFilter]
+HTTP 500 — /api/auth/login: Internal server error
+Error: connect ECONNREFUSED 127.0.0.1:5432
+    at TCPConnectWrap.afterConnect [as oncomplete] (net.js:1146:16)</code></pre>
+
+    <!-- ──────── 6 ──────── -->
+    <h2 id="mejoras">6. Mejoras aplicadas vs versión anterior</h2>
+
+    <table>
+      <tr><th>Aspecto</th><th>Versión anterior</th><th>Versión actual</th><th>Razón</th></tr>
+      <tr>
+        <td><strong>Response body</strong></td>
+        <td>Construido manual con <code>{ statusCode, message, path, timestamp }</code></td>
+        <td>Usa <code>exception.getResponse()</code> + enriquece con <code>path</code> y <code>timestamp</code></td>
+        <td>Preserva errores de validación y estructuras personalizadas</td>
+      </tr>
+      <tr>
+        <td><strong>Plataforma</strong></td>
+        <td>Dependía de Express (<code>response.status().json()</code>)</td>
+        <td>Usa <code>HttpAdapterHost</code> → <code>httpAdapter.reply()</code></td>
+        <td>Si migramos a Fastify, el filter funciona sin cambios</td>
+      </tr>
+      <tr>
+        <td><strong>Interface</strong></td>
+        <td>No implementaba <code>ExceptionFilter</code></td>
+        <td><code>implements ExceptionFilter</code></td>
+        <td>Type safety, firma correcta, integración con NestJS</td>
+      </tr>
+      <tr>
+        <td><strong>Logging</strong></td>
+        <td><code>console.log</code> (en <code>main.ts</code>)</td>
+        <td><code>Logger</code> de NestJS con niveles warn/error</td>
+        <td>Reglas del proyecto: no <code>console.log</code> en producción</td>
+      </tr>
+      <tr>
+        <td><strong>Logging de arrays</strong></td>
+        <td><code>exception.message</code> directo</td>
+        <td><code>serializeForLog()</code> que joinea arrays con <code>; </code></td>
+        <td>Los arrays de validación se ven legibles en consola</td>
+      </tr>
+    </table>
+
+    <!-- ──────── 7 ──────── -->
+    <h2 id="solido">7. SOLID compliance</h2>
+
+    <table>
+      <tr><th>Principio</th><th>Cómo se aplica</th></tr>
+      <tr>
+        <td><strong>SRP</strong> — Single Responsibility</td>
+        <td>Una sola responsabilidad: capturar, loguear y formatear errores</td>
+      </tr>
+      <tr>
+        <td><strong>OCP</strong> — Open/Closed</td>
+        <td><code>@Catch()</code> sin filtro atrapa todo. No hay que modificarlo para nuevos tipos de error</td>
+      </tr>
+      <tr>
+        <td><strong>LSP</strong> — Liskov Substitution</td>
+        <td>Trata <code>HttpException</code>, <code>RpcException</code> y <code>Error</code> según su tipo base</td>
+      </tr>
+      <tr>
+        <td><strong>ISP</strong> — Interface Segregation</td>
+        <td>Implementa solo <code>ExceptionFilter</code> → un único método <code>catch()</code></td>
+      </tr>
+      <tr>
+        <td><strong>DIP</strong> — Dependency Inversion</td>
+        <td>Depende de <code>HttpAdapterHost</code> (abstracción de NestJS), no de Express (concreto)</td>
+      </tr>
+    </table>
+
+    <!-- ──────── 8 ──────── -->
+    <h2 id="referencias">8. Referencias a NestJS</h2>
+
+    <table>
+      <tr><th>Concepto</th><th>Documentación</th><th>Uso en el filter</th></tr>
+      <tr>
+        <td>Exception filters</td>
+        <td><a href="https://docs.nestjs.com/exception-filters" target="_blank" style="color:var(--accent)">docs.nestjs.com/exception-filters</a></td>
+        <td><code>@Catch()</code>, <code>ExceptionFilter</code>, <code>ArgumentsHost</code></td>
+      </tr>
+      <tr>
+        <td>HttpAdapterHost</td>
+        <td><a href="https://docs.nestjs.com/exception-filters#inherit-from-the-base-exception-filter" target="_blank" style="color:var(--accent)">docs.nestjs.com — platform-agnostic</a></td>
+        <td><code>httpAdapter.reply()</code> en vez de Express directo</td>
+      </tr>
+      <tr>
+        <td>Microservices RPC</td>
+        <td><a href="https://docs.nestjs.com/microservices/exception-filters" target="_blank" style="color:var(--accent)">docs.nestjs.com/microservices/exception-filters</a></td>
+        <td><code>RpcException</code>, manejo de contexto <code>'rpc'</code></td>
+      </tr>
+      <tr>
+        <td>Built-in HTTP exceptions</td>
+        <td><a href="https://docs.nestjs.com/exception-filters#built-in-http-exceptions" target="_blank" style="color:var(--accent)">docs.nestjs.com — built-in exceptions</a></td>
+        <td><code>BadRequestException</code>, <code>ConflictException</code>, etc.</td>
+      </tr>
+      <tr>
+        <td>ValidationPipe</td>
+        <td><a href="https://docs.nestjs.com/techniques/validation" target="_blank" style="color:var(--accent)">docs.nestjs.com/techniques/validation</a></td>
+        <td>Configurado en <code>main.ts</code> con <code>whitelist: true</code></td>
+      </tr>
+      <tr>
+        <td>Logger</td>
+        <td><a href="https://docs.nestjs.com/techniques/logger" target="_blank" style="color:var(--accent)">docs.nestjs.com/techniques/logger</a></td>
+        <td><code>new Logger(RpcExceptionFilter.name)</code></td>
+      </tr>
+    </table>
+
+    <!-- ──────── 9 ──────── -->
+    <h2 id="codigo">9. Código fuente</h2>
+    <p><code>usuario-service/src/common/filters/rpc-exception.filter.ts</code>:</p>
+    <pre><code>import {
+  Catch, ExceptionFilter, HttpException, HttpStatus, Logger,
+  type ArgumentsHost,
+} from '@nestjs/common';
+import { HttpAdapterHost } from '@nestjs/core';
+import { RpcException } from '@nestjs/microservices';
+import { Observable, throwError } from 'rxjs';
+
+@Catch()
+export class RpcExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(RpcExceptionFilter.name);
+  constructor(private readonly httpAdapterHost: HttpAdapterHost) {}
+
+  catch(exception: unknown, host: ArgumentsHost): Observable&lt;any&gt; | void {
+    const type = host.getType();
+    if (type === 'rpc') return this.handleRpcError(exception);
+    this.handleHttpError(exception, host);
+  }
+
+  // ── RPC ───────────────────────────────────────────────────
+  private handleRpcError(exception: unknown): Observable&lt;never&gt; {
+    if (exception instanceof HttpException) {
+      const payload = this.extractErrorPayload(exception);
+      this.logger.warn(`RPC — ${this.serializeForLog(payload)}`);
+      return throwError(() =&gt; new RpcException(payload));
+    }
+    if (exception instanceof RpcException) {
+      this.logger.warn(`RPC — RpcException: ${JSON.stringify(exception.getError())}`);
+      return throwError(() =&gt; exception);
+    }
+    this.logger.error(`RPC — Unhandled: ${(exception as Error).message}`, (exception as Error).stack);
+    return throwError(() =&gt; new RpcException({
+      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+      message: 'Internal server error',
+    }));
+  }
+
+  // ── HTTP ──────────────────────────────────────────────────
+  private handleHttpError(exception: unknown, host: ArgumentsHost): void {
+    const { httpAdapter } = this.httpAdapterHost;
+    const ctx = host.switchToHttp();
+    const path = httpAdapter.getRequestUrl(ctx.getRequest());
+    const isHttpException = exception instanceof HttpException;
+
+    const responseBody = isHttpException
+      ? { ...this.extractErrorPayload(exception), path, timestamp: new Date().toISOString() }
+      : { statusCode: HttpStatus.INTERNAL_SERVER_ERROR, message: 'Internal server error', path, timestamp: new Date().toISOString() };
+
+    const logMsg = this.serializeForLog(responseBody);
+    if (responseBody.statusCode &gt;= 500) {
+      this.logger.error(`HTTP ${responseBody.statusCode} — ${path}: ${logMsg}`, (exception as Error).stack);
+    } else {
+      this.logger.warn(`HTTP ${responseBody.statusCode} — ${path}: ${logMsg}`);
+    }
+
+    httpAdapter.reply(ctx.getResponse(), responseBody, responseBody.statusCode);
+  }
+
+  // ── Helpers ───────────────────────────────────────────────
+  private extractErrorPayload(exception: HttpException): Record&lt;string, any&gt; {
+    const response = exception.getResponse();
+    if (typeof response === 'string') return { message: response, statusCode: exception.getStatus() };
+    if (typeof response === 'object' &amp;&amp; response !== null) return { statusCode: exception.getStatus(), ...response };
+    return { message: exception.message, statusCode: exception.getStatus() };
+  }
+
+  private serializeForLog(body: Record&lt;string, any&gt;): string {
+    if (Array.isArray(body.message)) return body.message.join('; ');
+    if (typeof body.message === 'string') return body.message;
+    return JSON.stringify(body);
+  }
+}</code></pre>
+
+  </main>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,251 @@
+# ───────────────────────────────────────────────────────────────
+#  AguaFress — Docker Compose (desarrollo)
+#  ───────────────────────────────────────────────────────────────
+#  Uso:
+#    docker compose up -d                    → levanta todo
+#    docker compose up -d postgres redis mongo → solo infra
+#    docker compose logs -f usuario-service  → logs del MS
+#    docker compose logs -f orders-service   → logs del MS
+#    docker compose logs -f notifications-service → logs del MS
+#    docker compose down -v                  → destruye todo + volúmenes
+#
+#  Arquitectura:
+#    - Gateway es la única entrada HTTP pública.
+#    - Los microservicios de dominio son TCP-only.
+#    - Cada microservicio debe tener DB/schema propios; este compose local
+#      solo coordina los servicios implementados, no define un Prisma
+#      schema centralizado.
+# ───────────────────────────────────────────────────────────────
+
+services:
+  # ─── PostgreSQL local para servicios implementados ───────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: agua-postgres
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: agua
+      TZ: America/Argentina/Buenos_Aires
+    volumes:
+      - agua-postgres-data:/var/lib/postgresql/data
+      - ./docker/init-db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d agua"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  postgres-init:
+    image: postgres:15-alpine
+    container_name: agua-postgres-init
+    environment:
+      PGPASSWORD: postgres
+    volumes:
+      - ./docker/init-db:/docker-entrypoint-initdb.d:ro
+    command: >
+      sh -c "psql -h postgres -U postgres -d postgres
+      -f /docker-entrypoint-initdb.d/create-service-databases.sql"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  # ─── Redis ──────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: agua-redis
+    ports:
+      - "6379:6379"
+    environment:
+      TZ: America/Argentina/Buenos_Aires
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ─── MongoDB local para notifications-service ───────────────
+  mongo:
+    image: mongo:7
+    container_name: agua-mongo
+    ports:
+      - "27017:27017"
+    environment:
+      TZ: America/Argentina/Buenos_Aires
+    volumes:
+      - agua-mongo-data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --eval \"db.adminCommand('ping')\" --quiet"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  usuario-service:
+    build:
+      context: .
+      dockerfile: MicroServices/usuario-service/Dockerfile
+    container_name: agua-usuario-service
+    ports:
+      - "3011"
+    env_file:
+      - .env
+    environment:
+      TZ: America/Argentina/Buenos_Aires
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/agua"
+      TCP_PORT: "3011"
+      JWT_SECRET: "aguafress-dev-secret-no-usar-en-prod"
+      JWT_REFRESH_SECRET: "auth-dev-refresh-secret-min-32!!"
+      JWT_EXPIRES_IN: "24h"
+      JWT_REFRESH_EXPIRES_IN: "7d"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      postgres-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ─── products-service ──────────────────────────────────────
+  products-service:
+    build:
+      context: .
+      dockerfile: MicroServices/products-service/Dockerfile
+    container_name: agua-products-service
+    env_file:
+      - .env
+    environment:
+      TZ: America/Argentina/Buenos_Aires
+      TCP_PORT: "3013"
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/agua"
+      USUARIO_SERVICE_HOST: usuario-service
+      USUARIO_SERVICE_TCP_PORT: "3011"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      postgres-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # ─── orders-service ─────────────────────────────────────────
+  orders-service:
+    build:
+      context: .
+      dockerfile: MicroServices/orders-service/Dockerfile
+    container_name: agua-orders-service
+    # No HTTP port — TCP only (internal Docker network)
+    env_file:
+      - .env
+    environment:
+      TZ: America/Argentina/Buenos_Aires
+      TCP_PORT: "3014"
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/agua_orders"
+      REDIS_URL: "redis://redis:6379"
+      ORDERS_CREATE_QUEUE_NAME: "orders.create"
+      ORDERS_CREATE_QUEUE_ATTEMPTS: "3"
+      ORDERS_CREATE_QUEUE_BACKOFF_MS: "5000"
+      ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE: "1000"
+      ORDERS_CREATE_WORKER_CONCURRENCY: "1"
+    depends_on:
+      postgres-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ─── entregas-service ──────────────────────────────────────
+  entregas-service:
+    build:
+      context: .
+      dockerfile: MicroServices/entregas-service/Dockerfile
+    container_name: agua-entregas-service
+    # No HTTP port — TCP only (internal Docker network)
+    env_file:
+      - .env
+    environment:
+      TZ: America/Argentina/Buenos_Aires
+      TCP_PORT: "3015"
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/agua_entregas"
+      REDIS_URL: "redis://redis:6379"
+      USUARIO_SERVICE_HOST: usuario-service
+      USUARIO_SERVICE_TCP_PORT: "3011"
+      TCP_TIMEOUT_MS: "5000"
+    depends_on:
+      postgres-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ─── notifications-service ─────────────────────────────────
+  notifications-service:
+    build:
+      context: .
+      dockerfile: MicroServices/notifications-service/Dockerfile
+    container_name: agua-notifications-service
+    # No HTTP port — TCP only (internal Docker network)
+    environment:
+      TZ: America/Argentina/Buenos_Aires
+      TCP_PORT: "3016"
+      MONGODB_URI: "mongodb://mongo:27017/agua_notifications"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ─── api-gateway ────────────────────────────────────────────
+  gateway:
+    build:
+      context: .
+      dockerfile: MicroServices/gateway/Dockerfile
+    container_name: agua-gateway
+    ports:
+      - "3000:3000"
+    # DEVELOPMENT ONLY:
+    # Reuses the root .env for local convenience while we iterate quickly.
+    # Before production, split gateway envs so it receives only gateway-owned
+    # config (PORT, JWT_SECRET, TCP hosts/ports, rate limits) and never domain
+    # DB credentials such as DATABASE_URL.
+    env_file:
+      - .env
+    environment:
+      TZ: America/Argentina/Buenos_Aires
+      PORT: "3000"
+      USUARIO_SERVICE_HOST: usuario-service
+      USUARIO_SERVICE_TCP_PORT: "3011"
+      ORDERS_SERVICE_HOST: orders-service
+      ORDERS_SERVICE_TCP_PORT: "3014"
+      NOTIFICATIONS_SERVICE_HOST: notifications-service
+      NOTIFICATIONS_SERVICE_TCP_PORT: "3016"
+      ENTREGAS_SERVICE_HOST: entregas-service
+      ENTREGAS_SERVICE_TCP_PORT: "3015"
+      PRODUCTS_SERVICE_HOST: products-service
+      PRODUCTS_SERVICE_TCP_PORT: "3013"
+      REDIS_URL: "redis://redis:6379"
+      ORDERS_CREATE_QUEUE_NAME: "orders.create"
+      ORDERS_CREATE_QUEUE_ATTEMPTS: "3"
+      ORDERS_CREATE_QUEUE_BACKOFF_MS: "5000"
+      ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE: "1000"
+    depends_on:
+      usuario-service:
+        condition: service_started
+      products-service:
+        condition: service_started
+      orders-service:
+        condition: service_started
+      notifications-service:
+        condition: service_started
+      entregas-service:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  agua-postgres-data:
+  agua-redis-data:
+  agua-mongo-data:

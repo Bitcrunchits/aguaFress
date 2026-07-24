@@ -1,0 +1,154 @@
+import * as crypto from 'crypto';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma } from '../generated/prisma';
+import { AuditAction, VendedorEstado } from '@agua/contracts';
+import { PrismaService } from '../common/prisma/prisma.service';
+import type { ListLinkInvitacionDto } from './dto/list-link-invitacion.dto';
+import { AuditLogService } from '../audit-log/audit-log.service';
+
+@Injectable()
+export class LinkInvitacionService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
+
+  private generateToken(): string {
+    return crypto.randomUUID().slice(0, 8);
+  }
+
+  async create(vendedorId: string, actorUserId: string) {
+    const vendedor = await this.prisma.vendedor.findUnique({
+      where: { id: vendedorId },
+      select: { estado: true },
+    });
+
+    if (!vendedor) {
+      throw new NotFoundException('Vendedor not found');
+    }
+
+    if (vendedor.estado === VendedorEstado.INACTIVO || vendedor.estado === VendedorEstado.BLOQUEADO) {
+      throw new ForbiddenException('Cannot create invitation links: vendedor is not active');
+    }
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const link = await this.prisma.linkInvitacion.create({
+          data: {
+            vendedor_id: vendedorId,
+            token: this.generateToken(),
+            expires_at: new Date(Date.now() + 48 * 60 * 60 * 1000),
+          },
+        });
+
+        await this.auditLogService.record(AuditAction.LINK_CREATED, actorUserId, {
+          targetId: link.id,
+        });
+
+        return link;
+      } catch (error) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          if (attempt === 2) {
+            throw new ConflictException(
+              'Could not generate unique invitation link',
+            );
+          }
+          continue;
+        }
+        throw error;
+      }
+    }
+    // TypeScript guard — loop always returns or throws
+    throw new ConflictException('Could not generate unique invitation link');
+  }
+
+  async list(vendedorId: string, dto: ListLinkInvitacionDto) {
+    const page = dto.page ?? 1;
+    const limit = dto.limit ?? 10;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.LinkInvitacionWhereInput = {
+      vendedor_id: vendedorId,
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.linkInvitacion.findMany({
+        skip,
+        take: limit,
+        where,
+        orderBy: { created_at: 'desc' },
+        select: {
+          id: true,
+          token: true,
+          activo: true,
+          expires_at: true,
+          created_at: true,
+        },
+      }),
+      this.prisma.linkInvitacion.count({ where }),
+    ]);
+
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async listByVendedor(vendedorId: string, dto: ListLinkInvitacionDto) {
+    return this.list(vendedorId, dto);
+  }
+
+  async deactivate(id: string, vendedorId: string, actorUserId: string) {
+    return this.deactivateInternal(id, actorUserId, vendedorId);
+  }
+
+  async deactivateAdmin(id: string, actorUserId: string) {
+    return this.deactivateInternal(id, actorUserId);
+  }
+
+  private async deactivateInternal(
+    id: string,
+    actorUserId: string,
+    vendedorId?: string,
+  ): Promise<void> {
+    const where: Prisma.LinkInvitacionWhereInput = {
+      id,
+      activo: true,
+      ...(vendedorId ? { vendedor_id: vendedorId } : {}),
+    };
+
+    const result = await this.prisma.linkInvitacion.updateMany({
+      where,
+      data: { activo: false },
+    });
+
+    if (result.count === 0) {
+      const exists = vendedorId
+        ? await this.prisma.linkInvitacion.findFirst({
+            where: { id, vendedor_id: vendedorId },
+          })
+        : await this.prisma.linkInvitacion.findUnique({ where: { id } });
+
+      if (!exists) throw new NotFoundException('LinkInvitacion not found');
+      throw new BadRequestException('LinkInvitacion is already inactive');
+    }
+
+    await this.auditLogService.record(AuditAction.LINK_DEACTIVATED, actorUserId, {
+      targetId: id,
+    });
+  }
+}

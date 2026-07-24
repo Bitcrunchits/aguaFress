@@ -23,6 +23,26 @@ export enum OrderEstado {
   VENCIDO = 'vencido',
 }
 
+// ─── Estados de comandos asíncronos de pedidos ───
+export enum OrderJobStatus {
+  PENDING = 'PENDING',
+  PROCESSING = 'PROCESSING',
+  RETRYING = 'RETRYING',
+  COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED',
+  DEAD_LETTER = 'DEAD_LETTER',
+}
+
+// ─── Estados de comandos asíncronos de entregas ───
+export enum DeliveryJobStatus {
+  PENDING = 'PENDING',
+  PROCESSING = 'PROCESSING',
+  RETRYING = 'RETRYING',
+  COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED',
+  DEAD_LETTER = 'DEAD_LETTER',
+}
+
 // ─── Estados de una entrega / reparto ───
 export enum DeliveryEstado {
   PENDIENTE = 'pendiente',
@@ -38,8 +58,28 @@ export enum MetodoPago {
 
 // ─── Tipo de factura (Argentina AFIP) ───
 export enum TipoFactura {
+  A = 'A',
   B = 'B',
   C = 'C',
+}
+
+// ─── Acciones de auditoría ───
+export enum AuditAction {
+  USER_REGISTERED = 'USER_REGISTERED',
+  USER_LOGIN = 'USER_LOGIN',
+  VENDEDOR_UPDATED = 'VENDEDOR_UPDATED',
+  VENDEDOR_STATUS_CHANGED = 'VENDEDOR_STATUS_CHANGED',
+  CLIENTE_UPDATED = 'CLIENTE_UPDATED',
+  CLIENTE_REASSIGNED = 'CLIENTE_REASSIGNED',
+  QR_CREATED = 'QR_CREATED',
+  QR_DEACTIVATED = 'QR_DEACTIVATED',
+  LINK_CREATED = 'LINK_CREATED',
+  LINK_DEACTIVATED = 'LINK_DEACTIVATED',
+  SUPER_ADMIN_UPDATED = 'SUPER_ADMIN_UPDATED',
+  PROFILE_UPDATED = 'PROFILE_UPDATED',
+  PASSWORD_CHANGED = 'PASSWORD_CHANGED',
+  PASSWORD_RESET_INITIATED = 'PASSWORD_RESET_INITIATED',
+  PASSWORD_RESET_COMPLETED = 'PASSWORD_RESET_COMPLETED',
 }
 
 // ─── Nombres de streams Redis ───

@@ -18,9 +18,8 @@ export interface SuperAdminDashboardResponse {
   vendedoresActivos: number;
   vendedoresPendientes: number;
   totalClientes: number;
-  ventasMes?: number;
-  pedidosMes?: number;
-  promedioTicket?: number;
+  clientesConVendedor: number;
+  totalSuperAdmins: number;
 }
 
 // ════════════════════════════════════════════

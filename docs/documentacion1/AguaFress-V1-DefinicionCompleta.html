@@ -229,24 +229,24 @@
     <h2>👥 Equipo y Asignación</h2>
     <div class="asignacion-grid">
         <div class="asignacion-item">
-            <strong>Lucas Lagos</strong>
-            <span class="servicios">auth-service (3001) + user-service (3002)</span>
+            <strong>Adrián Burdiles</strong>
+            <span class="servicios">usuario-service (auth + users) :3001</span>
         </div>
         <div class="asignacion-item">
             <strong>Emiliano Spagnolo</strong>
             <span class="servicios">products-service (3003)</span>
         </div>
         <div class="asignacion-item" style="border-left-color: #2c7da0;">
-            <strong>Adrián Burdiles</strong>
-            <span class="servicios">orders-service (3004)</span>
+            <strong>Agustín Soto</strong>
+            <span class="servicios">orders-service :3004 + api-gateway :3000</span>
         </div>
         <div class="asignacion-item" style="border-left-color: #0ea5e9;">
             <strong>Milagros Alvarado</strong>
             <span class="servicios">entregas-service (3005) <span class="badge badge-nuevo">NUEVO</span></span>
         </div>
         <div class="asignacion-item" style="border-left-color: #7c3aed;">
-            <strong>Agustín Zoto</strong>
-            <span class="servicios">notifications-service (3006) + Frontend Research</span>
+            <strong>Agustín Soto</strong>
+            <span class="servicios">notifications-service (3006) + Frontend Research + orders-service :3004 + api-gateway :3000</span>
         </div>
     </div>
 
@@ -308,12 +308,12 @@ Redis ──▶ Streams: auth-stream, user-stream, products-stream,
 <div class="page section-break">
 
     <!-- USUARIO SERVICE (auth + users unificados) -->
-    <h2>🔐👤 1. usuario-service <span class="badge badge-dev">Lucas</span></h2>
+    <h2>🔐👤 1. usuario-service <span class="badge badge-dev">Adrián</span></h2>
     <div class="ms-card">
-        <div class="meta">Puerto 3001 · PostgreSQL (2 schemas: auth, users) · Prisma · 2 módulos</div>
+        <div class="meta">Puerto 3001 · PostgreSQL · Prisma · Schema unificado (7 tablas)</div>
 
         <h4>📌 Módulo auth</h4>
-        <p><strong>Tablas:</strong> <code>USER</code> (id, email, password_hash, role, created_at, updated_at, deleted_at) · <code>SESSION</code> · <code>REFRESH_TOKEN</code></p>
+        <p><strong>Tablas:</strong> <code>AUTH_USER</code> (id, email, password, role, refresh_token_hash, is_active, is_verified, created_at, updated_at)</p>
         <h4>Endpoints</h4>
         <span class="endpoint">POST /auth/login &mdash; email+password → JWT</span>
         <span class="endpoint">POST /auth/register &mdash; admin crea usuario (clientes)</span>
@@ -327,8 +327,8 @@ Redis ──▶ Streams: auth-stream, user-stream, products-stream,
         <hr style="margin: 8px 0;">
 
         <h4>📌 Módulo users</h4>
-        <p><strong>Tablas:</strong> <code>VENDEDOR</code> · <code>CLIENTE</code> · <code>RELACION_CARTERA</code> · <code>DIRECCION</code> · <code>QR_CODE</code> · <code>LINK_INVITACION</code></p>
-        <p><em>Nota: CIUDAD, BARRIO, RUTA son texto libre en MVP (sin tabla separada). EXPORT_DATA es futuro.</em></p>
+        <p><strong>Tablas:</strong> <code>AUTH_USER</code> · <code>VENDEDOR</code> · <code>CLIENTE</code> · <code>SUPER_ADMIN</code> · <code>RELACION_CARTERA</code> · <code>QR_CODE</code> · <code>LINK_INVITACION</code> · <code>AUDIT_LOG</code></p>
+        <p><em>Nota: Las direcciones están embebidas en CLIENTE (no hay tabla DIRECCION separada). CIUDAD, BARRIO, RUTA son texto libre en MVP.</em></p>
         <h4>Endpoints</h4>
         <span class="endpoint">GET /users/me &mdash; mi perfil</span>
         <span class="endpoint">PATCH /users/me &mdash; actualizar mi perfil</span>
@@ -379,7 +379,7 @@ Redis ──▶ Streams: auth-stream, user-stream, products-stream,
     </div>
 
     <!-- ORDERS SERVICE -->
-    <h2>🛒 4. Orders Service <span class="badge badge-dev">Adrián</span></h2>
+    <h2>🛒 4. Orders Service <span class="badge badge-dev">Agustín</span></h2>
     <div class="ms-card">
         <div class="meta">Puerto 3004 · PostgreSQL · Prisma</div>
         <h4>Tablas</h4>
@@ -550,7 +550,7 @@ Redis ──▶ Streams: auth-stream, user-stream, products-stream,
     <h2>🗃️ 11. Modelo de Datos — Resumen</h2>
     <table>
         <tr><th>Servicio</th><th>Tablas / Colecciones</th><th>DB</th></tr>
-        <tr><td>usuario-service (3001)</td><td>USER, SESSION, REFRESH_TOKEN, VENDEDOR, CLIENTE, RELACION_CARTERA, DIRECCION, QR_CODE, LINK_INVITACION</td><td>PostgreSQL (2 schemas)</td></tr>
+        <tr><td>usuario-service (3001)</td><td>AUTH_USER, VENDEDOR, CLIENTE, SUPER_ADMIN, RELACION_CARTERA, QR_CODE, LINK_INVITACION, AUDIT_LOG</td><td>PostgreSQL (schema único)</td></tr>
         <tr><td>products-service (3003)</td><td>PRODUCTO, MARCA, CATEGORIA, PRODUCTO_IMAGEN, DESCUENTO</td><td>PostgreSQL</td></tr>
         <tr><td>orders-service (3004)</td><td>CART, CART_ITEM, ORDER, ORDER_ITEM, ORDER_HISTORY, FACTURA</td><td>PostgreSQL</td></tr>
         <tr><td>entregas-service (3005)</td><td>ENTREGA</td><td>PostgreSQL</td></tr>

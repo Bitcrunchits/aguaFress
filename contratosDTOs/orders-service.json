@@ -1,11 +1,46 @@
 {
   "service": "orders-service",
-  "port": 3004,
+  "port": 3014,
   "database": "PostgreSQL",
   "orm": "Prisma",
-  "responsibility": "Gestión de carrito, pedidos, estados y facturas B/C. Solo contra_entrega como método de pago.",
+  "responsibility": "Gestión de carrito, pedidos, estados, jobs async de pedidos y facturas B/C. Solo contra_entrega como método de pago.",
   "security_rules": [
     "⚠️ userId/clienteId NUNCA viene del body. Se extrae del token JWT en el middleware."
+  ],
+  "product_dependency_rule": "Hasta que exista un adaptador real de products-service, cart.items_add y cart.items_update pueden devolver 503 controlado por TCP. orders.create se maneja como job async; si la dependencia falla, el estado del job refleja retry, failed o dead letter. Lecturas, cart.items_delete y operaciones de estado no dependen del catálogo y siguen disponibles.",
+  "public_entrypoint": {
+    "type": "api-gateway",
+    "base_path": "/api/v1/{service}/{action}",
+    "note": "orders-service no expone HTTP público; el frontend no consume HTTP directo del microservicio. Las operaciones inmediatas usan TCP interno y orders.create usa BullMQ como piloto async."
+  },
+  "tcp_patterns": {
+    "cart": ["cart.get", "cart.items_add", "cart.items_update", "cart.items_delete"],
+    "orders": ["orders.list", "orders.get_by_id", "orders.job_status", "orders.status_update", "orders.cancel", "orders.confirm"]
+  },
+  "async_queue": {
+    "transport": "Redis + BullMQ",
+    "no_kafka_for_this_problem": true,
+    "owner": "orders-service",
+    "pilot_operations": ["orders.create"],
+    "queue_names": ["orders.create"],
+    "job_names": ["orders.create"],
+    "gateway_response": { "http_status": 202, "body": { "jobId": "string", "trackingId": "string", "status": "PENDING" } },
+    "tracking_states": ["PENDING", "PROCESSING", "RETRYING", "COMPLETED", "FAILED", "DEAD_LETTER"],
+    "required_controls": ["idempotencyKey", "retries", "exponential_backoff", "failed_jobs_or_dlq", "safe_error_payloads"],
+    "ownership_rule": "Gateway valida/auth/enqueues y devuelve tracking; orders-service ejecuta reglas de negocio, persiste la orden final y mantiene estado del job."
+  },
+  "gateway_routes": [
+    { "path": "/api/v1/cart/get", "method": "GET", "tcp_pattern": "cart.get", "auth": "CLIENTE" },
+    { "path": "/api/v1/cart/items/add", "method": "POST", "tcp_pattern": "cart.items_add", "auth": "CLIENTE" },
+    { "path": "/api/v1/cart/items/update", "method": "PATCH", "tcp_pattern": "cart.items_update", "auth": "CLIENTE" },
+    { "path": "/api/v1/cart/items/delete", "method": "DELETE", "tcp_pattern": "cart.items_delete", "auth": "CLIENTE", "request": { "cartId": "string", "productoId": "string" } },
+    { "path": "/api/v1/orders/list", "method": "GET", "tcp_pattern": "orders.list", "auth": "CLIENTE|VENDEDOR|SUPER_ADMIN" },
+    { "path": "/api/v1/orders/get-by-id?id={orderId}", "method": "GET", "tcp_pattern": "orders.get_by_id", "auth": "CLIENTE|VENDEDOR|SUPER_ADMIN" },
+    { "path": "/api/v1/orders/create", "method": "POST", "transport": "BullMQ", "job": "orders.create", "auth": "CLIENTE", "request": { "body": "CreateOrderRequest", "idempotencyKey": "string" }, "response": { "statusCode": 202, "body": "AsyncAcceptedResponse" } },
+    { "path": "/api/v1/orders/job-status?id={trackingId}", "method": "GET", "tcp_pattern": "orders.job_status", "auth": "CLIENTE|VENDEDOR|SUPER_ADMIN", "response": "OrderJobStatusResponse" },
+    { "path": "/api/v1/orders/status/update", "method": "PATCH", "tcp_pattern": "orders.status_update", "auth": "VENDEDOR" },
+    { "path": "/api/v1/orders/cancel", "method": "POST", "tcp_pattern": "orders.cancel", "auth": "CLIENTE" },
+    { "path": "/api/v1/orders/confirm", "method": "POST", "tcp_pattern": "orders.confirm", "auth": "VENDEDOR" }
   ],
   "events_publishes": ["orders-stream: OrderCreated, OrderStatusChanged"],
   "events_consumes": ["deliveries-stream: DeliveryCompleted"],
@@ -29,15 +64,15 @@
       "path": "/orders",
       "method": "POST",
       "auth": "CLIENTE",
-      "notes": "Crea pedido desde el carrito del usuario autenticado. Los items se toman del carrito, no del body.",
-      "request": { "metodoPago": "contra_entrega", "direccion": "DireccionEntrega", "observaciones?": "string" },
-      "response": { "id": "uuid", "pedidoNumero": "string", "estado": "pendiente", "total": "number" }
+      "notes": "Contrato público vía gateway para crear pedido como comando async. Los items se toman del carrito, no del body. orders-service persiste la orden final desde el worker.",
+      "request": { "metodoPago": "contra_entrega", "direccion": "DireccionEntrega", "observaciones?": "string", "idempotencyKey": "string" },
+      "response": { "statusCode": 202, "jobId": "string", "trackingId": "string", "status": "PENDING" }
     },
     {
       "path": "/orders/:id/status",
       "method": "PATCH",
       "auth": "VENDEDOR",
-      "notes": "Transiciones válidas: pendiente→confirmado→en_camino→entregado. Cualquier estado→cancelado.",
+      "notes": "Transiciones válidas para vendedor: pendiente→confirmado→en_camino→entregado y cancelaciones según máquina de estados.",
       "request": { "estado": "confirmado|en_camino|entregado|cancelado" },
       "response": { "id": "uuid", "estado": "OrderEstado", "updated": "boolean" }
     },
@@ -45,15 +80,15 @@
       "path": "/orders/:id/cancelar",
       "method": "POST",
       "auth": "CLIENTE",
-      "notes": "El cliente solo puede cancelar pedidos en estado pendiente.",
+      "notes": "El cliente solo puede cancelar pedidos propios en estado pendiente.",
       "request": { "motivo?": "string" },
       "response": { "id": "uuid", "estado": "cancelado" }
     },
     {
       "path": "/orders/:id/confirmar",
       "method": "POST",
-      "auth": "CLIENTE",
-      "notes": "El cliente confirma la visita del vendedor. Opcionalmente puede actualizar dirección de entrega.",
+      "auth": "VENDEDOR",
+      "notes": "El vendedor confirma el pedido como parte del ciclo de vida operativo. Opcionalmente puede actualizar dirección de entrega.",
       "request": { "direccion?": "DireccionEntrega" },
       "response": { "orderId": "uuid", "estado": "confirmado", "mensaje": "string" }
     },
@@ -62,29 +97,31 @@
       "method": "GET",
       "auth": "CLIENTE",
       "request": {},
-      "response": { "cartId": "uuid", "vendedorId": "uuid", "items": [{ "id": "uuid", "productId": "uuid", "nombre": "string", "cantidad": "number", "precioUnitario": "number" }], "totalSinIva": "number", "iva": "number", "total": "number", "expiresAt": "string (ISO 8601)" }
+      "response": { "id": "uuid", "clienteId": "uuid", "vendedorId": "uuid", "items": [{ "id": "uuid", "productoId": "uuid", "nombre": "string", "cantidad": "number", "precioUnitario": "number", "subtotal": "number" }], "total": "number", "expiresAt": "string (ISO 8601)" }
     },
     {
       "path": "/cart/items",
       "method": "POST",
       "auth": "CLIENTE",
       "notes": "Agrega un item al carrito del usuario autenticado.",
-      "request": { "productId": "uuid", "cantidad": "number" },
-      "response": { "items": "array", "total": "number" }
+      "request": { "cartId?": "uuid", "productoId": "uuid", "cantidad": "number" },
+      "response": "CartResponse",
+      "unavailable_behavior": "Puede devolver 503 controlado hasta que exista adaptador real de productos. Duplicate add incrementa cantidad."
     },
     {
       "path": "/cart/items/:id",
       "method": "PATCH",
       "auth": "CLIENTE",
-      "request": { "cantidad": "number" },
-      "response": { "updated": "boolean" }
+      "request": { "cartId": "uuid", "productoId": "uuid", "cantidad": "number" },
+      "response": "CartResponse",
+      "unavailable_behavior": "Puede devolver 503 controlado hasta que exista adaptador real de productos. Si el item no existe, devuelve 404 y no lo crea."
     },
     {
       "path": "/cart/items/:id",
       "method": "DELETE",
       "auth": "CLIENTE",
-      "request": {},
-      "response": { "deleted": "boolean" }
+      "request": { "cartId": "uuid", "productoId": "uuid" },
+      "response": "CartResponse"
     }
   ]
 }

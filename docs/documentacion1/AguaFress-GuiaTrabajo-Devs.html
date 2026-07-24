@@ -252,10 +252,10 @@
 ├── packages/
 │   └── contracts/                   ← tipos compartidos (DTOs, eventos)
 ├── services/
-│   ├── auth-service/                ← solo Lucas toca esto
-│   ├── user-service/                ← solo Lucas toca esto
+│   ├── auth-service/                ← solo Adrián toca esto
+│   ├── user-service/                ← solo Adrián toca esto
 │   ├── products-service/            ← solo Emiliano toca esto
-│   ├── orders-service/              ← solo Adrián toca esto
+│   ├── orders-service/              ← solo Agustín toca esto
 │   ├── entregas-service/            ← solo Milagros toca esto
 │   └── notifications-service/       ← solo Agustín toca esto
 ├── gateway/                         ← al final
@@ -321,23 +321,19 @@
 <span class="prompt">$</span> cd aguaFress</span>
 
     <h3>3.2 Instalar todo (raíz)</h3>
-    <span class="cmd"><span class="prompt">$</span> npm install
-<span class="comment"># Esto instala las dependencias de TODOS los servicios y paquetes</span></span>
+    <span class="cmd"><span class="prompt">$</span> pnpm install
+<span class="comment"># Instala las dependencias de TODOS los servicios y paquetes</span></span>
 
-    <p>Esto funciona porque en la raíz tenemos <code>package.json</code> con:</p>
-    <span class="cmd">{<br>
-    &nbsp; "workspaces": [<br>
-    &nbsp; &nbsp; "packages/*",<br>
-    &nbsp; &nbsp; "services/*",<br>
-    &nbsp; &nbsp; "gateway"<br>
-    &nbsp; ]<br>
-    }</span>
+    <p>Esto funciona porque tenemos <code>pnpm-workspace.yaml</code> en la raíz:</p>
+    <span class="cmd">packages:<br>
+    &nbsp; - "packages/*"<br>
+    &nbsp; - "MicroServices/*"</span>
 
     <h3>3.3 Setear el contrato en tu servicio</h3>
     <p>En el <code>package.json</code> de cada servicio:</p>
     <span class="cmd">{<br>
     &nbsp; "dependencies": {<br>
-    &nbsp; &nbsp; "@agua/contracts": "*"<br>
+    &nbsp;     &nbsp; "@agua/contracts": "workspace:*"<br>
     &nbsp; &nbsp; ...<br>
     &nbsp; }<br>
     }</span>
@@ -370,7 +366,7 @@ import { UserCreatedEvent } from '@agua/contracts';</span>
     <div class="workflow-step">
         <div class="num">4</div>
         <div><strong>Corré tu microservicio</strong>
-        <p style="font-size: 8pt; margin: 0;">En otra terminal, <code>npm run start:dev</code> dentro de <code>services/tu-servicio/</code>.</p></div>
+        <p style="font-size: 8pt; margin: 0;">En otra terminal, <code>pnpm run start:dev</code> dentro de <code>services/tu-servicio/</code>.</p></div>
     </div>
 
     <div class="workflow-step">
@@ -393,8 +389,8 @@ import { UserCreatedEvent } from '@agua/contracts';</span>
     <table class="profile-table">
         <tr><th>Dev</th><th>Comando</th><th>Levanta</th></tr>
         <tr>
-            <td>Lucas</td>
-            <td><code>docker compose --profile lucas up</code></td>
+            <td>Adrián</td>
+            <td><code>docker compose --profile adrian up</code></td>
             <td>Redis + postgres-auth (5433) + postgres-user (5434)</td>
         </tr>
         <tr>
@@ -403,8 +399,8 @@ import { UserCreatedEvent } from '@agua/contracts';</span>
             <td>Redis + postgres-products (5435)</td>
         </tr>
         <tr>
-            <td>Adrián</td>
-            <td><code>docker compose --profile adrian up</code></td>
+            <td>Agustín</td>
+            <td><code>docker compose --profile agustin up</code></td>
             <td>Redis + postgres-orders (5436)</td>
         </tr>
         <tr>
@@ -447,9 +443,9 @@ import { UserCreatedEvent } from '@agua/contracts';</span>
 
     <h3>6.1 Ramas</h3>
     <div class="diagrama">main
-├── lucas/auth-base         ← Lucas
+├── adrian/usuario-base         ← Adrián
 ├── emiliano/products-base  ← Emiliano
-├── adrian/orders-base      ← Adrián
+├── agustin/orders-base      ← Agustín
 ├── milagros/entregas-base  ← Milagros
 └── agustin/notifications-base ← Agustín</div>
 
@@ -457,7 +453,7 @@ import { UserCreatedEvent } from '@agua/contracts';</span>
     <span class="cmd"><span class="comment"># 1. Actualizar mi rama con lo último de main</span>
 <span class="prompt">$</span> git checkout main
 <span class="prompt">$</span> git pull
-<span class="prompt">$</span> git checkout lucas/auth-base
+<span class="prompt">$</span> git checkout adrian/usuario-base
 <span class="prompt">$</span> git merge main
 
 <span class="comment"># 2. Codear, codear, codear... </span>
@@ -528,15 +524,15 @@ import { UserCreatedEvent } from '@agua/contracts';</span>
 
     <div class="diagrama">┌─────────────────┐        publica        ┌───────────────┐
 │ auth-service    │────UserCreated────▶│  Redis        │
-│ (Lucas)         │                     │  Streams      │
+│ (Adrián)         │                     │  Streams      │
 └─────────────────┘                     └──────┬────────┘
                                               │
                                      escuchan │
                                               ▼
                                ┌──────────────────────┐
-                               │ user-service          │
-                               │ (Lucas)               │
-                               │ → crea perfil         │
+                                │ user-service          │
+                                │ (Adrián)               │
+                                │ → crea perfil         │
                                └──────────────────────┘</div>
 
     <p><strong>En NestJS se ve así:</strong></p>
@@ -644,12 +640,12 @@ import {
 
     <span class="cmd">{<br>
     &nbsp; "dependencies": {<br>
-    &nbsp; &nbsp; "@agua/contracts": "*",<br>
+    &nbsp;     &nbsp; "@agua/contracts": "workspace:*",<br>
     &nbsp; &nbsp; ...<br>
     &nbsp; }<br>
 }</span>
 
-    <p>Como estamos en un monorepo con npm workspaces, <code>npm install</code> desde la raíz ya lo linkea automáticamente. No necesitás publicarlo a npm.</p>
+    <p>Como estamos en un monorepo con pnpm workspaces, <code>pnpm install</code> desde la raíz ya lo linkea automáticamente via <code>workspace:*</code>. No necesitás publicarlo a un registry.</p>
 
     <h3>8.2 Ejemplo real: publicar un evento</h3>
     <span class="cmd"><span class="comment">// auth-service publica UserCreated</span>
@@ -677,7 +673,7 @@ async handleMessage(raw: string) {
 }</span>
 
     <div class="box box-tip">
-        <strong>💡 Tip:</strong> Si necesitás agregar un campo a un evento existente, <strong>hablalo con el equipo primero</strong>. Los contratos los mantenemos acá en la raíz. Cambiás el interface, build, push, y todos actualizan con <code>git pull + npm install</code>.
+        <strong>💡 Tip:</strong> Si necesitás agregar un campo a un evento existente, <strong>hablalo con el equipo primero</strong>. Los contratos los mantenemos acá en la raíz. Cambiás el interface, build, push, y todos actualizan con <code>git pull + pnpm install</code>.
     </div>
 
     <h3>8.4 Resumen de eventos del sistema</h3>
@@ -708,11 +704,10 @@ async handleMessage(raw: string) {
     <p>Acá está lo que cada uno necesita saber específicamente de su servicio:</p>
 
     <div class="box" style="border-left: 4px solid #1e40af;">
-        <h4>👤 Lucas — auth-service (3001) + user-service (3002)</h4>
-        <p><strong>auth-service:</strong> Prisma apunta a <code>postgresql://postgres:postgres@localhost:5433/agua_auth</code><br>
-        <strong>user-service:</strong> Prisma apunta a <code>postgresql://postgres:postgres@localhost:5434/agua_users</code></p>
-        <p><strong>Lo primero que hacés:</strong> El schema de Prisma con USER + SESSION + REFRESH_TOKEN, migration, y el endpoint POST /auth/login. Después el register de vendedor con estado pendiente.</p>
-        <p><strong>Flujo crítico:</strong> Cuando se registra un cliente vía link público, auth-service recibe un campo <code>qrToken</code> extra en UserCreated → user-service detecta ese token y crea RELACION_CARTERA automática.</p>
+        <h4>👤 Adrián — usuario-service (auth + users) :3001</h4>
+        <p><strong>usuario-service:</strong> Prisma apunta a <code>postgresql://postgres:postgres@localhost:5433/agua_auth</code> (schema auth) y <code>postgresql://postgres:postgres@localhost:5434/agua_users</code> (schema users)</p>
+        <p><strong>Lo primero que hacés:</strong> El schema de Prisma con USER + SESSION + REFRESH_TOKEN, VENDEDOR, CLIENTE, migration, y el endpoint POST /auth/login. Después el register de vendedor con estado pendiente.</p>
+        <p><strong>Flujo crítico:</strong> Cuando se registra un cliente vía link público, usuario-service recibe un campo <code>qrToken</code> extra en UserCreated → crea RELACION_CARTERA automática.</p>
     </div>
 
     <div class="box" style="border-left: 4px solid #166534;">
@@ -723,9 +718,10 @@ async handleMessage(raw: string) {
     </div>
 
     <div class="box" style="border-left: 4px solid #0e7490;">
-        <h4>🛒 Adrián — orders-service (3004)</h4>
-        <p>Prisma apunta a <code>postgresql://postgres:postgres@localhost:5436/agua_orders</code></p>
+        <h4>🛒 Agustín — orders-service (3004) + api-gateway (3000)</h4>
+        <p><strong>orders-service:</strong> Prisma apunta a <code>postgresql://postgres:postgres@localhost:5436/agua_orders</code></p>
         <p><strong>Lo primero que hacés:</strong> Schema con CART, CART_ITEM, ORDER, ORDER_ITEM, ORDER_HISTORY, FACTURA. Migrations. Endpoints del carrito primero (POST /cart/items, GET /cart, etc.). Después la creación de pedidos.</p>
+        <p><strong>api-gateway:</strong> Routing con Nginx, autenticación y rate limiting.</p>
         <p><strong>Ojo:</strong> Método de pago en MVP es solo <code>contra_entrega</code>. Review es FUTURE.</p>
     </div>
 
@@ -737,8 +733,10 @@ async handleMessage(raw: string) {
     </div>
 
     <div class="box" style="border-left: 4px solid #b91c1c;">
-        <h4>📋 Agustín — notifications-service (3006)</h4>
-        <p>MongoDB en <code>mongodb://localhost:27017/agua_logs</code></p>
+        <h4>📋 Agustín — notifications-service (3006) + orders-service (3004) + api-gateway (3000)</h4>
+        <p><strong>notifications-service:</strong> MongoDB en <code>mongodb://localhost:27017/agua_logs</code></p>
+        <p><strong>orders-service:</strong> PostgreSQL en <code>postgresql://postgres:postgres@localhost:5436/agua_orders</code></p>
+        <p><strong>api-gateway:</strong> NestJS Gateway en puerto 3000, routing y autenticación</p>
         <p><strong>Lo primero que hacés:</strong> Conexión a MongoDB con Mongoose. Definir schema de ACTIVITY_LOG. Escuchar TODOS los streams de Redis y guardar cada evento.</p>
         <p><strong>Después:</strong> GET /logs con filtros (servicio, acción, fechas). Solo admin puede acceder.</p>
         <p><strong>Paralelo:</strong> Investigación de frontend (Canva, wireframes, stack).</p>
@@ -795,8 +793,8 @@ async handleMessage(raw: string) {
         <tr><th width="30%">Problema</th><th width="40%">Causa</th><th width="30%">Solución</th></tr>
         <tr>
             <td>❌ <code>Cannot find module @agua/contracts</code></td>
-            <td>No corriste <code>npm install</code> en la raíz, o no linkeó bien el workspace.</td>
-            <td><code>npm install</code> desde la raíz.</td>
+            <td>No corriste <code>pnpm install</code> en la raíz, o no linkeó bien el workspace.</td>
+            <td><code>pnpm install</code> desde la raíz.</td>
         </tr>
         <tr>
             <td>❌ Puerto ocupado</td>
@@ -845,7 +843,7 @@ async handleMessage(raw: string) {
 
     <table>
         <tr><th>#</th><th>Task</th><th width="14%">Check</th></tr>
-        <tr><td>1</td><td>Cloné el repo, corrí <code>npm install</code> en la raíz y no dio error</td><td>⬜</td></tr>
+        <tr><td>1</td><td>Cloné el repo, corrí <code>pnpm install</code> en la raíz y no dio error</td><td>⬜</td></tr>
         <tr><td>2</td><td>Corrí <code>docker compose --profile miperfil up</code> y Redis + mi DB están levantados</td><td>⬜</td></tr>
         <tr><td>3</td><td>Creé mi proyecto NestJS en <code>services/mi-servicio/</code> con Prisma</td><td>⬜</td></tr>
         <tr><td>4</td><td>Configuré el schema de Prisma con la URL de mi base</td><td>⬜</td></tr>
@@ -892,9 +890,9 @@ async handleMessage(raw: string) {
 
     <table>
         <tr><th>Dev</th><th>Qué hace primero</th><th>Qué entrega al final del Sprint</th></tr>
-        <tr><td>Lucas</td><td>Auth: schema USER + login JWT</td><td>Register vendedor (pendiente), login, Google OAuth, seed de admin</td></tr>
+        <tr><td>Adrián</td><td>Auth: schema USER + login JWT</td><td>Register vendedor (pendiente), login, Google OAuth, seed de admin</td></tr>
         <tr><td>Emiliano</td><td>Schema producto + migration</td><td>CRUD productos, categorías, marcas, GET catálogo con filtros</td></tr>
-        <tr><td>Adrián</td><td>Schema carrito + migration</td><td>Carrito funcional (agregar/quitar/ver), POST /orders, eventos publicados</td></tr>
+        <tr><td>Agustín</td><td>Schema carrito + migration</td><td>Carrito funcional (agregar/quitar/ver), POST /orders, eventos publicados</td></tr>
         <tr><td>Milagros</td><td>Crear schema ENTREGA + migration</td><td>GET /deliveries, PATCH status, escuchar OrderConfirmed</td></tr>
         <tr><td>Agustín</td><td>Conexión MongoDB + schema activity_log</td><td>Escuchar 2 streams + GET /logs, frontend research avanzado</td></tr>
     </table>

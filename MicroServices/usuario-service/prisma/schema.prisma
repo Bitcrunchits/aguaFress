@@ -1,0 +1,203 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ENUMS DEL SISTEMA
+// ═══════════════════════════════════════════════════════════════
+
+enum UserRole {
+  super_admin
+  vendedor
+  cliente
+}
+
+enum VendedorEstado {
+  pendiente
+  activo
+  inactivo
+  bloqueado
+}
+
+enum TipoFactura {
+  A
+  B
+  C
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  usuario-service (AUTH + USERS)
+// ═══════════════════════════════════════════════════════════════
+
+model AuthUser {
+  id                 String    @id @default(uuid()) @db.Uuid
+  email              String    @unique @db.VarChar(255)
+  password           String    @db.VarChar(255)
+  role               UserRole
+  refresh_token_hash   String?   @db.VarChar(64)
+  reset_token_hash     String?   @db.VarChar(64)
+  reset_token_expires  DateTime?
+  is_active            Boolean   @default(true)
+  is_verified          Boolean   @default(false)
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
+
+  vendedor      Vendedor?
+  cliente       Cliente?
+  super_admin   SuperAdmin?
+  audit_logs AuditLog[] @relation("AuditLogActor")
+
+  @@map("AUTH_USER")
+}
+
+model Vendedor {
+  id              String         @id @default(uuid()) @db.Uuid
+  auth_user_id    String         @unique @db.Uuid
+  auth_user       AuthUser       @relation(fields: [auth_user_id], references: [id])
+  nombre          String         @db.VarChar(100)
+  apellido        String         @default("") @db.VarChar(100)
+  dni             String         @default("") @db.VarChar(8)
+  cuil            String?        @db.VarChar(15)
+  cuit            String?        @db.VarChar(15)
+  telefono        String         @default("") @db.VarChar(20)
+  empresa         String?        @db.VarChar(255)
+  logo            String?        @db.VarChar(500)
+  estado          VendedorEstado
+  ciudad_default  String         @default("") @db.VarChar(100)
+  zona_entrega    String?        @db.VarChar(100)
+  qr_token        String?        @unique @db.VarChar(50)
+  created_at      DateTime       @default(now())
+  updated_at      DateTime       @updatedAt
+
+  clientes  Cliente[]
+  cartera   Cartera[]    @relation("CarteraVendedor")
+  qr_codes  QrCode[]
+  links     LinkInvitacion[]
+
+  @@map("VENDEDOR")
+}
+
+model Cliente {
+  id                  String        @id @default(uuid()) @db.Uuid
+  auth_user_id        String        @unique @db.Uuid
+  auth_user           AuthUser      @relation(fields: [auth_user_id], references: [id])
+  nombre              String        @db.VarChar(100)
+  apellido            String        @default("") @db.VarChar(100)
+  dni                 String        @default("") @db.VarChar(20)
+  telefono            String        @default("") @db.VarChar(20)
+  tipo_factura        TipoFactura   @default(B)
+
+  // Dirección fiscal
+  direccion_calle       String   @default("") @db.VarChar(200)
+  direccion_numero      String   @default("") @db.VarChar(20)
+  direccion_piso        String?  @db.VarChar(20)
+  direccion_referencia  String?  @db.VarChar(200)
+  direccion_barrio      String?  @db.VarChar(100)
+  direccion_ciudad      String   @default("") @db.VarChar(100)
+  direccion_provincia   String   @default("") @db.VarChar(100)
+  direccion_cp          String?  @db.VarChar(20)
+
+  // ¿Usa la dirección fiscal como dirección de entrega?
+  misma_direccion_entrega Boolean  @default(true)
+
+  // Dirección de entrega (solo si misma_direccion_entrega = false)
+  entrega_calle       String?  @db.VarChar(200)
+  entrega_numero      String?  @db.VarChar(20)
+  entrega_piso        String?  @db.VarChar(20)
+  entrega_referencia  String?  @db.VarChar(200)
+  entrega_barrio      String?  @db.VarChar(100)
+  entrega_ciudad      String?  @db.VarChar(100)
+  entrega_provincia   String?  @db.VarChar(100)
+  entrega_cp          String?  @db.VarChar(20)
+
+  latitud   Decimal? @db.Decimal(10, 7)
+  longitud  Decimal? @db.Decimal(10, 7)
+
+  vendedor_id    String    @db.Uuid
+  vendedor       Vendedor  @relation(fields: [vendedor_id], references: [id])
+  cartera        Cartera[] @relation("CarteraCliente")
+
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+
+  @@map("CLIENTE")
+}
+
+model SuperAdmin {
+  id           String   @id @default(uuid()) @db.Uuid
+  auth_user_id String   @unique @db.Uuid
+  auth_user    AuthUser @relation(fields: [auth_user_id], references: [id])
+  nombre       String   @db.VarChar(100)
+  apellido     String?  @db.VarChar(100)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@map("SUPER_ADMIN")
+}
+
+model Cartera {
+  id          String   @id @default(uuid()) @db.Uuid
+  vendedor_id String   @db.Uuid
+  cliente_id  String   @db.Uuid
+  activo      Boolean  @default(true)
+  created_at  DateTime @default(now())
+
+  vendedor Vendedor @relation("CarteraVendedor", fields: [vendedor_id], references: [id])
+  cliente  Cliente  @relation("CarteraCliente", fields: [cliente_id], references: [id])
+
+  @@unique([vendedor_id, cliente_id])
+  @@map("RELACION_CARTERA")
+}
+
+model QrCode {
+  id          String   @id @default(uuid()) @db.Uuid
+  vendedor_id String   @db.Uuid
+  codigo      String   @unique @db.VarChar(50)
+  activo      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  expires_at  DateTime
+
+  vendedor Vendedor @relation(fields: [vendedor_id], references: [id])
+
+  @@map("QR_CODE")
+}
+
+model LinkInvitacion {
+  id          String   @id @default(uuid()) @db.Uuid
+  vendedor_id String   @db.Uuid
+  token       String   @unique @db.VarChar(50)
+  activo      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  expires_at  DateTime
+
+  vendedor Vendedor @relation(fields: [vendedor_id], references: [id])
+
+  @@map("LINK_INVITACION")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  usuario_id String?  @db.Uuid
+  target_id  String?  @db.Uuid
+  accion     String   @db.VarChar(50)
+  detalle    Json?
+  ip         String?  @db.VarChar(45)
+  created_at DateTime @default(now())
+
+  actor AuthUser? @relation("AuditLogActor", fields: [usuario_id], references: [id])
+
+  @@index([usuario_id])
+  @@index([created_at])
+  @@map("AUDIT_LOG")
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Future: products-service, orders-service, entregas-service
+//  will have their own schema files when implemented
+// ═══════════════════════════════════════════════════════════════

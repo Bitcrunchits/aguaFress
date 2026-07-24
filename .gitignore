@@ -1,5 +1,15 @@
 node_modules/
 dist/
+coverage/
+**/src/generated/prisma/
 .env
+**/.env
 *.log
 .DS_Store
+
+# SDD artifacts
+.atl/
+
+# MCP local helpers
+mcp/jira-mcp-server/jira-helper.mjs
+mcp/

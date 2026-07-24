@@ -1,22 +1,101 @@
 {
   "service": "api-gateway",
   "port": 3000,
-  "responsibility": "Punto de entrada único. Routing, autenticación JWT, rate limiting, forwarding a microservicios.",
-  "security_rules": [
-    "El gateway extrae el userId del token JWT y lo pasa a los servicios en los headers.",
-    "Rate limiting: implementar en endpoints de login (máx 5 intentos/min)."
+  "version": "1.0.0",
+  "responsibility": "Punto de entrada único HTTP en puerto 3000. Traduce requests HTTP /api/v1/{service}/{action} a TCP para operaciones inmediatas o encola jobs BullMQ para comandos críticos async. No es un proxy HTTP reverso ni dueño de datos de negocio.",
+  "architecture": {
+    "pattern": "two-road routing: TCP synchronous + Redis/BullMQ asynchronous",
+    "description": "Cada request HTTP entrante se resuelve contra un action registry. Las acciones inmediatas mapean a patrones TCP; los comandos críticos reintentables se encolan en BullMQ y responden 202 Accepted. El gateway NO hace forwarding HTTP a microservicios y NO persiste datos finales de negocio.",
+    "http_format": "/api/v1/{service}/{action}",
+    "canonical_methods": ["GET", "POST", "PATCH", "DELETE"],
+    "rejected_methods": ["PUT", "HEAD", "OPTIONS"],
+    "body_format": "JSON",
+    "global_prefix": "/api",
+    "version_prefix": "/v1"
+  },
+  "resilience_policy": {
+    "no_kafka_for_this_problem": true,
+    "sync_tcp": {
+      "use_cases": ["login", "profile", "validations", "simple_reads", "immediate_cart_actions", "order_reads", "order_lifecycle_actions"],
+      "failure_behavior": "Si el microservicio destino está caído, devolver error controlado, 503 o timeout. No encolar."
+    },
+    "async_bullmq": {
+      "use_cases": ["order_creation", "payment_like_commands", "notifications", "delivery_tasks"],
+      "pilot_scope": ["orders-service", "api-gateway", "shared_contracts_docs"],
+      "response": { "http_status": 202, "body": "AsyncAcceptedResponse { jobId, trackingId, status }" },
+      "required_controls": ["retries", "backoff", "failed_jobs_or_dlq", "idempotencyKey", "job_tracking_states"]
+    }
+  },
+  "security": {
+    "auth": "JWT via @agua/contracts UserRole enum. El gateway valida el token y pasa { sub, email, role } al microservicio en el payload TCP.",
+    "rate_limiting": "Global: 100 requests / 60s. Por acción vía @Throttle() donde se requiera.",
+    "helmet": "Cabeceras de seguridad habilitadas (x-frame-options, x-content-type-options, etc.)",
+    "cors": "Habilitado con credentials: true",
+    "payload_limit": "1mb default, configurable via PAYLOAD_LIMIT env"
+  },
+  "tcp_routing": {
+    "transport": "TCP via @nestjs/microservices ClientProxy",
+    "timeout_ms": 5000,
+    "retry_count": 2,
+    "payload_shape": {
+      "body": "request body (opcional)",
+      "query": "query params",
+      "params": "{ service, action }",
+      "user": "JWT payload { sub, email, role } (opcional, solo si autenticado)",
+      "requestId": "UUID o x-request-id header"
+    }
+  },
+  "action_families": [
+    { "service": "auth",     "status": "available",  "tcp_client": "USUARIO_CLIENT", "actions": ["login", "register", "register/vendedor", "refresh", "validate", "me", "logout"] },
+    { "service": "users",    "status": "available",  "tcp_client": "USUARIO_CLIENT", "actions": ["profile", "profile/update"] },
+    { "service": "vendedores", "status": "available","tcp_client": "USUARIO_CLIENT", "actions": ["list", "profile", "profile/update"] },
+    { "service": "clientes",   "status": "available","tcp_client": "USUARIO_CLIENT", "actions": ["list", "cartera"] },
+    { "service": "super-admin", "status": "available","tcp_client": "USUARIO_CLIENT", "actions": ["dashboard", "audit-log", "qr-codes", "link-invitacion", "vendedores"] },
+    { "service": "qr",          "status": "available","tcp_client": "USUARIO_CLIENT", "actions": ["vendor/list", "vendor/create"] },
+    { "service": "link-invitacion", "status": "available","tcp_client": "USUARIO_CLIENT", "actions": ["vendor/list", "vendor/create"] },
+    { "service": "orders",       "status": "available", "tcp_client": "ORDERS_CLIENT", "actions": ["list", "get-by-id", "create", "status/update", "cancel", "confirm"] },
+    { "service": "cart",         "status": "available", "tcp_client": "ORDERS_CLIENT", "actions": ["get", "items/add", "items/update", "items/delete"] },
+    { "service": "products",     "status": "unavailable", "tcp_client": "TBD", "actions": [] },
+    { "service": "categories",   "status": "unavailable", "tcp_client": "TBD", "actions": [] },
+    { "service": "brands",       "status": "unavailable", "tcp_client": "TBD", "actions": [] },
+    { "service": "deliveries",   "status": "unavailable", "tcp_client": "TBD", "actions": [] },
+    { "service": "activity-logs","status": "unavailable", "tcp_client": "TBD", "actions": [] }
   ],
-  "routes": [
-    { "path": "/auth/*", "target": "usuario-service (módulo auth)", "port": 3001, "auth_required": false },
-    { "path": "/users/*", "target": "usuario-service (módulo users)", "port": 3001, "auth_required": true },
-    { "path": "/qr/*", "target": "usuario-service (módulo users)", "port": 3001, "auth_required": false },
-    { "path": "/products/*", "target": "products-service", "port": 3003, "auth_required": false },
-    { "path": "/categories/*", "target": "products-service", "port": 3003, "auth_required": false },
-    { "path": "/brands/*", "target": "products-service", "port": 3003, "auth_required": false },
-    { "path": "/orders/*", "target": "orders-service", "port": 3004, "auth_required": true },
-    { "path": "/cart/*", "target": "orders-service", "port": 3004, "auth_required": true },
-    { "path": "/deliveries/*", "target": "entregas-service", "port": 3005, "auth_required": true },
-    { "path": "/activity-logs/*", "target": "notifications-service", "port": 3006, "auth_required": true },
-    { "path": "/super-admin/*", "target": "usuario-service (módulo auth)", "port": 3001, "auth_required": true }
-  ]
+  "orders_gateway_routes": {
+    "identity_rule": "El gateway elimina userId del body y reenvía la identidad confiable del JWT en payload.user.",
+    "delete_body_rule": "DELETE /api/v1/cart/items/delete acepta body JSON y elimina userId antes de reenviarlo por TCP.",
+    "async_create_rule": "orders.create es el piloto async: el gateway valida auth/rol/payload/idempotencyKey, encola en BullMQ y responde 202 Accepted con jobId y trackingId. orders-service procesa y persiste el resultado final.",
+    "order_lifecycle_role_rule": "orders.status/update y orders.confirm requieren rol VENDEDOR; orders.cancel requiere rol CLIENTE y solo cancela pedidos propios en estado pendiente.",
+    "product_dependency_rule": "cart.items_add y cart.items_update pueden devolver 503 controlado mientras no exista adaptador real de productos. orders.create se acepta como job async si el payload es válido; el worker refleja fallas finales en el estado del job.",
+    "cart_item_delete_request": { "cartId": "string", "productoId": "string" },
+    "cart": {
+      "get": "cart.get",
+      "items/add": "cart.items_add",
+      "items/update": "cart.items_update",
+      "items/delete": "cart.items_delete"
+    },
+    "orders": {
+      "list": "orders.list",
+      "get-by-id": "orders.get_by_id",
+      "create": "bullmq:orders.create",
+      "job-status": "orders.job_status",
+      "status/update": "orders.status_update",
+      "cancel": "orders.cancel",
+      "confirm": "orders.confirm"
+    }
+  },
+  "async_contracts": {
+    "accepted_response": {
+      "jobId": "string",
+      "trackingId": "string",
+      "status": "PENDING"
+    },
+    "status_values": ["PENDING", "PROCESSING", "RETRYING", "COMPLETED", "FAILED", "DEAD_LETTER"],
+    "idempotency": "Comandos async críticos deben incluir Idempotency-Key o idempotencyKey para evitar duplicados ante retries del cliente."
+  },
+  "health_endpoint": {
+    "path": "/api/health",
+    "auth_required": false,
+    "response": { "status": "ok", "service": "api-gateway", "version": "1.0.0" }
+  }
 }

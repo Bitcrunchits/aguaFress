@@ -46,13 +46,13 @@
         <tr><td>Gateway</td><td>NestJS API Gateway (puerto 3000)</td></tr>
         <tr><td>Comunicación</td><td>Redis Streams</td></tr>
         <tr><td>Frontend</td><td>React + Next.js (a definir)</td></tr>
-        <tr><td>Monorepo</td><td>npm workspaces (sin Nx/Turborepo)</td></tr>
+        <tr><td>Monorepo</td><td>pnpm workspaces (sin Nx/Turborepo)</td></tr>
     </table>
 
     <h2>Asignaciones</h2>
 
     <div class="member-card">
-        <h3>Lucas Lagos</h3>
+        <h3>Adrián Burdiles</h3>
         <div class="role">usuario-service (auth + users)</div>
         <div class="tech">Puerto 3001 · PostgreSQL (2 schemas: auth, users) · Prisma</div>
         <ul>
@@ -78,7 +78,7 @@
     </div>
 
     <div class="member-card">
-        <h3>Adrián Burdiles</h3>
+        <h3>Agustín Soto</h3>
         <div class="role">orders-service + api-gateway</div>
         <div class="tech">Puertos 3000 (gateway) y 3004 · PostgreSQL · Prisma</div>
         <ul>
@@ -104,9 +104,11 @@
 
     <div class="member-card">
         <h3>Agustín Soto</h3>
-        <div class="role">notifications-service + frontend research</div>
-        <div class="tech">Puerto 3006 · MongoDB · Mongoose</div>
+        <div class="role">notifications-service + orders-service + api-gateway + frontend research</div>
+        <div class="tech">Puertos 3000 (gateway), 3004 y 3006 · PostgreSQL · MongoDB · Mongoose</div>
         <ul>
+            <li>API Gateway: routing, auth, rate limiting</li>
+            <li>Carrito de compras y pedidos</li>
             <li>Activity Logs (registro de eventos)</li>
             <li>Consumo de eventos Redis Streams</li>
             <li>Investigación de stack frontend (React + Next.js)</li>
@@ -153,8 +155,8 @@
     <table>
         <tr><th>Semana</th><th>Hito</th><th>Responsable</th></tr>
         <tr><td>2</td><td>Primera integración: servicios + health checks + Redis</td><td>Todos</td></tr>
-        <tr><td>4</td><td>Contratos finalizados + flujo auth funcionando</td><td>Lucas + Adrián</td></tr>
-        <tr><td>6</td><td>Catálogo + pedidos funcionando con eventos</td><td>Emiliano + Adrián</td></tr>
+        <tr><td>4</td><td>Contratos finalizados + flujo auth funcionando</td><td>Adrián + Emiliano</td></tr>
+        <tr><td>6</td><td>Catálogo + pedidos funcionando con eventos</td><td>Emiliano + Agustín</td></tr>
         <tr><td>8</td><td>Flujo completo: registro → pedido → entrega</td><td>Todos</td></tr>
         <tr><td>12</td><td>Frontend conectado + pruebas E2E</td><td>Agustín + todos</td></tr>
         <tr><td>16</td><td>MVP ready para deploy</td><td>Todos</td></tr>
