@@ -123,7 +123,7 @@ services:
     environment:
       TZ: America/Argentina/Buenos_Aires
       TCP_PORT: "3013"
-      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/agua"
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/agua_products"
       USUARIO_SERVICE_HOST: usuario-service
       USUARIO_SERVICE_TCP_PORT: "3011"
     depends_on:
