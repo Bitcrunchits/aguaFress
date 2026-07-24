@@ -28,9 +28,9 @@ export class RegisterDto {
   @MaxLength(100)
   apellido: string;
 
-  @ApiProperty({ description: 'DNI (7 a 9 dígitos)', minLength: 7, maxLength: 9 })
+  @ApiProperty({ description: 'DNI (8 dígitos)', minLength: 8, maxLength: 8 })
   @IsString()
-  @Length(7, 9)
+  @Length(8, 8)
   dni: string;
 
   @ApiProperty({ description: 'Phone number' })

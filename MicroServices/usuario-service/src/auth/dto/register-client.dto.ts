@@ -91,10 +91,10 @@ export class RegisterClientDto {
   @IsNotEmpty()
   telefono!: string;
 
-  @ApiProperty({ description: 'DNI (7 a 9 dígitos)', minLength: 7, maxLength: 9 })
+  @ApiProperty({ description: 'DNI (8 dígitos)', minLength: 8, maxLength: 8 })
   @IsString()
   @IsNotEmpty()
-  @Length(7, 9)
+  @Length(8, 8)
   dni!: string;
 
   @ApiProperty({ description: 'Dirección de entrega' })
