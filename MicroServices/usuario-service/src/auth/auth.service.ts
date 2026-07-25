@@ -57,6 +57,7 @@ export class AuthService {
           dni: dto.dni,
           telefono: dto.telefono,
           ciudad_default: dto.ciudad,
+          ...(dto.logo ? { logo: dto.logo } : {}),
           estado: VendedorEstado.PENDIENTE,
         },
       });

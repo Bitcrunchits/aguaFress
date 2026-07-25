@@ -2,11 +2,22 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { CategoriesTcpController } from './categories-tcp.controller';
 import { TcpPayloadAdapter } from './tcp-payload-adapter.service';
 import { CategoriesService } from '../categories/categories.service';
+import { VENDEDOR_PROFILE_RESOLVER_PORT } from '../common/usuario-client/vendedor-profile-resolver.port';
 import type { TcpPayload } from './tcp-payload';
 
 const mockCategoriesService = {
   listCategorias: jest.fn(),
   listMarcas: jest.fn(),
+  createCategoria: jest.fn(),
+  updateCategoria: jest.fn(),
+  deleteCategoria: jest.fn(),
+  createMarca: jest.fn(),
+  updateMarca: jest.fn(),
+  deleteMarca: jest.fn(),
+};
+
+const mockVendedorResolver = {
+  resolveVendedorIdByAuthUserId: jest.fn(),
 };
 
 const VENDEDOR_ID = 'cf4439a6-395e-4b52-b33e-82ccbb6f123f';
@@ -30,6 +41,7 @@ describe('CategoriesTcpController (integración con TcpPayloadAdapter real)', ()
       providers: [
         TcpPayloadAdapter,
         { provide: CategoriesService, useValue: mockCategoriesService },
+        { provide: VENDEDOR_PROFILE_RESOLVER_PORT, useValue: mockVendedorResolver },
       ],
     }).compile();
 

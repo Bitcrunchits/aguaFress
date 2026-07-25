@@ -174,6 +174,7 @@ export interface VendedorResponse {
   nombre: string;
   apellido?: string;
   empresa?: string;
+  email?: string;
   telefono?: string;
   ciudad?: string;
   estado?: VendedorEstado;

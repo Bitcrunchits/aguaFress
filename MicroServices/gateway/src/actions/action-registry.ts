@@ -127,12 +127,18 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
     status: 'available',
     actions: {
       list: { tcpPattern: 'categories.list', transport: 'send', authRequired: false },
+      create: { tcpPattern: 'categories.create', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      update: { tcpPattern: 'categories.update', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      delete: { tcpPattern: 'categories.delete', transport: 'send', authRequired: true, roles: ['vendedor'] },
     },
   },
   brands: {
     status: 'available',
     actions: {
       list: { tcpPattern: 'brands.list', transport: 'send', authRequired: false },
+      create: { tcpPattern: 'brands.create', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      update: { tcpPattern: 'brands.update', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      delete: { tcpPattern: 'brands.delete', transport: 'send', authRequired: true, roles: ['vendedor'] },
     },
   },
   orders: {
