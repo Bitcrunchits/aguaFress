@@ -1,4 +1,4 @@
-import { IsEmail, IsOptional, IsString, MinLength, MaxLength, Length } from 'class-validator';
+import { IsEmail, IsOptional, IsString, MinLength, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Match } from '../decorators/match.decorator';
 
@@ -30,8 +30,9 @@ export class RegisterDto {
 
   @ApiProperty({ description: 'DNI (8 dígitos)', minLength: 8, maxLength: 8 })
   @IsString()
-  @Length(8, 8)
-  dni: string;
+@MinLength(8)
+@MaxLength(8)
+dni: string;
 
   @ApiProperty({ description: 'Phone number' })
   @IsString()

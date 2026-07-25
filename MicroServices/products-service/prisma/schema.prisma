@@ -17,6 +17,7 @@ model Categoria {
   id         String   @id @default(uuid()) @db.Uuid
   nombre     String   @db.VarChar(255)
   orden      Int      @default(0)
+  activo     Boolean  @default(true)
   vendedorId String   @map("vendedor_id") @db.Uuid
   productos  Producto[]
   createdAt  DateTime @default(now()) @map("created_at")
@@ -24,6 +25,7 @@ model Categoria {
 
   @@unique([vendedorId, nombre])
   @@index([vendedorId])
+  @@index([vendedorId, activo])
   @@map("CATEGORIA")
 }
 
@@ -31,6 +33,7 @@ model Categoria {
 model Marca {
   id         String     @id @default(uuid()) @db.Uuid
   nombre     String     @db.VarChar(255)
+  activo     Boolean    @default(true)
   vendedorId String     @map("vendedor_id") @db.Uuid
   productos  Producto[]
   createdAt  DateTime   @default(now()) @map("created_at")
@@ -38,6 +41,7 @@ model Marca {
 
   @@unique([vendedorId, nombre])
   @@index([vendedorId])
+  @@index([vendedorId, activo])
   @@map("MARCA")
 }
 
