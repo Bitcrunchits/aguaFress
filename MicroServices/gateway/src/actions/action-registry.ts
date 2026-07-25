@@ -42,6 +42,11 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
       refresh: { tcpPattern: 'auth.refresh', transport: 'send', authRequired: false },
       validate: { tcpPattern: 'auth.validate', transport: 'send', authRequired: false },
       logout: { tcpPattern: 'auth.logout', transport: 'send', authRequired: true },
+      'change-password': { tcpPattern: 'auth.change_password', transport: 'send', authRequired: true },
+      'admin-generate-reset-token': { tcpPattern: 'auth.admin_generate_reset_token', transport: 'send', authRequired: true, roles: ['super_admin'] },
+      'reset-password': { tcpPattern: 'auth.reset_password', transport: 'send', authRequired: false },
+      'register-client': { tcpPattern: 'auth.register_client', transport: 'send', authRequired: false },
+      'register-client/by-vendor': { tcpPattern: 'auth.register_client_by_vendor', transport: 'send', authRequired: true, roles: ['vendedor'] },
     },
   },
   users: {
@@ -58,7 +63,7 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
       profile: { tcpPattern: 'vendedores.profile', transport: 'send', authRequired: true },
       'profile/update': { tcpPattern: 'vendedores.profile_update', transport: 'send', authRequired: true },
       'get-by-id': { tcpPattern: 'vendedores.get_by_id', transport: 'send', authRequired: true, roles: ['super_admin'] },
-      update: { tcpPattern: 'vendedores.update', transport: 'send', authRequired: true, roles: ['super_admin'] },
+      // update: { tcpPattern: 'vendedores.update', transport: 'send', authRequired: true, roles: ['super_admin'] }, // deprecated: vendor self-manages via profile/update
       'change-estado': { tcpPattern: 'vendedores.change_estado', transport: 'send', authRequired: true, roles: ['super_admin'] },
     },
   },

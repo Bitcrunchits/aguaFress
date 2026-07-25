@@ -1,8 +1,0 @@
-Quiero crear una pagina html con las siguientes caracteristicas:
-    -> pagina principal con el contenido del archivo readme.md que sea tipo presentación inicial del proyecto.
-    -> pagina principal con un sidebar a la izquierda con botones siguientes: "Problema". que nos llevará al archivo que esta en carpeta documentos/presentacion de idea/presentacionAguaFress-oscuro.html
-    -> segundo boton "Requerimientos" que abrirá los siguientes subotones "diagrama Registro" que nos mostrará el archivo-> diagrama flujo compra.dia(1).png y un segundo boton 
-    "diagrama flujo registro y login" que nos mostrá el archivo->flujo de registro y login.pdf
-    Tercer suboton "Requerimientos "-> al archivo requerimientos-resumen.html.
-    salimos de boton requerimientos y volvemos a sidebar principal con el tercer boton "Arquitectura" -> archivo aguafress_arquietectura-v1.png
-    cuarto boton "modelo de datos"-> archivo modelo-datos.html

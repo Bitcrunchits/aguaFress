@@ -20,7 +20,7 @@ export class DocsController {
   @Header('Content-Type', 'text/html')
   getDocs(@Res() res: Response): void {
     const html = `<!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -31,12 +31,14 @@ export class DocsController {
   </style>
 </head>
 <body>
-  <script
-    id="api-reference"
-    data-url="/api/openapi.json"
-    data-configuration='{"theme":"purple","showSidebar":true,"hideDownloadButton":false,"searchHotKey":"s","servers":[{"url":"http://localhost:3000","description":"Desarrollo local"}],"authentication":{"preferredSecurityScheme":"bearerAuth"}}'
-  ></script>
+  <div id="app"></div>
   <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+  <script>
+    Scalar.createApiReference('#app', {
+      url: '/api/openapi.json',
+      proxyUrl: 'https://proxy.scalar.com',
+    })
+  </script>
 </body>
 </html>`;
     res.send(html);
