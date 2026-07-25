@@ -12,7 +12,7 @@ export class CategoriesService {
 
   async listCategorias(vendedorId: string): Promise<CategoriaResponse[]> {
     const categorias = await this.prisma.categoria.findMany({
-      where: { vendedorId },
+      where: { vendedorId, activo: true },
       orderBy: { orden: 'asc' },
     });
 
@@ -50,20 +50,23 @@ export class CategoriesService {
 
   async deleteCategoria(vendedorId: string, id: string) {
     const cat = await this.prisma.categoria.findFirst({
-      where: { id, vendedorId },
+      where: { id, vendedorId, activo: true },
     });
 
     if (!cat) {
       throw new NotFoundException('Categoría no encontrada');
     }
 
-    await this.prisma.categoria.delete({ where: { id } });
+    await this.prisma.categoria.update({
+      where: { id },
+      data: { activo: false },
+    });
     return { deleted: true };
   }
 
   async listMarcas(vendedorId: string): Promise<MarcaResponse[]> {
     const marcas = await this.prisma.marca.findMany({
-      where: { vendedorId },
+      where: { vendedorId, activo: true },
       orderBy: { nombre: 'asc' },
     });
 
@@ -99,14 +102,17 @@ export class CategoriesService {
 
   async deleteMarca(vendedorId: string, id: string) {
     const marca = await this.prisma.marca.findFirst({
-      where: { id, vendedorId },
+      where: { id, vendedorId, activo: true },
     });
 
     if (!marca) {
       throw new NotFoundException('Marca no encontrada');
     }
 
-    await this.prisma.marca.delete({ where: { id } });
+    await this.prisma.marca.update({
+      where: { id },
+      data: { activo: false },
+    });
     return { deleted: true };
   }
 }

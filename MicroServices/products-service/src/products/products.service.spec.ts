@@ -9,7 +9,7 @@ const mockTx = {
   producto: {
     findUnique: jest.fn(),
     update: jest.fn(),
-    deleteMany: jest.fn(),
+    updateMany: jest.fn(),
   },
 };
 
@@ -20,7 +20,7 @@ const mockPrisma = {
     count: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
-    deleteMany: jest.fn(),
+    updateMany: jest.fn(),
   },
   $transaction: jest.fn(),
 };
@@ -163,24 +163,28 @@ describe('ProductsService', () => {
     });
 
     it('lanza ForbiddenException si el producto no pertenece al vendedor', async () => {
-      mockTx.producto.deleteMany.mockResolvedValue({ count: 0 });
+      mockTx.producto.updateMany.mockResolvedValue({ count: 0 });
       mockTx.producto.findUnique.mockResolvedValue({ id: 'prod-1' }); // existe pero no es suyo
 
       await expect(service.remove('vendedor-1', 'prod-1')).rejects.toThrow(ForbiddenException);
     });
 
     it('lanza NotFoundException si el producto no existe', async () => {
-      mockTx.producto.deleteMany.mockResolvedValue({ count: 0 });
+      mockTx.producto.updateMany.mockResolvedValue({ count: 0 });
       mockTx.producto.findUnique.mockResolvedValue(null);
 
       await expect(service.remove('vendedor-1', 'no-existe')).rejects.toThrow(NotFoundException);
     });
 
-    it('borra el producto si pertenece al vendedor', async () => {
-      mockTx.producto.deleteMany.mockResolvedValue({ count: 1 });
+    it('desactiva el producto si pertenece al vendedor', async () => {
+      mockTx.producto.updateMany.mockResolvedValue({ count: 1 });
 
       const result = await service.remove('vendedor-1', 'prod-1');
 
+      expect(mockTx.producto.updateMany).toHaveBeenCalledWith({
+        where: { id: 'prod-1', vendedorId: 'vendedor-1', activo: true },
+        data: { activo: false },
+      });
       expect(result).toEqual({ deleted: true });
     });
   });
