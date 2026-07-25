@@ -1,10 +1,11 @@
 import type { SearchProductQuery } from '@agua/contracts';
-import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class SearchProductDto implements SearchProductQuery {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(200)
   q!: string;
 
   @IsOptional()

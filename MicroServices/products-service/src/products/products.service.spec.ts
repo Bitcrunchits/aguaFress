@@ -1,4 +1,5 @@
 import { Test, type TestingModule } from '@nestjs/testing';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { ProductsService } from './products.service';
@@ -35,6 +36,8 @@ const baseProducto = {
   descripcion: null,
   precioSinIva: new Prisma.Decimal(100),
   precioFinal: new Prisma.Decimal(121),
+  porcentajeIva: new Prisma.Decimal(21),
+  porcentajeImpuestos: new Prisma.Decimal(0),
   imagen: null,
   stock: 10,
   activo: true,
@@ -55,6 +58,7 @@ describe('ProductsService', () => {
         ProductsService,
         { provide: PrismaService, useValue: mockPrisma },
         { provide: PricingService, useValue: mockPricing },
+        { provide: EventEmitter2, useValue: { emit: jest.fn() } },
       ],
     }).compile();
 
@@ -109,10 +113,14 @@ describe('ProductsService', () => {
         stock: 5,
       });
 
-      expect(mockPricing.calcularPrecioFinal).toHaveBeenCalledWith(100);
+      expect(mockPricing.calcularPrecioFinal).toHaveBeenCalledWith(100, 21, 0);
       expect(mockPrisma.producto.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ vendedorId: 'vendedor-1' }),
+          data: expect.objectContaining({
+            vendedorId: 'vendedor-1',
+            porcentajeIva: 21,
+            porcentajeImpuestos: 0,
+          }),
         }),
       );
       expect(result).toEqual({ id: 'prod-nuevo', created: true });
@@ -143,14 +151,52 @@ describe('ProductsService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('recalcula precioFinal solo si viene precioSinIva en el update', async () => {
-      mockTx.producto.findUnique.mockResolvedValue({ vendedorId: 'vendedor-1' });
+    it('recalcula precioFinal si cambia precioSinIva', async () => {
+      mockTx.producto.findUnique.mockResolvedValue({
+        vendedorId: 'vendedor-1',
+        precioSinIva: new Prisma.Decimal(100),
+        precioFinal: new Prisma.Decimal(121),
+        porcentajeIva: new Prisma.Decimal(21),
+        porcentajeImpuestos: new Prisma.Decimal(0),
+      });
       mockPricing.calcularPrecioFinal.mockReturnValue(new Prisma.Decimal(60.5));
       mockTx.producto.update.mockResolvedValue({});
 
       await service.update('vendedor-1', 'prod-1', { precioSinIva: 50 });
 
-      expect(mockPricing.calcularPrecioFinal).toHaveBeenCalledWith(50);
+      expect(mockPricing.calcularPrecioFinal).toHaveBeenCalledWith(50, 21, 0);
+    });
+
+    it('recalcula precioFinal si cambia porcentajeIva', async () => {
+      mockTx.producto.findUnique.mockResolvedValue({
+        vendedorId: 'vendedor-1',
+        precioSinIva: new Prisma.Decimal(100),
+        precioFinal: new Prisma.Decimal(121),
+        porcentajeIva: new Prisma.Decimal(21),
+        porcentajeImpuestos: new Prisma.Decimal(0),
+      });
+      mockPricing.calcularPrecioFinal.mockReturnValue(new Prisma.Decimal(110));
+      mockTx.producto.update.mockResolvedValue({});
+
+      await service.update('vendedor-1', 'prod-1', { porcentajeIva: 10 });
+
+      expect(mockPricing.calcularPrecioFinal).toHaveBeenCalledWith(100, 10, 0);
+    });
+
+    it('recalcula precioFinal si cambia porcentajeImpuestos', async () => {
+      mockTx.producto.findUnique.mockResolvedValue({
+        vendedorId: 'vendedor-1',
+        precioSinIva: new Prisma.Decimal(100),
+        precioFinal: new Prisma.Decimal(121),
+        porcentajeIva: new Prisma.Decimal(21),
+        porcentajeImpuestos: new Prisma.Decimal(0),
+      });
+      mockPricing.calcularPrecioFinal.mockReturnValue(new Prisma.Decimal(130));
+      mockTx.producto.update.mockResolvedValue({});
+
+      await service.update('vendedor-1', 'prod-1', { porcentajeImpuestos: 9 });
+
+      expect(mockPricing.calcularPrecioFinal).toHaveBeenCalledWith(100, 21, 9);
     });
   });
 

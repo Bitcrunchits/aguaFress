@@ -407,7 +407,11 @@ const SHARED_SCHEMAS: Record<string, Schema> = {
     nombre: str('Nombre del producto'),
     descripcion: str('Descripción'),
     precioSinIva: { type: 'number', description: 'Precio sin IVA' },
-    precioFinal: { type: 'number', description: 'Precio final con IVA' },
+    porcentajeIva: { type: 'number', description: 'Porcentaje de IVA aplicado (default 21)' },
+    porcentajeImpuestos: { type: 'number', description: 'Porcentaje de impuestos adicionales (IIBB, municipales, default 0)' },
+    costoIva: { type: 'number', description: 'Monto del IVA en pesos' },
+    costoImpuestos: { type: 'number', description: 'Monto de impuestos adicionales en pesos' },
+    precioFinal: { type: 'number', description: 'Precio final con IVA + impuestos' },
     imagen: str('URL de imagen'),
     stock: { type: 'integer', description: 'Stock disponible' },
     marca: str('Nombre de la marca'),
@@ -415,12 +419,14 @@ const SHARED_SCHEMAS: Record<string, Schema> = {
     vendedorId: str('ID del vendedor'),
     activo: { type: 'boolean', description: 'Producto activo' },
     mostrarPrecio: { type: 'boolean', description: 'Mostrar precio al cliente' },
-  }, ['id', 'nombre', 'precioSinIva', 'precioFinal', 'stock', 'vendedorId', 'activo']),
+  }, ['id', 'nombre', 'precioSinIva', 'porcentajeIva', 'porcentajeImpuestos', 'costoIva', 'costoImpuestos', 'precioFinal', 'stock', 'vendedorId', 'activo']),
 
   CreateProductRequest: obj({
     nombre: str('Nombre del producto'),
     descripcion: str('Descripción'),
     precioSinIva: { type: 'number', description: 'Monto SIN IVA — el service calcula precioFinal automáticamente' },
+    porcentajeIva: { type: 'number', description: 'Porcentaje de IVA (default 21, opcional)' },
+    porcentajeImpuestos: { type: 'number', description: 'Porcentaje de impuestos adicionales (default 0, opcional)' },
     categoriaId: str('ID de la categoría (UUID)'),
     marcaId: str('ID de la marca (UUID, opcional)'),
     imagen: str('URL de imagen'),
@@ -432,6 +438,8 @@ const SHARED_SCHEMAS: Record<string, Schema> = {
     nombre: str('Nombre del producto'),
     descripcion: str('Descripción'),
     precioSinIva: { type: 'number', description: 'Monto SIN IVA' },
+    porcentajeIva: { type: 'number', description: 'Porcentaje de IVA' },
+    porcentajeImpuestos: { type: 'number', description: 'Porcentaje de impuestos adicionales' },
     stock: { type: 'integer', description: 'Stock' },
     imagen: str('URL de imagen'),
     activo: { type: 'boolean', description: 'Activar/desactivar producto' },
@@ -693,7 +701,7 @@ Los roles se especifican por endpoint: \`super_admin\`, \`vendedor\`.
       parameters.push({
         name: param,
         in: 'query',
-        required: param === 'vendedorId',
+        required: param === 'vendedorId' || param === 'id',
         schema: isPagination ? { type: 'integer' } : { type: 'string' },
         description: isPagination
           ? param === 'page' ? 'Número de página' : 'Items por página'

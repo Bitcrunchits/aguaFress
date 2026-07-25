@@ -1,15 +1,17 @@
 import { Test, type TestingModule } from '@nestjs/testing';
-import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ProductsTcpController } from './products-tcp.controller';
 import { TcpPayloadAdapter } from './tcp-payload-adapter.service';
 import { ProductsService } from '../products/products.service';
 import { VENDEDOR_PROFILE_RESOLVER_PORT } from '../common/usuario-client/vendedor-profile-resolver.port';
+import { CLIENTE_VENDEDOR_RESOLVER_PORT } from '../common/usuario-client/cliente-vendedor-resolver.port';
 import type { TcpPayload } from './tcp-payload';
 
 const PRODUCT_ID = 'cf4439a6-395e-4b52-b33e-82ccbb6f123f';
 const CATEGORIA_ID = '3f5a7b1e-3f0a-4c8a-9d2e-1a2b3c4d5e6f';
-const AUTH_USER_ID = 'auth-user-1'; // sub del JWT — distinto del vendedorId real
-const VENDEDOR_ID_REAL = 'vendedor-real-id-1'; // lo que devuelve el resolver
+const AUTH_USER_ID = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'; // sub del JWT — distinto del vendedorId real
+const VENDEDOR_ID_REAL = '11111111-1111-4111-8111-111111111111'; // lo que devuelve el resolver
+const OTRO_VENDEDOR_ID = '22222222-2222-4222-8222-222222222222'; // producto de otro vendedor
 
 const mockProductsService = {
   list: jest.fn(),
@@ -22,6 +24,10 @@ const mockProductsService = {
 
 const mockVendedorResolver = {
   resolveVendedorIdByAuthUserId: jest.fn(),
+};
+
+const mockClienteVendedorResolver = {
+  resolveVendedoresByClienteUserId: jest.fn(),
 };
 
 function basePayload(overrides: Partial<TcpPayload> = {}): TcpPayload {
@@ -40,6 +46,7 @@ describe('ProductsTcpController (integración con TcpPayloadAdapter real)', () =
   beforeEach(async () => {
     jest.clearAllMocks();
     mockVendedorResolver.resolveVendedorIdByAuthUserId.mockResolvedValue(VENDEDOR_ID_REAL);
+    mockClienteVendedorResolver.resolveVendedoresByClienteUserId.mockResolvedValue([]);
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ProductsTcpController],
@@ -47,34 +54,51 @@ describe('ProductsTcpController (integración con TcpPayloadAdapter real)', () =
         TcpPayloadAdapter, // real, no mockeado: valida DTOs y roles de verdad
         { provide: ProductsService, useValue: mockProductsService },
         { provide: VENDEDOR_PROFILE_RESOLVER_PORT, useValue: mockVendedorResolver },
+        { provide: CLIENTE_VENDEDOR_RESOLVER_PORT, useValue: mockClienteVendedorResolver },
       ],
     }).compile();
 
     controller = module.get<ProductsTcpController>(ProductsTcpController);
   });
 
+  // ─── LIST ────────────────────────────────────────────────────────
+
   describe('list — products.list', () => {
-    it('sin user y sin vendedorId en query, delega el filtro tal cual (catálogo público)', async () => {
-      mockProductsService.list.mockResolvedValue({ data: [], pagination: {} });
+    it('sin auth devuelve vacío — no llama al service', async () => {
+      const result = await controller.list(basePayload({ query: {} }));
 
-      await controller.list(basePayload({ query: {} }));
-
-      const filtrosRecibidos = mockProductsService.list.mock.calls[0][0];
-      expect(filtrosRecibidos.vendedorId).toBeUndefined();
-      expect(mockVendedorResolver.resolveVendedorIdByAuthUserId).not.toHaveBeenCalled();
+      expect(result).toEqual({ data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } });
+      expect(mockProductsService.list).not.toHaveBeenCalled();
     });
 
-    it('con user CLIENTE autenticado, no intenta resolver vendedorId (no es vendedor)', async () => {
+    it('con CLIENTE sin cartera devuelve vacío', async () => {
+      mockClienteVendedorResolver.resolveVendedoresByClienteUserId.mockResolvedValue([]);
+
+      const result = await controller.list(
+        basePayload({ user: { sub: AUTH_USER_ID, email: 'c@test.com', role: 'cliente' } }),
+      );
+
+      expect(result).toEqual({ data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } });
+      expect(mockClienteVendedorResolver.resolveVendedoresByClienteUserId).toHaveBeenCalledWith(AUTH_USER_ID);
+      expect(mockVendedorResolver.resolveVendedorIdByAuthUserId).not.toHaveBeenCalled();
+      expect(mockProductsService.list).not.toHaveBeenCalled();
+    });
+
+    it('con CLIENTE con cartera, filtra por el vendedor de su proveedor', async () => {
+      mockClienteVendedorResolver.resolveVendedoresByClienteUserId.mockResolvedValue([VENDEDOR_ID_REAL]);
       mockProductsService.list.mockResolvedValue({ data: [], pagination: {} });
 
       await controller.list(
         basePayload({ user: { sub: AUTH_USER_ID, email: 'c@test.com', role: 'cliente' } }),
       );
 
-      expect(mockVendedorResolver.resolveVendedorIdByAuthUserId).not.toHaveBeenCalled();
+      expect(mockClienteVendedorResolver.resolveVendedoresByClienteUserId).toHaveBeenCalledWith(AUTH_USER_ID);
+      expect(mockProductsService.list).toHaveBeenCalledWith(
+        expect.objectContaining({ vendedorId: VENDEDOR_ID_REAL }),
+      );
     });
 
-    it('con user VENDEDOR autenticado y sin vendedorId explícito, resuelve el vendedorId real', async () => {
+    it('con VENDEDOR resuelve vendedorId real y filtra', async () => {
       mockProductsService.list.mockResolvedValue({ data: [], pagination: {} });
 
       await controller.list(
@@ -88,17 +112,132 @@ describe('ProductsTcpController (integración con TcpPayloadAdapter real)', () =
         expect.objectContaining({ vendedorId: VENDEDOR_ID_REAL }),
       );
     });
-  });
 
-  describe('get — products.get', () => {
-    it('lee el id desde query, no desde params', async () => {
-      mockProductsService.findById.mockResolvedValue({ id: PRODUCT_ID });
+    it('con SUPER_ADMIN no filtra por vendedor', async () => {
+      mockProductsService.list.mockResolvedValue({ data: [], pagination: {} });
 
-      await controller.get(basePayload({ query: { id: PRODUCT_ID } }));
+      await controller.list(
+        basePayload({
+          user: { sub: AUTH_USER_ID, email: 's@test.com', role: 'super_admin' },
+          query: { vendedorId: VENDEDOR_ID_REAL },
+        }),
+      );
 
-      expect(mockProductsService.findById).toHaveBeenCalledWith(PRODUCT_ID);
+      expect(mockProductsService.list).toHaveBeenCalledWith(
+        expect.objectContaining({ vendedorId: VENDEDOR_ID_REAL }),
+      );
     });
   });
+
+  // ─── GET ─────────────────────────────────────────────────────────
+
+  describe('get — products.get', () => {
+    it('con SUPER_ADMIN retorna el producto sin scoping', async () => {
+      mockProductsService.findById.mockResolvedValue({ id: PRODUCT_ID, vendedorId: VENDEDOR_ID_REAL });
+
+      const result = await controller.get(
+        basePayload({
+          user: { sub: AUTH_USER_ID, email: 's@test.com', role: 'super_admin' },
+          query: { id: PRODUCT_ID },
+        }),
+      );
+
+      expect(mockProductsService.findById).toHaveBeenCalledWith(PRODUCT_ID);
+      expect(result).toEqual({ id: PRODUCT_ID, vendedorId: VENDEDOR_ID_REAL });
+    });
+
+    it('sin auth lanza NotFoundException (scoping impide verlo)', async () => {
+      mockProductsService.findById.mockResolvedValue({ id: PRODUCT_ID, vendedorId: VENDEDOR_ID_REAL });
+
+      await expect(
+        controller.get(basePayload({ query: { id: PRODUCT_ID } })),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('con CLIENTE que no tiene a este vendedor en cartera, lanza 404', async () => {
+      mockProductsService.findById.mockResolvedValue({ id: PRODUCT_ID, vendedorId: VENDEDOR_ID_REAL });
+      mockClienteVendedorResolver.resolveVendedoresByClienteUserId.mockResolvedValue([OTRO_VENDEDOR_ID]);
+
+      await expect(
+        controller.get(
+          basePayload({
+            user: { sub: AUTH_USER_ID, email: 'c@test.com', role: 'cliente' },
+            query: { id: PRODUCT_ID },
+          }),
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('con CLIENTE que sí tiene al vendedor en cartera, retorna el producto', async () => {
+      mockProductsService.findById.mockResolvedValue({ id: PRODUCT_ID, vendedorId: VENDEDOR_ID_REAL });
+      mockClienteVendedorResolver.resolveVendedoresByClienteUserId.mockResolvedValue([VENDEDOR_ID_REAL]);
+
+      const result = await controller.get(
+        basePayload({
+          user: { sub: AUTH_USER_ID, email: 'c@test.com', role: 'cliente' },
+          query: { id: PRODUCT_ID },
+        }),
+      );
+
+      expect(result).toEqual({ id: PRODUCT_ID, vendedorId: VENDEDOR_ID_REAL });
+    });
+
+    it('con VENDEDOR solo ve su propio producto', async () => {
+      mockProductsService.findById.mockResolvedValue({ id: PRODUCT_ID, vendedorId: VENDEDOR_ID_REAL });
+
+      const result = await controller.get(
+        basePayload({
+          user: { sub: AUTH_USER_ID, email: 'v@test.com', role: 'vendedor' },
+          query: { id: PRODUCT_ID },
+        }),
+      );
+
+      expect(mockVendedorResolver.resolveVendedorIdByAuthUserId).toHaveBeenCalledWith(AUTH_USER_ID);
+      // El producto es del mismo vendedor → pasa el scope
+      expect(result).toEqual({ id: PRODUCT_ID, vendedorId: VENDEDOR_ID_REAL });
+    });
+
+    it('con VENDEDOR, producto de otro vendedor da 404', async () => {
+      mockProductsService.findById.mockResolvedValue({ id: PRODUCT_ID, vendedorId: OTRO_VENDEDOR_ID });
+
+      await expect(
+        controller.get(
+          basePayload({
+            user: { sub: AUTH_USER_ID, email: 'v@test.com', role: 'vendedor' },
+            query: { id: PRODUCT_ID },
+          }),
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // ─── SEARCH ──────────────────────────────────────────────────────
+
+  describe('search — products.search', () => {
+    it('sin auth devuelve vacío', async () => {
+      const result = await controller.search(basePayload({ query: { q: 'agua' } }));
+
+      expect(result).toEqual({ data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } });
+      expect(mockProductsService.search).not.toHaveBeenCalled();
+    });
+
+    it('con VENDEDOR filtra por su vendedorId', async () => {
+      mockProductsService.search.mockResolvedValue({ data: [], pagination: {} });
+
+      await controller.search(
+        basePayload({
+          user: { sub: AUTH_USER_ID, email: 'v@test.com', role: 'vendedor' },
+          query: { q: 'bidón' },
+        }),
+      );
+
+      expect(mockProductsService.search).toHaveBeenCalledWith(
+        expect.objectContaining({ q: 'bidón', vendedorId: VENDEDOR_ID_REAL }),
+      );
+    });
+  });
+
+  // ─── CREATE ──────────────────────────────────────────────────────
 
   describe('create — products.create', () => {
     it('rechaza sin user autenticado', async () => {
@@ -140,6 +279,73 @@ describe('ProductsTcpController (integración con TcpPayloadAdapter real)', () =
         VENDEDOR_ID_REAL, // NO el sub del JWT
         expect.objectContaining({ nombre: 'Bidón 20L' }),
       );
+    });
+  });
+
+  // ─── UPDATE ──────────────────────────────────────────────────────
+
+  describe('update — products.update', () => {
+    it('rechaza sin auth', async () => {
+      await expect(
+        controller.update(
+          basePayload({ query: { id: PRODUCT_ID }, body: { nombre: 'x' } }),
+        ),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('rechaza si no es vendedor', async () => {
+      await expect(
+        controller.update(
+          basePayload({
+            user: { sub: AUTH_USER_ID, email: 'c@test.com', role: 'cliente' },
+            query: { id: PRODUCT_ID },
+            body: { nombre: 'x' },
+          }),
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('actualiza con el vendedorId resuelto', async () => {
+      mockProductsService.update.mockResolvedValue({ id: PRODUCT_ID, updated: true });
+
+      await controller.update(
+        basePayload({
+          user: { sub: AUTH_USER_ID, email: 'v@test.com', role: 'vendedor' },
+          query: { id: PRODUCT_ID },
+          body: { nombre: 'Bidón 20L Plus', precioSinIva: 120 },
+        }),
+      );
+
+      expect(mockVendedorResolver.resolveVendedorIdByAuthUserId).toHaveBeenCalledWith(AUTH_USER_ID);
+      expect(mockProductsService.update).toHaveBeenCalledWith(
+        VENDEDOR_ID_REAL,
+        PRODUCT_ID,
+        expect.objectContaining({ nombre: 'Bidón 20L Plus' }),
+      );
+    });
+  });
+
+  // ─── DELETE ──────────────────────────────────────────────────────
+
+  describe('delete — products.delete', () => {
+    it('rechaza sin auth', async () => {
+      await expect(
+        controller.remove(basePayload({ query: { id: PRODUCT_ID } })),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('elimina con el vendedorId resuelto', async () => {
+      mockProductsService.remove.mockResolvedValue({ id: PRODUCT_ID, deleted: true });
+
+      await controller.remove(
+        basePayload({
+          user: { sub: AUTH_USER_ID, email: 'v@test.com', role: 'vendedor' },
+          query: { id: PRODUCT_ID },
+        }),
+      );
+
+      expect(mockVendedorResolver.resolveVendedorIdByAuthUserId).toHaveBeenCalledWith(AUTH_USER_ID);
+      expect(mockProductsService.remove).toHaveBeenCalledWith(VENDEDOR_ID_REAL, PRODUCT_ID);
     });
   });
 });

@@ -21,18 +21,29 @@ export class CategoriesService {
       nombre: c.nombre,
       orden: c.orden,
       vendedorId: c.vendedorId,
+      activo: c.activo,
+      createdAt: c.createdAt.toISOString(),
+      updatedAt: c.updatedAt.toISOString(),
     }));
   }
 
   async createCategoria(vendedorId: string, dto: CreateCategoriaDto) {
+    let orden = dto.orden;
+    if (orden === undefined) {
+      const max = await this.prisma.categoria.aggregate({
+        where: { vendedorId, activo: true },
+        _max: { orden: true },
+      });
+      orden = (max._max.orden ?? 0) + 1;
+    }
     return this.prisma.categoria.create({
-      data: { nombre: dto.nombre, orden: dto.orden ?? 0, vendedorId },
+      data: { nombre: dto.nombre, orden, vendedorId },
     });
   }
 
   async updateCategoria(vendedorId: string, id: string, dto: UpdateCategoriaDto) {
     const cat = await this.prisma.categoria.findFirst({
-      where: { id, vendedorId },
+      where: { id, vendedorId, activo: true },
     });
 
     if (!cat) {
@@ -61,7 +72,7 @@ export class CategoriesService {
       where: { id },
       data: { activo: false },
     });
-    return { deleted: true };
+    return { deactivated: true };
   }
 
   async listMarcas(vendedorId: string): Promise<MarcaResponse[]> {
@@ -74,6 +85,9 @@ export class CategoriesService {
       id: m.id,
       nombre: m.nombre,
       vendedorId: m.vendedorId,
+      activo: m.activo,
+      createdAt: m.createdAt.toISOString(),
+      updatedAt: m.updatedAt.toISOString(),
     }));
   }
 
@@ -113,6 +127,6 @@ export class CategoriesService {
       where: { id },
       data: { activo: false },
     });
-    return { deleted: true };
+    return { deactivated: true };
   }
 }

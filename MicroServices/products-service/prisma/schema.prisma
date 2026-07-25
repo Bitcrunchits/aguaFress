@@ -56,7 +56,9 @@ model Producto {
   imagen        String?    @db.VarChar(500)
   stock         Int        @default(0)
   activo        Boolean    @default(true)
-  mostrarPrecio Boolean    @default(true) @map("mostrar_precio")
+  mostrarPrecio      Boolean   @default(true) @map("mostrar_precio")
+  porcentajeIva      Decimal   @default(21.00) @map("porcentaje_iva") @db.Decimal(5, 2)
+  porcentajeImpuestos Decimal  @default(0.00) @map("porcentaje_impuestos") @db.Decimal(5, 2)
 
   vendedorId  String     @map("vendedor_id") @db.Uuid
   // Nullable intencional: soporta onDelete: SetNull. En API es required.
