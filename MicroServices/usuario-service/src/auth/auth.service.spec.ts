@@ -169,6 +169,7 @@ describe('AuthService', () => {
       mockPrisma.vendedor.findUnique.mockResolvedValue({
         nombre: 'Vendedor Test',
         apellido: null,
+        estado: 'activo',
       });
 
       const result = await authService.login(loginDto);

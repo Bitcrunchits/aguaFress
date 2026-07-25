@@ -15,6 +15,7 @@ import { RateLimitModule } from './rate-limit/rate-limit.module';
 import { TcpModule } from './tcp/tcp.module';
 import { OrdersQueueModule } from './queues/orders-queue.module';
 import { DeliveriesQueueModule } from './queues/deliveries-queue.module';
+import { UploadProxyModule } from './upload-proxy/upload-proxy.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { DeliveriesQueueModule } from './queues/deliveries-queue.module';
     DocsModule,
     HealthModule,
     RateLimitModule,
+    UploadProxyModule,
   ],
   controllers: [GatewayController],
   providers: [

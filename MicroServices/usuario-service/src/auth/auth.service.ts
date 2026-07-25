@@ -226,6 +226,17 @@ export class AuthService {
     if (!isValid || !user) throw new UnauthorizedException('Invalid credentials');
     if (!user.is_active) throw new UnauthorizedException('Account is inactive');
 
+    // VENDEDOR debe tener estado "activo" para loguearse
+    if (user.role === UserRole.VENDEDOR) {
+      const vendedor = await this.prisma.vendedor.findUnique({
+        where: { auth_user_id: user.id },
+        select: { estado: true },
+      });
+      if (!vendedor || vendedor.estado !== 'activo') {
+        throw new UnauthorizedException('Vendor account is not active');
+      }
+    }
+
     const tokens = await this.tokenService.generateTokens(user.id, user.email, user.role);
 
     // Store refresh token hash for rotation
@@ -269,6 +280,17 @@ export class AuthService {
 
     if (!user || !user.is_active) {
       throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    // VENDEDOR debe tener estado "activo" para renovar token
+    if (user.role === UserRole.VENDEDOR) {
+      const vendedor = await this.prisma.vendedor.findUnique({
+        where: { auth_user_id: user.id },
+        select: { estado: true },
+      });
+      if (!vendedor || vendedor.estado !== 'activo') {
+        throw new UnauthorizedException('Vendor account is not active');
+      }
     }
 
     const tokenHash = this.hashToken(refreshToken);
