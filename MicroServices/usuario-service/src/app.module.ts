@@ -11,6 +11,7 @@ import { QrCodesModule } from './qr-codes/qr-codes.module';
 import { LinkInvitacionModule } from './link-invitacion/link-invitacion.module';
 import { AuditLogModule } from './audit-log/audit-log.module';
 import { TcpModule } from './tcp/tcp.module';
+import { UploadModule } from './common/upload/upload.module';
 import jwtConfig from './common/config/env.config';
 
 // TODO: implement Kafka producer when ready
@@ -28,6 +29,7 @@ import jwtConfig from './common/config/env.config';
     QrCodesModule,
     LinkInvitacionModule,
     AuditLogModule,
+    UploadModule,
     TcpModule,
   ],
 })

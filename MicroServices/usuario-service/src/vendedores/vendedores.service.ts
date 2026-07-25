@@ -55,18 +55,31 @@ export class VendedoresService {
       ];
     }
 
-    const [data, total] = await Promise.all([
+    const [vendedores, total] = await Promise.all([
       this.prisma.vendedor.findMany({
         skip,
         take: limit,
         where,
         orderBy: { created_at: 'desc' },
         include: {
+          auth_user: { select: { email: true } },
           _count: { select: { clientes: true } },
         },
       }),
       this.prisma.vendedor.count({ where }),
     ]);
+
+    const data = vendedores.map((v) => ({
+      id: v.id,
+      nombre: v.nombre,
+      apellido: v.apellido,
+      empresa: v.empresa,
+      email: v.auth_user.email,
+      telefono: v.telefono,
+      ciudad: v.ciudad_default,
+      estado: this.mapPrismaEstado(v.estado),
+      _count: v._count,
+    }));
 
     return {
       data,

@@ -128,6 +128,7 @@ describe('Auth Integration: register → login → refresh → profile', () => {
       mockPrisma.vendedor.findUnique.mockResolvedValue({
         nombre: 'Carlos',
         apellido: 'García',
+        estado: 'activo',
       });
 
       const loginResult = await authService.login({

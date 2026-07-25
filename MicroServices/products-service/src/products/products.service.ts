@@ -156,12 +156,10 @@ export class ProductsService {
   }
 
   async remove(vendedorId: string, id: string): Promise<{ deleted: boolean }> {
-    // Transacción: deleteMany atómico + diagnóstico en un solo paso,
-    // elimina la ventana TOCTOU residual entre deleteMany y el findUnique
-    // del bloque catch.
     return await this.prisma.$transaction(async (tx) => {
-      const { count } = await tx.producto.deleteMany({
-        where: { id, vendedorId },
+      const { count } = await tx.producto.updateMany({
+        where: { id, vendedorId, activo: true },
+        data: { activo: false },
       });
 
       if (count === 0) {

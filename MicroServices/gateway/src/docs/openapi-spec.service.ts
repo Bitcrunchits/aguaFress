@@ -98,6 +98,7 @@ const SHARED_SCHEMAS: Record<string, Schema> = {
     dni: str('DNI (7 a 9 dígitos)'),
     telefono: str('Teléfono'),
     ciudad: str('Ciudad'),
+    logo: str('Vendor logo imageId (opcional)', 'logos/abc123.webp'),
   }, ['email', 'emailConfirmation', 'password', 'nombre', 'apellido', 'dni', 'telefono']),
 
   RegisterResponse: obj({
@@ -455,11 +456,29 @@ const SHARED_SCHEMAS: Record<string, Schema> = {
     vendedorId: str('ID del vendedor'),
   }, ['id', 'nombre', 'vendedorId']),
 
+  CreateCategoriaRequest: obj({
+    nombre: str('Nombre de la categoría'),
+    orden: { type: 'integer', description: 'Orden de visualización (opcional)' },
+  }, ['nombre']),
+
+  UpdateCategoriaRequest: obj({
+    nombre: str('Nombre de la categoría'),
+    orden: { type: 'integer', description: 'Orden de visualización' },
+  }),
+
   MarcaResponse: obj({
     id: str('Marca ID'),
     nombre: str('Nombre'),
     vendedorId: str('ID del vendedor'),
   }, ['id', 'nombre', 'vendedorId']),
+
+  CreateMarcaRequest: obj({
+    nombre: str('Nombre de la marca'),
+  }, ['nombre']),
+
+  UpdateMarcaRequest: obj({
+    nombre: str('Nombre de la marca'),
+  }),
 };
 
 // ─── Action → HTTP method mapping ──────────────────────────────
@@ -555,7 +574,13 @@ const ACTIONS_DOC: Record<string, ActionDoc> = {
   'products.delete': { summary: 'Eliminar producto', description: 'El vendedor elimina un producto propio. id se pasa por query string.', method: 'delete', queryParams: ['id'], responseSchema: 'ProductDeletedResponse', roles: ['vendedor'] },
 
   'categories.list': { summary: 'Listar categorías', description: 'Público. Lista categorías de un vendedor.', method: 'get', queryParams: ['vendedorId'], responseSchema: 'CategoriaResponse', isArray: true },
+  'categories.create': { summary: 'Crear categoría', description: 'El vendedor crea una categoría propia.', method: 'post', bodySchema: 'CreateCategoriaRequest', responseSchema: 'CategoriaResponse', roles: ['vendedor'] },
+  'categories.update': { summary: 'Actualizar categoría', description: 'El vendedor actualiza una categoría propia. Solo si le pertenece.', method: 'patch', queryParams: ['id'], bodySchema: 'UpdateCategoriaRequest', responseSchema: 'CategoriaResponse', roles: ['vendedor'] },
+  'categories.delete': { summary: 'Eliminar categoría', description: 'El vendedor elimina una categoría propia. Productos asociados pasan a null.', method: 'delete', queryParams: ['id'], responseSchema: 'ProductDeletedResponse', roles: ['vendedor'] },
   'brands.list': { summary: 'Listar marcas', description: 'Público. Lista marcas de un vendedor.', method: 'get', queryParams: ['vendedorId'], responseSchema: 'MarcaResponse', isArray: true },
+  'brands.create': { summary: 'Crear marca', description: 'El vendedor crea una marca propia.', method: 'post', bodySchema: 'CreateMarcaRequest', responseSchema: 'MarcaResponse', roles: ['vendedor'] },
+  'brands.update': { summary: 'Actualizar marca', description: 'El vendedor actualiza una marca propia. Solo si le pertenece.', method: 'patch', queryParams: ['id'], bodySchema: 'UpdateMarcaRequest', responseSchema: 'MarcaResponse', roles: ['vendedor'] },
+  'brands.delete': { summary: 'Eliminar marca', description: 'El vendedor elimina una marca propia. Productos asociados pasan a null.', method: 'delete', queryParams: ['id'], responseSchema: 'ProductDeletedResponse', roles: ['vendedor'] },
 
   'orders.create': { summary: 'Crear pedido async', description: 'Valida vendedorId seleccionado, ignora body userId y encola con userId JWT + vendedorId.', method: 'post', bodySchema: 'CreateOrderRequest', responseSchema: 'AsyncAcceptedResponse', roles: ['cliente'] },
   'orders.job_status': { summary: 'Consultar estado de pedido async', method: 'get', queryParams: ['id'], responseSchema: 'AsyncAcceptedResponse' },

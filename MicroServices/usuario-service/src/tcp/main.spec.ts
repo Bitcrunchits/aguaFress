@@ -1,4 +1,4 @@
-import { getTcpPort } from '../main';
+import { getTcpPort } from '../common/config/ports';
 
 describe('getTcpPort', () => {
   const originalTcpPort = process.env.TCP_PORT;
