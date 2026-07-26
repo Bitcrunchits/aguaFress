@@ -7,18 +7,26 @@ import { Prisma } from '@prisma/client';
  * "El precio se calcula server-side. El frontend manda precioSinIva,
  *  el service calcula precioFinal."
  *
- * Este servicio es la ÚNICA fuente de verdad para ese cálculo.
- * TODO(equipo): confirmar si el % de IVA es fijo global o configurable
- * por vendedor/categoría — hoy se toma de env (IVA_PORCENTAJE, default 21).
+ * Modelo A — IVA + impuestos adicionales:
+ * - Cada producto tiene su propio porcentajeIva (default 21%) y porcentajeImpuestos (default 0%).
+ * - El precioFinal incluye AMBOS: precioSinIva * (1 + iva/100 + impuestos/100).
+ * - El cálculo es server-side. Los porcentajes se persisten por producto para flexibilidad fiscal.
  */
 @Injectable()
 export class PricingService {
   constructor(private readonly config: ConfigService) {}
 
-  calcularPrecioFinal(precioSinIva: number | Prisma.Decimal): Prisma.Decimal {
-    const porcentaje = this.config.get<number>('iva.porcentaje', 21);
+  calcularPrecioFinal(
+    precioSinIva: number | Prisma.Decimal,
+    porcentajeIva?: number,
+    porcentajeImpuestos?: number,
+  ): Prisma.Decimal {
+    const iva = porcentajeIva ?? this.config.get<number>('iva.porcentaje', 21);
+    const imp = porcentajeImpuestos ?? this.config.get<number>('impuestos.porcentaje', 0);
     const base = new Prisma.Decimal(precioSinIva.toString());
-    const factor = new Prisma.Decimal(1).plus(new Prisma.Decimal(porcentaje).div(100));
+    const factor = new Prisma.Decimal(1)
+      .plus(new Prisma.Decimal(iva).div(100))
+      .plus(new Prisma.Decimal(imp).div(100));
     return base.times(factor).toDecimalPlaces(2);
   }
 }

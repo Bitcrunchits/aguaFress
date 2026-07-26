@@ -1,4 +1,5 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { PaginatedResponse, ProductResponse } from '@agua/contracts';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../common/prisma/prisma.service';
@@ -16,6 +17,7 @@ export class ProductsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly pricing: PricingService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async list(filters: ListProductsDto): Promise<PaginatedResponse<ProductResponse>> {
@@ -24,7 +26,7 @@ export class ProductsService {
 
     const where = {
       ...(filters.vendedorId ? { vendedorId: filters.vendedorId } : {}),
-      ...(filters.categoria ? { categoria: { nombre: filters.categoria } } : {}),
+      ...(filters.categoriaId ? { categoriaId: filters.categoriaId } : {}),
       ...(filters.disponibles ? { activo: true, stock: { gt: 0 } } : {}),
     };
 
@@ -96,7 +98,13 @@ export class ProductsService {
   }
 
   async create(vendedorId: string, dto: CreateProductDto): Promise<{ id: string; created: boolean }> {
-    const precioFinal = this.pricing.calcularPrecioFinal(dto.precioSinIva);
+    const porcentajeIva = dto.porcentajeIva ?? 21;
+    const porcentajeImpuestos = dto.porcentajeImpuestos ?? 0;
+    const precioFinal = this.pricing.calcularPrecioFinal(
+      dto.precioSinIva,
+      porcentajeIva,
+      porcentajeImpuestos,
+    );
 
     const producto = await this.prisma.producto.create({
       data: {
@@ -107,10 +115,22 @@ export class ProductsService {
         imagen: dto.imagen,
         stock: dto.stock,
         mostrarPrecio: dto.mostrarPrecio ?? true,
+        porcentajeIva,
+        porcentajeImpuestos,
         vendedorId,
         categoriaId: dto.categoriaId,
         marcaId: dto.marcaId,
       },
+    });
+
+    this.eventEmitter.emit('product.created', {
+      type: 'ProductCreated' as const,
+      productId: producto.id,
+      vendedorId,
+      nombre: producto.nombre,
+      precioFinal: Number(producto.precioFinal),
+      stock: producto.stock,
+      timestamp: new Date().toISOString(),
     });
 
     return { id: producto.id, created: true };
@@ -121,27 +141,59 @@ export class ProductsService {
     id: string,
     dto: UpdateProductDto,
   ): Promise<{ id: string; updated: boolean }> {
-    const precioFinal =
-      dto.precioSinIva !== undefined
-        ? this.pricing.calcularPrecioFinal(dto.precioSinIva)
-        : undefined;
-
     // Transacción: ownership check + update atómicos, elimina
     // condición de carrera entre ambas operaciones.
+    let updatedProduct: {
+      nombre: string;
+      precioSinIva: { toString(): string };
+      precioFinal: { toString(): string };
+      stock: number;
+      activo: boolean;
+      porcentajeIva: { toString(): string };
+      porcentajeImpuestos: { toString(): string };
+    } | undefined;
+
+    let precioFinalCalculado: Prisma.Decimal | undefined;
+
     await this.prisma.$transaction(async (tx) => {
       const producto = await tx.producto.findUnique({
         where: { id },
-        select: { vendedorId: true },
+        select: {
+          vendedorId: true,
+          nombre: true,
+          precioSinIva: true,
+          precioFinal: true,
+          stock: true,
+          activo: true,
+          porcentajeIva: true,
+          porcentajeImpuestos: true,
+        },
       });
       if (!producto) throw new NotFoundException('Producto no encontrado');
       if (producto.vendedorId !== vendedorId) throw new ForbiddenException('No tenés permiso sobre este producto');
+
+      // Recalcular precioFinal si cambia precioSinIva o algún porcentaje
+      const recalcular =
+        dto.precioSinIva !== undefined ||
+        dto.porcentajeIva !== undefined ||
+        dto.porcentajeImpuestos !== undefined;
+
+      if (recalcular) {
+        const nuevoPrecioSinIva = dto.precioSinIva ?? Number(producto.precioSinIva);
+        const nuevoIva = dto.porcentajeIva ?? Number(producto.porcentajeIva);
+        const nuevoImp = dto.porcentajeImpuestos ?? Number(producto.porcentajeImpuestos);
+        precioFinalCalculado = this.pricing.calcularPrecioFinal(nuevoPrecioSinIva, nuevoIva, nuevoImp);
+      }
 
       await tx.producto.update({
         where: { id },
         data: {
           ...(dto.nombre !== undefined ? { nombre: dto.nombre } : {}),
           ...(dto.descripcion !== undefined ? { descripcion: dto.descripcion } : {}),
-          ...(dto.precioSinIva !== undefined ? { precioSinIva: dto.precioSinIva, precioFinal } : {}),
+          ...(dto.precioSinIva !== undefined ? { precioSinIva: dto.precioSinIva } : {}),
+          ...(precioFinalCalculado !== undefined ? { precioFinal: precioFinalCalculado } : {}),
+          ...(dto.porcentajeIva !== undefined ? { porcentajeIva: dto.porcentajeIva } : {}),
+          ...(dto.porcentajeImpuestos !== undefined ? { porcentajeImpuestos: dto.porcentajeImpuestos } : {}),
           ...(dto.stock !== undefined ? { stock: dto.stock } : {}),
           ...(dto.imagen !== undefined ? { imagen: dto.imagen } : {}),
           ...(dto.activo !== undefined ? { activo: dto.activo } : {}),
@@ -150,13 +202,28 @@ export class ProductsService {
           ...(dto.marcaId !== undefined ? { marcaId: dto.marcaId } : {}),
         },
       });
+
+      updatedProduct = producto;
+    });
+
+    this.eventEmitter.emit('product.updated', {
+      type: 'ProductUpdated' as const,
+      productId: id,
+      vendedorId,
+      nombre: dto.nombre ?? updatedProduct!.nombre,
+      precioFinal: precioFinalCalculado !== undefined
+        ? Number(precioFinalCalculado)
+        : Number(updatedProduct!.precioFinal),
+      stock: dto.stock ?? updatedProduct!.stock,
+      activo: dto.activo ?? updatedProduct!.activo,
+      timestamp: new Date().toISOString(),
     });
 
     return { id, updated: true };
   }
 
   async remove(vendedorId: string, id: string): Promise<{ deleted: boolean }> {
-    return await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const { count } = await tx.producto.updateMany({
         where: { id, vendedorId, activo: true },
         data: { activo: false },
@@ -173,6 +240,17 @@ export class ProductsService {
 
       return { deleted: true };
     });
+
+    if (result.deleted) {
+      this.eventEmitter.emit('product.deleted', {
+        type: 'ProductDeleted' as const,
+        productId: id,
+        vendedorId,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    return result;
   }
 
   private toResponse(producto: {
@@ -181,6 +259,8 @@ export class ProductsService {
     descripcion: string | null;
     precioSinIva: { toString(): string };
     precioFinal: { toString(): string };
+    porcentajeIva: { toString(): string };
+    porcentajeImpuestos: { toString(): string };
     imagen: string | null;
     stock: number;
     activo: boolean;
@@ -189,11 +269,19 @@ export class ProductsService {
     categoria?: { nombre: string } | null;
     marca?: { nombre: string } | null;
   }): ProductResponse {
+    const precioSinIva = Number(producto.precioSinIva);
+    const pctIva = Number(producto.porcentajeIva);
+    const pctImp = Number(producto.porcentajeImpuestos);
+
     return {
       id: producto.id,
       nombre: producto.nombre,
       descripcion: producto.descripcion ?? undefined,
-      precioSinIva: Number(producto.precioSinIva),
+      precioSinIva,
+      porcentajeIva: pctIva,
+      porcentajeImpuestos: pctImp,
+      costoIva: Number(new Prisma.Decimal(precioSinIva).times(pctIva).div(100).toDecimalPlaces(2)),
+      costoImpuestos: Number(new Prisma.Decimal(precioSinIva).times(pctImp).div(100).toDecimalPlaces(2)),
       precioFinal: Number(producto.precioFinal),
       imagen: producto.imagen ?? undefined,
       stock: producto.stock,

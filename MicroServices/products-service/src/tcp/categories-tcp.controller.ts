@@ -1,4 +1,4 @@
-import { Controller, Inject } from '@nestjs/common';
+import { BadRequestException, Controller, ForbiddenException, Inject } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { UserRole } from '@agua/contracts';
 import { CategoriesService } from '../categories/categories.service';
@@ -7,7 +7,7 @@ import { CreateCategoriaDto } from '../categories/dto/create-categoria.dto';
 import { UpdateCategoriaDto } from '../categories/dto/update-categoria.dto';
 import { CreateMarcaDto } from '../categories/dto/create-marca.dto';
 import { UpdateMarcaDto } from '../categories/dto/update-marca.dto';
-import { IdQueryDto } from '../products/dto/list-products.dto';
+import { IdQueryDto } from '../common/dto/id-query.dto';
 import { TcpPayloadAdapter } from './tcp-payload-adapter.service';
 import {
   VENDEDOR_PROFILE_RESOLVER_PORT,
@@ -24,10 +24,29 @@ export class CategoriesTcpController {
     private readonly vendedorResolver: VendedorProfileResolverPort,
   ) {}
 
-  // GET /v1/categories/list?vendedorId=xxx — auth: Público
+  // GET /v1/categories/list?vendedorId=xxx — auth: Público|VENDEDOR
+  // Si el user es VENDEDOR y no se pasó vendedorId, se resuelve del token.
+  // Si el user es VENDEDOR y pasó vendedorId, se valida que sea el suyo.
   @MessagePattern('categories.list')
   async listCategorias(@Payload() payload: TcpPayload) {
-    const { vendedorId } = await this.payloadAdapter.query(payload, ListCatalogoDto);
+    const dto = await this.payloadAdapter.query(payload, ListCatalogoDto);
+    let { vendedorId } = dto;
+
+    if (!vendedorId && payload.user?.role === UserRole.VENDEDOR) {
+      const authUserId = this.payloadAdapter.userId(payload);
+      vendedorId = await this.vendedorResolver.resolveVendedorIdByAuthUserId(authUserId);
+    } else if (vendedorId && payload.user?.role === UserRole.VENDEDOR) {
+      const authUserId = this.payloadAdapter.userId(payload);
+      const ownVendedorId = await this.vendedorResolver.resolveVendedorIdByAuthUserId(authUserId);
+      if (vendedorId !== ownVendedorId) {
+        throw new ForbiddenException('No puedes listar categorías de otro vendedor');
+      }
+    }
+
+    if (!vendedorId) {
+      throw new BadRequestException('vendedorId es requerido');
+    }
+
     return this.categoriesService.listCategorias(vendedorId);
   }
 
@@ -62,10 +81,28 @@ export class CategoriesTcpController {
     return this.categoriesService.deleteCategoria(vendedorId, id);
   }
 
-  // GET /v1/brands/list?vendedorId=xxx — auth: Público
+  // GET /v1/brands/list?vendedorId=xxx — auth: Público|VENDEDOR
+  // Mismo patrón que categories.list: resuelve vendedorId del token si es VENDEDOR
   @MessagePattern('brands.list')
   async listMarcas(@Payload() payload: TcpPayload) {
-    const { vendedorId } = await this.payloadAdapter.query(payload, ListCatalogoDto);
+    const dto = await this.payloadAdapter.query(payload, ListCatalogoDto);
+    let { vendedorId } = dto;
+
+    if (!vendedorId && payload.user?.role === UserRole.VENDEDOR) {
+      const authUserId = this.payloadAdapter.userId(payload);
+      vendedorId = await this.vendedorResolver.resolveVendedorIdByAuthUserId(authUserId);
+    } else if (vendedorId && payload.user?.role === UserRole.VENDEDOR) {
+      const authUserId = this.payloadAdapter.userId(payload);
+      const ownVendedorId = await this.vendedorResolver.resolveVendedorIdByAuthUserId(authUserId);
+      if (vendedorId !== ownVendedorId) {
+        throw new ForbiddenException('No puedes listar marcas de otro vendedor');
+      }
+    }
+
+    if (!vendedorId) {
+      throw new BadRequestException('vendedorId es requerido');
+    }
+
     return this.categoriesService.listMarcas(vendedorId);
   }
 

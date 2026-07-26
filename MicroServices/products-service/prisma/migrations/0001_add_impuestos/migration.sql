@@ -1,0 +1,3 @@
+-- Add tax percentage columns to PRODUCTO
+ALTER TABLE "PRODUCTO" ADD COLUMN "porcentaje_iva" DECIMAL(5,2) NOT NULL DEFAULT 21.00;
+ALTER TABLE "PRODUCTO" ADD COLUMN "porcentaje_impuestos" DECIMAL(5,2) NOT NULL DEFAULT 0.00;

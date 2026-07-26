@@ -5,6 +5,7 @@ import { Public } from '../auth/decorators/public.decorator';
 import { LoginDto } from '../auth/dto/login.dto';
 import { RegisterDto } from '../auth/dto/register.dto';
 import { RegisterClientDto } from '../auth/dto/register-client.dto';
+import { RegisterClientByVendorDto } from '../auth/dto/register-client-by-vendor.dto';
 import { RefreshTokenDto } from '../auth/dto/refresh-token.dto';
 import { ValidateTokenDto } from '../auth/dto/validate-token.dto';
 import { ChangePasswordDto } from '../auth/dto/change-password.dto';
@@ -69,7 +70,7 @@ export class AuthTcpController {
   async registerClientByVendor(@Payload() payload: TcpPayload) {
     this.payloadAdapter.requireRole(payload, UserRole.VENDEDOR);
     const userId = this.payloadAdapter.userId(payload);
-    const dto = await this.payloadAdapter.body(payload, RegisterClientDto);
+    const dto = await this.payloadAdapter.body(payload, RegisterClientByVendorDto);
     return this.authService.registerByVendor(dto, userId);
   }
 

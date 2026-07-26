@@ -1,25 +1,29 @@
-import { Controller, Inject } from '@nestjs/common';
+import { BadRequestException, Controller, ForbiddenException, Inject, NotFoundException } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { UserRole } from '@agua/contracts';
 import { ProductsService } from '../products/products.service';
 import { CreateProductDto } from '../products/dto/create-product.dto';
 import { UpdateProductDto } from '../products/dto/update-product.dto';
-import { ListProductsDto, IdQueryDto } from '../products/dto/list-products.dto';
+import { ListProductsDto } from '../products/dto/list-products.dto';
+import { IdQueryDto } from '../common/dto/id-query.dto';
 import { SearchProductDto } from '../products/dto/search-product.dto';
 import { TcpPayloadAdapter } from './tcp-payload-adapter.service';
 import {
   VENDEDOR_PROFILE_RESOLVER_PORT,
   type VendedorProfileResolverPort,
 } from '../common/usuario-client/vendedor-profile-resolver.port';
+import {
+  CLIENTE_VENDEDOR_RESOLVER_PORT,
+  type ClienteVendedorResolverPort,
+} from '../common/usuario-client/cliente-vendedor-resolver.port';
 import type { TcpPayload } from './tcp-payload';
 
 /**
- * NOTA sobre auth: no tuvimos acceso al guard/decorator @Public() ni al
- * guard global de usuario-service, así que este controller NO asume un
- * guard global de JWT en el contexto TCP — cada handler valida explícitamente
- * con TcpPayloadAdapter (requireUser / requireRole) según lo que pida
- * products-service.json. Confirmar con el equipo si products-service también
- * necesita un guard global equivalente.
+ * Scoping de seguridad:
+ * - VENDEDOR: solo ve/modifica sus propios productos
+ * - CLIENTE: solo ve productos de su proveedor (cartera)
+ * - SUPER_ADMIN: acceso total
+ * - Sin auth: list/search devuelven vacío, get devuelve 404
  *
  * NOTA sobre routing: el gateway usa rutas de "acción" (:action(.*) comodín +
  * match exacto contra ACTION_REGISTRY), NO rutas REST con :id dinámico.
@@ -29,9 +33,7 @@ import type { TcpPayload } from './tcp-payload';
  *
  * NOTA sobre vendedorId: modelo-datos.md v1.4 confirma que `vendedor_id`
  * debe ser `VENDEDOR.id`, no `AUTH_USER.id` (el `sub` del JWT). Se resuelve
- * vía VendedorProfileResolverPort (mismo patrón puerto/adaptador que usa
- * orders-service), cuyo adaptador TCP concreto llama al pattern confirmado
- * 'vendedores.resolve_profile_id' de usuario-domain-tcp.controller.ts.
+ * vía VendedorProfileResolverPort.
  */
 @Controller()
 export class ProductsTcpController {
@@ -40,35 +42,109 @@ export class ProductsTcpController {
     private readonly payloadAdapter: TcpPayloadAdapter,
     @Inject(VENDEDOR_PROFILE_RESOLVER_PORT)
     private readonly vendedorResolver: VendedorProfileResolverPort,
+    @Inject(CLIENTE_VENDEDOR_RESOLVER_PORT)
+    private readonly clienteVendedorResolver: ClienteVendedorResolverPort,
   ) {}
 
-  // GET /v1/products/list — auth: VENDEDOR|Público.
-  // Si viene user autenticado con rol VENDEDOR y no se pasó vendedorId
-  // explícito, se resuelve el vendedorId real. Si es público (o cliente sin
-  // vendedorId), se usa el vendedorId del query tal cual (o queda sin filtrar).
+  // ─── Helper: resuelve vendedorId según rol ─────────────────────────
+  // Devuelve string[] con los vendedorId permitidos, o null si acceso total (super_admin).
+  // Array vacío = sin acceso a nada (cliente sin cartera, no auth).
+  private async resolveScopedVendedorIds(payload: TcpPayload): Promise<string[] | null> {
+    if (!payload.user?.role) {
+      return []; // Sin auth → sin acceso
+    }
+
+    if (payload.user.role === UserRole.SUPER_ADMIN) {
+      return null; // null = sin filtro (todo)
+    }
+
+    if (payload.user.role === UserRole.VENDEDOR) {
+      const authUserId = this.payloadAdapter.userId(payload);
+      const vendedorId = await this.vendedorResolver.resolveVendedorIdByAuthUserId(authUserId);
+      return [vendedorId];
+    }
+
+    if (payload.user.role === UserRole.CLIENTE) {
+      const authUserId = this.payloadAdapter.userId(payload);
+      return this.clienteVendedorResolver.resolveVendedoresByClienteUserId(authUserId);
+    }
+
+    return []; // rol desconocido
+  }
+
+  // ─── GET /v1/products/list ──────────────────────────────────────
   @MessagePattern('products.list')
   async list(@Payload() payload: TcpPayload) {
     const filters = await this.payloadAdapter.query(payload, ListProductsDto);
+    const vendedorIds = await this.resolveScopedVendedorIds(payload);
 
-    if (!filters.vendedorId && payload.user?.role === UserRole.VENDEDOR) {
-      const authUserId = this.payloadAdapter.userId(payload);
-      filters.vendedorId = await this.vendedorResolver.resolveVendedorIdByAuthUserId(authUserId);
+    // Sin acceso a nada → devolver vacío
+    if (vendedorIds !== null && vendedorIds.length === 0) {
+      return { data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } };
+    }
+
+    // Scoping activo: validar o resolver vendedorId
+    if (vendedorIds !== null) {
+      if (filters.vendedorId) {
+        // Validar que el vendedorId solicitado esté en sus carteras permitidas
+        if (!vendedorIds.includes(filters.vendedorId)) {
+          throw new NotFoundException('Producto no encontrado');
+        }
+      } else if (payload.user?.role === UserRole.CLIENTE && vendedorIds.length > 1) {
+        // CLIENTE con multi-cartera debe seleccionar un proveedor explícitamente
+        throw new BadRequestException('requiresSelection');
+      } else {
+        // Un solo vendedor disponible → usarlo automáticamente
+        filters.vendedorId = vendedorIds[0];
+      }
     }
 
     return this.productsService.list(filters);
   }
 
-  // GET /v1/products/get?id=xxx — auth: Público
+  // ─── GET /v1/products/get?id=xxx ───────────────────────────────
   @MessagePattern('products.get')
   async get(@Payload() payload: TcpPayload) {
     const { id } = await this.payloadAdapter.query(payload, IdQueryDto);
-    return this.productsService.findById(id);
+    const vendedorIds = await this.resolveScopedVendedorIds(payload);
+
+    const producto = await this.productsService.findById(id);
+
+    // Si hay scope y el producto no está en los vendedores permitidos → 404
+    if (vendedorIds !== null && !vendedorIds.includes(producto.vendedorId)) {
+      throw new NotFoundException('Producto no encontrado');
+    }
+
+    return producto;
   }
 
-  // GET /v1/products/search — auth: Público
+  // ─── GET /v1/products/search ───────────────────────────────────
   @MessagePattern('products.search')
   async search(@Payload() payload: TcpPayload) {
     const query = await this.payloadAdapter.query(payload, SearchProductDto);
+    const vendedorIds = await this.resolveScopedVendedorIds(payload);
+
+    // Sin acceso a nada → devolver vacío
+    if (vendedorIds !== null && vendedorIds.length === 0) {
+      return { data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } };
+    }
+
+    // Scoping activo: validar o resolver vendedorId
+    if (vendedorIds !== null) {
+      if (query.vendedorId) {
+        // Validar que el vendedorId solicitado esté en sus carteras permitidas
+        if (!vendedorIds.includes(query.vendedorId)) {
+          throw new NotFoundException('Producto no encontrado');
+        }
+      } else if (payload.user?.role === UserRole.CLIENTE && vendedorIds.length > 1) {
+        // CLIENTE con multi-cartera debe seleccionar un proveedor explícitamente
+        throw new BadRequestException('requiresSelection');
+      } else {
+        // Un solo vendedor disponible → usarlo automáticamente
+        query.vendedorId = vendedorIds[0];
+      }
+    }
+
     return this.productsService.search(query);
   }
 
