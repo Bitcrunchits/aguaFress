@@ -72,6 +72,15 @@ export type UserEvent =
 //  PRODUCTS STREAM
 // ════════════════════════════════════════════════
 
+export interface ProductCreatedEvent extends BaseEvent {
+  type: 'ProductCreated';
+  productId: string;
+  vendedorId: string;
+  nombre: string;
+  precioFinal: number;
+  stock: number;
+}
+
 export interface ProductUpdatedEvent extends BaseEvent {
   type: 'ProductUpdated';
   productId: string;
@@ -79,6 +88,7 @@ export interface ProductUpdatedEvent extends BaseEvent {
   nombre: string;
   precioFinal: number;
   stock: number;
+  activo: boolean;
 }
 
 export interface ProductDeletedEvent extends BaseEvent {
@@ -88,6 +98,7 @@ export interface ProductDeletedEvent extends BaseEvent {
 }
 
 export type ProductEvent =
+  | ProductCreatedEvent
   | ProductUpdatedEvent
   | ProductDeletedEvent;
 

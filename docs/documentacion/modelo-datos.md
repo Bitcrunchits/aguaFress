@@ -1,6 +1,6 @@
 # Modelo de Datos - AguaFress V1.0 MVP
 
-**Versión:** 1.4
+**Versión:** 1.5
 **Fecha:** Julio 2026  
 **Stack:** Node.js 22 LTS + NestJS 10 + TypeScript 5 + Prisma 5 + PostgreSQL 15 + Redis 7  
 **Proyecto:** AguaFress - Plataforma de Pedidos y Gestión para Distribuidores de Agua y Soda
@@ -191,8 +191,10 @@ Las tablas se separaron por rol siguiendo SRP: `AUTH_USER` solo tiene datos de l
 | descripcion | TEXT | |
 | marca_id | UUID | FK → MARCA |
 | categoria_id | UUID | FK → CATEGORIA |
-| precio_sin_iva | DECIMAL(10,2) | Lo que manda el vendedor |
-| precio_final | DECIMAL(10,2) | Calculado server-side (con IVA) |
+| precio_sin_iva | DECIMAL(10,2) | Lo que manda el vendedor (sin IVA ni impuestos) |
+| precio_final | DECIMAL(10,2) | Calculado server-side: `precioSinIva × (1 + iva/100 + imp/100)` |
+| porcentaje_iva | DECIMAL(5,2) | Default 21.00. Porcentaje de IVA del producto |
+| porcentaje_impuestos | DECIMAL(5,2) | Default 0.00. Porcentaje de impuestos adicionales (IIBB, municipales) |
 | stock | INTEGER | 0 = sin stock |
 | imagen | VARCHAR(500) | URL |
 | activo | BOOLEAN | Default true |
@@ -502,6 +504,7 @@ docker compose down -v                  # destruir todo + volúmenes
 | 1.2 | Junio 2026 | Table splitting AUTH_USER/VENDEDOR/CLIENTE/SUPER_ADMIN, +AUDIT_LOG, +direcciones cliente |
 | 1.3 | Julio 2026 | VENDEDOR: apellido/dni/telefono/ciudad_default required, +cuil+cuit. CLIENTE: 8 campos pasan a required, +misma_direccion_entrega, +entrega_* (8 campos). TipoFactura: +A |
 | **1.4** | **Julio 2026** | **Multi-proveedor cliente: `RELACION_CARTERA` activa es la relación canónica; `CLIENTE.vendedor_id` queda como default/compatibilidad V1; carrito/pedido usan `vendedor_id` como proveedor seleccionado validado.** |
+| **1.5** | **Julio 2026** | **Modelo A de precios: `porcentaje_iva` y `porcentaje_impuestos` por producto. El `precioFinal` se calcula server-side incluyendo IVA + impuestos adicionales. Frontend decide UX de ingreso (precio final vs. precio sin IVA).** |
 
 ---
 

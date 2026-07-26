@@ -271,6 +271,8 @@ describe('VendedoresService', () => {
           telefono: '11-5555-0100',
           empresa: 'Empresa',
           estado: VendedorEstado.ACTIVO,
+          ciudad_default: 'CABA',
+          auth_user: { email: 'juan@email.com' },
           _count: { clientes: 3 },
           created_at: new Date('2024-01-01'),
         },
@@ -281,6 +283,8 @@ describe('VendedoresService', () => {
           telefono: null,
           empresa: null,
           estado: VendedorEstado.PENDIENTE,
+          ciudad_default: '',
+          auth_user: { email: 'maria@email.com' },
           _count: { clientes: 0 },
           created_at: new Date('2024-01-02'),
         },
@@ -296,7 +300,10 @@ describe('VendedoresService', () => {
         take: 10,
         where: {},
         orderBy: { created_at: 'desc' },
-        include: { _count: { select: { clientes: true } } },
+        include: {
+          auth_user: { select: { email: true } },
+          _count: { select: { clientes: true } },
+        },
       });
       expect(prisma.vendedor.count).toHaveBeenCalledWith({ where: {} });
       expect(result).toEqual({
@@ -385,6 +392,8 @@ describe('VendedoresService', () => {
           telefono: null,
           empresa: null,
           estado: VendedorEstado.ACTIVO,
+          ciudad_default: '',
+          auth_user: { email: 'juan@email.com' },
           _count: { clientes: 5 },
           created_at: new Date(),
         },

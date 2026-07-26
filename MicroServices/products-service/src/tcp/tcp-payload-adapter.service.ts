@@ -7,9 +7,18 @@ type ClassType<T> = new () => T;
 
 @Injectable()
 export class TcpPayloadAdapter {
-  private readonly validationPipe = new ValidationPipe({
+  /** Pipe estricto: rechaza propiedades desconocidas (body de create/update) */
+  private readonly strictPipe = new ValidationPipe({
     whitelist: true,
     forbidNonWhitelisted: true,
+    transform: true,
+  });
+
+  /** Pipe permisivo: solo remueve propiedades desconocidas (queries públicas que
+   *  pueden traer parámetros extra de Scalar o UIs de terceros) */
+  private readonly permissivePipe = new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: false,
     transform: true,
   });
 
@@ -43,23 +52,24 @@ export class TcpPayloadAdapter {
   }
 
   async body<T extends object>(payload: TcpPayload, dtoType: ClassType<T>): Promise<T> {
-    return this.validate(payload.body ?? {}, dtoType, 'body');
+    return this.validate(payload.body ?? {}, dtoType, 'body', this.strictPipe);
   }
 
   async query<T extends object>(payload: TcpPayload, dtoType: ClassType<T>): Promise<T> {
-    return this.validate(payload.query ?? {}, dtoType, 'query');
+    return this.validate(payload.query ?? {}, dtoType, 'query', this.permissivePipe);
   }
 
   private async validate<T extends object>(
     value: unknown,
     dtoType: ClassType<T>,
     type: ArgumentMetadata['type'],
+    pipe: ValidationPipe,
   ): Promise<T> {
     if (!this.isRecord(value)) {
       throw new BadRequestException(`${type} must be an object`);
     }
 
-    const transformed = await this.validationPipe.transform(value, {
+    const transformed = await pipe.transform(value, {
       type,
       metatype: dtoType,
     });

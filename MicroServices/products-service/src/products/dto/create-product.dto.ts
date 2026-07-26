@@ -1,6 +1,7 @@
 import type { CreateProductRequest } from '@agua/contracts';
 import {
   IsBoolean,
+  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsPositive,
@@ -9,6 +10,7 @@ import {
   IsUUID,
   MaxLength,
   Min,
+  MinLength,
 } from 'class-validator';
 
 // Implementa CreateProductRequest de @agua/contracts.
@@ -16,6 +18,8 @@ import {
 // del contrato) — se inyecta server-side desde el JWT (payload.user, vía TCP).
 export class CreateProductDto implements CreateProductRequest {
   @IsString()
+  @IsNotEmpty()
+  @MinLength(2)
   @MaxLength(255)
   nombre!: string;
 
@@ -26,6 +30,16 @@ export class CreateProductDto implements CreateProductRequest {
   @IsNumber({ maxDecimalPlaces: 2 })
   @IsPositive()
   precioSinIva!: number;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  porcentajeIva?: number;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  porcentajeImpuestos?: number;
 
   @IsUUID()
   // categoriaId es required en la API, pero nullable en Prisma (String?)

@@ -1,16 +1,29 @@
-import { Catch, HttpException, HttpStatus, Logger, type ArgumentsHost, type ExceptionFilter } from '@nestjs/common';
+import {
+  Catch,
+  type ExceptionFilter,
+  type ArgumentsHost,
+  HttpException,
+  HttpStatus,
+  Logger,
+} from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { Observable, throwError } from 'rxjs';
 
 /**
- * ⚠️ INFERIDO, NO CONFIRMADO: no tuvimos acceso al rpc-exception.filter.ts
- * actualizado de usuario-service. Sabemos por el nuevo main.ts que ahora se
- * instancia como `new RpcExceptionFilter()` (sin HttpAdapterHost), lo que
- * indica que el equipo ya sacó el manejo de contexto HTTP ya que
- * usuario-service (y ahora products-service) son TCP-only.
+ * Filtro global RPC (TCP).
  *
- * Esta versión solo maneja el contexto 'rpc'. Reemplazar por el archivo
- * real del equipo en cuanto lo compartan.
+ * Versión canonical para servicios TCP-only (usuario-service y products-service).
+ * Si se modifica ACÁ, actualizar también en usuario-service.
+ *
+ * Captura TODAS las excepciones en contexto RPC y las convierte
+ * a RpcException preservando el mensaje original.
+ *
+ * Logging:
+ *   - 4xx (client error) → Logger.warn
+ *   - 5xx (server error) → Logger.error con stack trace
+ *
+ * Uso en main.ts:
+ *   app.useGlobalFilters(new RpcExceptionFilter());
  */
 @Catch()
 export class RpcExceptionFilter implements ExceptionFilter {
