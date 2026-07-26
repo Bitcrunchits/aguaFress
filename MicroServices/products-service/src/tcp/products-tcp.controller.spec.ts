@@ -1,5 +1,5 @@
 import { Test, type TestingModule } from '@nestjs/testing';
-import { ForbiddenException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ProductsTcpController } from './products-tcp.controller';
 import { TcpPayloadAdapter } from './tcp-payload-adapter.service';
 import { ProductsService } from '../products/products.service';
@@ -84,7 +84,7 @@ describe('ProductsTcpController (integración con TcpPayloadAdapter real)', () =
       expect(mockProductsService.list).not.toHaveBeenCalled();
     });
 
-    it('con CLIENTE con cartera, filtra por el vendedor de su proveedor', async () => {
+    it('con CLIENTE con cartera única, filtra por ese vendedor automáticamente', async () => {
       mockClienteVendedorResolver.resolveVendedoresByClienteUserId.mockResolvedValue([VENDEDOR_ID_REAL]);
       mockProductsService.list.mockResolvedValue({ data: [], pagination: {} });
 
@@ -96,6 +96,58 @@ describe('ProductsTcpController (integración con TcpPayloadAdapter real)', () =
       expect(mockProductsService.list).toHaveBeenCalledWith(
         expect.objectContaining({ vendedorId: VENDEDOR_ID_REAL }),
       );
+    });
+
+    it('con CLIENTE con multi-cartera sin vendedorId explícito, lanza requiresSelection', async () => {
+      mockClienteVendedorResolver.resolveVendedoresByClienteUserId.mockResolvedValue([
+        VENDEDOR_ID_REAL,
+        OTRO_VENDEDOR_ID,
+      ]);
+
+      await expect(
+        controller.list(
+          basePayload({ user: { sub: AUTH_USER_ID, email: 'c@test.com', role: 'cliente' } }),
+        ),
+      ).rejects.toThrow(BadRequestException);
+
+      // Verificar el mensaje exacto
+      await expect(
+        controller.list(
+          basePayload({ user: { sub: AUTH_USER_ID, email: 'c@test.com', role: 'cliente' } }),
+        ),
+      ).rejects.toThrow('requiresSelection');
+    });
+
+    it('con CLIENTE con multi-cartera y vendedorId válido, filtra por ese', async () => {
+      mockClienteVendedorResolver.resolveVendedoresByClienteUserId.mockResolvedValue([
+        VENDEDOR_ID_REAL,
+        OTRO_VENDEDOR_ID,
+      ]);
+      mockProductsService.list.mockResolvedValue({ data: [], pagination: {} });
+
+      await controller.list(
+        basePayload({
+          user: { sub: AUTH_USER_ID, email: 'c@test.com', role: 'cliente' },
+          query: { vendedorId: OTRO_VENDEDOR_ID },
+        }),
+      );
+
+      expect(mockProductsService.list).toHaveBeenCalledWith(
+        expect.objectContaining({ vendedorId: OTRO_VENDEDOR_ID }),
+      );
+    });
+
+    it('con CLIENTE con multi-cartera y vendedorId inválido, lanza 404', async () => {
+      mockClienteVendedorResolver.resolveVendedoresByClienteUserId.mockResolvedValue([VENDEDOR_ID_REAL]);
+
+      await expect(
+        controller.list(
+          basePayload({
+            user: { sub: AUTH_USER_ID, email: 'c@test.com', role: 'cliente' },
+            query: { vendedorId: OTRO_VENDEDOR_ID }, // no está en su cartera
+          }),
+        ),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('con VENDEDOR resuelve vendedorId real y filtra', async () => {
@@ -111,6 +163,34 @@ describe('ProductsTcpController (integración con TcpPayloadAdapter real)', () =
       expect(mockProductsService.list).toHaveBeenCalledWith(
         expect.objectContaining({ vendedorId: VENDEDOR_ID_REAL }),
       );
+    });
+
+    it('con VENDEDOR que manda su propio vendedorId explícito, lo respeta', async () => {
+      mockProductsService.list.mockResolvedValue({ data: [], pagination: {} });
+
+      await controller.list(
+        basePayload({
+          user: { sub: AUTH_USER_ID, email: 'v@test.com', role: 'vendedor' },
+          query: { vendedorId: VENDEDOR_ID_REAL },
+        }),
+      );
+
+      expect(mockProductsService.list).toHaveBeenCalledWith(
+        expect.objectContaining({ vendedorId: VENDEDOR_ID_REAL }),
+      );
+    });
+
+    it('con VENDEDOR que manda vendedorId de otro, lanza 404', async () => {
+      mockProductsService.list.mockResolvedValue({ data: [], pagination: {} });
+
+      await expect(
+        controller.list(
+          basePayload({
+            user: { sub: AUTH_USER_ID, email: 'v@test.com', role: 'vendedor' },
+            query: { vendedorId: OTRO_VENDEDOR_ID },
+          }),
+        ),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('con SUPER_ADMIN no filtra por vendedor', async () => {
@@ -233,6 +313,41 @@ describe('ProductsTcpController (integración con TcpPayloadAdapter real)', () =
 
       expect(mockProductsService.search).toHaveBeenCalledWith(
         expect.objectContaining({ q: 'bidón', vendedorId: VENDEDOR_ID_REAL }),
+      );
+    });
+
+    it('con CLIENTE con multi-cartera sin vendedorId, lanza requiresSelection en search', async () => {
+      mockClienteVendedorResolver.resolveVendedoresByClienteUserId.mockResolvedValue([
+        VENDEDOR_ID_REAL,
+        OTRO_VENDEDOR_ID,
+      ]);
+
+      await expect(
+        controller.search(
+          basePayload({
+            user: { sub: AUTH_USER_ID, email: 'c@test.com', role: 'cliente' },
+            query: { q: 'agua' },
+          }),
+        ),
+      ).rejects.toThrow('requiresSelection');
+    });
+
+    it('con CLIENTE multi-cartera y vendedorId válido, search filtra correctamente', async () => {
+      mockClienteVendedorResolver.resolveVendedoresByClienteUserId.mockResolvedValue([
+        VENDEDOR_ID_REAL,
+        OTRO_VENDEDOR_ID,
+      ]);
+      mockProductsService.search.mockResolvedValue({ data: [], pagination: {} });
+
+      await controller.search(
+        basePayload({
+          user: { sub: AUTH_USER_ID, email: 'c@test.com', role: 'cliente' },
+          query: { q: 'agua', vendedorId: OTRO_VENDEDOR_ID },
+        }),
+      );
+
+      expect(mockProductsService.search).toHaveBeenCalledWith(
+        expect.objectContaining({ q: 'agua', vendedorId: OTRO_VENDEDOR_ID }),
       );
     });
   });

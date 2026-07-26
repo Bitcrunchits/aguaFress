@@ -1,4 +1,4 @@
-import { Controller, ForbiddenException, Inject, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Controller, ForbiddenException, Inject, NotFoundException } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { UserRole } from '@agua/contracts';
 import { ProductsService } from '../products/products.service';
@@ -83,9 +83,20 @@ export class ProductsTcpController {
       return { data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } };
     }
 
-    // Si está scoped y no se pasó vendedorId explícito, forzar el scope
-    if (vendedorIds !== null && !filters.vendedorId) {
-      filters.vendedorId = vendedorIds[0];
+    // Scoping activo: validar o resolver vendedorId
+    if (vendedorIds !== null) {
+      if (filters.vendedorId) {
+        // Validar que el vendedorId solicitado esté en sus carteras permitidas
+        if (!vendedorIds.includes(filters.vendedorId)) {
+          throw new NotFoundException('Producto no encontrado');
+        }
+      } else if (payload.user?.role === UserRole.CLIENTE && vendedorIds.length > 1) {
+        // CLIENTE con multi-cartera debe seleccionar un proveedor explícitamente
+        throw new BadRequestException('requiresSelection');
+      } else {
+        // Un solo vendedor disponible → usarlo automáticamente
+        filters.vendedorId = vendedorIds[0];
+      }
     }
 
     return this.productsService.list(filters);
@@ -118,9 +129,20 @@ export class ProductsTcpController {
       return { data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } };
     }
 
-    // Si está scoped y no se pasó vendedorId explícito, forzar el scope
-    if (vendedorIds !== null && !query.vendedorId) {
-      query.vendedorId = vendedorIds[0];
+    // Scoping activo: validar o resolver vendedorId
+    if (vendedorIds !== null) {
+      if (query.vendedorId) {
+        // Validar que el vendedorId solicitado esté en sus carteras permitidas
+        if (!vendedorIds.includes(query.vendedorId)) {
+          throw new NotFoundException('Producto no encontrado');
+        }
+      } else if (payload.user?.role === UserRole.CLIENTE && vendedorIds.length > 1) {
+        // CLIENTE con multi-cartera debe seleccionar un proveedor explícitamente
+        throw new BadRequestException('requiresSelection');
+      } else {
+        // Un solo vendedor disponible → usarlo automáticamente
+        query.vendedorId = vendedorIds[0];
+      }
     }
 
     return this.productsService.search(query);
