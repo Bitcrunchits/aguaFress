@@ -22,7 +22,7 @@ COPY packages/contracts ./packages/contracts
 COPY MicroServices/entregas-service ./MicroServices/entregas-service
 
 # Generar Prisma client ANTES de compilar TypeScript
-RUN cd MicroServices/entregas-service && npx prisma generate
+RUN pnpm --filter @agua/entregas-service run prisma:generate
 
 # Build de paquetes en orden de dependencia
 RUN pnpm --filter @agua/contracts build

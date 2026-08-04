@@ -326,6 +326,29 @@ const SHARED_SCHEMAS: Record<string, Schema> = {
     createdAt: str('ISO 8601'),
   }, ['id', 'action', 'createdAt']),
 
+  ClienteEntregaInfo: obj({
+    nombre: str('Nombre del cliente'),
+    telefono: str('Teléfono del cliente'),
+  }),
+
+  DeliveryResponse: obj({
+    id: str('Entrega ID (UUID)'),
+    orderId: str('Pedido ID (UUID)'),
+    vendedorId: str('Vendedor ID (UUID)'),
+    clienteId: str('Cliente ID (UUID)'),
+    estado: str('Estado: PENDIENTE | EN_CAMINO | ENTREGADA', 'PENDIENTE'),
+    cliente: ref('#/components/schemas/ClienteEntregaInfo'),
+    direccion: ref('#/components/schemas/DireccionEntrega'),
+    fechaAsignacion: str('Fecha asignación ISO 8601'),
+    fechaEntrega: str('Fecha entrega ISO 8601 (null si no entregada)'),
+    notas: str('Notas opcionales'),
+  }, ['id', 'orderId', 'vendedorId', 'clienteId', 'estado', 'cliente', 'direccion', 'fechaAsignacion']),
+
+  UpdateDeliveryStatusRequest: obj({
+    estado: str('Nuevo estado: EN_CAMINO | ENTREGADA', 'EN_CAMINO'),
+    notas: str('Notas opcionales'),
+  }, ['estado']),
+
   SuperAdminDashboard: obj({
     totalVendedores: { type: 'integer' },
     pendientes: { type: 'integer' },
@@ -415,6 +438,33 @@ const ACTIONS_DOC: Record<string, ActionDoc> = {
 
   'orders.create': { summary: 'Crear pedido async', description: 'Valida vendedorId seleccionado, ignora body userId y encola con userId JWT + vendedorId.', method: 'post', bodySchema: 'CreateOrderRequest', responseSchema: 'AsyncAcceptedResponse', roles: ['cliente'] },
   'orders.job_status': { summary: 'Consultar estado de pedido async', method: 'get', queryParams: ['id'], responseSchema: 'AsyncAcceptedResponse' },
+
+  'deliveries.list': {
+    summary: 'Listar mis entregas',
+    description: 'Lista las entregas asignadas al vendedor autenticado. Filtrable por fecha.',
+    method: 'get',
+    queryParams: ['fecha', 'page', 'limit'],
+    responseSchema: 'DeliveryResponse',
+    paginated: true,
+    roles: ['vendedor'],
+  },
+  'deliveries.get': {
+    summary: 'Obtener entrega por ID',
+    description: 'Devuelve el detalle de una entrega del vendedor autenticado.',
+    method: 'get',
+    pathParams: ['id'],
+    responseSchema: 'DeliveryResponse',
+    roles: ['vendedor'],
+  },
+  'deliveries.update_status': {
+    summary: 'Actualizar estado de entrega',
+    description: 'Transiciones válidas: PENDIENTE → EN_CAMINO → ENTREGADA. No se puede retroceder.',
+    method: 'patch',
+    pathParams: ['id'],
+    bodySchema: 'UpdateDeliveryStatusRequest',
+    responseSchema: 'DeliveryResponse',
+    roles: ['vendedor'],
+  },
 };
 
 // ─── Service Family Display Names ───────────────────────────────
@@ -427,6 +477,7 @@ const SERVICE_NAMES: Record<string, string> = {
   clientes: 'Clientes',
   qr: 'Códigos QR',
   'link-invitacion': 'Links de Invitación',
+  deliveries: 'Entregas / Repartos',
 };
 
 // ─── OpenAPI Generator ──────────────────────────────────────────
