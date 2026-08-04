@@ -2,6 +2,7 @@ export type TcpTransport = 'send' | 'publish';
 
 export const ASYNC_QUEUE_NAMES = {
   ORDERS_CREATE: 'orders.create',
+  DELIVERIES_UPDATE_STATUS: 'deliveries.update_status',
 } as const;
 
 export type AsyncQueueName = (typeof ASYNC_QUEUE_NAMES)[keyof typeof ASYNC_QUEUE_NAMES];
@@ -41,6 +42,11 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
       refresh: { tcpPattern: 'auth.refresh', transport: 'send', authRequired: false },
       validate: { tcpPattern: 'auth.validate', transport: 'send', authRequired: false },
       logout: { tcpPattern: 'auth.logout', transport: 'send', authRequired: true },
+      'change-password': { tcpPattern: 'auth.change_password', transport: 'send', authRequired: true },
+      'admin-generate-reset-token': { tcpPattern: 'auth.admin_generate_reset_token', transport: 'send', authRequired: true, roles: ['super_admin'] },
+      'reset-password': { tcpPattern: 'auth.reset_password', transport: 'send', authRequired: false },
+      'register-client': { tcpPattern: 'auth.register_client', transport: 'send', authRequired: false },
+      'register-client/by-vendor': { tcpPattern: 'auth.register_client_by_vendor', transport: 'send', authRequired: true, roles: ['vendedor'] },
     },
   },
   users: {
@@ -57,7 +63,7 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
       profile: { tcpPattern: 'vendedores.profile', transport: 'send', authRequired: true },
       'profile/update': { tcpPattern: 'vendedores.profile_update', transport: 'send', authRequired: true },
       'get-by-id': { tcpPattern: 'vendedores.get_by_id', transport: 'send', authRequired: true, roles: ['super_admin'] },
-      update: { tcpPattern: 'vendedores.update', transport: 'send', authRequired: true, roles: ['super_admin'] },
+      // update: { tcpPattern: 'vendedores.update', transport: 'send', authRequired: true, roles: ['super_admin'] }, // deprecated: vendor self-manages via profile/update
       'change-estado': { tcpPattern: 'vendedores.change_estado', transport: 'send', authRequired: true, roles: ['super_admin'] },
     },
   },
@@ -106,10 +112,35 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
       'vendor/deactivate': { tcpPattern: 'link_invitacion.vendor_deactivate', transport: 'send', authRequired: true, roles: ['vendedor'] },
     },
   },
-  // Planned service families — not deployed yet
-  products: { status: 'unavailable', actions: {} },
-  categories: { status: 'unavailable', actions: {} },
-  brands: { status: 'unavailable', actions: {} },
+  products: {
+    status: 'available',
+    actions: {
+      list: { tcpPattern: 'products.list', transport: 'send', authRequired: false },
+      get: { tcpPattern: 'products.get', transport: 'send', authRequired: false },
+      search: { tcpPattern: 'products.search', transport: 'send', authRequired: false },
+      create: { tcpPattern: 'products.create', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      update: { tcpPattern: 'products.update', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      delete: { tcpPattern: 'products.delete', transport: 'send', authRequired: true, roles: ['vendedor'] },
+    },
+  },
+  categories: {
+    status: 'available',
+    actions: {
+      list: { tcpPattern: 'categories.list', transport: 'send', authRequired: false },
+      create: { tcpPattern: 'categories.create', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      update: { tcpPattern: 'categories.update', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      delete: { tcpPattern: 'categories.delete', transport: 'send', authRequired: true, roles: ['vendedor'] },
+    },
+  },
+  brands: {
+    status: 'available',
+    actions: {
+      list: { tcpPattern: 'brands.list', transport: 'send', authRequired: false },
+      create: { tcpPattern: 'brands.create', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      update: { tcpPattern: 'brands.update', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      delete: { tcpPattern: 'brands.delete', transport: 'send', authRequired: true, roles: ['vendedor'] },
+    },
+  },
   orders: {
     status: 'available',
     actions: {
@@ -143,7 +174,8 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
     actions: {
       list: { tcpPattern: 'deliveries.list', transport: 'send', authRequired: true, roles: ['vendedor'] },
       get: { tcpPattern: 'deliveries.get', transport: 'send', authRequired: true, roles: ['vendedor'] },
-      'update-status': { tcpPattern: 'deliveries.update_status', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      'update-status': { tcpPattern: 'deliveries.update_status', transport: 'send', authRequired: true, roles: ['vendedor'], asyncQueue: ASYNC_QUEUE_NAMES.DELIVERIES_UPDATE_STATUS },
+      'job-status': { tcpPattern: 'deliveries.job_status', transport: 'send', authRequired: true, roles: ['vendedor'] },
     },
   },
   'activity-logs': {

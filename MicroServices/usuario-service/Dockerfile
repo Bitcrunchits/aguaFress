@@ -46,5 +46,5 @@ COPY --from=build /app/MicroServices/usuario-service/prisma ./MicroServices/usua
 
 EXPOSE 3011
 
-# db push auto + arranque
-CMD cd MicroServices/usuario-service && npx prisma generate && npx prisma db push && node dist/main.js
+# db push auto + seed test + arranque
+CMD cd MicroServices/usuario-service && npx prisma generate && npx prisma db push && node prisma/seed.cjs && node dist/main.js

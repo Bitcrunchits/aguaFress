@@ -32,8 +32,19 @@ export class JwtAuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
     const actionMapping = this.resolveActionMapping(request);
 
-    // Allow actions explicitly marked as public in the registry (no JWT needed)
+    // Actions without authRequired: allow public access, but still try
+    // to extract the JWT if present so downstream services can resolve
+    // the authenticated user (e.g. resolve vendedorId from token).
     if (actionMapping && !actionMapping.authRequired) {
+      const token = this.extractTokenFromHeader(request);
+      if (token) {
+        try {
+          const payload = this.jwtService.verify<JwtPayload>(token);
+          (request as unknown as Record<string, unknown>).user = payload;
+        } catch {
+          // Token present but invalid — ignore, public access is still allowed
+        }
+      }
       return true;
     }
 

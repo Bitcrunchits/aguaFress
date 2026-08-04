@@ -1,32 +1,6 @@
 import { RpcExceptionFilter } from './rpc-exception.filter';
-import {
-  HttpException,
-  HttpStatus,
-  type ArgumentsHost,
-} from '@nestjs/common';
-import { HttpAdapterHost } from '@nestjs/core';
+import { HttpException, HttpStatus, type ArgumentsHost } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
-
-function createMockHttpAdapterHost() {
-  const reply = jest.fn();
-  const getRequestUrl = jest.fn().mockReturnValue('/api/test');
-
-  const httpAdapterHost = {
-    httpAdapter: { reply, getRequestUrl },
-  } as unknown as HttpAdapterHost;
-
-  return { httpAdapterHost, reply, getRequestUrl };
-}
-
-function createHttpHost(response: any): ArgumentsHost {
-  return {
-    getType: () => 'http' as const,
-    switchToHttp: () => ({
-      getRequest: () => ({ url: '/api/test' }),
-      getResponse: () => response,
-    }),
-  } as ArgumentsHost;
-}
 
 function createRpcHost(): ArgumentsHost {
   return {
@@ -36,65 +10,10 @@ function createRpcHost(): ArgumentsHost {
 
 describe('RpcExceptionFilter', () => {
   let filter: RpcExceptionFilter;
-  let httpAdapterHost: HttpAdapterHost;
-  let reply: jest.Mock;
 
   beforeEach(() => {
-    const mock = createMockHttpAdapterHost();
-    httpAdapterHost = mock.httpAdapterHost;
-    reply = mock.reply;
-    filter = new RpcExceptionFilter(httpAdapterHost);
+    filter = new RpcExceptionFilter();
   });
-
-  // ── HTTP context ──────────────────────────────────────────
-
-  describe('HTTP context', () => {
-    function catchAndAssert(
-      exception: unknown,
-      expectedStatus: number,
-      expectedBody: Record<string, any>,
-    ) {
-      filter.catch(exception, createHttpHost({}));
-
-      expect(reply).toHaveBeenCalledTimes(1);
-      const [, body, status] = reply.mock.calls[0];
-      expect(status).toBe(expectedStatus);
-      expect(body).toMatchObject(expectedBody);
-      expect(typeof body.timestamp).toBe('string');
-
-      return body;
-    }
-
-    it('devuelve JSON con statusCode, message, path y timestamp para HttpException', () => {
-      const body = catchAndAssert(
-        new HttpException('Not Found', 404),
-        HttpStatus.NOT_FOUND,
-        { message: 'Not Found', statusCode: 404, path: '/api/test' },
-      );
-    });
-
-    it('devuelve 500 para errores no manejados sin error field', () => {
-      const body = catchAndAssert(
-        new Error('Algo explotó'),
-        HttpStatus.INTERNAL_SERVER_ERROR,
-        { statusCode: 500, message: 'Internal server error', path: '/api/test' },
-      );
-      expect(body.error).toBeUndefined();
-    });
-
-    it('preserva array de mensajes de ValidationPipe', () => {
-      const body = catchAndAssert(
-        new HttpException(
-          { message: ['email must be an email', 'password too short'], error: 'Bad Request' },
-          HttpStatus.BAD_REQUEST,
-        ),
-        HttpStatus.BAD_REQUEST,
-        { message: ['email must be an email', 'password too short'], statusCode: 400, path: '/api/test' },
-      );
-    });
-  });
-
-  // ── RPC context ───────────────────────────────────────────
 
   describe('RPC context', () => {
     it('convierte HttpException a RpcException con el mismo código y mensaje', () => {

@@ -1,0 +1,84 @@
+// products-service — Prisma schema
+// DB: PostgreSQL (misma instancia "agua", schema propio del servicio)
+// Sin FKs Prisma cruzadas a otros microservicios (usuario-service, etc.):
+// vendedorId es un UUID escalar, ownership se valida por TCP/JWT, no por FK.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Categoría ───
+model Categoria {
+  id         String   @id @default(uuid()) @db.Uuid
+  nombre     String   @db.VarChar(255)
+  orden      Int      @default(0)
+  activo     Boolean  @default(true)
+  vendedorId String   @map("vendedor_id") @db.Uuid
+  productos  Producto[]
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([vendedorId, nombre])
+  @@index([vendedorId])
+  @@index([vendedorId, activo])
+  @@map("CATEGORIA")
+}
+
+// ─── Marca ───
+model Marca {
+  id         String     @id @default(uuid()) @db.Uuid
+  nombre     String     @db.VarChar(255)
+  activo     Boolean    @default(true)
+  vendedorId String     @map("vendedor_id") @db.Uuid
+  productos  Producto[]
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+
+  @@unique([vendedorId, nombre])
+  @@index([vendedorId])
+  @@index([vendedorId, activo])
+  @@map("MARCA")
+}
+
+// ─── Producto ───
+// precioSinIva: lo manda el vendedor. precioFinal: SIEMPRE calculado server-side.
+model Producto {
+  id            String     @id @default(uuid()) @db.Uuid
+  nombre        String     @db.VarChar(255)
+  descripcion   String?    @db.Text
+  precioSinIva  Decimal    @map("precio_sin_iva") @db.Decimal(10, 2)
+  precioFinal   Decimal    @map("precio_final") @db.Decimal(10, 2)
+  imagen        String?    @db.VarChar(500)
+  stock         Int        @default(0)
+  activo        Boolean    @default(true)
+  mostrarPrecio      Boolean   @default(true) @map("mostrar_precio")
+  porcentajeIva      Decimal   @default(21.00) @map("porcentaje_iva") @db.Decimal(5, 2)
+  porcentajeImpuestos Decimal  @default(0.00) @map("porcentaje_impuestos") @db.Decimal(5, 2)
+
+  vendedorId  String     @map("vendedor_id") @db.Uuid
+  // Nullable intencional: soporta onDelete: SetNull. En API es required.
+  categoriaId String?    @map("categoria_id") @db.Uuid
+  marcaId     String?    @map("marca_id") @db.Uuid
+
+  categoria Categoria? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+  marca     Marca?     @relation(fields: [marcaId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([vendedorId])
+  @@index([categoriaId])
+  @@index([marcaId])
+  @@index([vendedorId, activo])
+  @@map("PRODUCTO")
+}
+
+// ⚠️ PENDIENTE — bloqueado por falta de info del equipo:
+// PRODUCTO_IMAGEN y DESCUENTO están pedidos en el Jira ("solo modelo, sin
+// lógica") pero no tenemos sus campos desde docs/documentación/modelo-datos.md.
+// Agregar acá en cuanto el equipo los comparta.

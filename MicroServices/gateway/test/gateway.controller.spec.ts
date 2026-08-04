@@ -3,6 +3,7 @@ import { ActionResolverService, ActionNotFoundError, ServiceUnavailable } from '
 import { type ActionMapping } from '../src/actions/action-registry';
 import { GatewayController } from '../src/gateway.controller';
 import { OrdersCreateQueueService } from '../src/queues/orders-create-queue.service';
+import { DeliveriesQueueService } from '../src/queues/deliveries-queue.service';
 import { TcpDispatcherService } from '../src/tcp/tcp-dispatcher.service';
 
 describe('GatewayController', () => {
@@ -10,6 +11,7 @@ describe('GatewayController', () => {
   let mockResolver: jest.Mocked<ActionResolverService>;
   let mockDispatcher: { dispatch: jest.Mock };
   let mockOrdersCreateQueue: { enqueue: jest.Mock };
+  let mockDeliveriesQueue: { enqueue: jest.Mock; getJobStatus: jest.Mock };
 
   const mockMapping: ActionMapping = {
     tcpPattern: 'auth.login',
@@ -20,6 +22,10 @@ describe('GatewayController', () => {
   beforeEach(() => {
     mockResolver = {
       resolve: jest.fn(),
+      parseActionPath: jest.fn().mockImplementation((service: string, action: string) => ({
+        action,
+        params: { service, action },
+      })),
     } as unknown as jest.Mocked<ActionResolverService>;
 
     mockDispatcher = {
@@ -30,10 +36,16 @@ describe('GatewayController', () => {
       enqueue: jest.fn(),
     };
 
+    mockDeliveriesQueue = {
+      enqueue: jest.fn(),
+      getJobStatus: jest.fn(),
+    };
+
     controller = new GatewayController(
       mockResolver,
       mockDispatcher as unknown as TcpDispatcherService,
       mockOrdersCreateQueue as unknown as OrdersCreateQueueService,
+      mockDeliveriesQueue as unknown as DeliveriesQueueService,
     );
   });
 

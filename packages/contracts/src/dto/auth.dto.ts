@@ -81,6 +81,39 @@ export interface GoogleLoginResponse {
   user: { id: string; email: string; role: UserRole };
 }
 
+// ─── Admin Generate Reset Token ───
+
+export interface AdminGenerateResetTokenRequest {
+  userId: string;
+}
+
+export interface AdminGenerateResetTokenResponse {
+  resetToken: string;
+  expiresAt: string;
+}
+
+// ─── Reset Password (public, with token) ───
+
+export interface ResetPasswordRequest {
+  token: string;
+  newPassword: string;
+}
+
+export interface ResetPasswordResponse {
+  message: string;
+}
+
+// ─── Change Password ───
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface ChangePasswordResponse {
+  message: string;
+}
+
 // ─── Refresh / Validate ───
 
 export interface RefreshTokenRequest {

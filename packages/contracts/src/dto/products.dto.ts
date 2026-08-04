@@ -14,6 +14,10 @@ export interface ProductResponse {
   nombre: string;
   descripcion?: string;
   precioSinIva: number;
+  porcentajeIva: number;
+  porcentajeImpuestos: number;
+  costoIva: number;
+  costoImpuestos: number;
   precioFinal: number;
   imagen?: string;
   stock: number;
@@ -32,6 +36,10 @@ export interface CreateProductRequest {
   descripcion?: string;
   /** Monto SIN IVA. El service calcula precioFinal automáticamente. */
   precioSinIva: number;
+  /** Porcentaje de IVA (default 21). Se guarda por producto para flexibilidad fiscal. */
+  porcentajeIva?: number;
+  /** Porcentaje de impuestos adicionales (IIBB, municipales). Default 0. */
+  porcentajeImpuestos?: number;
   categoriaId: string;
   marcaId?: string;
   imagen?: string;
@@ -50,17 +58,21 @@ export interface UpdateProductRequest {
   nombre?: string;
   descripcion?: string;
   precioSinIva?: number;
+  porcentajeIva?: number;
+  porcentajeImpuestos?: number;
   stock?: number;
   imagen?: string;
   activo?: boolean;
   mostrarPrecio?: boolean;
+  categoriaId?: string;
+  marcaId?: string;
 }
 
 // ─── Filtros y búsqueda ───
 
 export interface ProductListFilters extends PaginationRequest {
   vendedorId?: string;
-  categoria?: string;
+  categoriaId?: string;
   /** Solo productos con stock > 0 y activo = true */
   disponibles?: boolean;
 }
@@ -68,6 +80,8 @@ export interface ProductListFilters extends PaginationRequest {
 export interface SearchProductQuery {
   q: string;
   vendedorId?: string;
+  page?: number;
+  limit?: number;
 }
 
 // ─── Marcas y Categorías ───
@@ -76,6 +90,9 @@ export interface MarcaResponse {
   id: string;
   nombre: string;
   vendedorId: string;
+  activo?: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CategoriaResponse {
@@ -83,4 +100,7 @@ export interface CategoriaResponse {
   nombre: string;
   orden: number;
   vendedorId: string;
+  activo?: boolean;
+  createdAt: string;
+  updatedAt: string;
 }

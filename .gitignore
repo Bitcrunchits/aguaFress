@@ -13,3 +13,6 @@ coverage/
 # MCP local helpers
 mcp/jira-mcp-server/jira-helper.mjs
 mcp/
+
+# Build artifacts
+*.tsbuildinfo

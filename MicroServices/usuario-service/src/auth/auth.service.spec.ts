@@ -66,6 +66,7 @@ describe('AuthService', () => {
   describe('register', () => {
     const registerDto = {
       email: 'vendedor@test.com',
+      emailConfirmation: 'vendedor@test.com',
       password: 'password123',
       nombre: 'Vendedor',
       apellido: 'Test',
@@ -168,6 +169,7 @@ describe('AuthService', () => {
       mockPrisma.vendedor.findUnique.mockResolvedValue({
         nombre: 'Vendedor Test',
         apellido: null,
+        estado: 'activo',
       });
 
       const result = await authService.login(loginDto);

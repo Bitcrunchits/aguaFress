@@ -27,6 +27,46 @@ export interface DeliveryRecord {
   readonly notas: string | null;
 }
 
+export interface DeliveryCommandJobRecord {
+  readonly id: string;
+  readonly trackingId: string;
+  readonly jobId: string;
+  readonly deliveryId: string;
+  readonly vendedorId: string;
+  readonly actorUserId: string;
+  readonly estado: $Enums.DeliveryEstado;
+  readonly notas: string | null;
+  readonly estadoAnterior: $Enums.DeliveryEstado | null;
+  readonly status: $Enums.DeliveryJobStatus;
+  readonly idempotencyKey: string;
+  readonly payloadFingerprint: string;
+  readonly errorCode: string | null;
+  readonly errorMessage: string | null;
+  readonly attempts: number;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
+}
+
+export interface CreateDeliveryCommandJobInput {
+  readonly trackingId: string;
+  readonly jobId: string;
+  readonly deliveryId: string;
+  readonly vendedorId: string;
+  readonly actorUserId: string;
+  readonly estado: $Enums.DeliveryEstado;
+  readonly notas: string | null;
+  readonly idempotencyKey: string;
+  readonly payloadFingerprint: string;
+}
+
+export interface UpdateDeliveryCommandJobStatusInput {
+  readonly status: $Enums.DeliveryJobStatus;
+  readonly estadoAnterior?: $Enums.DeliveryEstado;
+  readonly errorCode?: string;
+  readonly errorMessage?: string;
+  readonly attempts?: number;
+}
+
 export interface FindAllQuery {
   readonly fecha?: string;
   readonly page: number;
@@ -43,6 +83,10 @@ export interface DeliveriesRepository {
   findAll(vendedorId: string, query: FindAllQuery): Promise<{ data: DeliveryRecord[]; total: number }>;
   findById(id: string): Promise<DeliveryRecord | null>;
   updateStatus(id: string, data: UpdateStatusData): Promise<DeliveryRecord>;
+  createDeliveryCommandJob(input: CreateDeliveryCommandJobInput): Promise<DeliveryCommandJobRecord>;
+  findDeliveryCommandByIdempotency(deliveryId: string, idempotencyKey: string): Promise<DeliveryCommandJobRecord | null>;
+  findDeliveryCommandByTrackingId(trackingId: string): Promise<DeliveryCommandJobRecord | null>;
+  updateDeliveryCommandJobStatus(id: string, input: UpdateDeliveryCommandJobStatusInput): Promise<DeliveryCommandJobRecord>;
 }
 
 @Injectable()
@@ -94,6 +138,55 @@ export class PrismaDeliveriesRepository implements DeliveriesRepository {
     });
     return mapDelivery(delivery);
   }
+
+  // ─── DeliveryCommandJob methods ────────────────────────
+
+  async createDeliveryCommandJob(input: CreateDeliveryCommandJobInput): Promise<DeliveryCommandJobRecord> {
+    const record = await this.prisma.deliveryCommandJob.create({
+      data: {
+        tracking_id: input.trackingId,
+        job_id: input.jobId,
+        delivery_id: input.deliveryId,
+        vendedor_id: input.vendedorId,
+        actor_user_id: input.actorUserId,
+        estado: input.estado,
+        notas: input.notas,
+        idempotency_key: input.idempotencyKey,
+        payload_fingerprint: input.payloadFingerprint,
+      },
+    });
+    return mapDeliveryCommandJob(record);
+  }
+
+  async findDeliveryCommandByIdempotency(deliveryId: string, idempotencyKey: string): Promise<DeliveryCommandJobRecord | null> {
+    const record = await this.prisma.deliveryCommandJob.findUnique({
+      where: {
+        delivery_id_idempotency_key: { delivery_id: deliveryId, idempotency_key: idempotencyKey },
+      },
+    });
+    return record === null ? null : mapDeliveryCommandJob(record);
+  }
+
+  async findDeliveryCommandByTrackingId(trackingId: string): Promise<DeliveryCommandJobRecord | null> {
+    const record = await this.prisma.deliveryCommandJob.findUnique({
+      where: { tracking_id: trackingId },
+    });
+    return record === null ? null : mapDeliveryCommandJob(record);
+  }
+
+  async updateDeliveryCommandJobStatus(id: string, input: UpdateDeliveryCommandJobStatusInput): Promise<DeliveryCommandJobRecord> {
+    const record = await this.prisma.deliveryCommandJob.update({
+      where: { id },
+      data: {
+        status: input.status,
+        estado_anterior: input.estadoAnterior,
+        error_code: input.errorCode,
+        error_message: input.errorMessage,
+        attempts: input.attempts,
+      },
+    });
+    return mapDeliveryCommandJob(record);
+  }
 }
 
 function mapDelivery(delivery: {
@@ -139,5 +232,45 @@ function mapDelivery(delivery: {
     fechaAsignacion: delivery.fecha_asignacion,
     fechaEntrega: delivery.fecha_entrega,
     notas: delivery.notas,
+  };
+}
+
+function mapDeliveryCommandJob(record: {
+  id: string;
+  tracking_id: string;
+  job_id: string;
+  delivery_id: string;
+  vendedor_id: string;
+  actor_user_id: string;
+  estado: $Enums.DeliveryEstado;
+  notas: string | null;
+  estado_anterior: $Enums.DeliveryEstado | null;
+  status: $Enums.DeliveryJobStatus;
+  idempotency_key: string;
+  payload_fingerprint: string;
+  error_code: string | null;
+  error_message: string | null;
+  attempts: number;
+  created_at: Date;
+  updated_at: Date;
+}): DeliveryCommandJobRecord {
+  return {
+    id: record.id,
+    trackingId: record.tracking_id,
+    jobId: record.job_id,
+    deliveryId: record.delivery_id,
+    vendedorId: record.vendedor_id,
+    actorUserId: record.actor_user_id,
+    estado: record.estado,
+    notas: record.notas,
+    estadoAnterior: record.estado_anterior,
+    status: record.status,
+    idempotencyKey: record.idempotency_key,
+    payloadFingerprint: record.payload_fingerprint,
+    errorCode: record.error_code,
+    errorMessage: record.error_message,
+    attempts: record.attempts,
+    createdAt: record.created_at,
+    updatedAt: record.updated_at,
   };
 }

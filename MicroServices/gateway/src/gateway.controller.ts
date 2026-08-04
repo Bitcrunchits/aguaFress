@@ -23,6 +23,8 @@ import type { Request, Response } from 'express';
 import { ActionResolverService } from './actions/action-resolver.service';
 import { TcpDispatcherService, type TcpCommandPayload } from './tcp/tcp-dispatcher.service';
 import { OrdersCreateQueueService } from './queues/orders-create-queue.service';
+import { DeliveriesQueueService } from './queues/deliveries-queue.service';
+import type { UpdateDeliveryStatusJobData } from '@agua/contracts';
 
 const PROVIDER_SELECTION_MAPPING = {
   tcpPattern: 'clientes.providers_select',
@@ -41,6 +43,7 @@ export class GatewayController {
     private readonly resolver: ActionResolverService,
     private readonly dispatcher: TcpDispatcherService,
     private readonly ordersCreateQueue: OrdersCreateQueueService,
+    private readonly deliveriesQueue: DeliveriesQueueService,
   ) {}
 
   @Head(':action(.*)')
@@ -53,7 +56,7 @@ export class GatewayController {
   @Get(':action(.*)')
   @ApiOperation({ summary: 'Execute a GET action', description: 'Dispatches a read-only action to the target microservice via TCP.' })
   @ApiParam({ name: 'service', description: 'Service family (auth, users, vendedores, clientes, etc.)' })
-  @ApiParam({ name: 'action', description: 'Action to execute within the service family' })
+  @ApiParam({ name: 'action', description: 'Action to execute within the service family. Append /:id for entity-specific operations.' })
   @ApiQuery({ name: 'query', required: false, description: 'Query parameters forwarded to the microservice' })
   @ApiResponse({ status: 200, description: 'Action executed successfully' })
   @ApiResponse({ status: 401, description: 'Missing or invalid JWT' })
@@ -67,8 +70,9 @@ export class GatewayController {
     @Query() query: Record<string, string>,
     @Req() req: Request,
   ): Promise<unknown> {
-    const mapping = this.resolver.resolve(service, action);
-    const payload = this.buildPayload(req, query, { service, action });
+    const { action: resolvedAction, params } = this.resolver.parseActionPath(service, action);
+    const mapping = this.resolver.resolve(service, resolvedAction);
+    const payload = this.buildPayload(req, query, params);
     await this.validateProviderScopedDispatch(service, req, payload);
     return this.dispatcher.dispatch(service, payload, mapping);
   }
@@ -77,7 +81,7 @@ export class GatewayController {
   @HttpCode(200)
   @ApiOperation({ summary: 'Execute a POST action', description: 'Dispatches a mutating action to the target microservice via TCP.' })
   @ApiParam({ name: 'service', description: 'Service family' })
-  @ApiParam({ name: 'action', description: 'Action to execute' })
+  @ApiParam({ name: 'action', description: 'Action to execute. Append /:id for entity-specific operations.' })
   @ApiResponse({ status: 200, description: 'Action executed successfully' })
   @ApiResponse({ status: 401, description: 'Missing or invalid JWT' })
   @ApiResponse({ status: 403, description: 'Insufficient role' })
@@ -91,7 +95,8 @@ export class GatewayController {
     @Req() req: Request,
     @Res({ passthrough: true }) res?: Response,
   ): Promise<unknown> {
-    const mapping = this.resolver.resolve(service, action);
+    const { action: resolvedAction, params } = this.resolver.parseActionPath(service, action);
+    const mapping = this.resolver.resolve(service, resolvedAction);
     const sanitizedBody = sanitizeBodyIdentity(body);
 
     if (mapping.asyncQueue === 'orders.create') {
@@ -110,7 +115,7 @@ export class GatewayController {
       });
     }
 
-    const payload = this.buildPayload(req, query, { service, action }, sanitizedBody);
+    const payload = this.buildPayload(req, query, params, sanitizedBody);
     await this.validateProviderScopedDispatch(service, req, payload);
     return this.dispatcher.dispatch(service, payload, mapping);
   }
@@ -118,7 +123,7 @@ export class GatewayController {
   @Patch(':action(.*)')
   @ApiOperation({ summary: 'Execute a PATCH action', description: 'Dispatches a partial update action to the target microservice via TCP.' })
   @ApiParam({ name: 'service', description: 'Service family' })
-  @ApiParam({ name: 'action', description: 'Action to execute' })
+  @ApiParam({ name: 'action', description: 'Action to execute. Append /:id for entity-specific operations.' })
   @ApiResponse({ status: 200, description: 'Action executed successfully' })
   @ApiResponse({ status: 401, description: 'Missing or invalid JWT' })
   @ApiResponse({ status: 403, description: 'Insufficient role' })
@@ -130,9 +135,38 @@ export class GatewayController {
     @Body() body: unknown,
     @Query() query: Record<string, string>,
     @Req() req: Request,
+    @Res({ passthrough: true }) res?: Response,
   ): Promise<unknown> {
-    const mapping = this.resolver.resolve(service, action);
-    const payload = this.buildPayload(req, query, { service, action }, sanitizeBodyIdentity(body));
+    const { action: resolvedAction, params } = this.resolver.parseActionPath(service, action);
+    const mapping = this.resolver.resolve(service, resolvedAction);
+    const sanitizedBody = sanitizeBodyIdentity(body);
+
+    if (mapping.asyncQueue === 'deliveries.update_status') {
+      const deliveryId = readDeliveryId(query, sanitizedBody);
+      if (deliveryId === undefined) {
+        throw new BadRequestException('delivery id is required for deliveries.update-status');
+      }
+
+      const user = readAuthenticatedUser(req);
+      const idempotencyKey = readDeliveriesIdempotencyKey(req, sanitizedBody);
+      const vendedorId = user?.sub ?? '';
+      const actorUserId = user?.sub ?? '';
+      const requestId = readRequestId(req);
+      const parsedBody = isPlainRecord(sanitizedBody) ? sanitizedBody as Record<string, unknown> : {};
+
+      res?.status(HttpStatus.ACCEPTED);
+      return this.deliveriesQueue.enqueue({
+        deliveryId,
+        vendedorId,
+        actorUserId,
+        estado: parsedBody.estado as UpdateDeliveryStatusJobData['estado'],
+        notas: typeof parsedBody.notas === 'string' ? parsedBody.notas : undefined,
+        idempotencyKey,
+        requestId,
+      });
+    }
+
+    const payload = this.buildPayload(req, query, params, sanitizedBody);
     await this.validateProviderScopedDispatch(service, req, payload);
     return this.dispatcher.dispatch(service, payload, mapping);
   }
@@ -140,7 +174,7 @@ export class GatewayController {
   @Delete(':action(.*)')
   @ApiOperation({ summary: 'Execute a DELETE action', description: 'Dispatches a delete action to the target microservice via TCP.' })
   @ApiParam({ name: 'service', description: 'Service family' })
-  @ApiParam({ name: 'action', description: 'Action to execute' })
+  @ApiParam({ name: 'action', description: 'Action to execute. Append /:id for entity-specific operations.' })
   @ApiResponse({ status: 200, description: 'Action executed successfully' })
   @ApiResponse({ status: 401, description: 'Missing or invalid JWT' })
   @ApiResponse({ status: 403, description: 'Insufficient role' })
@@ -153,8 +187,9 @@ export class GatewayController {
     @Query() query: Record<string, string>,
     @Req() req: Request,
   ): Promise<unknown> {
-    const mapping = this.resolver.resolve(service, action);
-    const payload = this.buildPayload(req, query, { service, action }, sanitizeBodyIdentity(body));
+    const { action: resolvedAction, params } = this.resolver.parseActionPath(service, action);
+    const mapping = this.resolver.resolve(service, resolvedAction);
+    const payload = this.buildPayload(req, query, params, sanitizeBodyIdentity(body));
     await this.validateProviderScopedDispatch(service, req, payload);
     return this.dispatcher.dispatch(service, payload, mapping);
   }
@@ -311,3 +346,37 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 function isProviderScopedService(service: string): boolean {
   return service === 'cart' || service === 'orders';
 }
+
+function readDeliveryId(query: Record<string, string>, body: unknown): string | undefined {
+  const queryId = query.id?.trim();
+  if (queryId !== undefined && queryId.length > 0) {
+    return queryId;
+  }
+
+  if (!isPlainRecord(body) || typeof body.id !== 'string') {
+    return undefined;
+  }
+
+  const bodyId = body.id.trim();
+  return bodyId.length > 0 ? bodyId : undefined;
+}
+
+function readDeliveriesIdempotencyKey(req: Request, body: unknown): string {
+  const headerKey = readStringHeader(req.headers['idempotency-key']);
+  const bodyKey = isPlainRecord(body) && typeof body.idempotencyKey === 'string'
+    ? body.idempotencyKey.trim()
+    : undefined;
+
+  if (headerKey !== undefined && bodyKey !== undefined && headerKey !== bodyKey) {
+    throw new BadRequestException('Idempotency-Key header must match body idempotencyKey');
+  }
+
+  const idempotencyKey = headerKey ?? bodyKey;
+  if (idempotencyKey === undefined || idempotencyKey.length === 0) {
+    throw new BadRequestException('Idempotency key is required for deliveries.update-status');
+  }
+
+  return idempotencyKey;
+}
+
+

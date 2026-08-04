@@ -13,6 +13,10 @@ export const GATEWAY_ENV_DEFAULTS = {
   ORDERS_CREATE_QUEUE_ATTEMPTS: 3,
   ORDERS_CREATE_QUEUE_BACKOFF_MS: 1000,
   ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE: 1000,
+  DELIVERIES_QUEUE_NAME: 'deliveries.update_status',
+  DELIVERIES_QUEUE_ATTEMPTS: 3,
+  DELIVERIES_QUEUE_BACKOFF_MS: 1000,
+  DELIVERIES_QUEUE_REMOVE_ON_COMPLETE: 1000,
 } as const;
 
 const REQUIRED_ENV_KEYS = {
@@ -25,6 +29,8 @@ const REQUIRED_ENV_KEYS = {
   NOTIFICATIONS_SERVICE_TCP_PORT: 'NOTIFICATIONS_SERVICE_TCP_PORT',
   ENTREGAS_SERVICE_HOST: 'ENTREGAS_SERVICE_HOST',
   ENTREGAS_SERVICE_TCP_PORT: 'ENTREGAS_SERVICE_TCP_PORT',
+  PRODUCTS_SERVICE_HOST: 'PRODUCTS_SERVICE_HOST',
+  PRODUCTS_SERVICE_TCP_PORT: 'PRODUCTS_SERVICE_TCP_PORT',
 } as const;
 
 type RequiredEnvKey = (typeof REQUIRED_ENV_KEYS)[keyof typeof REQUIRED_ENV_KEYS];
@@ -47,6 +53,8 @@ export interface GatewayEnv {
   readonly NOTIFICATIONS_SERVICE_TCP_PORT: number;
   readonly ENTREGAS_SERVICE_HOST: string;
   readonly ENTREGAS_SERVICE_TCP_PORT: number;
+  readonly PRODUCTS_SERVICE_HOST: string;
+  readonly PRODUCTS_SERVICE_TCP_PORT: number;
   readonly TCP_TIMEOUT_MS: number;
   readonly RATE_LIMIT_TTL_MS: number;
   readonly RATE_LIMIT_MAX: number;
@@ -60,6 +68,10 @@ export interface GatewayEnv {
   readonly ORDERS_CREATE_QUEUE_ATTEMPTS: number;
   readonly ORDERS_CREATE_QUEUE_BACKOFF_MS: number;
   readonly ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE: number;
+  readonly DELIVERIES_QUEUE_NAME: string;
+  readonly DELIVERIES_QUEUE_ATTEMPTS: number;
+  readonly DELIVERIES_QUEUE_BACKOFF_MS: number;
+  readonly DELIVERIES_QUEUE_REMOVE_ON_COMPLETE: number;
 }
 
 type GatewayEnvInput = Record<string, string | undefined>;
@@ -83,6 +95,10 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
   const entregasServiceTcpPort = readRequiredPort(
     envInput.ENTREGAS_SERVICE_TCP_PORT,
     'ENTREGAS_SERVICE_TCP_PORT',
+  );
+  const productsServiceTcpPort = readRequiredPort(
+    envInput.PRODUCTS_SERVICE_TCP_PORT,
+    'PRODUCTS_SERVICE_TCP_PORT',
   );
   const tcpTimeoutMs = readOptionalPositiveInteger(
     envInput.TCP_TIMEOUT_MS,
@@ -134,6 +150,21 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
     GATEWAY_ENV_DEFAULTS.ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE,
     'ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE',
   );
+  const deliveriesQueueAttempts = readOptionalPositiveInteger(
+    envInput.DELIVERIES_QUEUE_ATTEMPTS,
+    GATEWAY_ENV_DEFAULTS.DELIVERIES_QUEUE_ATTEMPTS,
+    'DELIVERIES_QUEUE_ATTEMPTS',
+  );
+  const deliveriesQueueBackoffMs = readOptionalPositiveInteger(
+    envInput.DELIVERIES_QUEUE_BACKOFF_MS,
+    GATEWAY_ENV_DEFAULTS.DELIVERIES_QUEUE_BACKOFF_MS,
+    'DELIVERIES_QUEUE_BACKOFF_MS',
+  );
+  const deliveriesQueueRemoveOnComplete = readOptionalPositiveInteger(
+    envInput.DELIVERIES_QUEUE_REMOVE_ON_COMPLETE,
+    GATEWAY_ENV_DEFAULTS.DELIVERIES_QUEUE_REMOVE_ON_COMPLETE,
+    'DELIVERIES_QUEUE_REMOVE_ON_COMPLETE',
+  );
 
   const invalidMessages = [
     port.error,
@@ -141,6 +172,7 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
     ordersServiceTcpPort.error,
     notificationsServiceTcpPort.error,
     entregasServiceTcpPort.error,
+    productsServiceTcpPort.error,
     tcpTimeoutMs.error,
     rateLimitTtlMs.error,
     rateLimitMax.error,
@@ -151,6 +183,9 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
     ordersCreateQueueAttempts.error,
     ordersCreateQueueBackoffMs.error,
     ordersCreateQueueRemoveOnComplete.error,
+    deliveriesQueueAttempts.error,
+    deliveriesQueueBackoffMs.error,
+    deliveriesQueueRemoveOnComplete.error,
   ].filter(isString);
 
   if (invalidMessages.length > 0) {
@@ -168,6 +203,8 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
     NOTIFICATIONS_SERVICE_TCP_PORT: notificationsServiceTcpPort.value,
     ENTREGAS_SERVICE_HOST: envInput.ENTREGAS_SERVICE_HOST as string,
     ENTREGAS_SERVICE_TCP_PORT: entregasServiceTcpPort.value,
+    PRODUCTS_SERVICE_HOST: envInput.PRODUCTS_SERVICE_HOST as string,
+    PRODUCTS_SERVICE_TCP_PORT: productsServiceTcpPort.value,
     TCP_TIMEOUT_MS: tcpTimeoutMs.value,
     RATE_LIMIT_TTL_MS: rateLimitTtlMs.value,
     RATE_LIMIT_MAX: rateLimitMax.value,
@@ -181,6 +218,10 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
     ORDERS_CREATE_QUEUE_ATTEMPTS: ordersCreateQueueAttempts.value,
     ORDERS_CREATE_QUEUE_BACKOFF_MS: ordersCreateQueueBackoffMs.value,
     ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE: ordersCreateQueueRemoveOnComplete.value,
+    DELIVERIES_QUEUE_NAME: envInput.DELIVERIES_QUEUE_NAME ?? GATEWAY_ENV_DEFAULTS.DELIVERIES_QUEUE_NAME,
+    DELIVERIES_QUEUE_ATTEMPTS: deliveriesQueueAttempts.value,
+    DELIVERIES_QUEUE_BACKOFF_MS: deliveriesQueueBackoffMs.value,
+    DELIVERIES_QUEUE_REMOVE_ON_COMPLETE: deliveriesQueueRemoveOnComplete.value,
   };
 }
 

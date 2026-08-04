@@ -40,9 +40,11 @@ model AuthUser {
   email              String    @unique @db.VarChar(255)
   password           String    @db.VarChar(255)
   role               UserRole
-  refresh_token_hash String?   @db.VarChar(64)
-  is_active          Boolean   @default(true)
-  is_verified        Boolean   @default(false)
+  refresh_token_hash   String?   @db.VarChar(64)
+  reset_token_hash     String?   @db.VarChar(64)
+  reset_token_expires  DateTime?
+  is_active            Boolean   @default(true)
+  is_verified          Boolean   @default(false)
   created_at         DateTime  @default(now())
   updated_at         DateTime  @updatedAt
 

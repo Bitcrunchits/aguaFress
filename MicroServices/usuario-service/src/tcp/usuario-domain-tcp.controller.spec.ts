@@ -206,27 +206,27 @@ describe('UsuarioDomainTcpController', () => {
     });
   });
 
-  describe('vendedores.update', () => {
-    it('requires super_admin role', async () => {
-      const payload = vendedorPayload({ body: { empresa: 'NewCo' } });
-      await expect(controller.updateVendedor(payload)).rejects.toBeInstanceOf(ForbiddenException);
-      expect(vendedoresService.update).not.toHaveBeenCalled();
-    });
-
-    it('validates body and calls VendedoresService.update', async () => {
-      const expected = { id: 'v-1', empresa: 'Updated' };
-      vendedoresService.update.mockResolvedValue(expected);
-
-      const payload = superAdminPayload({
-        params: { id: 'v-1' },
-        body: { empresa: 'Updated' },
-      });
-      const result = await controller.updateVendedor(payload);
-
-      expect(vendedoresService.update).toHaveBeenCalledWith('v-1', expect.objectContaining({ empresa: 'Updated' }));
-      expect(result).toBe(expected);
-    });
-  });
+  // describe('vendedores.update', () => { // deprecated: vendor self-manages via profile/update
+  //   it('requires super_admin role', async () => {
+  //     const payload = vendedorPayload({ body: { empresa: 'NewCo' } });
+  //     await expect(controller.updateVendedor(payload)).rejects.toBeInstanceOf(ForbiddenException);
+  //     expect(vendedoresService.update).not.toHaveBeenCalled();
+  //   });
+  //
+  //   it('validates body and calls VendedoresService.update', async () => {
+  //     const expected = { id: 'v-1', empresa: 'Updated' };
+  //     vendedoresService.update.mockResolvedValue(expected);
+  //
+  //     const payload = superAdminPayload({
+  //       params: { id: 'v-1' },
+  //       body: { empresa: 'Updated' },
+  //     });
+  //     const result = await controller.updateVendedor(payload);
+  //
+  //     expect(vendedoresService.update).toHaveBeenCalledWith('v-1', expect.objectContaining({ empresa: 'Updated' }));
+  //     expect(result).toBe(expected);
+  //   });
+  // });
 
   describe('vendedores.change_estado', () => {
     it('requires super_admin role', async () => {

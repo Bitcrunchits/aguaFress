@@ -50,5 +50,5 @@ COPY --from=build /app/MicroServices/entregas-service/prisma ./MicroServices/ent
 
 EXPOSE 3015
 
-# db push auto + arranque
-CMD cd MicroServices/entregas-service && npx prisma generate && npx prisma db push --accept-data-loss && node dist/main.js
+# db push auto + copiar generated a dist + arranque
+CMD cd MicroServices/entregas-service && npx prisma generate && npx prisma db push --accept-data-loss && cp -r src/generated dist/ && node dist/main.js

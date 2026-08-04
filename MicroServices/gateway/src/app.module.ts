@@ -14,6 +14,8 @@ import { ProtectedRouteRateLimitGuard } from './rate-limit/protected-route-rate-
 import { RateLimitModule } from './rate-limit/rate-limit.module';
 import { TcpModule } from './tcp/tcp.module';
 import { OrdersQueueModule } from './queues/orders-queue.module';
+import { DeliveriesQueueModule } from './queues/deliveries-queue.module';
+import { UploadProxyModule } from './upload-proxy/upload-proxy.module';
 
 @Module({
   imports: [
@@ -24,10 +26,12 @@ import { OrdersQueueModule } from './queues/orders-queue.module';
     ActionsModule,
     TcpModule,
     OrdersQueueModule,
+    DeliveriesQueueModule,
     AuthModule,
     DocsModule,
     HealthModule,
     RateLimitModule,
+    UploadProxyModule,
   ],
   controllers: [GatewayController],
   providers: [

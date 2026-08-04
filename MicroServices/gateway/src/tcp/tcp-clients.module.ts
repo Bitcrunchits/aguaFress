@@ -6,6 +6,7 @@ export const USUARIO_CLIENT = 'USUARIO_CLIENT';
 export const ORDERS_CLIENT = 'ORDERS_CLIENT';
 export const NOTIFICATIONS_CLIENT = 'NOTIFICATIONS_CLIENT';
 export const ENTREGAS_CLIENT = 'ENTREGAS_CLIENT';
+export const PRODUCTS_CLIENT = 'PRODUCTS_CLIENT';
 @Module({
   imports: [
     ClientsModule.registerAsync([
@@ -54,6 +55,18 @@ export const ENTREGAS_CLIENT = 'ENTREGAS_CLIENT';
           options: {
             host: configService.getOrThrow<string>('ENTREGAS_SERVICE_HOST'),
             port: configService.getOrThrow<number>('ENTREGAS_SERVICE_TCP_PORT'),
+          },
+        }),
+      },
+      {
+        name: PRODUCTS_CLIENT,
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.getOrThrow<string>('PRODUCTS_SERVICE_HOST'),
+            port: configService.getOrThrow<number>('PRODUCTS_SERVICE_TCP_PORT'),
           },
         }),
       },
