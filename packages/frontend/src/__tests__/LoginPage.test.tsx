@@ -97,7 +97,7 @@ describe('LoginPage', () => {
 
     expect(screen.getByRole('heading', { name: /aguaFress/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/contraseña/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^contraseña$/i)).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /iniciar sesión/i })
     ).toBeInTheDocument();
@@ -117,12 +117,26 @@ describe('LoginPage', () => {
     });
   });
 
+  it('toggles password visibility', async () => {
+    const user = userEvent.setup();
+    renderLoginPage();
+
+    const passwordInput = screen.getByLabelText(/^contraseña$/i);
+    expect(passwordInput).toHaveAttribute('type', 'password');
+
+    await user.click(screen.getByRole('button', { name: /mostrar contraseña/i }));
+    expect(passwordInput).toHaveAttribute('type', 'text');
+
+    await user.click(screen.getByRole('button', { name: /ocultar contraseña/i }));
+    expect(passwordInput).toHaveAttribute('type', 'password');
+  });
+
   it('shows loading text on button while submitting', async () => {
     const user = userEvent.setup();
     renderLoginPage();
 
     await user.type(screen.getByLabelText(/email/i), 'vendedor@test.com');
-    await user.type(screen.getByLabelText(/contraseña/i), 'password123');
+    await user.type(screen.getByLabelText(/^contraseña$/i), 'password123');
 
     user.click(screen.getByRole('button', { name: /iniciar sesión/i }));
 
@@ -138,7 +152,7 @@ describe('LoginPage', () => {
     renderLoginPage();
 
     await user.type(screen.getByLabelText(/email/i), 'vendedor@test.com');
-    await user.type(screen.getByLabelText(/contraseña/i), 'password123');
+    await user.type(screen.getByLabelText(/^contraseña$/i), 'password123');
     await user.click(screen.getByRole('button', { name: /iniciar sesión/i }));
 
     await waitFor(() => {
@@ -151,7 +165,7 @@ describe('LoginPage', () => {
     renderLoginPage();
 
     await user.type(screen.getByLabelText(/email/i), 'admin@test.com');
-    await user.type(screen.getByLabelText(/contraseña/i), 'password123');
+    await user.type(screen.getByLabelText(/^contraseña$/i), 'password123');
     await user.click(screen.getByRole('button', { name: /iniciar sesión/i }));
 
     await waitFor(() => {
@@ -164,7 +178,7 @@ describe('LoginPage', () => {
     renderLoginPage();
 
     await user.type(screen.getByLabelText(/email/i), 'wrong@test.com');
-    await user.type(screen.getByLabelText(/contraseña/i), 'wrongpass');
+    await user.type(screen.getByLabelText(/^contraseña$/i), 'wrongpass');
     await user.click(screen.getByRole('button', { name: /iniciar sesión/i }));
 
     await waitFor(() => {
@@ -188,7 +202,7 @@ describe('LoginPage', () => {
     renderLoginPage();
 
     await user.type(screen.getByLabelText(/email/i), 'vendedor@test.com');
-    await user.type(screen.getByLabelText(/contraseña/i), 'password123');
+    await user.type(screen.getByLabelText(/^contraseña$/i), 'password123');
     await user.click(screen.getByRole('button', { name: /iniciar sesión/i }));
 
     await waitFor(() => {

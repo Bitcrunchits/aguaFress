@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -21,6 +23,7 @@ interface LoginFormProps {
 }
 
 export default function LoginForm({ onSubmit, serverError }: LoginFormProps) {
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const {
     register,
     handleSubmit,
@@ -67,22 +70,43 @@ export default function LoginForm({ onSubmit, serverError }: LoginFormProps) {
         >
           Contraseña
         </label>
-        <input
-          id="password"
-          type="password"
-          autoComplete="current-password"
-          {...register('password')}
-          className={`w-full rounded-md border px-3 py-2 text-sm outline-none transition-colors
-            ${
-              errors.password
-                ? 'border-error focus:border-error'
-                : 'border-gray-300 focus:border-brand-teal'
-            }`}
-          placeholder="••••••••"
-        />
+        <div className="relative">
+          <input
+            id="password"
+            type={isPasswordVisible ? 'text' : 'password'}
+            autoComplete="current-password"
+            {...register('password')}
+            className={`w-full rounded-md border px-3 py-2 pr-20 text-sm outline-none transition-colors
+              ${
+                errors.password
+                  ? 'border-error focus:border-error'
+                  : 'border-gray-300 focus:border-brand-teal'
+              }`}
+            placeholder="••••••••"
+          />
+          <button
+            type="button"
+            aria-label={
+              isPasswordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'
+            }
+            aria-pressed={isPasswordVisible}
+            onClick={() => setIsPasswordVisible((current) => !current)}
+            className="absolute inset-y-0 right-0 px-3 text-xs font-medium text-brand-teal hover:text-brand-teal/80"
+          >
+            {isPasswordVisible ? 'Ocultar' : 'Ver'}
+          </button>
+        </div>
         {errors.password && (
           <p className="text-xs text-error">{errors.password.message}</p>
         )}
+        <div className="mt-1 text-right">
+          <Link
+            to="/forgot-password"
+            className="text-xs text-brand-teal hover:text-brand-teal/80 hover:underline"
+          >
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </div>
       </div>
 
       {serverError && (

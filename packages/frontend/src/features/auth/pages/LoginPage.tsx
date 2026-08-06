@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { UserRole, type LoginRequest } from '@agua/contracts';
 import { useAuth } from '../hooks/useAuth';
 import LoginForm from '../components/LoginForm';
+import AuthLayout from '../../../shared/Layout/AuthLayout';
 
-const ROLE_REDIRECT: Record<string, string> = {
+const ROLE_REDIRECT: Record<UserRole, string> = {
   [UserRole.VENDEDOR]: '/dashboard',
   [UserRole.SUPER_ADMIN]: '/admin',
-  [UserRole.CLIENTE]: '/orders',
+  [UserRole.CLIENTE]: '/catalogo',
 };
 
 export default function LoginPage() {
@@ -30,14 +31,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface-muted px-4">
-      <div className="w-full max-w-md rounded-lg bg-surface p-8 shadow-sm">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-text-primary">AguaFress</h1>
-          <p className="mt-1 text-sm text-text-secondary">Iniciar sesión</p>
-        </div>
-        <LoginForm onSubmit={handleSubmit} serverError={serverError} />
-      </div>
-    </div>
+    <AuthLayout title="AguaFress" subtitle="Iniciar sesión">
+      <LoginForm onSubmit={handleSubmit} serverError={serverError} />
+    </AuthLayout>
   );
 }
