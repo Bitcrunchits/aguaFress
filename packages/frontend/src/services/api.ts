@@ -69,7 +69,7 @@ api.interceptors.response.use(
 
       if (!refreshTokenValue) {
         clearSession();
-        window.location.href = '/login';
+        try { window.location.href = '/login'; } catch { /* entorno sin navegación (test) */ }
         return Promise.reject(error);
       }
 
@@ -89,7 +89,7 @@ api.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError, null);
         clearSession();
-        window.location.href = '/login';
+        try { window.location.href = '/login'; } catch { /* entorno sin navegación (test) */ }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -99,5 +99,11 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+/** Testing only: reset mutable module state between tests */
+export function __resetApiState(): void {
+  isRefreshing = false;
+  failedQueue = [];
+}
 
 export default api;

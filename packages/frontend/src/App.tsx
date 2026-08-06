@@ -16,6 +16,26 @@ const queryClient = new QueryClient({
   },
 });
 
+function renderRoute(route: RouteConfig, index?: number): React.ReactElement {
+  const key = route.path ?? `route-${index}`;
+
+  if (route.children) {
+    return (
+      <Route key={key} path={route.path} element={route.element}>
+        {route.children.map((child, i) => renderRoute(child, i))}
+      </Route>
+    );
+  }
+
+  if (route.index) {
+    return <Route key={key} index element={route.element} />;
+  }
+
+  return (
+    <Route key={key} path={route.path} element={route.element} />
+  );
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -23,13 +43,7 @@ export default function App() {
         <AuthProvider>
           <Suspense fallback={<PageSkeleton />}>
             <Routes>
-              {routes.map((route: RouteConfig) => (
-                <Route
-                  key={route.path}
-                  path={route.path}
-                  element={route.element}
-                />
-              ))}
+              {routes.map((route: RouteConfig, i: number) => renderRoute(route, i))}
               <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
           </Suspense>

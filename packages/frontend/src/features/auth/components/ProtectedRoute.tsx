@@ -1,17 +1,17 @@
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { UserRole } from '@agua/contracts';
 import { useAuth } from '../hooks/useAuth';
 import PageSkeleton from '../../../shared/components/PageSkeleton';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   allowedRoles?: UserRole[];
 }
 
 const ROLE_REDIRECT: Record<string, string> = {
   [UserRole.VENDEDOR]: '/dashboard',
   [UserRole.SUPER_ADMIN]: '/admin',
-  [UserRole.CLIENTE]: '/orders',
+  [UserRole.CLIENTE]: '/catalogo',
 };
 
 export default function ProtectedRoute({
@@ -34,5 +34,5 @@ export default function ProtectedRoute({
     return <Navigate to={redirectPath} replace />;
   }
 
-  return <>{children}</>;
+  return children ? <>{children}</> : <Outlet />;
 }
