@@ -1,4 +1,5 @@
 import { FormEvent, useState } from 'react';
+import { Link } from 'react-router-dom';
 import EmptyState from '../../../shared/components/EmptyState';
 import ErrorState from '../../../shared/components/ErrorState';
 import PageSkeleton from '../../../shared/components/PageSkeleton';
@@ -31,11 +32,16 @@ export default function AdminVendorsPage() {
           <h1 className="text-2xl font-bold text-text-primary">Vendedores</h1>
           <p className="text-sm text-text-secondary">Listado administrativo servido por el API Gateway.</p>
         </div>
-        {pagination && (
-          <p className="text-sm text-text-muted">
-            {pagination.total} vendedores · página {pagination.page} de {pagination.totalPages}
-          </p>
-        )}
+        <div className="flex items-center gap-3">
+          {pagination && (
+            <p className="text-sm text-text-muted">
+              {pagination.total} vendedores · página {pagination.page} de {pagination.totalPages}
+            </p>
+          )}
+          <Link to="/admin/vendors/new">
+            <Button type="button">Nuevo vendedor</Button>
+          </Link>
+        </div>
       </div>
 
       <form className="flex flex-col gap-2 sm:flex-row" onSubmit={handleSubmit}>

@@ -20,6 +20,7 @@ describe('admin routes', () => {
       'index',
       'vendors',
       'vendors/pending',
+      'vendors/new',
       'vendors/:vendedorId',
       'clients',
       'clients/:clienteId',

@@ -11,6 +11,7 @@ const AdminDashboardPage = lazy(() => import('../features/admin/pages/AdminDashb
 const AdminVendorsPage = lazy(() => import('../features/admin/pages/AdminVendorsPage'));
 const AdminPendingVendorsPage = lazy(() => import('../features/admin/pages/AdminPendingVendorsPage'));
 const AdminVendorDetailPage = lazy(() => import('../features/admin/pages/AdminVendorDetailPage'));
+const AdminVendorRegistrationPage = lazy(() => import('../features/admin/pages/AdminVendorRegistrationPage'));
 const AdminPlaceholderPage = lazy(() => import('../features/admin/pages/AdminPlaceholderPage'));
 const ClientesPage = lazy(() => import('../features/clientes/pages/ClientesPage'));
 const CatalogoPage = lazy(() => import('../features/catalogo/pages/CatalogoPage'));
@@ -83,6 +84,7 @@ const routes: RouteConfig[] = [
           { index: true, element: <AdminDashboardPage /> },
           { path: 'vendors', element: <AdminVendorsPage /> },
           { path: 'vendors/pending', element: <AdminPendingVendorsPage /> },
+          { path: 'vendors/new', element: <AdminVendorRegistrationPage /> },
           { path: 'vendors/:vendedorId', element: <AdminVendorDetailPage /> },
           { path: 'clients', element: <AdminPlaceholderPage title="Clientes" /> },
           { path: 'clients/:clienteId', element: <AdminPlaceholderPage title="Detalle de cliente" /> },
