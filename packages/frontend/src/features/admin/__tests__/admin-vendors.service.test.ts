@@ -1,8 +1,13 @@
 import { beforeAll, afterAll, afterEach, describe, expect, it } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
-import { VendedorEstado } from '@agua/contracts';
-import { changeAdminVendorEstado, getAdminVendorById, listAdminVendors } from '../services/admin-vendors.service';
+import { UserRole, VendedorEstado } from '@agua/contracts';
+import {
+  changeAdminVendorEstado,
+  getAdminVendorById,
+  listAdminVendors,
+  registerAdminVendor,
+} from '../services/admin-vendors.service';
 
 const server = setupServer();
 
@@ -86,5 +91,33 @@ describe('admin vendor service', () => {
 
     expect(capturedBody).toEqual({ estado: VendedorEstado.ACTIVO });
     expect(response.estadoNuevo).toBe(VendedorEstado.ACTIVO);
+  });
+
+  it('registers a vendor through public auth registration without editable identities', async () => {
+    let capturedBody: unknown;
+    server.use(
+      http.post('/api/v1/auth/register', async ({ request }) => {
+        capturedBody = await request.json();
+        return HttpResponse.json({
+          user: { id: 'auth-user-1', email: 'new-vendor@test.com', role: UserRole.VENDEDOR },
+        });
+      })
+    );
+
+    const response = await registerAdminVendor({
+      email: 'new-vendor@test.com',
+      password: 'Seguro123!',
+      nombre: 'Nueva Vendedora',
+    });
+
+    expect(capturedBody).toEqual({
+      email: 'new-vendor@test.com',
+      password: 'Seguro123!',
+      nombre: 'Nueva Vendedora',
+      role: UserRole.VENDEDOR,
+    });
+    expect(JSON.stringify(capturedBody)).not.toContain('userId');
+    expect(JSON.stringify(capturedBody)).not.toContain('actorUserId');
+    expect(response.user.role).toBe(UserRole.VENDEDOR);
   });
 });

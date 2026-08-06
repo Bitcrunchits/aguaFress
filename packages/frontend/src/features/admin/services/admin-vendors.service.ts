@@ -1,13 +1,16 @@
 import type {
+  RegisterRequest,
+  RegisterResponse,
   SuperAdminAccionResponse,
   SuperAdminVendedorItem,
   SuperAdminVendedorListFilters,
   SuperAdminVendedorListResponse,
 } from '@agua/contracts';
-import { VendedorEstado } from '@agua/contracts';
+import { UserRole, VendedorEstado } from '@agua/contracts';
 import api from '../../../services/api';
 
 export type AdminVendorDetail = SuperAdminVendedorItem;
+export type AdminVendorRegistrationRequest = Omit<RegisterRequest, 'role' | 'qrToken'>;
 
 const DEFAULT_VENDOR_FILTERS = {
   page: 1,
@@ -40,5 +43,15 @@ export async function changeAdminVendorEstado(
     `/vendedores/change-estado/${vendedorId}`,
     { estado }
   );
+  return response.data;
+}
+
+export async function registerAdminVendor(
+  request: AdminVendorRegistrationRequest
+): Promise<RegisterResponse> {
+  const response = await api.post<RegisterResponse>('/auth/register', {
+    ...request,
+    role: UserRole.VENDEDOR,
+  });
   return response.data;
 }
