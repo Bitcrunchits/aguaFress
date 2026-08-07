@@ -2,12 +2,16 @@ import type { PaginatedResponse } from '@agua/contracts';
 import api from '../../../services/api';
 import type {
   AdminAuditResponse,
+  AdminAuditDetailResponse,
+  AdminAuditListFilters,
   AdminClientesResponse,
   AdminDashboardStats,
   AdminLinksResponse,
   AdminOverview,
+  AdminProfileResponse,
   AdminQrResponse,
   AdminVendedoresResponse,
+  UpdateAdminProfileRequest,
 } from '../types';
 
 const DEFAULT_PAGE_PARAMS = {
@@ -56,6 +60,28 @@ export async function listAdminAudit(): Promise<AdminAuditResponse> {
   const response = await api.get<AdminAuditResponse>('/activity-logs/list', {
     params: DEFAULT_PAGE_PARAMS,
   });
+  return response.data;
+}
+
+export async function listAdminAuditEntries(filters: AdminAuditListFilters = {}): Promise<AdminAuditResponse> {
+  const response = await api.get<AdminAuditResponse>('/activity-logs/list', {
+    params: { page: 1, limit: 20, ...filters },
+  });
+  return response.data;
+}
+
+export async function getAdminAuditById(auditId: string): Promise<AdminAuditDetailResponse> {
+  const response = await api.get<AdminAuditDetailResponse>(`/activity-logs/get-by-id/${auditId}`);
+  return response.data;
+}
+
+export async function getAdminProfile(): Promise<AdminProfileResponse> {
+  const response = await api.get<AdminProfileResponse>('/super-admin/profile');
+  return response.data;
+}
+
+export async function updateAdminProfile(body: UpdateAdminProfileRequest): Promise<AdminProfileResponse> {
+  const response = await api.patch<AdminProfileResponse>('/super-admin/profile/update', body);
   return response.data;
 }
 

@@ -14,8 +14,10 @@ const AdminVendorDetailPage = lazy(() => import('../features/admin/pages/AdminVe
 const AdminVendorRegistrationPage = lazy(() => import('../features/admin/pages/AdminVendorRegistrationPage'));
 const AdminClientsPage = lazy(() => import('../features/admin/pages/AdminClientsPage'));
 const AdminClientDetailPage = lazy(() => import('../features/admin/pages/AdminClientDetailPage'));
+const AdminAuditPage = lazy(() => import('../features/admin/pages/AdminAuditPage'));
+const AdminAuditDetailPage = lazy(() => import('../features/admin/pages/AdminAuditDetailPage'));
 const AdminQrLinksPage = lazy(() => import('../features/admin/pages/AdminQrLinksPage'));
-const AdminPlaceholderPage = lazy(() => import('../features/admin/pages/AdminPlaceholderPage'));
+const AdminProfilePage = lazy(() => import('../features/admin/pages/AdminProfilePage'));
 const ClientesPage = lazy(() => import('../features/clientes/pages/ClientesPage'));
 const CatalogoPage = lazy(() => import('../features/catalogo/pages/CatalogoPage'));
 const CartPage = lazy(() => import('../features/cart/pages/CartPage'));
@@ -91,11 +93,11 @@ const routes: RouteConfig[] = [
           { path: 'vendors/:vendedorId', element: <AdminVendorDetailPage /> },
           { path: 'clients', element: <AdminClientsPage /> },
           { path: 'clients/:clienteId', element: <AdminClientDetailPage /> },
-          { path: 'audit', element: <AdminPlaceholderPage title="Auditoría" /> },
-          { path: 'audit/:auditId', element: <AdminPlaceholderPage title="Detalle de auditoría" /> },
+          { path: 'audit', element: <AdminAuditPage /> },
+          { path: 'audit/:auditId', element: <AdminAuditDetailPage /> },
           { path: 'qr-codes', element: <AdminQrLinksPage kind="qr" /> },
           { path: 'invitation-links', element: <AdminQrLinksPage kind="links" /> },
-          { path: 'profile', element: <AdminPlaceholderPage title="Perfil" /> },
+          { path: 'profile', element: <AdminProfilePage /> },
         ],
       },
     ],

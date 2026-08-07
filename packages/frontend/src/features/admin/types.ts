@@ -1,17 +1,38 @@
 import type {
   ActivityLogListResponseDTO,
+  ActivityLogDetailResponseDTO,
   GenerarLinkResponse,
   GenerarQRResponse,
   PaginatedResponse,
+  PaginationRequest,
   SuperAdminClienteItem,
   SuperAdminDashboardResponse,
   SuperAdminVendedorItem,
+  UserRole,
 } from '@agua/contracts';
 
 export type AdminDashboardStats = SuperAdminDashboardResponse;
 export type AdminVendedoresResponse = PaginatedResponse<SuperAdminVendedorItem>;
 export type AdminClientesResponse = PaginatedResponse<SuperAdminClienteItem>;
 export type AdminAuditResponse = ActivityLogListResponseDTO;
+export type AdminAuditDetailResponse = ActivityLogDetailResponseDTO;
+
+export type AdminAuditListFilters = Pick<PaginationRequest, 'page' | 'limit'>;
+
+export interface AdminProfileResponse {
+  id: string;
+  email?: string;
+  nombre?: string;
+  apellido?: string;
+  role?: UserRole;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface UpdateAdminProfileRequest {
+  nombre?: string;
+  apellido?: string;
+}
 
 export interface AdminQrItem extends GenerarQRResponse {
   id: string;
