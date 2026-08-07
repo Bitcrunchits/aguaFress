@@ -41,10 +41,10 @@ Estimated changed lines: ~650-780. Rollback boundary: remove admin route/menu ad
 
 Goal: add admin-started vendor onboarding through existing public registration.
 
-- [ ] 2.1 Extend frontend auth/admin service access for `POST /api/v1/auth/register` with `role: UserRole.VENDEDOR`. Refs: Admin Vendor Registration.
-- [ ] 2.2 Add `AdminVendorRegistrationPage` form, validation, pending-approval success copy, and no editable IDs. Refs: Registration validation errors; Password and identity boundaries.
-- [ ] 2.3 Add Vitest service/page tests for success, frontend validation, backend duplicate errors, and preserved non-sensitive values. Refs: Admin Vendor Registration.
-- [ ] 2.4 Verify PR2: `pnpm --filter @agua/frontend test`, `pnpm --filter @agua/frontend lint`, `pnpm --filter @agua/frontend build`.
+- [x] 2.1 Extend frontend auth/admin service access for `POST /api/v1/auth/register` with `role: UserRole.VENDEDOR`. Refs: Admin Vendor Registration.
+- [x] 2.2 Add `AdminVendorRegistrationPage` form, validation, pending-approval success copy, and no editable IDs. Refs: Registration validation errors; Password and identity boundaries.
+- [x] 2.3 Add Vitest service/page tests for success, frontend validation, backend duplicate errors, and preserved non-sensitive values. Refs: Admin Vendor Registration.
+- [x] 2.4 Verify PR2: `pnpm --filter @agua/frontend test`, `pnpm --filter @agua/frontend lint`, `pnpm --filter @agua/frontend build`.
 
 Estimated changed lines: ~300-420. Rollback boundary: remove `/admin/vendors/new` flow only; PR1 vendor management remains intact.
 
