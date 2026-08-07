@@ -63,8 +63,8 @@ Estimated changed lines: ~550-750. Rollback boundary: remove admin client routes
 
 Goal: fix vendor-scoped QR/link behavior and add audit/profile screens.
 
-- [ ] 4.1 Add QR and invitation-link pages/hooks requiring selected `vendedorId` before querying. Refs: Admin QR Codes and Invitation Links.
-- [ ] 4.2 Update admin QR/link services to surface required-parameter failures and deactivate selected vendor-scoped items. Refs: Required-parameter failures are visible.
+- [x] 4.1 Add QR and invitation-link pages/hooks requiring selected `vendedorId` before querying. Refs: Admin QR Codes and Invitation Links.
+- [x] 4.2 Update admin QR/link services to surface required-parameter failures and deactivate selected vendor-scoped items. Refs: Required-parameter failures are visible.
 - [ ] 4.3 Add audit list/detail and profile read/update pages/hooks/services. Refs: Admin Audit and Profile.
 - [ ] 4.4 Add Vitest tests for prerequisite, error, empty, success, deactivation refresh, audit detail, profile validation, and dashboard not masking QR/link failures. Refs: Admin QR Codes and Invitation Links; Admin Audit and Profile.
 - [ ] 4.5 Verify PR4: `pnpm --filter @agua/frontend test`, `pnpm --filter @agua/frontend lint`, `pnpm --filter @agua/frontend build`.

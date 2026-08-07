@@ -15,6 +15,17 @@ const DEFAULT_PAGE_PARAMS = {
   limit: 5,
 } as const;
 
+const DEFAULT_QR_LINK_PARAMS = {
+  page: 1,
+  limit: 20,
+} as const;
+
+export interface AdminVendorScopedListParams {
+  vendedorId: string;
+  page?: number;
+  limit?: number;
+}
+
 function emptyPaginated<T>(): PaginatedResponse<T> {
   return {
     data: [],
@@ -48,16 +59,24 @@ export async function listAdminAudit(): Promise<AdminAuditResponse> {
   return response.data;
 }
 
-export async function listAdminQrCodes(): Promise<AdminQrResponse> {
+function assertSelectedVendor(vendedorId: string): void {
+  if (!vendedorId.trim()) {
+    throw new Error('Debe seleccionar un vendedor');
+  }
+}
+
+export async function listAdminQrCodes(params: AdminVendorScopedListParams): Promise<AdminQrResponse> {
+  assertSelectedVendor(params.vendedorId);
   const response = await api.get<AdminQrResponse>('/super-admin/qr-codes', {
-    params: DEFAULT_PAGE_PARAMS,
+    params: { ...DEFAULT_QR_LINK_PARAMS, ...params },
   });
   return response.data;
 }
 
-export async function listAdminLinks(): Promise<AdminLinksResponse> {
+export async function listAdminLinks(params: AdminVendorScopedListParams): Promise<AdminLinksResponse> {
+  assertSelectedVendor(params.vendedorId);
   const response = await api.get<AdminLinksResponse>('/super-admin/link-invitacion', {
-    params: DEFAULT_PAGE_PARAMS,
+    params: { ...DEFAULT_QR_LINK_PARAMS, ...params },
   });
   return response.data;
 }
@@ -78,17 +97,12 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     listAdminAudit(),
   ]);
 
-  const [qrCodesResult, linksResult] = await Promise.allSettled([
-    listAdminQrCodes(),
-    listAdminLinks(),
-  ]);
-
   return {
     dashboard,
     vendedores,
     clientes,
     audit,
-    qrCodes: qrCodesResult.status === 'fulfilled' ? qrCodesResult.value : emptyPaginated(),
-    links: linksResult.status === 'fulfilled' ? linksResult.value : emptyPaginated(),
+    qrCodes: emptyPaginated(),
+    links: emptyPaginated(),
   };
 }
