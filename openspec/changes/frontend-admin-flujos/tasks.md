@@ -52,10 +52,10 @@ Estimated changed lines: ~300-420. Rollback boundary: remove `/admin/vendors/new
 
 Goal: enable admin client list/detail/update/reassign/provider-add flows.
 
-- [ ] 3.1 Add admin client services/hooks/pages for list/detail/update using domain `clienteId`. Refs: Admin Client Management; Frontend-Only Scope and Identity Boundaries.
-- [ ] 3.2 Add provider selector/actions for reassignment and provider-add using domain `vendedorId`, disabled when no eligible vendors exist. Refs: Reassign client provider; Add provider relation.
-- [ ] 3.3 Add Vitest tests for loading/error/empty/success, validation/backend errors, refresh, and no `userId`/`actorUserId` bodies. Refs: Admin Client Management; Audit actor identity.
-- [ ] 3.4 Verify PR3: `pnpm --filter @agua/frontend test`, `pnpm --filter @agua/frontend lint`, `pnpm --filter @agua/frontend build`.
+- [x] 3.1 Add admin client services/hooks/pages for list/detail/update using domain `clienteId`. Refs: Admin Client Management; Frontend-Only Scope and Identity Boundaries.
+- [x] 3.2 Add provider selector/actions for reassignment and provider-add using domain `vendedorId`, disabled when no eligible vendors exist. Refs: Reassign client provider; Add provider relation.
+- [x] 3.3 Add Vitest tests for loading/error/empty/success, validation/backend errors, refresh, and no `userId`/`actorUserId` bodies. Refs: Admin Client Management; Audit actor identity.
+- [x] 3.4 Verify PR3: `pnpm --filter @agua/frontend test`, `pnpm --filter @agua/frontend lint`, `pnpm --filter @agua/frontend build`.
 
 Estimated changed lines: ~550-750. Rollback boundary: remove admin client routes/slice; PR1/PR2 vendor flows remain shippable.
 
