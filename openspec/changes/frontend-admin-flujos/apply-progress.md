@@ -1,8 +1,8 @@
 # Apply Progress — frontend-admin-flujos
 
-## Status: PR3 COMPLETE (2026-08-06)
+## Status: PR4 COMPLETE (2026-08-06)
 
-Chain: `feature/frontend-admin-flujos-tracker` ← PR1 `feature/frontend-admin-flujos/pr1-admin-nav-vendedores` ← PR2 `feature/frontend-admin-flujos/pr2-vendor-registration` ← PR3 `feature/frontend-admin-flujos/pr3-admin-clients`
+Chain: `feature/frontend-admin-flujos-tracker` ← PR1 `feature/frontend-admin-flujos/pr1-admin-nav-vendedores` ← PR2 `feature/frontend-admin-flujos/pr2-vendor-registration` ← PR3 `feature/frontend-admin-flujos/pr3-admin-clients` ← PR4 `feature/frontend-admin-flujos/pr4-admin-qr-audit-profile`
 
 ## PR1: Admin Routes, Navigation, and Vendor Enablement — DONE
 
@@ -68,6 +68,38 @@ Verification:
 - `pnpm --filter @agua/frontend build`: PASS
 
 Changed lines: ~1,044 across PR3A/B/C — above 800 hard cap; review risk noted for orchestrator. PR3C itself changed 459 lines.
+
+## PR4: Admin QR, Invitation Links, Audit, and Profile — DONE
+
+Completed tasks: tasks.md 4.1–4.5.
+
+- `08c5161` fix(frontend): require vendor selection for admin QR links
+- `1f95168` feat(frontend): add admin audit and profile pages
+
+Implementation notes:
+
+- PR4A fixed QR/link vendor-scoped prerequisite states and prevented querying without selected `vendedorId`.
+- Audit list uses `GET /api/v1/activity-logs/list`; audit detail uses `GET /api/v1/activity-logs/get-by-id/{id}`.
+- Admin profile uses `GET /api/v1/super-admin/profile` and `PATCH /api/v1/super-admin/profile/update`.
+- Profile updates send only `{ nombre, apellido }`; the UI does not expose editable `userId` or `actorUserId` fields.
+- Audit/profile pages replace the existing admin placeholders and preserve loading, error, empty, and success states.
+
+Strict TDD evidence:
+
+| Task | Test File | Layer | Safety Net | RED | GREEN | TRIANGULATE | REFACTOR |
+|------|-----------|-------|------------|-----|-------|-------------|----------|
+| 4.3 | `src/features/admin/__tests__/admin-audit-profile.service.test.ts`, `src/features/admin/__tests__/AdminAuditProfilePage.test.tsx` | Service + component integration | Existing admin patterns read; no pre-existing audit/profile tests | Tests failed for missing service functions/pages | 9/9 targeted tests passed | Covered list success/empty/error, detail, profile load/update/error/validation | Removed dead placeholder import; DBS manual PASS |
+| 4.4 | PR4A tests + `AdminAuditProfilePage.test.tsx` | Component integration | PR4A suite already green in prior commit | Audit/profile scenarios failed before implementation | Full suite 155/155 passed | Covered identity leakage and backend error preservation | No further refactor needed |
+| 4.5 | N/A | Verification | N/A | N/A | test/lint/build passed | N/A | N/A |
+
+Verification:
+
+- `pnpm --filter @agua/frontend test src/features/admin/__tests__/admin-audit-profile.service.test.ts src/features/admin/__tests__/AdminAuditProfilePage.test.tsx`: 2 files, 9/9 tests PASS
+- `pnpm --filter @agua/frontend test`: 34 files, 155/155 tests PASS
+- `pnpm --filter @agua/frontend lint`: PASS with 1 pre-existing `AuthContext.tsx` fast-refresh warning
+- `pnpm --filter @agua/frontend build`: PASS
+
+Changed lines: PR4B stayed scoped to audit/profile service/hooks/pages/routes/tests plus SDD tracking. No backend/contracts/schema/generated files changed.
 
 ## Incidents / Learnings
 
