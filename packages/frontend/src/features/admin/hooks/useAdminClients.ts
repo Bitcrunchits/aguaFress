@@ -64,20 +64,17 @@ export function useAdminClientDetail(clienteId?: string) {
     onSuccess: invalidateClient,
   });
 
-  const firstError =
-    clientQuery.error ?? updateMutation.error ?? reassignMutation.error ?? addProviderMutation.error;
-
   return {
     client: clientQuery.data,
     isLoading: clientQuery.isLoading,
     isError: clientQuery.isError,
     isMutating: updateMutation.isPending || reassignMutation.isPending || addProviderMutation.isPending,
-    errorMessage: firstError
-      ? normalizeApiError(firstError, 'No se pudo cargar el cliente').message
+    errorMessage: clientQuery.error
+      ? normalizeApiError(clientQuery.error, 'No se pudo cargar el cliente').message
       : undefined,
     refetch: clientQuery.refetch,
-    updateClient: updateMutation.mutate,
-    reassignClient: reassignMutation.mutate,
-    addProvider: addProviderMutation.mutate,
+    updateClient: updateMutation.mutateAsync,
+    reassignClient: reassignMutation.mutateAsync,
+    addProvider: addProviderMutation.mutateAsync,
   };
 }
