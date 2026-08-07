@@ -9,6 +9,7 @@ export default function CartPage() {
   const {
     providers,
     selectedProvider,
+    isProviderSelectionRequired,
     cart,
     isLoading,
     isError,
@@ -27,6 +28,10 @@ export default function CartPage() {
   }
 
   if (providers.length === 0) {
+    return <EmptyState message="Seleccioná un proveedor antes de usar el carrito" />;
+  }
+
+  if (isProviderSelectionRequired) {
     return <EmptyState message="Seleccioná un proveedor antes de usar el carrito" />;
   }
 

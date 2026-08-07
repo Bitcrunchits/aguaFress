@@ -9,6 +9,7 @@ export default function CatalogoPage() {
   const {
     providers,
     selectedProvider,
+    isProviderSelectionRequired,
     products,
     pagination,
     categories,
@@ -27,6 +28,10 @@ export default function CatalogoPage() {
 
   if (providers.length === 0) {
     return <EmptyState message="Todavía no tenés proveedores activos" />;
+  }
+
+  if (isProviderSelectionRequired) {
+    return <EmptyState message="Seleccioná un proveedor para ver el catálogo" />;
   }
 
   return (

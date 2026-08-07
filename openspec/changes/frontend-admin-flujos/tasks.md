@@ -75,8 +75,8 @@ Estimated changed lines: ~650-790. Rollback boundary: revert QR/link/audit/profi
 
 Goal: complete cliente provider-scoped catalog/cart/checkout behavior without backend changes.
 
-- [ ] 5.1 Add cliente provider loading/selection state and provider-required catalog gating. Refs: Cliente provider selection; Provider-scoped catalog.
-- [ ] 5.2 Add add-to-cart and provider-scoped cart refresh behavior. Refs: Add product to cart.
+- [x] 5.1 Add cliente provider loading/selection state and provider-required catalog gating. Refs: Cliente provider selection; Provider-scoped catalog.
+- [x] 5.2 Add add-to-cart and provider-scoped cart refresh behavior. Refs: Add product to cart.
 - [ ] 5.3 Add checkout form/prerequisite blocking, `CreateOrderV2Request`, `Idempotency-Key`, and no editable `userId`. Refs: Cart checkout; Checkout missing prerequisites.
 - [ ] 5.4 Add order job pending/polling UI for `202 Accepted`. Refs: Async order job tracking.
 - [ ] 5.5 Add Vitest tests for provider prerequisites, cart mutation/refetch, checkout validation/body/header, and terminal job polling. Refs: Cliente Provider, Cart, Checkout, and Job Tracking.
