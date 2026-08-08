@@ -77,10 +77,10 @@ Goal: complete cliente provider-scoped catalog/cart/checkout behavior without ba
 
 - [x] 5.1 Add cliente provider loading/selection state and provider-required catalog gating. Refs: Cliente provider selection; Provider-scoped catalog.
 - [x] 5.2 Add add-to-cart and provider-scoped cart refresh behavior. Refs: Add product to cart.
-- [ ] 5.3 Add checkout form/prerequisite blocking, `CreateOrderV2Request`, `Idempotency-Key`, and no editable `userId`. Refs: Cart checkout; Checkout missing prerequisites.
-- [ ] 5.4 Add order job pending/polling UI for `202 Accepted`. Refs: Async order job tracking.
-- [ ] 5.5 Add Vitest tests for provider prerequisites, cart mutation/refetch, checkout validation/body/header, and terminal job polling. Refs: Cliente Provider, Cart, Checkout, and Job Tracking.
-- [ ] 5.6 Verify PR5: `pnpm --filter @agua/frontend test`, `pnpm --filter @agua/frontend lint`, `pnpm --filter @agua/frontend build`.
+- [x] 5.3 Add checkout form/prerequisite blocking, `CreateOrderV2Request`, `Idempotency-Key`, and no editable `userId`. Refs: Cart checkout; Checkout missing prerequisites.
+- [x] 5.4 Add order job pending/polling UI for `202 Accepted`. Refs: Async order job tracking.
+- [x] 5.5 Add Vitest tests for provider prerequisites, cart mutation/refetch, checkout validation/body/header, and terminal job polling. Refs: Cliente Provider, Cart, Checkout, and Job Tracking.
+- [x] 5.6 Verify PR5: `pnpm --filter @agua/frontend test`, `pnpm --filter @agua/frontend lint`, `pnpm --filter @agua/frontend build`.
 
 Estimated changed lines: ~650-790. Rollback boundary: revert cliente catalog/cart/order additions; admin slices remain isolated.
 
