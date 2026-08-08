@@ -1,9 +1,19 @@
 # Verify Report — frontend-admin-flujos
 
-Date: 2026-08-07
+Date: 2026-08-07 (re-verified 2026-08-08 after fix)
 Branch: `feature/frontend-admin-flujos/pr6-vendedor-clients`
 Mode: SDD verify executor, frontend-only
-Verdict: FAIL
+Verdict: PASS (initially FAIL; 3 CRITICAL findings resolved in `1d7d8eb`)
+
+## Re-Verification (2026-08-08)
+
+Fix commit `1d7d8eb test(frontend): cover admin QR link deactivation and error states` added the 3 missing scenarios to `AdminQrLinksPage.test.tsx` (+99 lines):
+
+1. QR deactivate: asserts `PATCH /api/v1/qr/admin/deactivate/qr-1` and vendor-scoped list refetch (`listRequestCount === 2`). PASS.
+2. Invitation-link deactivate: asserts `PATCH /api/v1/link-invitacion/admin/deactivate/link-1` and vendor-scoped list refetch. PASS.
+3. Required-parameter failure: selected vendor QR list returning 400 renders error message + retry, NOT empty state. PASS.
+
+Re-run evidence: `pnpm --filter @agua/frontend test` PASS (40 files, 180/180 tests), lint 0 errors (pre-existing AuthContext warning), build PASS. No implementation changes were needed — the missing coverage was test-only.
 
 ## Executive Summary
 
@@ -41,7 +51,7 @@ Worktree note: there are unrelated untracked paths (`packages/PRS AG-1.txt`, `pa
 | Admin vendor management | PASS | Service/page tests cover `GET /vendedores/list`, pending filter with `VendedorEstado.PENDIENTE`, detail route, typed `PATCH /vendedores/change-estado/{id}`, refresh/error behavior, and no identity fields. |
 | Admin vendor registration | PASS | Tests cover `POST /auth/register` with forced `UserRole.VENDEDOR`, validation/backend duplicate errors, pending-success copy, preserved non-sensitive values, and no editable IDs. |
 | Admin client management | PASS | Tests cover list/detail/update/reassign/provider-add endpoints, selected domain `vendedorId`, disabled/empty provider selector states, backend errors, refresh behavior, and absence of `userId`/`actorUserId`. |
-| Admin QR codes and invitation links | FAIL | Prerequisite and vendor-scoped list tests pass, but deactivation scenarios and backend required-parameter error visibility lack passing covering tests. |
+| Admin QR codes and invitation links | PASS | Re-verified: deactivation tests assert exact PATCH URLs + vendor-scoped refresh; 400 required-parameter failure renders error state with retry, not empty state (commit `1d7d8eb`). |
 | Admin audit and profile | PASS | Tests cover activity-log list/detail, profile read/update, validation/backend errors, timestamp/action rendering, and no identity fields in profile update. |
 | Cliente provider, cart, checkout, and job tracking | PASS | Tests cover provider load/select, provider-scoped catalog gating, add-to-cart/refetch, provider-scoped cart, checkout prerequisites, `CreateOrderV2Request`, `Idempotency-Key`, no `userId`, and job polling to terminal states. |
 | Vendedor client flow completion | PASS | Tests cover `/clientes/cartera`, `/clientes/own/get-by-id/{id}`, `/clientes/own/update/{id}`, direct registration via `/auth/register-client/by-vendor`, error preservation, and no `vendedorId`/`userId`/`actorUserId` body fields. |
@@ -55,25 +65,17 @@ Worktree note: there are unrelated untracked paths (`packages/PRS AG-1.txt`, `pa
 |---|---:|---|
 | Cart checkout MSW tests | PASS | `CartPage.checkout.test.tsx` asserts real `/api/v1/orders/create` request body, `Idempotency-Key` header, absence of `userId`, prerequisite blocking, and `/api/v1/orders/job-status` polling until terminal states. |
 | Vendedor client MSW tests | PASS | `VendedorClientPages.test.tsx` asserts real `/api/v1/clientes/cartera`, `/api/v1/clientes/own/get-by-id/{id}`, `/api/v1/clientes/own/update/{id}`, and `/api/v1/auth/register-client/by-vendor` URLs and bodies. |
-| Admin QR/link MSW tests | FAIL | Existing tests assert prerequisite and scoped list URLs, but do not exercise deactivate buttons/endpoints or backend required-parameter failure rendering after a selected/invalid vendor request. |
+| Admin QR/link MSW tests | PASS | `AdminQrLinksPage.test.tsx` now exercises deactivate buttons/endpoints with URL assertions + list invalidation, and backend 400 rendering as `ErrorState` after vendor selection. |
 
 ## Findings
 
-### CRITICAL
+### CRITICAL — ALL RESOLVED (re-verified 2026-08-08)
 
-1. `UNTESTED`: Admin QR deactivate scenario has no passing covering test.
-   - Spec: `Admin QR deactivate` requires `PATCH /api/v1/qr/admin/deactivate/{id}` and refresh of the vendor-scoped QR list.
-   - Implementation evidence: `AdminQrLinksPage.tsx` renders `Desactivar` at lines 50-52 and `useAdminQrLinks.ts` calls `deactivateAdminQrCode` with invalidation.
-   - Test evidence: no matches for `deactivate`, `Desactivar`, or `/qr/admin/deactivate` under `packages/frontend/src/features/admin/__tests__`.
+1. `RESOLVED`: Admin QR deactivate scenario now covered by passing test (asserts `PATCH /api/v1/qr/admin/deactivate/qr-1` + vendor-scoped refetch). Commit `1d7d8eb`.
 
-2. `UNTESTED`: Admin invitation-link deactivate scenario has no passing covering test.
-   - Spec: `Admin invitation-link deactivate` requires `PATCH /api/v1/link-invitacion/admin/deactivate/{id}` and refresh of the vendor-scoped invitation-link list.
-   - Implementation evidence: `AdminQrLinksPage.tsx` renders `Desactivar` at lines 61-63 and `useAdminQrLinks.ts` calls `deactivateAdminLink` with invalidation.
-   - Test evidence: no matches for `deactivate`, `Desactivar`, or `/link-invitacion/admin/deactivate` under `packages/frontend/src/features/admin/__tests__`.
+2. `RESOLVED`: Admin invitation-link deactivate scenario now covered by passing test (asserts `PATCH /api/v1/link-invitacion/admin/deactivate/link-1` + vendor-scoped refetch). Commit `1d7d8eb`.
 
-3. `UNTESTED`: Backend required-parameter failure visibility for selected QR/link requests lacks direct coverage.
-   - Spec: `Required-parameter failures are visible` requires backend rejection for missing/invalid `vendedorId` to render an error state and not an empty pagination object.
-   - Existing coverage proves local missing-selection prevention and dashboard no-query behavior, but not a selected QR/link request returning backend 400/500 and rendering `ErrorState`.
+3. `RESOLVED`: Backend required-parameter failure visibility now covered by passing test (400 on selected vendor QR list renders error + retry, not empty state). Commit `1d7d8eb`.
 
 ### WARNING
 
@@ -103,4 +105,4 @@ Worktree note: there are unrelated untracked paths (`packages/PRS AG-1.txt`, `pa
 
 ## Final Verdict
 
-FAIL: implementation builds and most requirements are covered, but SDD scenario coverage is incomplete for admin QR/invitation-link deactivation and required-parameter error visibility.
+PASS (re-verified 2026-08-08): implementation builds, the full frontend suite is green (40 files, 180/180 tests), and SDD scenario coverage is complete including admin QR/invitation-link deactivation and required-parameter error visibility. Remaining WARNING/SUGGESTION items are non-blocking. Archive is unblocked; PR3/PR6 slice sizes remain known/accepted review context.
