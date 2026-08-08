@@ -1,8 +1,8 @@
 # Apply Progress — frontend-admin-flujos
 
-## Status: PR5 COMPLETE (2026-08-07)
+## Status: PR6 COMPLETE (2026-08-07)
 
-Chain: `feature/frontend-admin-flujos-tracker` ← PR1 `feature/frontend-admin-flujos/pr1-admin-nav-vendedores` ← PR2 `feature/frontend-admin-flujos/pr2-vendor-registration` ← PR3 `feature/frontend-admin-flujos/pr3-admin-clients` ← PR4 `feature/frontend-admin-flujos/pr4-admin-qr-audit-profile` ← PR5 `feature/frontend-admin-flujos/pr5-cliente-cart-checkout`
+Chain: `feature/frontend-admin-flujos-tracker` ← PR1 `feature/frontend-admin-flujos/pr1-admin-nav-vendedores` ← PR2 `feature/frontend-admin-flujos/pr2-vendor-registration` ← PR3 `feature/frontend-admin-flujos/pr3-admin-clients` ← PR4 `feature/frontend-admin-flujos/pr4-admin-qr-audit-profile` ← PR5 `feature/frontend-admin-flujos/pr5-cliente-cart-checkout` ← PR6 `feature/frontend-admin-flujos/pr6-vendedor-clients`
 
 ## PR1: Admin Routes, Navigation, and Vendor Enablement — DONE
 
@@ -125,6 +125,35 @@ Verification:
 
 Changed lines: ~777 insertions across PR5A/B — within 800 hard cap.
 
+## PR6: Vendedor Client Flow Completion — DONE
+
+Completed tasks: tasks.md 6.1–6.5.
+
+- `3af8268` feat(frontend): add vendedor client data layer (PR6A)
+- `12c7963` feat(frontend): add vendedor client pages (PR6B)
+
+Implementation notes:
+
+- `ClientesPage` now uses `useVendedorClientPortfolio` directly and renders `/clientes/cartera` pagination with loading, error, empty, and success states.
+- Vendedor client detail route `/clientes/:clienteId` uses `GET /clientes/own/get-by-id/{id}` and `PATCH /clientes/own/update/{id}`; update failures are shown without clearing loaded client data.
+- Direct registration route `/clientes/nuevo` posts to `POST /auth/register-client/by-vendor` with `nombre`, `apellido`, `email`, `emailConfirmation`, `password`, `telefono`, `dni`, and `direccionEntrega`; no `userId`, `actorUserId`, or `vendedorId` fields are collected or sent.
+- Vendedor route allowlist now includes `index`, `nuevo`, and `:clienteId`; DashboardLayout exposes the direct registration link for vendedores.
+
+Strict TDD evidence:
+
+| Task | Test File | Layer | Safety Net | RED | GREEN | TRIANGULATE | REFACTOR |
+|------|-----------|-------|------------|-----|-------|-------------|----------|
+| 6.4 | `src/features/clientes/__tests__/VendedorClientPages.test.tsx`, `src/__tests__/ClientesPage.test.tsx`, `src/__tests__/adminRoutes.test.tsx` | Component integration + route unit | 8/8 existing vendedor client tests passed before edits | Missing vendedor detail/registration page imports failed before implementation | Targeted 12/12 tests passed | Covered portfolio empty/error/success, detail update error preservation, registration validation/backend error/success, and identity-free bodies | Route test added and existing list test wrapped with router |
+| 6.5 | N/A | Verification | N/A | N/A | Full test/lint/build passed | N/A | N/A |
+
+Verification:
+
+- `pnpm --filter @agua/frontend test`: 40 files, 177/177 tests PASS
+- `pnpm --filter @agua/frontend lint`: 0 errors, 1 pre-existing `AuthContext.tsx` fast-refresh warning
+- `pnpm --filter @agua/frontend build`: PASS
+
+Changed lines: PR6B code commit changed 522 lines (8 files), slightly above the 500-line soft target but below the PR6 800-line hard cap. PR6 total from PR5 base should be reviewed as one final vendedor-client slice.
+
 ## Incidents / Learnings
 
 - Git branch naming: tracker uses `-tracker`; slices use `feature/<change>/prN-*` because Git refs cannot have both `feature/<change>` and `feature/<change>/prN-*`.
@@ -135,7 +164,7 @@ Changed lines: ~777 insertions across PR5A/B — within 800 hard cap.
 
 ## Next slice
 
-PR6: Vendedor Client Flow Completion — cartera endpoint, own client detail/update, direct client registration (tasks.md 6.x). Branch from PR5: `feature/frontend-admin-flujos/pr6-vendedor-clients`.
+sdd-verify.
 
 ## NOT done (by rule)
 

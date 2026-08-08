@@ -91,8 +91,8 @@ Goal: complete vendedor-owned client list/detail/update/direct-registration flow
 - [x] 6.1 Replace vendedor client portfolio calls with `GET /api/v1/clientes/cartera`. Refs: Vendor client portfolio uses own endpoint.
 - [x] 6.2 Add vendedor own client detail/update pages/hooks using `/clientes/own/*`. Refs: Vendor client detail; Vendor updates own client.
 - [x] 6.3 Add direct client registration by vendor via `POST /api/v1/auth/register-client/by-vendor` without editable `vendedorId`. Refs: Vendor registers client directly.
-- [ ] 6.4 Add Vitest tests for endpoint usage, loading/error/not-found/success, update errors, and JWT-derived vendor identity. Refs: Vendedor Client Flow Completion.
-- [ ] 6.5 Verify PR6: `pnpm --filter @agua/frontend test`, `pnpm --filter @agua/frontend lint`, `pnpm --filter @agua/frontend build`.
+- [x] 6.4 Add Vitest tests for endpoint usage, loading/error/not-found/success, update errors, and JWT-derived vendor identity. Refs: Vendedor Client Flow Completion.
+- [x] 6.5 Verify PR6: `pnpm --filter @agua/frontend test`, `pnpm --filter @agua/frontend lint`, `pnpm --filter @agua/frontend build`.
 
 Estimated changed lines: ~450-650. Rollback boundary: revert vendedor client slice only; cliente/admin slices remain intact.
 
