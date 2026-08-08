@@ -1,8 +1,8 @@
 # Apply Progress — frontend-admin-flujos
 
-## Status: PR4 COMPLETE (2026-08-06)
+## Status: PR5 COMPLETE (2026-08-07)
 
-Chain: `feature/frontend-admin-flujos-tracker` ← PR1 `feature/frontend-admin-flujos/pr1-admin-nav-vendedores` ← PR2 `feature/frontend-admin-flujos/pr2-vendor-registration` ← PR3 `feature/frontend-admin-flujos/pr3-admin-clients` ← PR4 `feature/frontend-admin-flujos/pr4-admin-qr-audit-profile`
+Chain: `feature/frontend-admin-flujos-tracker` ← PR1 `feature/frontend-admin-flujos/pr1-admin-nav-vendedores` ← PR2 `feature/frontend-admin-flujos/pr2-vendor-registration` ← PR3 `feature/frontend-admin-flujos/pr3-admin-clients` ← PR4 `feature/frontend-admin-flujos/pr4-admin-qr-audit-profile` ← PR5 `feature/frontend-admin-flujos/pr5-cliente-cart-checkout`
 
 ## PR1: Admin Routes, Navigation, and Vendor Enablement — DONE
 
@@ -101,6 +101,30 @@ Verification:
 
 Changed lines: PR4B stayed scoped to audit/profile service/hooks/pages/routes/tests plus SDD tracking. No backend/contracts/schema/generated files changed.
 
+## PR5: Cliente Provider, Cart, Checkout, and Job Tracking — DONE
+
+Completed tasks: tasks.md 5.1–5.6.
+
+- `db28808` feat(frontend): add cliente provider cart data layer (PR5A)
+- `ac0770a` feat(frontend): add cart checkout and order job tracking (PR5B)
+
+Implementation notes:
+
+- `useClienteProviderSelection` loads providers, auto-selects default, exposes `isProviderSelectionRequired` gating.
+- Catalog gating: `useCatalogo`/`CatalogoPage` require selected provider before listing/adding products.
+- `useCart` scopes cart query by `vendedorId`; `addProductToCart` throws provider-required error without selected provider.
+- Checkout posts `CreateOrderV2Request` (vendedorId, metodoPago, direccion, observaciones) to `POST /api/v1/orders/create` with `Idempotency-Key` header (crypto.randomUUID, regenerated on terminal job state); no `userId` in body.
+- Job polling: `GET /api/v1/orders/job-status?id=` every 2s until COMPLETED/FAILED/DEAD_LETTER; cart invalidated on terminal; UI shows pending/failure/success states.
+- PR5B agent timed out; orchestrator audited WIP inline (service/hook/page/tests complete), ran full verification, and landed it.
+
+Verification:
+
+- `pnpm --filter @agua/frontend test`: 38 files, 166/166 tests PASS
+- `pnpm --filter @agua/frontend lint`: 0 errors, 1 pre-existing AuthContext warning
+- `pnpm --filter @agua/frontend build`: PASS
+
+Changed lines: ~777 insertions across PR5A/B — within 800 hard cap.
+
 ## Incidents / Learnings
 
 - Git branch naming: tracker uses `-tracker`; slices use `feature/<change>/prN-*` because Git refs cannot have both `feature/<change>` and `feature/<change>/prN-*`.
@@ -111,7 +135,7 @@ Changed lines: PR4B stayed scoped to audit/profile service/hooks/pages/routes/te
 
 ## Next slice
 
-PR4: Admin QR, Invitation Links, Audit, and Profile — QR/link vendor-scoped prerequisite states, deactivation refresh, audit list/detail, and admin profile read/update (tasks.md 4.x). Branch from PR3: `feature/frontend-admin-flujos/pr4-admin-qr-audit-profile`.
+PR6: Vendedor Client Flow Completion — cartera endpoint, own client detail/update, direct client registration (tasks.md 6.x). Branch from PR5: `feature/frontend-admin-flujos/pr6-vendedor-clients`.
 
 ## NOT done (by rule)
 
