@@ -32,3 +32,16 @@ describe('admin routes', () => {
     ]);
   });
 });
+
+describe('vendedor client routes', () => {
+  it('keeps vendedor client routes behind the VENDEDOR ProtectedRoute', () => {
+    const clientesRoute = findRoute('/clientes');
+
+    expect(clientesRoute?.allowedRoles).toEqual([UserRole.VENDEDOR]);
+    expect(clientesRoute?.children?.[0]?.children?.map((route) => route.path ?? 'index')).toEqual([
+      'index',
+      'nuevo',
+      ':clienteId',
+    ]);
+  });
+});
