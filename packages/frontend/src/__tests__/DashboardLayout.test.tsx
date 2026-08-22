@@ -81,7 +81,7 @@ describe('DashboardLayout', () => {
     expect(screen.queryByText('Productos')).not.toBeInTheDocument();
   });
 
-  it('does not expose vendedor navigation links to SUPER_ADMIN', () => {
+  it('renders complete SUPER_ADMIN navigation links under /admin', () => {
     renderLayout(
       createAuthValue({
         user: {
@@ -94,12 +94,24 @@ describe('DashboardLayout', () => {
       })
     );
 
-    expect(screen.getByRole('link', { name: /admin/i })).toBeInTheDocument();
-    expect(screen.queryByText('Clientes')).not.toBeInTheDocument();
+    const expectedLinks = [
+      ['Admin Dashboard', '/admin'],
+      ['Vendedores', '/admin/vendors'],
+      ['Pendientes', '/admin/vendors/pending'],
+      ['Clientes', '/admin/clients'],
+      ['Auditoría', '/admin/audit'],
+      ['QR Codes', '/admin/qr-codes'],
+      ['Invitation Links', '/admin/invitation-links'],
+      ['Perfil', '/admin/profile'],
+    ];
+
+    for (const [name, href] of expectedLinks) {
+      expect(screen.getByRole('link', { name: new RegExp(name, 'i') })).toHaveAttribute('href', href);
+    }
+
     expect(screen.queryByText('Productos')).not.toBeInTheDocument();
     expect(screen.queryByText('Órdenes')).not.toBeInTheDocument();
     expect(screen.queryByText('Entregas')).not.toBeInTheDocument();
-    expect(screen.queryByText('QR')).not.toBeInTheDocument();
   });
 
   it('displays user name and email in sidebar', () => {

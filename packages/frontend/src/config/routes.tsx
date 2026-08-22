@@ -8,6 +8,10 @@ const ForgotPasswordPage = lazy(() => import('../features/auth/pages/ForgotPassw
 const ResetPasswordPage = lazy(() => import('../features/auth/pages/ResetPasswordPage'));
 const VendedorDashboardPage = lazy(() => import('../features/vendedor/pages/VendedorDashboardPage'));
 const AdminDashboardPage = lazy(() => import('../features/admin/pages/AdminDashboardPage'));
+const AdminVendorsPage = lazy(() => import('../features/admin/pages/AdminVendorsPage'));
+const AdminPendingVendorsPage = lazy(() => import('../features/admin/pages/AdminPendingVendorsPage'));
+const AdminVendorDetailPage = lazy(() => import('../features/admin/pages/AdminVendorDetailPage'));
+const AdminPlaceholderPage = lazy(() => import('../features/admin/pages/AdminPlaceholderPage'));
 const ClientesPage = lazy(() => import('../features/clientes/pages/ClientesPage'));
 const CatalogoPage = lazy(() => import('../features/catalogo/pages/CatalogoPage'));
 const CartPage = lazy(() => import('../features/cart/pages/CartPage'));
@@ -77,6 +81,16 @@ const routes: RouteConfig[] = [
         element: <DashboardLayout />,
         children: [
           { index: true, element: <AdminDashboardPage /> },
+          { path: 'vendors', element: <AdminVendorsPage /> },
+          { path: 'vendors/pending', element: <AdminPendingVendorsPage /> },
+          { path: 'vendors/:vendedorId', element: <AdminVendorDetailPage /> },
+          { path: 'clients', element: <AdminPlaceholderPage title="Clientes" /> },
+          { path: 'clients/:clienteId', element: <AdminPlaceholderPage title="Detalle de cliente" /> },
+          { path: 'audit', element: <AdminPlaceholderPage title="Auditoría" /> },
+          { path: 'audit/:auditId', element: <AdminPlaceholderPage title="Detalle de auditoría" /> },
+          { path: 'qr-codes', element: <AdminPlaceholderPage title="QR Codes" /> },
+          { path: 'invitation-links', element: <AdminPlaceholderPage title="Invitation Links" /> },
+          { path: 'profile', element: <AdminPlaceholderPage title="Perfil" /> },
         ],
       },
     ],

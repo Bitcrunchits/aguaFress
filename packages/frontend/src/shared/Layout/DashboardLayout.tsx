@@ -20,7 +20,14 @@ const NAV_ITEMS_BY_ROLE: Record<string, NavItem[]> = {
     { to: '/qr', label: 'QR', icon: '🔗' },
   ],
   [UserRole.SUPER_ADMIN]: [
-    { to: '/admin', label: 'Admin', icon: '⚙️' },
+    { to: '/admin', label: 'Admin Dashboard', icon: '⚙️' },
+    { to: '/admin/vendors', label: 'Vendedores', icon: '👥' },
+    { to: '/admin/vendors/pending', label: 'Pendientes', icon: '⏳' },
+    { to: '/admin/clients', label: 'Clientes', icon: '🧾' },
+    { to: '/admin/audit', label: 'Auditoría', icon: '📋' },
+    { to: '/admin/qr-codes', label: 'QR Codes', icon: '🔗' },
+    { to: '/admin/invitation-links', label: 'Invitation Links', icon: '✉️' },
+    { to: '/admin/profile', label: 'Perfil', icon: '👤' },
   ],
   [UserRole.CLIENTE]: [
     { to: '/catalogo', label: 'Catálogo', icon: '🏠' },
