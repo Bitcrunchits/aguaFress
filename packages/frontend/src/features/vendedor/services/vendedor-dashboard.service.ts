@@ -1,4 +1,5 @@
 import { OrderEstado, type ClienteResponse, type OrderListResponse, type VendedorResponse } from '@agua/contracts';
+import { listVendedorClientPortfolio } from '../../clientes/services/clientes.service';
 import { listOrders } from '../../ordenes/services/ordenes.service';
 import { listVendorQrCodes } from '../../qr/services/qr.service';
 import api from '../../../services/api';
@@ -35,7 +36,7 @@ function buildMetrics(clientes: ClienteResponse[], orders: OrderListResponse[], 
 
 export async function getVendedorDashboard(): Promise<VendedorDashboardData> {
   const [clientesResponse, vendedorResponse, orders, qrCodes] = await Promise.all([
-    api.get<ClienteResponse[]>('/clientes/list'),
+    listVendedorClientPortfolio(),
     api.get<VendedorResponse>('/vendedores/profile'),
     listOrders({ page: 1, limit: 5 }),
     listVendorQrCodes(),

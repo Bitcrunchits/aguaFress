@@ -14,6 +14,7 @@ const NAV_ITEMS_BY_ROLE: Record<string, NavItem[]> = {
   [UserRole.VENDEDOR]: [
     { to: '/dashboard', label: 'Dashboard', icon: '📊' },
     { to: '/clientes', label: 'Clientes', icon: '👥' },
+    { to: '/clientes/nuevo', label: 'Nuevo cliente', icon: '➕' },
     { to: '/productos', label: 'Productos', icon: '📦' },
     { to: '/ordenes', label: 'Órdenes', icon: '📋' },
     { to: '/deliveries', label: 'Entregas', icon: '🚚' },

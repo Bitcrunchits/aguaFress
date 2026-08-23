@@ -19,6 +19,8 @@ const AdminAuditDetailPage = lazy(() => import('../features/admin/pages/AdminAud
 const AdminQrLinksPage = lazy(() => import('../features/admin/pages/AdminQrLinksPage'));
 const AdminProfilePage = lazy(() => import('../features/admin/pages/AdminProfilePage'));
 const ClientesPage = lazy(() => import('../features/clientes/pages/ClientesPage'));
+const VendedorClientDetailPage = lazy(() => import('../features/clientes/pages/VendedorClientDetailPage'));
+const VendedorClientRegistrationPage = lazy(() => import('../features/clientes/pages/VendedorClientRegistrationPage'));
 const CatalogoPage = lazy(() => import('../features/catalogo/pages/CatalogoPage'));
 const CartPage = lazy(() => import('../features/cart/pages/CartPage'));
 const ProductosPage = lazy(() => import('../features/productos/pages/ProductosPage'));
@@ -114,6 +116,8 @@ const routes: RouteConfig[] = [
         element: <DashboardLayout />,
         children: [
           { index: true, element: <ClientesPage /> },
+          { path: 'nuevo', element: <VendedorClientRegistrationPage /> },
+          { path: ':clienteId', element: <VendedorClientDetailPage /> },
         ],
       },
     ],

@@ -18,8 +18,9 @@ vi.mock('../../features/auth/hooks/useAuth', () => ({
 }));
 
 const server = setupServer(
-  http.get('/api/v1/clientes/list', () => {
-    return HttpResponse.json([
+  http.get('/api/v1/clientes/cartera', () => {
+    return HttpResponse.json({
+      data: [
       {
         id: 'cliente-1',
         nombre: 'Juan',
@@ -36,7 +37,9 @@ const server = setupServer(
         address: 'Av. Siempre Viva 456',
         tipoFactura: 'C',
       },
-    ]);
+      ],
+      pagination: { page: 1, limit: 20, total: 2, totalPages: 1 },
+    });
   }),
 
   http.get('/api/v1/vendedores/profile', () => {
@@ -131,12 +134,10 @@ describe('VendedorDashboardPage', () => {
 
   it('shows error state when API fails', async () => {
     server.use(
-      http.get('/api/v1/clientes/list', () => {
-        return HttpResponse.json(
-          { statusCode: 500, message: 'Error del servidor' },
-          { status: 500 }
-        );
-      })
+      http.get('/api/v1/clientes/cartera', () => HttpResponse.json(
+        { statusCode: 500, message: 'Error del servidor' },
+        { status: 500 }
+      ))
     );
 
     renderPage();

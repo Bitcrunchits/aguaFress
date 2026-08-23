@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
+import { MemoryRouter } from 'react-router-dom';
 import { UserRole } from '@agua/contracts';
 import { AuthContext, type AuthContextValue } from '../context/AuthContext';
 import ClientesPage from '../features/clientes/pages/ClientesPage';
@@ -28,7 +29,9 @@ function renderPage() {
   return render(
     <QueryClientProvider client={queryClient}>
       <AuthContext.Provider value={authValue}>
-        <ClientesPage />
+        <MemoryRouter>
+          <ClientesPage />
+        </MemoryRouter>
       </AuthContext.Provider>
     </QueryClientProvider>
   );
