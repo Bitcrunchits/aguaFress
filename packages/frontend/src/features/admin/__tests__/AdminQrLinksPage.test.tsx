@@ -54,7 +54,7 @@ describe('AdminQrLinksPage', () => {
       http.get('/api/v1/super-admin/qr-codes', ({ request }) => {
         capturedUrl = new URL(request.url);
         return HttpResponse.json({
-          data: [{ id: 'qr-1', url: 'https://qr.test/agua-norte', vendedorId: 'vendedor-1', activo: true }],
+          data: [{ id: 'qr-1', codigo: 'QR-NORTE-001', activo: true, expires_at: '2026-08-07T12:00:00.000Z', created_at: '2026-08-06T12:00:00.000Z' }],
           pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
         });
       })
@@ -62,10 +62,12 @@ describe('AdminQrLinksPage', () => {
 
     renderAdminQrLinksPage('qr');
 
+    await screen.findByRole('option', { name: 'Agua Norte' });
     await userEvent.selectOptions(await screen.findByLabelText('Vendedor'), 'vendedor-1');
 
     await waitFor(() => expect(capturedUrl?.searchParams.get('vendedorId')).toBe('vendedor-1'));
-    expect(await screen.findByText('https://qr.test/agua-norte')).toBeInTheDocument();
+    expect(await screen.findByText('Código: QR-NORTE-001')).toBeInTheDocument();
+    expect(screen.getByText('Expira: 2026-08-07T12:00:00.000Z · Creado: 2026-08-06T12:00:00.000Z')).toBeInTheDocument();
   });
 
   it('deactivates a QR code and refreshes the selected vendor QR list', async () => {
@@ -83,7 +85,7 @@ describe('AdminQrLinksPage', () => {
 
         return HttpResponse.json({
           data: listRequestCount === 1
-            ? [{ id: 'qr-1', url: 'https://qr.test/agua-norte', vendedorId: 'vendedor-1', activo: true }]
+            ? [{ id: 'qr-1', codigo: 'QR-NORTE-001', activo: true, expires_at: '2026-08-07T12:00:00.000Z', created_at: '2026-08-06T12:00:00.000Z' }]
             : [],
           pagination: { page: 1, limit: 20, total: listRequestCount === 1 ? 1 : 0, totalPages: listRequestCount === 1 ? 1 : 0 },
         });
@@ -97,8 +99,9 @@ describe('AdminQrLinksPage', () => {
 
     renderAdminQrLinksPage('qr');
 
+    await screen.findByRole('option', { name: 'Agua Norte' });
     await userEvent.selectOptions(await screen.findByLabelText('Vendedor'), 'vendedor-1');
-    expect(await screen.findByText('https://qr.test/agua-norte')).toBeInTheDocument();
+    expect(await screen.findByText('Código: QR-NORTE-001')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Desactivar' }));
 
@@ -117,7 +120,7 @@ describe('AdminQrLinksPage', () => {
       http.get('/api/v1/super-admin/link-invitacion', ({ request }) => {
         capturedUrl = new URL(request.url);
         return HttpResponse.json({
-          data: [{ id: 'link-1', linkUrl: 'https://link.test/agua-sur', vendedorId: 'vendedor-2', activo: true }],
+          data: [{ id: 'link-1', token: 'invite-sur-001', activo: true, expires_at: '2026-08-07T12:00:00.000Z', created_at: '2026-08-06T12:00:00.000Z' }],
           pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
         });
       })
@@ -125,10 +128,11 @@ describe('AdminQrLinksPage', () => {
 
     renderAdminQrLinksPage('links');
 
+    await screen.findByRole('option', { name: 'Agua Sur' });
     await userEvent.selectOptions(await screen.findByLabelText('Vendedor'), 'vendedor-2');
 
     await waitFor(() => expect(capturedUrl?.searchParams.get('vendedorId')).toBe('vendedor-2'));
-    expect(await screen.findByText('https://link.test/agua-sur')).toBeInTheDocument();
+    expect(await screen.findByText('Token: invite-sur-001')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1, name: 'Invitation Links' })).toBeInTheDocument();
   });
 
@@ -147,7 +151,7 @@ describe('AdminQrLinksPage', () => {
 
         return HttpResponse.json({
           data: listRequestCount === 1
-            ? [{ id: 'link-1', linkUrl: 'https://link.test/agua-sur', vendedorId: 'vendedor-2', activo: true }]
+            ? [{ id: 'link-1', token: 'invite-sur-001', activo: true, expires_at: '2026-08-07T12:00:00.000Z', created_at: '2026-08-06T12:00:00.000Z' }]
             : [],
           pagination: { page: 1, limit: 20, total: listRequestCount === 1 ? 1 : 0, totalPages: listRequestCount === 1 ? 1 : 0 },
         });
@@ -161,8 +165,9 @@ describe('AdminQrLinksPage', () => {
 
     renderAdminQrLinksPage('links');
 
+    await screen.findByRole('option', { name: 'Agua Sur' });
     await userEvent.selectOptions(await screen.findByLabelText('Vendedor'), 'vendedor-2');
-    expect(await screen.findByText('https://link.test/agua-sur')).toBeInTheDocument();
+    expect(await screen.findByText('Token: invite-sur-001')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Desactivar' }));
 
@@ -185,10 +190,48 @@ describe('AdminQrLinksPage', () => {
 
     renderAdminQrLinksPage('qr');
 
+    await screen.findByRole('option', { name: 'Agua Norte' });
     await userEvent.selectOptions(await screen.findByLabelText('Vendedor'), 'vendedor-1');
 
     expect(await screen.findByText('vendedorId is required')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
     expect(screen.queryByText('No hay qr codes activos para este vendedor')).not.toBeInTheDocument();
+  });
+
+  it('paginates and searches active vendors through the backend selector', async () => {
+    const capturedVendorUrls: URL[] = [];
+    server.use(
+      http.get('/api/v1/vendedores/list', ({ request }) => {
+        const url = new URL(request.url);
+        capturedVendorUrls.push(url);
+
+        if (url.searchParams.get('page') === '2') {
+          return HttpResponse.json({
+            data: [{ id: 'vendedor-2', nombre: 'Agua Sur', email: 'sur@test.com', estado: VendedorEstado.ACTIVO }],
+            pagination: { page: 2, limit: 20, total: 40, totalPages: 2 },
+          });
+        }
+
+        return HttpResponse.json({
+          data: [{ id: 'vendedor-1', nombre: 'Agua Norte', email: 'norte@test.com', estado: VendedorEstado.ACTIVO }],
+          pagination: { page: 1, limit: 20, total: 40, totalPages: 2 },
+        });
+      })
+    );
+
+    renderAdminQrLinksPage('qr');
+
+    await screen.findByRole('option', { name: 'Agua Norte' });
+    await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+    await screen.findByRole('option', { name: 'Agua Sur' });
+    await userEvent.type(screen.getByLabelText('Buscar vendedores activos'), 'sur');
+
+    await waitFor(() => {
+      const lastVendorUrl = capturedVendorUrls.at(-1);
+      expect(lastVendorUrl?.searchParams.get('page')).toBe('1');
+      expect(lastVendorUrl?.searchParams.get('limit')).toBe('20');
+      expect(lastVendorUrl?.searchParams.get('estado')).toBe(VendedorEstado.ACTIVO);
+      expect(lastVendorUrl?.searchParams.get('search')).toBe('sur');
+    });
   });
 });

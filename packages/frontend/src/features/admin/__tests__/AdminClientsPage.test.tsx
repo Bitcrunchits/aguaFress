@@ -235,6 +235,102 @@ describe('admin client pages', () => {
     expect(await screen.findByText('Cliente reasignado correctamente')).toBeInTheDocument();
   });
 
+  it('loads active vendor selector options through backend pagination and search', async () => {
+    const requestedVendorFilters: Array<Record<string, string | null>> = [];
+
+    server.use(
+      http.get('/api/v1/clientes/get-by-id/cliente-1', () => HttpResponse.json({
+        id: 'cliente-1',
+        nombre: 'Laura',
+        apellido: 'Perez',
+        email: 'laura@test.com',
+        providers: [],
+      })),
+      http.get('/api/v1/vendedores/list', ({ request }) => {
+        const url = new URL(request.url);
+        const page = url.searchParams.get('page');
+        const search = url.searchParams.get('search');
+        requestedVendorFilters.push({
+          estado: url.searchParams.get('estado'),
+          limit: url.searchParams.get('limit'),
+          page,
+          search,
+        });
+
+        if (search === 'Oculta') {
+          return HttpResponse.json({
+            data: [
+              {
+                id: 'vendedor-150',
+                nombre: 'Agua Oculta',
+                email: 'oculta@test.com',
+                estado: VendedorEstado.ACTIVO,
+                clientesCount: 0,
+                fechaRegistro: '2026-08-06T00:00:00.000Z',
+              },
+            ],
+            pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+          });
+        }
+
+        if (page === '2') {
+          return HttpResponse.json({
+            data: [
+              {
+                id: 'vendedor-101',
+                nombre: 'Agua Pagina Dos',
+                email: 'pagina@test.com',
+                estado: VendedorEstado.ACTIVO,
+                clientesCount: 0,
+                fechaRegistro: '2026-08-06T00:00:00.000Z',
+              },
+            ],
+            pagination: { page: 2, limit: 20, total: 21, totalPages: 2 },
+          });
+        }
+
+        return HttpResponse.json({
+          data: [
+            {
+              id: 'vendedor-1',
+              nombre: 'Agua Primera',
+              email: 'primera@test.com',
+              estado: VendedorEstado.ACTIVO,
+              clientesCount: 0,
+              fechaRegistro: '2026-08-06T00:00:00.000Z',
+            },
+          ],
+          pagination: { page: 1, limit: 20, total: 21, totalPages: 2 },
+        });
+      })
+    );
+
+    renderAdminClientRoute('/admin/clients/cliente-1');
+
+    expect(await screen.findAllByRole('option', { name: 'Agua Primera' })).toHaveLength(2);
+    expect(screen.queryByRole('option', { name: 'Agua Pagina Dos' })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+
+    expect(await screen.findAllByRole('option', { name: 'Agua Pagina Dos' })).toHaveLength(2);
+    expect(requestedVendorFilters).toContainEqual({
+      estado: VendedorEstado.ACTIVO,
+      limit: '20',
+      page: '2',
+      search: null,
+    });
+
+    await userEvent.type(screen.getByLabelText('Buscar vendedores activos'), 'Oculta');
+
+    expect(await screen.findAllByRole('option', { name: 'Agua Oculta' })).toHaveLength(2);
+    expect(requestedVendorFilters).toContainEqual({
+      estado: VendedorEstado.ACTIVO,
+      limit: '20',
+      page: '1',
+      search: 'Oculta',
+    });
+  });
+
   it('adds a provider relation without identity leakage and disables actions without vendors', async () => {
     let capturedBody: unknown;
     server.use(
@@ -292,7 +388,7 @@ describe('admin client pages', () => {
 
     renderAdminClientRoute('/admin/clients/cliente-1');
 
-    expect(await screen.findByText('No hay vendedores elegibles para asignar')).toBeInTheDocument();
+    expect(await screen.findByText('No se encontraron vendedores activos elegibles')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reasignar cliente' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Agregar proveedor' })).toBeDisabled();
   });

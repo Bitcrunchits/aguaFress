@@ -1,7 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { AddCartItemV2Request } from '@agua/contracts';
 import { normalizeApiError } from '../../../shared/api-error';
 import { listBrands, listCategories, listProducts, type ProductFilters } from '../../productos/services/productos.service';
 import { useClienteProviderSelection } from '../../clientes/hooks/useClienteProviderSelection';
+import { addCartItem } from '../../cart/services/cart.service';
+
+type AddProductToCartRequest = Omit<AddCartItemV2Request, 'vendedorId'>;
 
 const CATALOGO_QUERY_KEYS = {
   products: (filters: ProductFilters) => ['catalogo', 'products', filters] as const,
@@ -10,6 +14,7 @@ const CATALOGO_QUERY_KEYS = {
 } as const;
 
 export function useCatalogo() {
+  const queryClient = useQueryClient();
   const providerSelection = useClienteProviderSelection();
   const vendedorId = providerSelection.selectedVendedorId;
   const productFilters: ProductFilters = { page: 1, limit: 20, vendedorId, disponibles: true };
@@ -38,6 +43,19 @@ export function useCatalogo() {
 
   const firstError = productsQuery.error ?? categoriesQuery.error ?? brandsQuery.error;
 
+  const addProductMutation = useMutation({
+    mutationFn: (request: AddProductToCartRequest) => {
+      if (!vendedorId) {
+        throw new Error('Seleccioná un proveedor antes de agregar productos al carrito');
+      }
+
+      return addCartItem({ ...request, vendedorId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cart', 'detail', vendedorId] });
+    },
+  });
+
   return {
     providers: providerSelection.providers,
     selectedProvider: providerSelection.selectedProvider,
@@ -52,6 +70,9 @@ export function useCatalogo() {
     errorMessage: providerSelection.errorMessage ?? (firstError
       ? normalizeApiError(firstError, 'No se pudo cargar el catálogo').message
       : undefined),
+    mutationErrorMessage: addProductMutation.error
+      ? normalizeApiError(addProductMutation.error, 'No se pudo actualizar el carrito').message
+      : undefined,
     refetch: () => {
       providerSelection.refetchProviders();
       productsQuery.refetch();
@@ -60,5 +81,7 @@ export function useCatalogo() {
     },
     selectProvider: providerSelection.selectProvider,
     isSelectingProvider: providerSelection.isSelectingProvider,
+    addProductToCart: (request: AddProductToCartRequest) => addProductMutation.mutateAsync(request),
+    isAddingToCart: addProductMutation.isPending,
   };
 }

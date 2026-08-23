@@ -71,7 +71,9 @@ export async function listAdminAuditEntries(filters: AdminAuditListFilters = {})
 }
 
 export async function getAdminAuditById(auditId: string): Promise<AdminAuditDetailResponse> {
-  const response = await api.get<AdminAuditDetailResponse>(`/activity-logs/get-by-id/${auditId}`);
+  const response = await api.get<AdminAuditDetailResponse>('/activity-logs/get-by-id', {
+    params: { id: auditId },
+  });
   return response.data;
 }
 

@@ -16,7 +16,7 @@ describe('admin QR and invitation link service', () => {
       http.get('/api/v1/super-admin/qr-codes', ({ request }) => {
         capturedUrl = new URL(request.url);
         return HttpResponse.json({
-          data: [{ id: 'qr-1', url: 'https://qr.test/1', vendedorId: 'vendedor-1', activo: true }],
+          data: [{ id: 'qr-1', codigo: 'QR-001', activo: true, expires_at: '2026-08-07T12:00:00.000Z', created_at: '2026-08-06T12:00:00.000Z' }],
           pagination: { page: 2, limit: 10, total: 1, totalPages: 1 },
         });
       })
@@ -36,7 +36,7 @@ describe('admin QR and invitation link service', () => {
       http.get('/api/v1/super-admin/link-invitacion', ({ request }) => {
         capturedUrl = new URL(request.url);
         return HttpResponse.json({
-          data: [{ id: 'link-1', linkUrl: 'https://link.test/1', vendedorId: 'vendedor-2', activo: true }],
+          data: [{ id: 'link-1', token: 'invite-token-1', activo: true, expires_at: '2026-08-07T12:00:00.000Z', created_at: '2026-08-06T12:00:00.000Z' }],
           pagination: { page: 3, limit: 5, total: 1, totalPages: 1 },
         });
       })

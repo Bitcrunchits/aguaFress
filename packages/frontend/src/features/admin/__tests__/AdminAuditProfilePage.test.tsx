@@ -82,21 +82,25 @@ describe('admin audit and profile pages', () => {
   });
 
   it('renders audit detail with actor, action, target, and timestamp', async () => {
+    let requestedId = '';
     server.use(
-      http.get('/api/v1/activity-logs/get-by-id/audit-1', () => HttpResponse.json({
-        data: {
-          id: 'audit-1',
-          createdAt: '2026-08-06T12:00:00.000Z',
-          source: 'usuario-service',
-          action: 'VENDEDOR_STATUS_CHANGED',
-          actor: { email: 'admin@test.com', role: UserRole.SUPER_ADMIN },
-          entity: { type: 'vendedor', id: 'vendedor-1' },
-          result: 'success',
-          summary: 'Vendor enabled',
-          metadata: { estado: 'activo' },
-          requestId: 'req-1',
-        },
-      }))
+      http.get('/api/v1/activity-logs/get-by-id', ({ request }) => {
+        requestedId = new URL(request.url).searchParams.get('id') ?? '';
+        return HttpResponse.json({
+          data: {
+            id: 'audit-1',
+            createdAt: '2026-08-06T12:00:00.000Z',
+            source: 'usuario-service',
+            action: 'VENDEDOR_STATUS_CHANGED',
+            actor: { email: 'admin@test.com', role: UserRole.SUPER_ADMIN },
+            entity: { type: 'vendedor', id: 'vendedor-1' },
+            result: 'success',
+            summary: 'Vendor enabled',
+            metadata: { estado: 'activo' },
+            requestId: 'req-1',
+          },
+        });
+      })
     );
 
     renderAdminRoute('/admin/audit/audit-1');
@@ -106,6 +110,7 @@ describe('admin audit and profile pages', () => {
     expect(screen.getByText('VENDEDOR_STATUS_CHANGED')).toBeInTheDocument();
     expect(screen.getByText('vendedor · vendedor-1')).toBeInTheDocument();
     expect(screen.getByText('2026-08-06T12:00:00.000Z')).toBeInTheDocument();
+    expect(requestedId).toBe('audit-1');
   });
 
   it('loads and updates the admin profile without editable identity ids', async () => {

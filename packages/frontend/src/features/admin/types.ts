@@ -1,8 +1,6 @@
 import type {
   ActivityLogListResponseDTO,
   ActivityLogDetailResponseDTO,
-  GenerarLinkResponse,
-  GenerarQRResponse,
   PaginatedResponse,
   PaginationRequest,
   SuperAdminClienteItem,
@@ -34,16 +32,20 @@ export interface UpdateAdminProfileRequest {
   apellido?: string;
 }
 
-export interface AdminQrItem extends GenerarQRResponse {
+export interface AdminQrItem {
   id: string;
-  vendedorId?: string;
-  activo?: boolean;
+  codigo: string;
+  activo: boolean;
+  expires_at: string;
+  created_at: string;
 }
 
-export interface AdminLinkItem extends GenerarLinkResponse {
+export interface AdminLinkItem {
   id: string;
-  vendedorId?: string;
-  activo?: boolean;
+  token: string;
+  activo: boolean;
+  expires_at: string;
+  created_at: string;
 }
 
 export type AdminQrResponse = PaginatedResponse<AdminQrItem>;

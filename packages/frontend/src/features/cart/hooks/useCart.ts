@@ -117,6 +117,7 @@ export function useCart() {
     isError: providerSelection.isError || cartQuery.isError,
     isMutating: addProductMutation.isPending || addItemMutation.isPending || updateItemMutation.isPending || deleteItemMutation.isPending,
     isCheckingOut: checkoutMutation.isPending,
+    isSelectingProvider: providerSelection.isSelectingProvider,
     errorMessage: providerSelection.errorMessage ?? (firstError
       ? normalizeApiError(firstError, 'No se pudo cargar el carrito').message
       : undefined),
@@ -131,6 +132,7 @@ export function useCart() {
       providerSelection.refetchProviders();
       cartQuery.refetch();
     },
+    selectProvider: providerSelection.selectProvider,
     addItem: addItemMutation.mutate,
     addProductToCart: (request: AddProductToCartRequest) => addProductMutation.mutateAsync(request),
     updateItem: updateItemMutation.mutate,
