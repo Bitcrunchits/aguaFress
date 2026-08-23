@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
@@ -128,24 +127,24 @@ describe('AdminDashboardPage', () => {
     expect(screen.getByRole('button', { name: /reintentar/i })).toBeInTheDocument();
   });
 
-  it('deactivates admin QR invitations through the gateway', async () => {
-    let deactivatedQr = false;
+  it('does not request vendor-scoped QR data from the overview without a selected vendor', async () => {
+    let qrRequestCount = 0;
+    let linkRequestCount = 0;
     server.use(
-      http.get('/api/v1/super-admin/qr-codes', () => HttpResponse.json({
-        data: [{ id: '550e8400-e29b-41d4-a716-446655440000', qrCode: 'base64', url: 'https://agua.app/invitar/admin-qr', expiresAt: '2026-07-29T00:00:00.000Z', vendedorId: 'vendedor-1', activo: true }],
-        pagination: { page: 1, limit: 5, total: 1, totalPages: 1 },
-      })),
-      http.patch('/api/v1/qr/admin/deactivate/550e8400-e29b-41d4-a716-446655440000', () => {
-        deactivatedQr = true;
-        return HttpResponse.json({ deactivated: true });
+      http.get('/api/v1/super-admin/qr-codes', () => {
+        qrRequestCount += 1;
+        return HttpResponse.json({ message: 'vendedorId requerido' }, { status: 400 });
+      }),
+      http.get('/api/v1/super-admin/link-invitacion', () => {
+        linkRequestCount += 1;
+        return HttpResponse.json({ message: 'vendedorId requerido' }, { status: 400 });
       })
     );
 
     renderPage();
 
-    expect(await screen.findByText('https://agua.app/invitar/admin-qr')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Desactivar' }));
-
-    expect(deactivatedQr).toBe(true);
+    expect(await screen.findByText('Panel de Administración')).toBeInTheDocument();
+    expect(qrRequestCount).toBe(0);
+    expect(linkRequestCount).toBe(0);
   });
 });

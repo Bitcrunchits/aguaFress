@@ -2,6 +2,7 @@ import { Card } from '../../../shared/components/Card';
 import EmptyState from '../../../shared/components/EmptyState';
 import ErrorState from '../../../shared/components/ErrorState';
 import PageSkeleton from '../../../shared/components/PageSkeleton';
+import { ClienteProviderSelector } from '../../clientes/components/ClienteProviderSelector';
 import ProductCard from '../../productos/components/ProductCard';
 import { useCatalogo } from '../hooks/useCatalogo';
 
@@ -9,6 +10,8 @@ export default function CatalogoPage() {
   const {
     providers,
     selectedProvider,
+    selectedVendedorId,
+    isProviderSelectionRequired,
     products,
     pagination,
     categories,
@@ -17,6 +20,11 @@ export default function CatalogoPage() {
     isError,
     errorMessage,
     refetch,
+    selectProvider,
+    isSelectingProvider,
+    addProductToCart,
+    isAddingToCart,
+    mutationErrorMessage,
   } = useCatalogo();
 
   if (isLoading) return <PageSkeleton />;
@@ -27,6 +35,23 @@ export default function CatalogoPage() {
 
   if (providers.length === 0) {
     return <EmptyState message="Todavía no tenés proveedores activos" />;
+  }
+
+  if (isProviderSelectionRequired) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-text-primary">Catálogo</h1>
+          <p className="text-sm text-text-secondary">Seleccioná un proveedor para ver sus productos.</p>
+        </div>
+        <ClienteProviderSelector
+          providers={providers}
+          selectedVendedorId={selectedVendedorId}
+          isSelectingProvider={isSelectingProvider}
+          onSelectProvider={selectProvider}
+        />
+      </div>
+    );
   }
 
   return (
@@ -50,6 +75,8 @@ export default function CatalogoPage() {
         </Card.Body>
       </Card>
 
+      {mutationErrorMessage && <p role="alert" className="text-sm text-error">{mutationErrorMessage}</p>}
+
       {products.length === 0 ? (
         <EmptyState message="Este proveedor no tiene productos disponibles" />
       ) : (
@@ -61,7 +88,13 @@ export default function CatalogoPage() {
           )}
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard
+                key={product.id}
+                product={product}
+                canAddToCart={Boolean(selectedVendedorId)}
+                isAddingToCart={isAddingToCart}
+                onAddToCart={(selectedProduct) => addProductToCart({ productoId: selectedProduct.id, cantidad: 1 })}
+              />
             ))}
           </div>
         </>

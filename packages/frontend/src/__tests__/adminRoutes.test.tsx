@@ -20,6 +20,7 @@ describe('admin routes', () => {
       'index',
       'vendors',
       'vendors/pending',
+      'vendors/new',
       'vendors/:vendedorId',
       'clients',
       'clients/:clienteId',
@@ -28,6 +29,19 @@ describe('admin routes', () => {
       'qr-codes',
       'invitation-links',
       'profile',
+    ]);
+  });
+});
+
+describe('vendedor client routes', () => {
+  it('keeps vendedor client routes behind the VENDEDOR ProtectedRoute', () => {
+    const clientesRoute = findRoute('/clientes');
+
+    expect(clientesRoute?.allowedRoles).toEqual([UserRole.VENDEDOR]);
+    expect(clientesRoute?.children?.[0]?.children?.map((route) => route.path ?? 'index')).toEqual([
+      'index',
+      'nuevo',
+      ':clienteId',
     ]);
   });
 });

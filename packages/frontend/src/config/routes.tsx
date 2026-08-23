@@ -11,8 +11,16 @@ const AdminDashboardPage = lazy(() => import('../features/admin/pages/AdminDashb
 const AdminVendorsPage = lazy(() => import('../features/admin/pages/AdminVendorsPage'));
 const AdminPendingVendorsPage = lazy(() => import('../features/admin/pages/AdminPendingVendorsPage'));
 const AdminVendorDetailPage = lazy(() => import('../features/admin/pages/AdminVendorDetailPage'));
-const AdminPlaceholderPage = lazy(() => import('../features/admin/pages/AdminPlaceholderPage'));
+const AdminVendorRegistrationPage = lazy(() => import('../features/admin/pages/AdminVendorRegistrationPage'));
+const AdminClientsPage = lazy(() => import('../features/admin/pages/AdminClientsPage'));
+const AdminClientDetailPage = lazy(() => import('../features/admin/pages/AdminClientDetailPage'));
+const AdminAuditPage = lazy(() => import('../features/admin/pages/AdminAuditPage'));
+const AdminAuditDetailPage = lazy(() => import('../features/admin/pages/AdminAuditDetailPage'));
+const AdminQrLinksPage = lazy(() => import('../features/admin/pages/AdminQrLinksPage'));
+const AdminProfilePage = lazy(() => import('../features/admin/pages/AdminProfilePage'));
 const ClientesPage = lazy(() => import('../features/clientes/pages/ClientesPage'));
+const VendedorClientDetailPage = lazy(() => import('../features/clientes/pages/VendedorClientDetailPage'));
+const VendedorClientRegistrationPage = lazy(() => import('../features/clientes/pages/VendedorClientRegistrationPage'));
 const CatalogoPage = lazy(() => import('../features/catalogo/pages/CatalogoPage'));
 const CartPage = lazy(() => import('../features/cart/pages/CartPage'));
 const ProductosPage = lazy(() => import('../features/productos/pages/ProductosPage'));
@@ -83,14 +91,15 @@ const routes: RouteConfig[] = [
           { index: true, element: <AdminDashboardPage /> },
           { path: 'vendors', element: <AdminVendorsPage /> },
           { path: 'vendors/pending', element: <AdminPendingVendorsPage /> },
+          { path: 'vendors/new', element: <AdminVendorRegistrationPage /> },
           { path: 'vendors/:vendedorId', element: <AdminVendorDetailPage /> },
-          { path: 'clients', element: <AdminPlaceholderPage title="Clientes" /> },
-          { path: 'clients/:clienteId', element: <AdminPlaceholderPage title="Detalle de cliente" /> },
-          { path: 'audit', element: <AdminPlaceholderPage title="Auditoría" /> },
-          { path: 'audit/:auditId', element: <AdminPlaceholderPage title="Detalle de auditoría" /> },
-          { path: 'qr-codes', element: <AdminPlaceholderPage title="QR Codes" /> },
-          { path: 'invitation-links', element: <AdminPlaceholderPage title="Invitation Links" /> },
-          { path: 'profile', element: <AdminPlaceholderPage title="Perfil" /> },
+          { path: 'clients', element: <AdminClientsPage /> },
+          { path: 'clients/:clienteId', element: <AdminClientDetailPage /> },
+          { path: 'audit', element: <AdminAuditPage /> },
+          { path: 'audit/:auditId', element: <AdminAuditDetailPage /> },
+          { path: 'qr-codes', element: <AdminQrLinksPage kind="qr" /> },
+          { path: 'invitation-links', element: <AdminQrLinksPage kind="links" /> },
+          { path: 'profile', element: <AdminProfilePage /> },
         ],
       },
     ],
@@ -107,6 +116,8 @@ const routes: RouteConfig[] = [
         element: <DashboardLayout />,
         children: [
           { index: true, element: <ClientesPage /> },
+          { path: 'nuevo', element: <VendedorClientRegistrationPage /> },
+          { path: ':clienteId', element: <VendedorClientDetailPage /> },
         ],
       },
     ],

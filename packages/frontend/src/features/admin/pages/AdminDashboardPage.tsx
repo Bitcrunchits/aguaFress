@@ -124,8 +124,9 @@ export default function AdminDashboardPage() {
                 {overview.qrCodes.data.map((qr) => (
                   <div key={qr.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
                     <div>
-                      <p className="font-medium text-text-primary">{qr.url}</p>
-                      <p className="text-xs text-text-muted">Vendedor: {qr.vendedorId ?? 'sin vendedor informado'}</p>
+                      <p className="font-medium text-text-primary">Código: {qr.codigo}</p>
+                      <p className="text-xs text-text-muted">Estado: {qr.activo ? 'Activo' : 'Inactivo'}</p>
+                      <p className="text-xs text-text-muted">Expira: {qr.expires_at} · Creado: {qr.created_at}</p>
                     </div>
                     <Button variant="ghost" size="sm" disabled={isMutatingInvitation} onClick={() => deactivateQr(qr.id)}>
                       Desactivar
@@ -149,8 +150,9 @@ export default function AdminDashboardPage() {
                 {overview.links.data.map((link) => (
                   <div key={link.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
                     <div>
-                      <p className="font-medium text-text-primary">{link.linkUrl}</p>
-                      <p className="text-xs text-text-muted">Vendedor: {link.vendedorId ?? 'sin vendedor informado'}</p>
+                      <p className="font-medium text-text-primary">Token: {link.token}</p>
+                      <p className="text-xs text-text-muted">Estado: {link.activo ? 'Activo' : 'Inactivo'}</p>
+                      <p className="text-xs text-text-muted">Expira: {link.expires_at} · Creado: {link.created_at}</p>
                     </div>
                     <Button variant="ghost" size="sm" disabled={isMutatingInvitation} onClick={() => deactivateLink(link.id)}>
                       Desactivar
