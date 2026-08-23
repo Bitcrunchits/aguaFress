@@ -48,9 +48,12 @@ describe('admin audit and profile service', () => {
 
   it('loads audit detail by id through the live detail endpoint', async () => {
     let requestedPath = '';
+    let requestedId = '';
     server.use(
-      http.get('/api/v1/activity-logs/get-by-id/audit-42', ({ request }) => {
-        requestedPath = new URL(request.url).pathname;
+      http.get('/api/v1/activity-logs/get-by-id', ({ request }) => {
+        const url = new URL(request.url);
+        requestedPath = url.pathname;
+        requestedId = url.searchParams.get('id') ?? '';
         return HttpResponse.json({
           data: {
             id: 'audit-42',
@@ -70,7 +73,8 @@ describe('admin audit and profile service', () => {
 
     const response = await getAdminAuditById('audit-42');
 
-    expect(requestedPath).toBe('/api/v1/activity-logs/get-by-id/audit-42');
+    expect(requestedPath).toBe('/api/v1/activity-logs/get-by-id');
+    expect(requestedId).toBe('audit-42');
     expect(response.data.id).toBe('audit-42');
   });
 
