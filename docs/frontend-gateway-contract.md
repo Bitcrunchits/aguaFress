@@ -164,17 +164,41 @@ Content-Type: application/json
 
 Estados esperados: `PENDING`, `PROCESSING`, `RETRYING`, `COMPLETED`, `FAILED`, `DEAD_LETTER`.
 
-## Servicios planificados pero no disponibles
+## Estado real del gateway para frontend
 
-Estas familias existen en el mapa del gateway, pero hoy responden `503 Service Unavailable` porque todavía no están desplegadas detrás del gateway:
+El frontend debe consumir la API terminada desde el `api-gateway`. Según el registry vigente, estas familias están disponibles:
 
-- `products`
-- `categories`
-- `brands`
-- `deliveries`
-- `activity-logs`
+| Familia | Estado | Uso principal en frontend |
+|---------|--------|---------------------------|
+| `auth` | Disponible | Login, refresh, logout, cambio/reset de contraseña, registro de cliente. |
+| `users` | Disponible | Perfil del usuario autenticado. |
+| `vendedores` | Disponible | Perfil/listado/estado de vendedores. |
+| `clientes` | Disponible | Cartera, proveedores, actualización y reasignación de clientes. |
+| `super-admin` | Disponible | Dashboard, auditoría, QR, links de invitación y vendedores. |
+| `qr` | Disponible | QR de vendedores y desactivación admin/vendor. |
+| `link-invitacion` | Disponible | Links de invitación de vendedores y desactivación admin/vendor. |
+| `products` | Disponible | Listado, búsqueda, detalle, creación, edición y borrado de productos. |
+| `categories` | Disponible | Categorías del catálogo. |
+| `brands` | Disponible | Marcas del catálogo. |
+| `orders` | Disponible | Listado, detalle, creación async y ciclo de vida de órdenes. |
+| `cart` | Disponible | Carrito del cliente. |
+| `deliveries` | Disponible | Entregas y actualización async de estado. |
+| `activity-logs` | Disponible | Auditoría para `super_admin`. |
 
-El frontend no debería construir pantallas productivas contra estas rutas hasta que pasen a estado disponible.
+Si una ruta responde `503`, tratarlo como indisponibilidad operativa o dependencia caída, no como “servicio no implementado”. El frontend ya no debe bloquear pantallas productivas asumiendo que `products`, `categories`, `brands`, `deliveries` o `activity-logs` son futuros.
+
+## Estado actual del frontend web
+
+| Área | Estado | Qué falta |
+|------|--------|-----------|
+| Login/session | Base implementada | Validar contra usuarios seed reales y cubrir recuperación/reset en flujo visual completo. |
+| API client | Base implementada con Axios, JWT y refresh | Alinear `VITE_API_URL` con `/api/v1`, tipar servicios por dominio y centralizar errores por pantalla. |
+| Rutas vendedor/admin | Navegación base implementada | Reemplazar placeholders por pantallas conectadas a endpoints reales. |
+| Rutas cliente | Muy incompleto | Catálogo, carrito, pedidos, proveedores y selección de vendedor. |
+| Productos | Placeholder | Consumir `products`, `categories`, `brands`; implementar toggle precio final/precio sin IVA. |
+| Órdenes/carrito | Placeholder | Manejar creación async con `Idempotency-Key`, `202 Accepted` y polling por `trackingId`. |
+| QR/links invitación | Placeholder | Conectar `qr` y `link-invitacion`; registro de cliente por invitación. |
+| Super admin | Dashboard base | Conectar dashboard, auditoría, vendedores, QR y links desde `super-admin`. |
 
 ## Ejemplos de integración
 

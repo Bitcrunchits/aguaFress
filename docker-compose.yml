@@ -54,6 +54,22 @@ services:
         condition: service_healthy
     restart: "no"
 
+  # ─── Seed: products-service ────────────────────────────────
+  products-seed:
+    image: postgres:15-alpine
+    container_name: agua-products-seed
+    environment:
+      PGPASSWORD: postgres
+    volumes:
+      - ./docker/init-db:/docker-entrypoint-initdb.d:ro
+    command: >
+      sh -c "psql -h postgres -U postgres -d agua_products
+      -f /docker-entrypoint-initdb.d/seed-products-mock.sql"
+    depends_on:
+      postgres-init:
+        condition: service_completed_successfully
+    restart: "no"
+
   # ─── Redis ──────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
@@ -130,6 +146,8 @@ services:
       postgres:
         condition: service_healthy
       postgres-init:
+        condition: service_completed_successfully
+      products-seed:
         condition: service_completed_successfully
     restart: unless-stopped
 
@@ -242,6 +260,22 @@ services:
       notifications-service:
         condition: service_started
       entregas-service:
+        condition: service_started
+    restart: unless-stopped
+
+  # ─── frontend-web ───────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: packages/frontend/Dockerfile
+    container_name: agua-frontend
+    ports:
+      - "5173:80"
+    environment:
+      TZ: America/Argentina/Buenos_Aires
+      VITE_API_URL: /api/v1
+    depends_on:
+      gateway:
         condition: service_started
     restart: unless-stopped
 
