@@ -38,6 +38,17 @@ export function useClienteProviderSelection() {
     mutationFn: selectClienteProvider,
     onSuccess: (response) => {
       setSelectedVendedorId(response.selectedProvider.id);
+      queryClient.setQueryData<ClienteProvidersResponse>(CLIENTE_PROVIDER_QUERY_KEYS.providers, (current) => current
+        ? {
+            ...current,
+            defaultVendedorId: response.selectedProvider.id,
+            requiresSelection: false,
+            providers: current.providers.map((provider) => ({
+              ...provider,
+              isDefault: provider.id === response.selectedProvider.id,
+            })),
+          }
+        : current);
       queryClient.invalidateQueries({ queryKey: CLIENTE_PROVIDER_QUERY_KEYS.providers });
     },
   });

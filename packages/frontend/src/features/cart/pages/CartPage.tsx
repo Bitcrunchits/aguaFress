@@ -5,6 +5,7 @@ import { Button } from '../../../shared/components/Button';
 import EmptyState from '../../../shared/components/EmptyState';
 import ErrorState from '../../../shared/components/ErrorState';
 import PageSkeleton from '../../../shared/components/PageSkeleton';
+import { ClienteProviderSelector } from '../../clientes/components/ClienteProviderSelector';
 import { useCart } from '../hooks/useCart';
 
 interface CheckoutFormState {
@@ -41,6 +42,8 @@ export default function CartPage() {
     checkoutErrorMessage,
     checkoutJob,
     refetch,
+    selectProvider,
+    isSelectingProvider,
     updateItem,
     deleteItem,
     checkoutOrder,
@@ -97,7 +100,20 @@ export default function CartPage() {
   }
 
   if (isProviderSelectionRequired) {
-    return <EmptyState message="Seleccioná un proveedor antes de usar el carrito" />;
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-text-primary">Carrito</h1>
+          <p className="text-sm text-text-secondary">Seleccioná un proveedor antes de usar el carrito.</p>
+        </div>
+        <ClienteProviderSelector
+          providers={providers}
+          selectedVendedorId={selectedVendedorId}
+          isSelectingProvider={isSelectingProvider}
+          onSelectProvider={selectProvider}
+        />
+      </div>
+    );
   }
 
   if (!cart || cart.items.length === 0) {

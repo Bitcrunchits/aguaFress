@@ -9,6 +9,9 @@ interface ProductCardProps {
   onEdit?: (product: ProductResponse) => void;
   onToggleActive?: (product: ProductResponse) => void;
   onDelete?: (productId: string) => void;
+  onAddToCart?: (product: ProductResponse) => void;
+  canAddToCart?: boolean;
+  isAddingToCart?: boolean;
 }
 
 function productStatusClassName(isActive: boolean): string {
@@ -17,7 +20,16 @@ function productStatusClassName(isActive: boolean): string {
     : 'bg-surface-hover text-text-secondary';
 }
 
-export default function ProductCard({ product, isMutating = false, onEdit, onToggleActive, onDelete }: ProductCardProps) {
+export default function ProductCard({
+  product,
+  isMutating = false,
+  onEdit,
+  onToggleActive,
+  onDelete,
+  onAddToCart,
+  canAddToCart = true,
+  isAddingToCart = false,
+}: ProductCardProps) {
   return (
     <Card>
       <Card.Body className="space-y-4">
@@ -56,8 +68,18 @@ export default function ProductCard({ product, isMutating = false, onEdit, onTog
           Sin IVA: {formatProductPrice(product.precioSinIva)} · IVA {product.porcentajeIva}%
         </div>
 
-        {(onEdit || onToggleActive || onDelete) && (
+        {(onEdit || onToggleActive || onDelete || onAddToCart) && (
           <div className="flex flex-wrap gap-2 border-t border-surface-hover pt-3">
+            {onAddToCart && (
+              <Button
+                type="button"
+                size="sm"
+                disabled={isMutating || isAddingToCart || !canAddToCart}
+                onClick={() => onAddToCart(product)}
+              >
+                {isAddingToCart ? 'Agregando' : 'Agregar al carrito'}
+              </Button>
+            )}
             {onEdit && (
               <Button
                 type="button"
