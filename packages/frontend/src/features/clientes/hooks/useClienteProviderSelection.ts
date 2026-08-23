@@ -14,12 +14,12 @@ export const CLIENTE_PROVIDER_QUERY_KEYS = {
 
 function resolveDefaultProvider(response?: ClienteProvidersResponse): ClienteProviderResponse | undefined {
   if (!response) return undefined;
+  if (response.requiresSelection) return undefined;
 
   const defaultProvider = response.providers.find((provider) => provider.isDefault)
     ?? response.providers.find((provider) => provider.id === response.defaultVendedorId);
 
   if (defaultProvider) return defaultProvider;
-  if (response.requiresSelection) return undefined;
 
   return response.providers[0];
 }

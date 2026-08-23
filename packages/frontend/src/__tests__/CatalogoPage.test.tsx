@@ -81,7 +81,11 @@ describe('CatalogoPage', () => {
   it('renders provider selection UI and does not auto-load catalog when selection is required', async () => {
     server.use(
       http.get('/api/v1/clientes/providers', () => HttpResponse.json({
-        providers: [{ id: 'vendedor-1', nombre: 'Carlos', empresa: 'Agua Norte', isDefault: false }],
+        providers: [
+          { id: 'vendedor-1', nombre: 'Carlos', empresa: 'Agua Norte', isDefault: true },
+          { id: 'vendedor-2', nombre: 'Ana', empresa: 'Soda Sur', isDefault: false },
+        ],
+        defaultVendedorId: 'vendedor-1',
         requiresSelection: true,
       })),
       http.get('/api/v1/products/list', () => {
@@ -93,6 +97,7 @@ describe('CatalogoPage', () => {
     renderPage();
 
     expect(await screen.findByRole('button', { name: 'Seleccionar Agua Norte' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Seleccionar Soda Sur' })).toBeInTheDocument();
     expect(screen.queryByText('Bidón 20L')).not.toBeInTheDocument();
     expect(productRequestCount).toBe(0);
   });

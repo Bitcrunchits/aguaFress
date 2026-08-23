@@ -46,6 +46,27 @@ describe('useClienteProviderSelection', () => {
     expect(result.current.isProviderSelectionRequired).toBe(true);
   });
 
+  it('requires explicit provider selection when backend also sends a default provider', async () => {
+    server.use(
+      http.get('/api/v1/clientes/providers', () => HttpResponse.json({
+        providers: [
+          { id: 'vendedor-1', nombre: 'Carlos', empresa: 'Agua Norte', isDefault: true },
+          { id: 'vendedor-2', nombre: 'Ana', empresa: 'Soda Sur', isDefault: false },
+        ],
+        defaultVendedorId: 'vendedor-1',
+        requiresSelection: true,
+      }))
+    );
+
+    const { result } = renderHook(() => useClienteProviderSelection(), { wrapper: createWrapper() });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    expect(result.current.selectedProvider).toBeUndefined();
+    expect(result.current.selectedVendedorId).toBeUndefined();
+    expect(result.current.isProviderSelectionRequired).toBe(true);
+  });
+
   it('selects a provider with only the domain vendedorId body', async () => {
     server.use(
       http.get('/api/v1/clientes/providers', () => HttpResponse.json({

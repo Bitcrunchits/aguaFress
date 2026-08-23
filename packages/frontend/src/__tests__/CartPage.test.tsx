@@ -66,7 +66,11 @@ describe('CartPage', () => {
   it('renders provider selection UI and waits for explicit selection before loading cart', async () => {
     server.use(
       http.get('/api/v1/clientes/providers', () => HttpResponse.json({
-        providers: [{ id: 'vendedor-1', nombre: 'Carlos', empresa: 'Agua Norte', isDefault: false }],
+        providers: [
+          { id: 'vendedor-1', nombre: 'Carlos', empresa: 'Agua Norte', isDefault: true },
+          { id: 'vendedor-2', nombre: 'Ana', empresa: 'Soda Sur', isDefault: false },
+        ],
+        defaultVendedorId: 'vendedor-1',
         requiresSelection: true,
       })),
       http.post('/api/v1/clientes/providers/select', () => HttpResponse.json({
@@ -88,6 +92,7 @@ describe('CartPage', () => {
     renderPage();
 
     const selectButton = await screen.findByRole('button', { name: 'Seleccionar Agua Norte' });
+    expect(screen.getByRole('button', { name: 'Seleccionar Soda Sur' })).toBeInTheDocument();
     expect(cartGetVendedorIds).toEqual([]);
 
     await userEvent.click(selectButton);
