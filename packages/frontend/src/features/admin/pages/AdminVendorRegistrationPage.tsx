@@ -65,7 +65,7 @@ export default function AdminVendorRegistrationPage() {
             </p>
             <div className="flex gap-3">
               <Link to="/admin/vendors/pending">
-                <Button type="button">Ver pendientes</Button>
+                <Button asChild>Ver pendientes</Button>
               </Link>
               <Button type="button" onClick={() => setRegisteredEmail(null)}>
                 Registrar otro
@@ -134,7 +134,7 @@ export default function AdminVendorRegistrationPage() {
               {isSubmitting ? 'Registrando…' : 'Registrar vendedor'}
             </Button>
             <Link to="/admin/vendors">
-              <Button type="button">Volver al listado</Button>
+              <Button asChild>Volver al listado</Button>
             </Link>
           </div>
         </form>

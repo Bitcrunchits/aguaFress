@@ -39,7 +39,7 @@ export default function AdminVendorsPage() {
             </p>
           )}
           <Link to="/admin/vendors/new">
-            <Button type="button">Nuevo vendedor</Button>
+            <Button asChild>Nuevo vendedor</Button>
           </Link>
         </div>
       </div>
