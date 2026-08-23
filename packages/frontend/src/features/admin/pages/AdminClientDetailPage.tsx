@@ -11,6 +11,8 @@ import { useAdminClientDetail } from '../hooks/useAdminClients';
 import { useAdminVendors } from '../hooks/useAdminVendors';
 import type { AdminClientDetail, AdminClientUpdateRequest } from '../services/admin-clients.service';
 
+const ACTIVE_VENDOR_SELECTOR_LIMIT = 20;
+
 const ACTION_STATUS = {
   IDLE: 'idle',
   SUCCESS: 'success',
@@ -46,6 +48,10 @@ function formatProviderName(provider: NonNullable<AdminClientDetail['providers']
   return [provider.nombre, provider.apellido].filter(Boolean).join(' ') || provider.empresa || provider.id;
 }
 
+function formatVendorName(vendor: { id: string; nombre: string; apellido?: string; empresa?: string }) {
+  return [vendor.nombre, vendor.apellido].filter(Boolean).join(' ') || vendor.empresa || vendor.id;
+}
+
 function buildInitialForm(client: AdminClientDetail): ClientFormState {
   return {
     nombre: client.nombre ?? '',
@@ -76,10 +82,13 @@ function buildUpdateRequest(form: ClientFormState): AdminClientUpdateRequest {
 export default function AdminClientDetailPage() {
   const { clienteId } = useParams();
   const { client, isLoading, isError, isMutating, errorMessage, refetch, updateClient, reassignClient, addProvider } = useAdminClientDetail(clienteId);
-  const { vendors, isLoading: isLoadingVendors, isError: isVendorError, errorMessage: vendorErrorMessage } = useAdminVendors({
-    page: 1,
-    limit: 100,
+  const [vendorPage, setVendorPage] = useState(1);
+  const [vendorSearch, setVendorSearch] = useState('');
+  const { vendors, pagination: vendorPagination, isLoading: isLoadingVendors, isError: isVendorError, errorMessage: vendorErrorMessage } = useAdminVendors({
+    page: vendorPage,
+    limit: ACTIVE_VENDOR_SELECTOR_LIMIT,
     estado: VendedorEstado.ACTIVO,
+    search: toOptionalString(vendorSearch),
   });
   const [form, setForm] = useState<ClientFormState>({
     nombre: '',
@@ -111,10 +120,25 @@ export default function AdminClientDetailPage() {
   const hasVendors = vendors.length > 0;
   const hasAdditionalVendors = additionalVendors.length > 0;
   const mutationDisabled = isMutating || isLoadingVendors;
+  const hasPreviousVendorPage = vendorPage > 1;
+  const hasNextVendorPage = vendorPagination ? vendorPage < vendorPagination.totalPages : false;
 
   const handleChange = (field: keyof ClientFormState, value: string) => {
     setFeedback(EMPTY_FEEDBACK);
     setForm((currentForm) => ({ ...currentForm, [field]: value }));
+  };
+
+  const handleVendorSearchChange = (value: string) => {
+    setVendorSearch(value);
+    setVendorPage(1);
+    setPrimaryVendorId('');
+    setAdditionalVendorId('');
+  };
+
+  const handleVendorPageChange = (page: number) => {
+    setVendorPage(page);
+    setPrimaryVendorId('');
+    setAdditionalVendorId('');
   };
 
   const handleUpdate = async (event: FormEvent<HTMLFormElement>) => {
@@ -281,8 +305,45 @@ export default function AdminClientDetailPage() {
           )}
           {isLoadingVendors && <p className="text-sm text-text-secondary">Cargando vendedores elegibles...</p>}
           {!isLoadingVendors && !isVendorError && !hasVendors && (
-            <p className="text-sm text-text-secondary">No hay vendedores elegibles para asignar</p>
+            <p className="text-sm text-text-secondary">No se encontraron vendedores activos elegibles</p>
           )}
+          <div className="space-y-3 rounded-md border border-gray-100 p-3">
+            <label className="space-y-1 text-sm">
+              <span className="font-medium text-text-primary">Buscar vendedores activos</span>
+              <input
+                aria-label="Buscar vendedores activos"
+                value={vendorSearch}
+                onChange={(event) => handleVendorSearchChange(event.target.value)}
+                className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+                placeholder="Nombre, empresa o email"
+              />
+            </label>
+            <div className="flex items-center justify-between gap-3 text-sm text-text-secondary">
+              <span>
+                Página {vendorPage}{vendorPagination ? ` de ${vendorPagination.totalPages}` : ''}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!hasPreviousVendorPage || isLoadingVendors}
+                  onClick={() => handleVendorPageChange(vendorPage - 1)}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!hasNextVendorPage || isLoadingVendors}
+                  onClick={() => handleVendorPageChange(vendorPage + 1)}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </div>
+          </div>
           <div className="grid gap-4 border-t border-gray-100 pt-4 lg:grid-cols-2">
             <form className="space-y-3" onSubmit={handleReassign}>
               <label className="space-y-1 text-sm">
@@ -296,7 +357,7 @@ export default function AdminClientDetailPage() {
                 >
                   <option value="">Seleccionar vendedor</option>
                   {vendors.map((vendor) => (
-                    <option key={vendor.id} value={vendor.id}>{vendor.nombre}</option>
+                    <option key={vendor.id} value={vendor.id}>{formatVendorName(vendor)}</option>
                   ))}
                 </select>
               </label>
@@ -315,7 +376,7 @@ export default function AdminClientDetailPage() {
                 >
                   <option value="">Seleccionar vendedor</option>
                   {additionalVendors.map((vendor) => (
-                    <option key={vendor.id} value={vendor.id}>{vendor.nombre}</option>
+                    <option key={vendor.id} value={vendor.id}>{formatVendorName(vendor)}</option>
                   ))}
                 </select>
               </label>
