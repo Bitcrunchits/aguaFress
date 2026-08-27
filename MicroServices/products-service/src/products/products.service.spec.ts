@@ -111,6 +111,7 @@ describe('ProductsService', () => {
         precioSinIva: 100,
         categoriaId: 'cat-1',
         stock: 5,
+        imagen: 'products/uploaded.webp',
       });
 
       expect(mockPricing.calcularPrecioFinal).toHaveBeenCalledWith(100, 21, 0);
@@ -118,6 +119,7 @@ describe('ProductsService', () => {
         expect.objectContaining({
           data: expect.objectContaining({
             vendedorId: 'vendedor-1',
+            imagen: 'products/uploaded.webp',
             porcentajeIva: 21,
             porcentajeImpuestos: 0,
           }),
@@ -197,6 +199,28 @@ describe('ProductsService', () => {
       await service.update('vendedor-1', 'prod-1', { porcentajeImpuestos: 9 });
 
       expect(mockPricing.calcularPrecioFinal).toHaveBeenCalledWith(100, 21, 9);
+    });
+
+    it('actualiza imagen con el imageId subido', async () => {
+      mockTx.producto.findUnique.mockResolvedValue({
+        vendedorId: 'vendedor-1',
+        nombre: 'Bidón 20L',
+        precioSinIva: new Prisma.Decimal(100),
+        precioFinal: new Prisma.Decimal(121),
+        stock: 10,
+        activo: true,
+        porcentajeIva: new Prisma.Decimal(21),
+        porcentajeImpuestos: new Prisma.Decimal(0),
+      });
+      mockTx.producto.update.mockResolvedValue({});
+
+      await service.update('vendedor-1', 'prod-1', { imagen: 'products/uploaded.webp' });
+
+      expect(mockTx.producto.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ imagen: 'products/uploaded.webp' }),
+        }),
+      );
     });
   });
 

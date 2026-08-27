@@ -72,7 +72,7 @@ describe('JwtAuthGuard', () => {
     expect(() => guard.canActivate(ctx)).toThrow(UnauthorizedException);
   });
 
-  it('allows public registry actions without decoding an optional token', () => {
+  it('allows public registry actions and ignores invalid optional tokens', () => {
     mockReflector.getAllAndOverride.mockReturnValue(false);
     const { ctx, request } = createMockContext(
       { authorization: 'Bearer invalid-token' },
@@ -80,7 +80,7 @@ describe('JwtAuthGuard', () => {
     );
 
     expect(guard.canActivate(ctx)).toBe(true);
-    expect(mockJwtService.verify).not.toHaveBeenCalled();
+    expect(mockJwtService.verify).toHaveBeenCalledWith('invalid-token');
     expect(request.user).toBeUndefined();
   });
 

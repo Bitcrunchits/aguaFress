@@ -155,7 +155,7 @@ export class ProductsTcpController {
     this.payloadAdapter.requireRole(payload, UserRole.VENDEDOR);
     const dto = await this.payloadAdapter.body(payload, CreateProductDto);
     const authUserId = this.payloadAdapter.userId(payload);
-    const vendedorId = await this.vendedorResolver.resolveVendedorIdByAuthUserId(authUserId);
+    const vendedorId = await this.vendedorResolver.resolveActiveVendedorIdByAuthUserId(authUserId);
     return this.productsService.create(vendedorId, dto);
   }
 
@@ -166,7 +166,7 @@ export class ProductsTcpController {
     const { id } = await this.payloadAdapter.query(payload, IdQueryDto);
     const dto = await this.payloadAdapter.body(payload, UpdateProductDto);
     const authUserId = this.payloadAdapter.userId(payload);
-    const vendedorId = await this.vendedorResolver.resolveVendedorIdByAuthUserId(authUserId);
+    const vendedorId = await this.vendedorResolver.resolveActiveVendedorIdByAuthUserId(authUserId);
     return this.productsService.update(vendedorId, id, dto);
   }
 

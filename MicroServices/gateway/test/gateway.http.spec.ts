@@ -27,6 +27,8 @@ describe('Gateway HTTP routing', () => {
     process.env.NOTIFICATIONS_SERVICE_TCP_PORT = '3016';
     process.env.ENTREGAS_SERVICE_HOST = 'entregas-service';
     process.env.ENTREGAS_SERVICE_TCP_PORT = '3015';
+    process.env.PRODUCTS_SERVICE_HOST = 'products-service';
+    process.env.PRODUCTS_SERVICE_TCP_PORT = '3013';
 
     mockDispatch = jest.fn();
     mockEnqueueOrderCreate = jest.fn();
@@ -200,11 +202,19 @@ describe('Gateway HTTP routing', () => {
       .expect(404);
   });
 
-  it('returns 503 for unavailable service families', async () => {
-    await request(app.getHttpServer())
+  it('dispatches public products actions to products-service TCP patterns', async () => {
+    mockDispatch.mockResolvedValue({ data: [] });
+
+    const response = await request(app.getHttpServer())
       .post('/api/v1/products/list')
-      .set('Authorization', `Bearer ${vendedorToken}`)
-      .expect(503);
+      .expect(200);
+
+    expect(response.body).toEqual({ data: [] });
+    expect(mockDispatch).toHaveBeenCalledWith(
+      'products',
+      expect.objectContaining({ params: { service: 'products', action: 'list' } }),
+      expect.objectContaining({ tcpPattern: 'products.list', authRequired: false }),
+    );
   });
 
   it('dispatches protected cart actions to orders-service TCP patterns', async () => {

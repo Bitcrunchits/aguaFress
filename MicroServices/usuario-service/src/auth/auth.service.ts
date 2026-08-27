@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { TokenService } from './token.service';
 import * as bcrypt from 'bcrypt';
@@ -39,6 +39,7 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, this.SALT_ROUNDS);
+    const empresa = dto.empresa?.trim();
 
     const result = await this.prisma.$transaction(async (tx) => {
       const user = await tx.authUser.create({
@@ -57,7 +58,7 @@ export class AuthService {
           dni: dto.dni,
           telefono: dto.telefono,
           ciudad_default: dto.ciudad,
-          ...(dto.logo ? { logo: dto.logo } : {}),
+          ...(empresa ? { empresa } : {}),
           estado: VendedorEstado.PENDIENTE,
         },
       });

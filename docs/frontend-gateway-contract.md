@@ -39,7 +39,7 @@ Ejemplos:
 
 ```txt
 POST  /api/v1/auth/login
-POST  /api/v1/auth/register/vendedor
+POST  /api/v1/auth/register
 GET   /api/v1/users/profile
 PATCH /api/v1/users/profile/update
 GET   /api/v1/vendedores/list
@@ -75,7 +75,6 @@ Estas acciones NO requieren JWT:
 |-----------------|----------|---------|----------|
 | `POST` | `/api/v1/auth/login` | `LoginRequest` | `LoginResponse` |
 | `POST` | `/api/v1/auth/register` | `RegisterRequest` | `RegisterResponse` |
-| `POST` | `/api/v1/auth/register/vendedor` | `RegisterVendedorRequest` | `RegisterVendedorResponse` |
 | `POST` | `/api/v1/auth/refresh` | `RefreshTokenRequest` | `RefreshTokenResponse` |
 | `POST` | `/api/v1/auth/validate` | `ValidateTokenRequest` | `ValidateTokenResponse` |
 

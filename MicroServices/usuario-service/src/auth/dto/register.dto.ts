@@ -30,9 +30,9 @@ export class RegisterDto {
 
   @ApiProperty({ description: 'DNI (8 dígitos)', minLength: 8, maxLength: 8 })
   @IsString()
-@MinLength(8)
-@MaxLength(8)
-dni: string;
+  @MinLength(8)
+  @MaxLength(8)
+  dni: string;
 
   @ApiProperty({ description: 'Phone number' })
   @IsString()
@@ -43,9 +43,10 @@ dni: string;
   @MinLength(2)
   ciudad: string;
 
-  @ApiProperty({ description: 'Vendor logo imageId (opcional)', required: false })
+  @ApiProperty({ description: 'Company or business name', maxLength: 255, required: false })
   @IsOptional()
   @IsString()
-  @MaxLength(500)
-  logo?: string;
+  @MaxLength(255)
+  empresa?: string;
+
 }

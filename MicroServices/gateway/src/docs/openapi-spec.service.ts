@@ -98,7 +98,7 @@ const SHARED_SCHEMAS: Record<string, Schema> = {
     dni: str('DNI (7 a 9 dígitos)'),
     telefono: str('Teléfono'),
     ciudad: str('Ciudad'),
-    logo: str('Vendor logo imageId (opcional)', 'logos/abc123.webp'),
+    empresa: str('Company or business name (opcional)', 'Distribuidora AguaFress'),
   }, ['email', 'emailConfirmation', 'password', 'nombre', 'apellido', 'dni', 'telefono']),
 
   RegisterResponse: obj({

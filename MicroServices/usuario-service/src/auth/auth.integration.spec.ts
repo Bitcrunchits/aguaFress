@@ -50,7 +50,7 @@ describe('Auth Integration: register → login → refresh → profile', () => {
     jest.clearAllMocks();
 
     mockPrisma.$transaction.mockImplementation(
-      (cb: (tx: typeof mockTx) => Promise<any>) => cb(mockTx),
+      (cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx),
     );
 
     const module: TestingModule = await Test.createTestingModule({
@@ -117,10 +117,14 @@ describe('Auth Integration: register → login → refresh → profile', () => {
         dni: '12345678',
         telefono: '11-5555-0200',
         ciudad: 'Capital Federal',
+        empresa: 'Ruta Capital',
       });
 
       expect(registerResult.status).toBe('pendiente');
       expect(registerResult.vendedorId).toBe('vendedor-1');
+      expect(mockTx.vendedor.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ empresa: 'Ruta Capital' }),
+      });
 
       // --- LOGIN ---
       mockPrisma.authUser.findUnique.mockResolvedValue(mockVendedorUser);

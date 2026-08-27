@@ -1,5 +1,6 @@
 import { Test, type TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { VendedorEstado } from '@agua/contracts';
 import { VendedorResolver } from './vendedor-resolver.service';
 import { PrismaService } from './prisma.service';
 
@@ -60,6 +61,26 @@ describe('VendedorResolver', () => {
         where: { auth_user_id: 'valid-auth-user-id' },
         select: { id: true },
       });
+    });
+  });
+
+  describe('resolveActive', () => {
+    it('devuelve vendedor.id cuando el vendedor está activo', async () => {
+      prisma.vendedor.findUnique.mockResolvedValue({ id: 'vendedor-id', estado: VendedorEstado.ACTIVO });
+
+      const result = await resolver.resolveActive('valid-auth-user-id');
+
+      expect(prisma.vendedor.findUnique).toHaveBeenCalledWith({
+        where: { auth_user_id: 'valid-auth-user-id' },
+        select: { id: true, estado: true },
+      });
+      expect(result).toBe('vendedor-id');
+    });
+
+    it('lanza ForbiddenException cuando el vendedor no está activo', async () => {
+      prisma.vendedor.findUnique.mockResolvedValue({ id: 'vendedor-id', estado: VendedorEstado.PENDIENTE });
+
+      await expect(resolver.resolveActive('pending-auth-user-id')).rejects.toThrow(ForbiddenException);
     });
   });
 });
