@@ -213,6 +213,10 @@ export class VendedoresService {
       );
     }
 
+    if (dto.logo !== undefined && estado !== VendedorEstado.ACTIVO) {
+      throw new ForbiddenException('El vendedor debe estar activo para actualizar el logo.');
+    }
+
     const data = cleanUpdateInput(dto) as Prisma.VendedorUpdateInput;
 
     return this.prisma.vendedor.update({

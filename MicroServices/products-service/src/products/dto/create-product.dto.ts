@@ -6,12 +6,12 @@ import {
   IsOptional,
   IsPositive,
   IsString,
-  IsUrl,
   IsUUID,
   MaxLength,
   Min,
   MinLength,
 } from 'class-validator';
+import { IsProductImageReference } from './product-image.validator';
 
 // Implementa CreateProductRequest de @agua/contracts.
 // vendedorId NO está acá a propósito: nunca viene del body (regla de seguridad
@@ -51,8 +51,9 @@ export class CreateProductDto implements CreateProductRequest {
   marcaId?: string;
 
   @IsOptional()
-  @IsUrl()
+  @IsString()
   @MaxLength(500)
+  @IsProductImageReference()
   imagen?: string;
 
   @IsNumber()

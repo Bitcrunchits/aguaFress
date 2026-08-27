@@ -25,6 +25,7 @@ services:
     ports:
       - "5433:5432" 
     environment:
+      # TODO [AG-174]: Move Postgres credentials to .env / secrets before production.
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: agua
@@ -43,6 +44,7 @@ services:
     image: postgres:15-alpine
     container_name: agua-postgres-init
     environment:
+      # TODO [AG-174]: Reuse POSTGRES_PASSWORD from .env instead of duplicating it here.
       PGPASSWORD: postgres
     volumes:
       - ./docker/init-db:/docker-entrypoint-initdb.d:ro
@@ -59,6 +61,7 @@ services:
     image: postgres:15-alpine
     container_name: agua-products-seed
     environment:
+      # TODO [AG-174]: Reuse POSTGRES_PASSWORD from .env instead of duplicating it here.
       PGPASSWORD: postgres
     volumes:
       - ./docker/init-db:/docker-entrypoint-initdb.d:ro
@@ -113,12 +116,17 @@ services:
       - .env
     environment:
       TZ: America/Argentina/Buenos_Aires
+      # TODO [AG-174]: Move usuario-service DATABASE_URL to a service-specific env variable.
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/agua"
       TCP_PORT: "3011"
+      # TODO [AG-174]: Move JWT secrets to .env / secrets before production.
       JWT_SECRET: "aguafress-dev-secret-no-usar-en-prod"
       JWT_REFRESH_SECRET: "auth-dev-refresh-secret-min-32!!"
       JWT_EXPIRES_IN: "24h"
       JWT_REFRESH_EXPIRES_IN: "7d"
+      UPLOAD_DIR: "/app/public/uploads"
+    volumes:
+      - agua-uploads:/app/public/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -139,9 +147,13 @@ services:
     environment:
       TZ: America/Argentina/Buenos_Aires
       TCP_PORT: "3013"
+      # TODO [AG-174]: Move products-service DATABASE_URL to a service-specific env variable.
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/agua_products"
       USUARIO_SERVICE_HOST: usuario-service
       USUARIO_SERVICE_TCP_PORT: "3011"
+      UPLOAD_DIR: "/app/public/uploads"
+    volumes:
+      - agua-uploads:/app/public/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -163,7 +175,7 @@ services:
     environment:
       TZ: America/Argentina/Buenos_Aires
       TCP_PORT: "3014"
-      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/agua_orders"
+      DATABASE_URL: "${ORDERS_DATABASE_URL:?ORDERS_DATABASE_URL must be set in .env}"
       REDIS_URL: "redis://redis:6379"
       ORDERS_CREATE_QUEUE_NAME: "orders.create"
       ORDERS_CREATE_QUEUE_ATTEMPTS: "3"
@@ -189,6 +201,7 @@ services:
     environment:
       TZ: America/Argentina/Buenos_Aires
       TCP_PORT: "3015"
+      # TODO [AG-174]: Move entregas-service DATABASE_URL to a service-specific env variable.
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/agua_entregas"
       REDIS_URL: "redis://redis:6379"
       USUARIO_SERVICE_HOST: usuario-service
@@ -250,6 +263,9 @@ services:
       ORDERS_CREATE_QUEUE_ATTEMPTS: "3"
       ORDERS_CREATE_QUEUE_BACKOFF_MS: "5000"
       ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE: "1000"
+      UPLOAD_DIR: "/app/public/uploads"
+    volumes:
+      - agua-uploads:/app/public/uploads
     depends_on:
       usuario-service:
         condition: service_started
@@ -283,3 +299,4 @@ volumes:
   agua-postgres-data:
   agua-redis-data:
   agua-mongo-data:
+  agua-uploads:

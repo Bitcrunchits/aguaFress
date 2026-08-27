@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 import { Test, type TestingModule } from '@nestjs/testing';
-import { ConflictException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedException } from '@nestjs/common';
 import { UserRole } from '@agua/contracts';
 import { TokenService } from './token.service';
 import { AuthService } from './auth.service';
@@ -48,7 +48,7 @@ describe('AuthService', () => {
     jest.clearAllMocks();
 
     mockPrisma.$transaction.mockImplementation(
-      (cb: (tx: typeof mockTx) => Promise<any>) => cb(mockTx),
+      (cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx),
     );
 
     const module: TestingModule = await Test.createTestingModule({
@@ -123,6 +123,30 @@ describe('AuthService', () => {
       expect(result).toEqual({
         status: 'pendiente',
         vendedorId: 'vendedor-1',
+      });
+    });
+
+    it('persiste empresa trimmeada cuando se informa', async () => {
+      mockPrisma.authUser.findUnique.mockResolvedValue(null);
+
+      await authService.register({ ...registerDto, empresa: '  Agua Norte  ' });
+
+      expect(mockTx.vendedor.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          empresa: 'Agua Norte',
+        }),
+      });
+    });
+
+    it('omite empresa cuando viene vacía', async () => {
+      mockPrisma.authUser.findUnique.mockResolvedValue(null);
+
+      await authService.register({ ...registerDto, empresa: '   ' });
+
+      expect(mockTx.vendedor.create).toHaveBeenCalledWith({
+        data: expect.not.objectContaining({
+          empresa: expect.any(String),
+        }),
       });
     });
 
