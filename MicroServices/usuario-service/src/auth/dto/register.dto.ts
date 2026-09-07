@@ -1,4 +1,4 @@
-import { IsEmail, IsOptional, IsString, MinLength, MaxLength } from 'class-validator';
+import { IsEmail, IsOptional, IsString, Matches, MinLength, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Match } from '../decorators/match.decorator';
 
@@ -28,10 +28,9 @@ export class RegisterDto {
   @MaxLength(100)
   apellido: string;
 
-  @ApiProperty({ description: 'DNI (8 dígitos)', minLength: 8, maxLength: 8 })
+  @ApiProperty({ description: 'DNI (8 numeric digits)', pattern: '^\\d{8}$', minLength: 8, maxLength: 8 })
   @IsString()
-  @MinLength(8)
-  @MaxLength(8)
+  @Matches(/^\d{8}$/, { message: 'El DNI debe contener exactamente 8 dígitos numéricos' })
   dni: string;
 
   @ApiProperty({ description: 'Phone number' })

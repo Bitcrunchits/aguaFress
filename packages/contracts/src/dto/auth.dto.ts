@@ -26,20 +26,25 @@ export interface LoginResponse {
   };
 }
 
-// ─── Registro de cliente o vendedor desde link público ───
+// ─── Registro público de vendedor ───
 
 export interface RegisterRequest {
   email: string;
+  emailConfirmation: string;
   password: string;
-  /** Nombre completo (NO se separa en nombre+apellido) */
   nombre: string;
-  role: UserRole.VENDEDOR | UserRole.CLIENTE;
-  /** Solo si viene de link público QR */
-  qrToken?: string;
+  apellido: string;
+  /** Exactly 8 numeric digits. */
+  dni: string;
+  telefono: string;
+  ciudad: string;
+  empresa?: string;
 }
 
 export interface RegisterResponse {
-  user: { id: string; email: string; role: UserRole };
+  status: 'pendiente';
+  vendedorId: string;
+  message: string;
 }
 
 // ─── Registro manual de vendedor (admin) ───
@@ -59,6 +64,7 @@ export interface RegisterVendedorRequest {
 export interface RegisterVendedorResponse {
   status: 'pendiente';
   vendedorId: string;
+  message: string;
 }
 
 // ─── Logout ───
