@@ -95,7 +95,7 @@ const SHARED_SCHEMAS: Record<string, Schema> = {
     password: str('Contraseña', '********'),
     nombre: str('Nombre'),
     apellido: str('Apellido'),
-    dni: str('DNI (7 a 9 dígitos)'),
+    dni: str('DNI (8 numeric digits)', '12345678'),
     telefono: str('Teléfono'),
     ciudad: str('Ciudad'),
     empresa: str('Company or business name (opcional)', 'Distribuidora AguaFress'),
@@ -104,7 +104,8 @@ const SHARED_SCHEMAS: Record<string, Schema> = {
   RegisterResponse: obj({
     status: str('Siempre "pendiente"', 'pendiente'),
     vendedorId: str('ID del vendedor creado'),
-  }, ['status', 'vendedorId']),
+    message: str('Mensaje genérico seguro para evitar enumeración de emails'),
+  }, ['status', 'vendedorId', 'message']),
 
   RefreshTokenRequest: obj({
     refreshToken: str('Refresh token'),

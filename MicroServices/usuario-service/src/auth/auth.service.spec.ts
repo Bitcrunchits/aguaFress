@@ -43,6 +43,8 @@ const mockAuditLogService = {
 
 describe('AuthService', () => {
   let authService: AuthService;
+  const vendorRegisterMessage =
+    'Solicitud recibida. Si corresponde, revisaremos el alta del vendedor.';
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -123,6 +125,7 @@ describe('AuthService', () => {
       expect(result).toEqual({
         status: 'pendiente',
         vendedorId: 'vendedor-1',
+        message: vendorRegisterMessage,
       });
     });
 
@@ -150,13 +153,18 @@ describe('AuthService', () => {
       });
     });
 
-    it('devuelve status pendiente si el email ya existe (prevención enumeración)', async () => {
+    it('devuelve mensaje seguro si el email ya existe y no abre transacción', async () => {
       mockPrisma.authUser.findUnique.mockResolvedValue({ id: 'existing' });
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-password');
 
       const result = await authService.register(registerDto);
 
-      expect(result).toEqual({ status: 'pendiente', vendedorId: '' });
+      expect(result).toEqual({
+        status: 'pendiente',
+        vendedorId: '',
+        message: vendorRegisterMessage,
+      });
+      expect(bcrypt.hash).toHaveBeenCalledWith('password123', 12);
       expect(mockPrisma.$transaction).not.toHaveBeenCalled();
     });
   });

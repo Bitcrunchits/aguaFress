@@ -805,14 +805,14 @@ describe('Gateway HTTP routing', () => {
   });
 
   it('dispatches public auth/register without requiring a token', async () => {
-    mockDispatch.mockResolvedValue({ status: 'pendiente', vendedorId: 'v-123' });
+    mockDispatch.mockResolvedValue({ status: 'pendiente', vendedorId: 'v-123', message: 'Solicitud recibida.' });
 
     const response = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
       .send({ email: 'vendedor@test.com', password: 'secret', nombre: 'Test', telefono: '123456789' })
       .expect(200);
 
-    expect(response.body).toEqual({ status: 'pendiente', vendedorId: 'v-123' });
+    expect(response.body).toEqual({ status: 'pendiente', vendedorId: 'v-123', message: 'Solicitud recibida.' });
     expect(mockDispatch).toHaveBeenCalledWith(
       'auth',
       expect.objectContaining({

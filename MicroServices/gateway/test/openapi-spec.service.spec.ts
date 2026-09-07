@@ -1,6 +1,20 @@
 import { OpenApiSpecService } from '../src/docs/openapi-spec.service';
 
 describe('OpenApiSpecService provider context docs', () => {
+  it('documents safe vendor register response message', () => {
+    const spec = new OpenApiSpecService().generateSpec();
+    const schemas = (spec.components as { schemas: Record<string, unknown> }).schemas;
+
+    expect(schemas.RegisterResponse).toEqual(
+      expect.objectContaining({
+        required: expect.arrayContaining(['status', 'vendedorId', 'message']),
+        properties: expect.objectContaining({
+          message: expect.objectContaining({ type: 'string' }),
+        }),
+      }),
+    );
+  });
+
   it('documents cliente provider list and select gateway actions', () => {
     const spec = new OpenApiSpecService().generateSpec();
     const paths = spec.paths as Record<string, Record<string, unknown>>;

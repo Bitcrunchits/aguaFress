@@ -37,6 +37,7 @@ export class DocsController {
     Scalar.createApiReference('#app', {
       url: '/api/openapi.json',
       proxyUrl: 'https://proxy.scalar.com',
+      persistAuth: true,
     })
   </script>
 </body>

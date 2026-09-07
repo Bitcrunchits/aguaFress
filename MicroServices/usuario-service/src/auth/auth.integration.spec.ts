@@ -122,6 +122,9 @@ describe('Auth Integration: register → login → refresh → profile', () => {
 
       expect(registerResult.status).toBe('pendiente');
       expect(registerResult.vendedorId).toBe('vendedor-1');
+      expect(registerResult.message).toBe(
+        'Solicitud recibida. Si corresponde, revisaremos el alta del vendedor.',
+      );
       expect(mockTx.vendedor.create).toHaveBeenCalledWith({
         data: expect.objectContaining({ empresa: 'Ruta Capital' }),
       });
