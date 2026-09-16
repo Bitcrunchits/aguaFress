@@ -6,7 +6,7 @@ export default () => ({
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   },
   upload: {
-    dir: process.env.UPLOAD_DIR || './public/uploads',
+    dir: process.env.UPLOAD_DIR || '../../public/uploads',
     maxSizeMb: parseInt(process.env.UPLOAD_MAX_SIZE_MB ?? '', 10) || 5,
     webpQuality: parseInt(process.env.UPLOAD_WEBP_QUALITY ?? '', 10) || 80,
   },

@@ -8,6 +8,7 @@ export const GATEWAY_ENV_DEFAULTS = {
   RATE_LIMIT_PUBLIC_TTL_MS: 60000,
   RATE_LIMIT_PUBLIC_MAX: 300,
   PAYLOAD_LIMIT: '1mb',
+  UPLOAD_DIR: '../../public/uploads',
   REDIS_URL: 'redis://localhost:6379',
   ORDERS_CREATE_QUEUE_NAME: 'orders.create',
   ORDERS_CREATE_QUEUE_ATTEMPTS: 3,
@@ -63,6 +64,7 @@ export interface GatewayEnv {
   readonly RATE_LIMIT_PUBLIC_TTL_MS: number;
   readonly RATE_LIMIT_PUBLIC_MAX: number;
   readonly PAYLOAD_LIMIT: string;
+  readonly UPLOAD_DIR: string;
   readonly REDIS_URL: string;
   readonly ORDERS_CREATE_QUEUE_NAME: string;
   readonly ORDERS_CREATE_QUEUE_ATTEMPTS: number;
@@ -213,6 +215,7 @@ export function createGatewayEnv(envInput: GatewayEnvInput): GatewayEnv {
     RATE_LIMIT_PUBLIC_TTL_MS: rateLimitPublicTtlMs.value,
     RATE_LIMIT_PUBLIC_MAX: rateLimitPublicMax.value,
     PAYLOAD_LIMIT: envInput.PAYLOAD_LIMIT ?? GATEWAY_ENV_DEFAULTS.PAYLOAD_LIMIT,
+    UPLOAD_DIR: envInput.UPLOAD_DIR ?? GATEWAY_ENV_DEFAULTS.UPLOAD_DIR,
     REDIS_URL: envInput.REDIS_URL ?? GATEWAY_ENV_DEFAULTS.REDIS_URL,
     ORDERS_CREATE_QUEUE_NAME: envInput.ORDERS_CREATE_QUEUE_NAME ?? GATEWAY_ENV_DEFAULTS.ORDERS_CREATE_QUEUE_NAME,
     ORDERS_CREATE_QUEUE_ATTEMPTS: ordersCreateQueueAttempts.value,

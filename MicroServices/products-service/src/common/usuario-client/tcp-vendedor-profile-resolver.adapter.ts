@@ -32,6 +32,14 @@ export class TcpVendedorProfileResolverAdapter implements VendedorProfileResolve
   constructor(@Inject(USUARIO_CLIENT) private readonly usuarioClient: ClientProxy) {}
 
   async resolveVendedorIdByAuthUserId(authUserId: string): Promise<string> {
+    return this.resolveVendedorId(authUserId, 'vendedores.resolve_profile_id');
+  }
+
+  async resolveActiveVendedorIdByAuthUserId(authUserId: string): Promise<string> {
+    return this.resolveVendedorId(authUserId, 'vendedores.resolve_active_profile_id');
+  }
+
+  private async resolveVendedorId(authUserId: string, pattern: string): Promise<string> {
     const payload = {
       user: { sub: authUserId, userId: authUserId, role: UserRole.VENDEDOR },
       body: {},
@@ -41,7 +49,7 @@ export class TcpVendedorProfileResolverAdapter implements VendedorProfileResolve
     };
 
     const result$ = this.usuarioClient
-      .send<{ vendedorId: string } | null>('vendedores.resolve_profile_id', payload)
+      .send<{ vendedorId: string } | null>(pattern, payload)
       .pipe(
         timeout(this.timeoutMs),
         catchError((err) => throwError(() => err)),

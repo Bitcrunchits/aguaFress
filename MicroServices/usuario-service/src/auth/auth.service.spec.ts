@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 import { Test, type TestingModule } from '@nestjs/testing';
-import { ConflictException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedException } from '@nestjs/common';
 import { UserRole } from '@agua/contracts';
 import { TokenService } from './token.service';
 import { AuthService } from './auth.service';
@@ -43,12 +43,14 @@ const mockAuditLogService = {
 
 describe('AuthService', () => {
   let authService: AuthService;
+  const vendorRegisterMessage =
+    'Solicitud recibida. Si corresponde, revisaremos el alta del vendedor.';
 
   beforeEach(async () => {
     jest.clearAllMocks();
 
     mockPrisma.$transaction.mockImplementation(
-      (cb: (tx: typeof mockTx) => Promise<any>) => cb(mockTx),
+      (cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx),
     );
 
     const module: TestingModule = await Test.createTestingModule({
@@ -123,16 +125,46 @@ describe('AuthService', () => {
       expect(result).toEqual({
         status: 'pendiente',
         vendedorId: 'vendedor-1',
+        message: vendorRegisterMessage,
       });
     });
 
-    it('devuelve status pendiente si el email ya existe (prevención enumeración)', async () => {
+    it('persiste empresa trimmeada cuando se informa', async () => {
+      mockPrisma.authUser.findUnique.mockResolvedValue(null);
+
+      await authService.register({ ...registerDto, empresa: '  Agua Norte  ' });
+
+      expect(mockTx.vendedor.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          empresa: 'Agua Norte',
+        }),
+      });
+    });
+
+    it('omite empresa cuando viene vacía', async () => {
+      mockPrisma.authUser.findUnique.mockResolvedValue(null);
+
+      await authService.register({ ...registerDto, empresa: '   ' });
+
+      expect(mockTx.vendedor.create).toHaveBeenCalledWith({
+        data: expect.not.objectContaining({
+          empresa: expect.any(String),
+        }),
+      });
+    });
+
+    it('devuelve mensaje seguro si el email ya existe y no abre transacción', async () => {
       mockPrisma.authUser.findUnique.mockResolvedValue({ id: 'existing' });
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-password');
 
       const result = await authService.register(registerDto);
 
-      expect(result).toEqual({ status: 'pendiente', vendedorId: '' });
+      expect(result).toEqual({
+        status: 'pendiente',
+        vendedorId: '',
+        message: vendorRegisterMessage,
+      });
+      expect(bcrypt.hash).toHaveBeenCalledWith('password123', 12);
       expect(mockPrisma.$transaction).not.toHaveBeenCalled();
     });
   });

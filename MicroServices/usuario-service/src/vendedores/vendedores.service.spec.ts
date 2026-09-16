@@ -693,6 +693,19 @@ describe('VendedoresService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
+    it('rechaza actualizar logo si el vendedor está pendiente', async () => {
+      prisma.vendedor.findUnique.mockResolvedValue({
+        ...baseVendedor,
+        estado: VendedorEstado.PENDIENTE,
+      });
+
+      await expect(
+        service.updateMyProfile('user-1', { logo: 'logos/logo.webp' }),
+      ).rejects.toThrow('El vendedor debe estar activo para actualizar el logo.');
+
+      expect(prisma.vendedor.update).not.toHaveBeenCalled();
+    });
+
     it('actualiza solo los campos provistos (parcial)', async () => {
       prisma.vendedor.findUnique.mockResolvedValue(baseVendedor);
       prisma.vendedor.update.mockResolvedValue({

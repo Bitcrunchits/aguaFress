@@ -2,6 +2,7 @@ import { BadRequestException, Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { UserRole } from '@agua/contracts';
 import { UploadService } from '../common/upload/upload.service';
+import { VendedorResolver } from '../common/prisma/vendedor-resolver.service';
 import { TcpPayloadAdapter } from './tcp-payload-adapter.service';
 import type { TcpPayload } from './tcp-payload';
 
@@ -9,6 +10,7 @@ import type { TcpPayload } from './tcp-payload';
 export class UsuarioUploadTcpController {
   constructor(
     private readonly uploadService: UploadService,
+    private readonly vendedorResolver: VendedorResolver,
     private readonly payloadAdapter: TcpPayloadAdapter,
   ) {}
 
@@ -16,6 +18,7 @@ export class UsuarioUploadTcpController {
   @MessagePattern('users.upload_logo')
   async uploadVendorLogo(@Payload() payload: TcpPayload) {
     this.payloadAdapter.requireRole(payload, UserRole.VENDEDOR);
+    await this.vendedorResolver.resolveActive(this.payloadAdapter.userId(payload));
 
     const body = payload.body as Record<string, unknown> | undefined;
     const file = body?.file as string | undefined;

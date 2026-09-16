@@ -67,6 +67,13 @@ export class UsuarioDomainTcpController {
     return { vendedorId };
   }
 
+  @MessagePattern('vendedores.resolve_active_profile_id')
+  async resolveActiveVendedorProfileId(@Payload() payload: TcpPayload): Promise<{ vendedorId: string }> {
+    this.payloadAdapter.requireRole(payload, UserRole.VENDEDOR);
+    const vendedorId = await this.vendedorResolver.resolveActive(this.payloadAdapter.userId(payload));
+    return { vendedorId };
+  }
+
   @MessagePattern('vendedores.get_by_id')
   async getVendedorById(@Payload() payload: TcpPayload) {
     this.payloadAdapter.requireRole(payload, UserRole.SUPER_ADMIN);

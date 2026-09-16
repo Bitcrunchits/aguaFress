@@ -24,6 +24,7 @@ const mockProductsService = {
 
 const mockVendedorResolver = {
   resolveVendedorIdByAuthUserId: jest.fn(),
+  resolveActiveVendedorIdByAuthUserId: jest.fn(),
 };
 
 const mockClienteVendedorResolver = {
@@ -46,6 +47,7 @@ describe('ProductsTcpController (integración con TcpPayloadAdapter real)', () =
   beforeEach(async () => {
     jest.clearAllMocks();
     mockVendedorResolver.resolveVendedorIdByAuthUserId.mockResolvedValue(VENDEDOR_ID_REAL);
+    mockVendedorResolver.resolveActiveVendedorIdByAuthUserId.mockResolvedValue(VENDEDOR_ID_REAL);
     mockClienteVendedorResolver.resolveVendedoresByClienteUserId.mockResolvedValue([]);
 
     const module: TestingModule = await Test.createTestingModule({
@@ -374,7 +376,7 @@ describe('ProductsTcpController (integración con TcpPayloadAdapter real)', () =
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('resuelve vendedorId real via el puerto, nunca usa el sub ni el body', async () => {
+    it('resuelve vendedorId activo via el puerto, nunca usa el sub ni el body', async () => {
       mockProductsService.create.mockResolvedValue({ id: 'prod-nuevo', created: true });
 
       await controller.create(
@@ -389,11 +391,25 @@ describe('ProductsTcpController (integración con TcpPayloadAdapter real)', () =
         }),
       );
 
-      expect(mockVendedorResolver.resolveVendedorIdByAuthUserId).toHaveBeenCalledWith(AUTH_USER_ID);
+      expect(mockVendedorResolver.resolveActiveVendedorIdByAuthUserId).toHaveBeenCalledWith(AUTH_USER_ID);
       expect(mockProductsService.create).toHaveBeenCalledWith(
         VENDEDOR_ID_REAL, // NO el sub del JWT
         expect.objectContaining({ nombre: 'Bidón 20L' }),
       );
+    });
+
+    it('rechaza creación cuando el vendedor no está activo', async () => {
+      mockVendedorResolver.resolveActiveVendedorIdByAuthUserId.mockRejectedValue(new ForbiddenException('inactive'));
+
+      await expect(
+        controller.create(
+          basePayload({
+            user: { sub: AUTH_USER_ID, email: 'v@test.com', role: 'vendedor' },
+            body: { nombre: 'Bidón 20L', precioSinIva: 100, categoriaId: CATEGORIA_ID, stock: 5 },
+          }),
+        ),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockProductsService.create).not.toHaveBeenCalled();
     });
   });
 
@@ -431,12 +447,27 @@ describe('ProductsTcpController (integración con TcpPayloadAdapter real)', () =
         }),
       );
 
-      expect(mockVendedorResolver.resolveVendedorIdByAuthUserId).toHaveBeenCalledWith(AUTH_USER_ID);
+      expect(mockVendedorResolver.resolveActiveVendedorIdByAuthUserId).toHaveBeenCalledWith(AUTH_USER_ID);
       expect(mockProductsService.update).toHaveBeenCalledWith(
         VENDEDOR_ID_REAL,
         PRODUCT_ID,
         expect.objectContaining({ nombre: 'Bidón 20L Plus' }),
       );
+    });
+
+    it('rechaza actualización cuando el vendedor no está activo', async () => {
+      mockVendedorResolver.resolveActiveVendedorIdByAuthUserId.mockRejectedValue(new ForbiddenException('inactive'));
+
+      await expect(
+        controller.update(
+          basePayload({
+            user: { sub: AUTH_USER_ID, email: 'v@test.com', role: 'vendedor' },
+            query: { id: PRODUCT_ID },
+            body: { nombre: 'Bidón 20L Plus' },
+          }),
+        ),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockProductsService.update).not.toHaveBeenCalled();
     });
   });
 

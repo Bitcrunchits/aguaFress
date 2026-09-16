@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { TokenService } from './token.service';
 import * as bcrypt from 'bcrypt';
@@ -15,6 +15,8 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 @Injectable()
 export class AuthService {
   private readonly SALT_ROUNDS = 12;
+  private readonly VENDOR_REGISTER_PENDING_MESSAGE =
+    'Solicitud recibida. Si corresponde, revisaremos el alta del vendedor.';
 
   constructor(
     private readonly prisma: PrismaService,
@@ -35,10 +37,15 @@ export class AuthService {
     if (existing) {
       // Prevent email enumeration: do work regardless, return 201
       await bcrypt.hash(dto.password, this.SALT_ROUNDS);
-      return { status: 'pendiente' as const, vendedorId: '' };
+      return {
+        status: 'pendiente' as const,
+        vendedorId: '',
+        message: this.VENDOR_REGISTER_PENDING_MESSAGE,
+      };
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, this.SALT_ROUNDS);
+    const empresa = dto.empresa?.trim();
 
     const result = await this.prisma.$transaction(async (tx) => {
       const user = await tx.authUser.create({
@@ -57,7 +64,7 @@ export class AuthService {
           dni: dto.dni,
           telefono: dto.telefono,
           ciudad_default: dto.ciudad,
-          ...(dto.logo ? { logo: dto.logo } : {}),
+          ...(empresa ? { empresa } : {}),
           estado: VendedorEstado.PENDIENTE,
         },
       });
@@ -70,6 +77,7 @@ export class AuthService {
     return {
       status: 'pendiente' as const,
       vendedorId: result.id,
+      message: this.VENDOR_REGISTER_PENDING_MESSAGE,
     };
   }
 
@@ -126,6 +134,7 @@ export class AuthService {
 
     const existing = await this.prisma.authUser.findUnique({ where: { email: dto.email } });
     if (existing) {
+      // TODO [AG-195]: Align client registration with public email-enumeration protection.
       throw new ConflictException('El email ya está registrado');
     }
 

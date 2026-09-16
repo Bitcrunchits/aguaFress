@@ -6,12 +6,12 @@ import {
   IsOptional,
   IsPositive,
   IsString,
-  IsUrl,
   IsUUID,
   MaxLength,
   Min,
   MinLength,
 } from 'class-validator';
+import { IsProductImageReference } from './product-image.validator';
 
 export class UpdateProductDto implements UpdateProductRequest {
   @IsOptional()
@@ -46,8 +46,9 @@ export class UpdateProductDto implements UpdateProductRequest {
   stock?: number;
 
   @IsOptional()
-  @IsUrl()
+  @IsString()
   @MaxLength(500)
+  @IsProductImageReference()
   imagen?: string;
 
   @IsOptional()
