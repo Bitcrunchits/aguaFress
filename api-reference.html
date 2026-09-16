@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AguaFress API — Referencia para Frontend</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #232838;
+    --border: #2d3348;
+    --text: #e2e4eb;
+    --text2: #9498a8;
+    --accent: #7c5cfc;
+    --green: #34d399;
+    --yellow: #fbbf24;
+    --red: #f87171;
+    --blue: #60a5fa;
+    --font: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    line-height: 1.6;
+    padding: 2rem;
+  }
+  h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: .25rem;
+  }
+  h1 span { color: var(--accent); }
+  .subtitle {
+    color: var(--text2);
+    font-size: .95rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1rem;
+  }
+  h2 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin: 2rem 0 1rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+  h2 .badge { font-size: .7rem; font-weight: 500; padding: 2px 8px; border-radius: 4px; }
+  .badge-avail { background: #065f4620; color: var(--green); border: 1px solid #065f46; }
+  .badge-planned { background: #1e3a5f20; color: var(--blue); border: 1px solid #1e3a5f; }
+  .section-info {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    font-size: .9rem;
+    color: var(--text2);
+  }
+  .section-info code {
+    background: var(--surface2);
+    color: var(--accent);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-family: var(--font);
+    font-size: .85em;
+  }
+  .table-wrap {
+    overflow-x: auto;
+    margin-bottom: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .85rem;
+    min-width: 700px;
+  }
+  thead th {
+    background: var(--surface);
+    text-align: left;
+    padding: .7rem .9rem;
+    font-weight: 600;
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--text2);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: .65rem .9rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--surface); }
+  .method {
+    display: inline-block;
+    font-family: var(--font);
+    font-weight: 700;
+    font-size: .7rem;
+    padding: 1px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+  }
+  .method-get { background: #1e3a5f40; color: var(--blue); }
+  .method-post { background: #065f4620; color: var(--green); }
+  .method-patch { background: #5b3d1e20; color: var(--yellow); }
+  .method-delete { background: #5f1e1e20; color: var(--red); }
+  .endpoint {
+    font-family: var(--font);
+    font-size: .8rem;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .endpoint span { color: var(--text2); }
+  .auth-badge {
+    display: inline-block;
+    font-size: .65rem;
+    font-family: var(--font);
+    padding: 1px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .auth-no { background: #1e3a5f30; color: var(--blue); }
+  .auth-yes { background: #5f421e20; color: var(--yellow); }
+  .auth-role { background: #5f1e1e20; color: var(--red); }
+  .role-list { font-size: .75rem; color: var(--text2); }
+  .dto-block {
+    margin-top: .8rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: .8rem 1rem;
+    font-family: var(--font);
+    font-size: .78rem;
+    overflow-x: auto;
+  }
+  .dto-block .comment {
+    color: #6b7280;
+    font-style: italic;
+  }
+  .dto-block .key { color: var(--accent); }
+  .dto-block .type { color: var(--blue); }
+  .dto-block .opt { color: var(--text2); font-size: .7rem; }
+  .enum-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .8rem;
+    margin-bottom: 1.5rem;
+  }
+  .enum-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .8rem 1rem;
+    flex: 1 1 200px;
+  }
+  .enum-card h4 {
+    font-size: .8rem;
+    font-weight: 600;
+    margin-bottom: .4rem;
+    color: var(--accent);
+  }
+  .enum-card code {
+    display: block;
+    font-family: var(--font);
+    font-size: .75rem;
+    color: var(--text2);
+    line-height: 1.8;
+  }
+  .enum-card code::before { content: "'"; color: #6b7280; }
+  .enum-card code::after { content: "'"; color: #6b7280; }
+  .avail-tag { font-size: .65rem; padding: 1px 6px; border-radius: 3px; margin-left: .5rem; }
+  .avail-yes { background: #065f4620; color: var(--green); }
+  .avail-no { background: #1e3a5f20; color: var(--text2); }
+  @media (max-width: 768px) {
+    body { padding: 1rem; }
+    table { font-size: .8rem; }
+  }
+</style>
+</head>
+<body>
+
+<h1>AguaFress <span>API</span></h1>
+<div class="subtitle">
+  Base URL: <code>http://localhost:3000/api/v1</code> &nbsp;|&nbsp;
+  Docs UI: <code>http://localhost:3000/api/docs</code> &nbsp;|&nbsp;
+  OpenAPI spec: <code>http://localhost:3000/api/openapi.json</code>
+</div>
+
+<div class="section-info">
+  <strong>Autenticación:</strong> Los endpoints protegidos requieren <code>Authorization: Bearer &lt;token&gt;</code>.
+  Los roles se especifican por endpoint. El token JWT se obtiene de <code>auth/login</code>.
+  <br><br>
+  <strong>IDs:</strong> <code>userId</code> NUNCA va en el body. Se extrae del token JWT.
+  IDs en parámetros de ruta van como <strong>query params</strong>.
+  <br><br>
+  <strong>Paginación:</strong> Endpoints de listas aceptan <code>?page=1&amp;limit=20</code> (opcional, defaults: page=1, limit=20).
+  <br><br>
+  <strong>Fechas:</strong> Siempre ISO 8601 strings.
+</div>
+
+<!-- ═══════════ ENUMS ═══════════ -->
+<h2>Enums del sistema</h2>
+<div class="enum-section">
+  <div class="enum-card">
+    <h4>UserRole</h4>
+    <code>super_admin</code>
+    <code>vendedor</code>
+    <code>cliente</code>
+  </div>
+  <div class="enum-card">
+    <h4>VendedorEstado</h4>
+    <code>pendiente</code>
+    <code>activo</code>
+    <code>inactivo</code>
+    <code>bloqueado</code>
+  </div>
+  <div class="enum-card">
+    <h4>OrderEstado</h4>
+    <code>pendiente</code>
+    <code>confirmado</code>
+    <code>en_camino</code>
+    <code>entregado</code>
+    <code>cancelado</code>
+    <code>vencido</code>
+  </div>
+  <div class="enum-card">
+    <h4>DeliveryEstado</h4>
+    <code>pendiente</code>
+    <code>en_camino</code>
+    <code>entregada</code>
+  </div>
+  <div class="enum-card">
+    <h4>MetodoPago</h4>
+    <code>contra_entrega</code>
+  </div>
+  <div class="enum-card">
+    <h4>TipoFactura</h4>
+    <code>A</code>
+    <code>B</code>
+    <code>C</code>
+  </div>
+</div>
+
+<!-- ═══════════ COMMON TYPES ═══════════ -->
+<h2>Tipos compartidos</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Tipo</th><th>Campos</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>DireccionEntrega</code></td>
+  <td>
+    <div class="dto-block">
+{ <span class="key">calle</span>: <span class="type">string</span>,
+  <span class="key">numero</span>: <span class="type">string</span>,
+  <span class="key">pisoDepto</span>?: <span class="type">string</span>,
+  <span class="key">referencia</span>?: <span class="type">string</span>,
+  <span class="key">barrio</span>?: <span class="type">string</span>,    <span class="comment">// texto libre, no id</span>
+  <span class="key">ciudad</span>?: <span class="type">string</span>,
+  <span class="key">provincia</span>?: <span class="type">string</span>,
+  <span class="key">codigoPostal</span>?: <span class="type">string</span>,
+  <span class="key">latitude</span>?: <span class="type">number</span>,
+  <span class="key">longitude</span>?: <span class="type">number</span> }
+    </div>
+  </td>
+</tr>
+<tr>
+  <td><code>PaginationRequest</code></td>
+  <td><code>{ page?: number, limit?: number }</code></td>
+</tr>
+<tr>
+  <td><code>PaginationResponse</code></td>
+  <td><code>{ page: number, limit: number, total: number, totalPages: number }</code></td>
+</tr>
+<tr>
+  <td><code>PaginatedResponse&lt;T&gt;</code></td>
+  <td><code>{ data: T[], pagination: PaginationResponse }</code></td>
+</tr>
+<tr>
+  <td><code>ErrorResponse</code></td>
+  <td><code>{ statusCode: number, message: string, error?: string, details?: unknown }</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<!-- ═══════════ AUTH ═══════════ -->
+<h2><span class="badge badge-avail">●</span> Auth <span class="avail-tag avail-yes">available</span></h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Método</th><th>Endpoint</th><th>Auth</th><th>Request</th><th>Response</th></tr></thead>
+<tbody>
+
+<tr>
+  <td><span class="method method-post">POST</span></td>
+  <td><code class="endpoint">/auth/login</code></td>
+  <td><span class="auth-badge auth-no">no</span></td>
+  <td><div class="dto-block">{ <span class="key">email</span>: <span class="type">string</span>, <span class="key">password</span>: <span class="type">string</span> }</div></td>
+  <td><div class="dto-block">{ <span class="key">token</span>: <span class="type">string</span>, <span class="key">refreshToken</span>: <span class="type">string</span>,<br>
+  <span class="key">user</span>: { <span class="key">id</span>: <span class="type">string</span>, <span class="key">email</span>: <span class="type">string</span>, <span class="key">role</span>: <span class="type">UserRole</span>,<br>
+  &nbsp;&nbsp;<span class="key">nombre</span>?: <span class="type">string</span>, <span class="key">apellido</span>?: <span class="type">string</span> } }</div></td>
+</tr>
+
+<tr>
+  <td><span class="method method-post">POST</span></td>
+  <td><code class="endpoint">/auth/register</code></td>
+  <td><span class="auth-badge auth-no">no</span></td>
+  <td><div class="dto-block">{ <span class="key">email</span>: <span class="type">string</span>, <span class="key">password</span>: <span class="type">string</span>,<br>
+  <span class="key">nombre</span>: <span class="type">string</span>, <span class="key">telefono</span>: <span class="type">string</span>,<br>
+  <span class="key">ciudad</span>?: <span class="type">string</span>, <span class="key">zonaEntrega</span>?: <span class="type">string</span> }</div></td>
+  <td><div class="dto-block">{ <span class="key">status</span>: <span class="type">"pendiente"</span>, <span class="key">vendedorId</span>: <span class="type">string</span> }</div></td>
+</tr>
+
+<tr>
+  <td><span class="method method-post">POST</span></td>
+  <td><code class="endpoint">/auth/refresh</code></td>
+  <td><span class="auth-badge auth-no">no</span></td>
+  <td><div class="dto-block">{ <span class="key">refreshToken</span>: <span class="type">string</span> }</div></td>
+  <td><div class="dto-block">{ <span class="key">token</span>: <span class="type">string</span> }</div></td>
+</tr>
+
+<tr>
+  <td><span class="method method-post">POST</span></td>
+  <td><code class="endpoint">/auth/validate</code></td>
+  <td><span class="auth-badge auth-no">no</span></td>
+  <td><div class="dto-block">{ <span class="key">token</span>: <span class="type">string</span> }</div></td>
+  <td><div class="dto-block">{ <span class="key">valid</span>: <span class="type">boolean</span>,<br> <span class="key">user</span>?: { <span class="key">id</span>: <span class="type">string</span>, <span class="key">email</span>: <span class="type">string</span>, <span class="key">role</span>: <span class="type">UserRole</span> } | <span class="type">null</span> }</div></td>
+</tr>
+
+<tr>
+  <td><span class="method method-post">POST</span></td>
+  <td><code class="endpoint">/auth/logout</code></td>
+  <td><span class="auth-badge auth-yes">si</span></td>
+  <td>—</td>
+  <td><div class="dto-block">{ <span class="key">message</span>: <span class="type">string</span> }</div></td>
+</tr>
+
+</tbody>
+</table>
+</div>
+
+<!-- ═══════════ USERS ═══════════ -->
+<h2><span class="badge badge-avail">●</span> Usuarios / Perfil</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Método</th><th>Endpoint</th><th>Auth</th><th>Request</th><th>Response</th></tr></thead>
+<tbody>
+
+<tr>
+  <td><span class="method method-get">GET</span></td>
+  <td><code class="endpoint">/users/profile</code></td>
+  <td><span class="auth-badge auth-yes">si</span></td>
+  <td>—</td>
+  <td><div class="dto-block">{ <span class="key">id</span>: <span class="type">string</span>, <span class="key">email</span>: <span class="type">string</span>,<br>
+  <span class="key">nombre</span>?: <span class="type">string</span>, <span class="key">apellido</span>?: <span class="type">string</span>,<br>
+  <span class="key">role</span>: <span class="type">UserRole</span>, <span class="key">telefono</span>?: <span class="type">string</span>,<br>
+  <span class="key">isActive</span>: <span class="type">boolean</span>,<br>
+  <span class="key">profile</span>?: <span class="type">VendedorProfile</span> | <span class="type">ClienteProfile</span> }</div></td>
+</tr>
+
+<tr>
+  <td><span class="method method-patch">PATCH</span></td>
+  <td><code class="endpoint">/users/profile/update</code></td>
+  <td><span class="auth-badge auth-yes">si</span></td>
+  <td><div class="dto-block">{ <span class="key">nombre</span>?: <span class="type">string</span>, <span class="key">apellido</span>?: <span class="type">string</span>,<br>
+  <span class="key">telefono</span>?: <span class="type">string</span>,<br>
+  <span class="key">address</span>?: { <span class="key">calle</span>?: <span class="type">string</span>, <span class="key">numero</span>?: <span class="type">string</span>,<br>
+  &nbsp;&nbsp;<span class="key">pisoDepto</span>?: <span class="type">string</span>, <span class="key">barrio</span>?: <span class="type">string</span>,<br>
+  &nbsp;&nbsp;<span class="key">ciudad</span>?: <span class="type">string</span>, <span class="key">provincia</span>?: <span class="type">string</span>,<br>
+  &nbsp;&nbsp;<span class="key">latitude</span>?: <span class="type">number</span>, <span class="key">longitude</span>?: <span class="type">number</span> } }</div></td>
+  <td>mismo que GET profile</td>
+</tr>
+
+</tbody>
+</table>
+</div>
+
+<!-- ═══════════ VENDEDORES ═══════════ -->
+<h2><span class="badge badge-avail">●</span> Vendedores</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Método</th><th>Endpoint</th><th>Auth</th><th>Roles</th><th>Request</th><th>Response</th></tr></thead>
+<tbody>
+
+<tr>
+  <td><span class="method method-get">GET</span></td>
+  <td><code class="endpoint">/vendedores/list</code></td>
+  <td><span class="auth-badge auth-role">rol</span></td>
+  <td class="role-list">super_admin</td>
+  <td><div class="dto-block">?page=&amp;limit=&amp;search=&amp;estado=</div></td>
+  <td><div class="dto-block">PaginatedResponse&lt;{ <span class="key">id</span>: <span class="type">string</span>, <span class="key">nombre</span>: <span class="type">string</span>,<br>
+  <span class="key">apellido</span>?: <span class="type">string</span>, <span class="key">empresa</span>?: <span class="type">string</span>,<br>
+  <span class="key">email</span>: <span class="type">string</span>, <span class="key">telefono</span>?: <span class="type">string</span>,<br>
+  <span class="key">ciudad</span>?: <span class="type">string</span>, <span class="key">estado</span>: <span class="type">VendedorEstado</span>,<br>
+  <span class="key">createdAt</span>: <span class="type">string</span> }&gt;</div></td>
+</tr>
+
+<tr>
+  <td><span class="method method-get">GET</span></td>
+  <td><code class="endpoint">/vendedores/profile</code></td>
+  <td><span class="auth-badge auth-yes">si</span></td>
+  <td class="role-list">—</td>
+  <td>—</td>
+  <td><div class="dto-block">{ <span class="key">nombre</span>?: <span class="type">string</span>, <span class="key">apellido</span>?: <span class="type">string</span>,<br>
+  <span class="key">empresa</span>?: <span class="type">string</span>, <span class="key">logo</span>?: <span class="type">string</span>,<br>
+  <span class="key">estado</span>: <span class="type">VendedorEstado</span>, <span class="key">qrCode</span>?: <span class="type">string</span>,<br>
+  <span class="key">linkPublico</span>?: <span class="type">string</span>, <span class="key">ciudadDefault</span>?: <span class="type">string</span>,<br>
+  <span class="key">zonaEntrega</span>?: <span class="type">string</span> }</div></td>
+</tr>
+
+<tr>
+  <td><span class="method method-patch">PATCH</span></td>
+  <td><code class="endpoint">/vendedores/profile/update</code></td>
+  <td><span class="auth-badge auth-yes">si</span></td>
+  <td class="role-list">—</td>
+  <td><div class="dto-block">{ <span class="key">nombre</span>?: <span class="type">string</span>, <span class="key">apellido</span>?: <span class="type">string</span>,<br>
+  <span class="key">telefono</span>?: <span class="type">string</span> }</div></td>
+  <td>mismo que GET profile</td>
+</tr>
+
+<tr>
+  <td><span class="method method-get">GET</span></td>
+  <td><code class="endpoint">/vendedores/get-by-id</code></td>
+  <td><span class="auth-badge auth-role">rol</span></td>
+  <td class="role-list">super_admin</td>
+  <td><div class="dto-block">?id=&lt;uuid&gt;</div></td>
+  <td>VendedorListItem (mismo que list)</td>
+</tr>
+
+<tr>
+  <td><span class="method method-patch">PATCH</span></td>
+  <td><code class="endpoint">/vendedores/update</code></td>
+  <td><span class="auth-badge auth-role">rol</span></td>
+  <td class="role-list">super_admin</td>
+  <td><div class="dto-block">?id=&lt;uuid&gt;<br>
+  { <span class="key">nombre</span>?: <span class="type">string</span>, <span class="key">apellido</span>?: <span class="type">string</span>,<br>
+  <span class="key">empresa</span>?: <span class="type">string</span>, <span class="key">telefono</span>?: <span class="type">string</span>,<br>
+  <span class="key">ciudad</span>?: <span class="type">string</span>, <span class="key">logo</span>?: <span class="type">string</span> }</div></td>
+  <td>VendedorListItem</td>
+</tr>
+
+<tr>
+  <td><span class="method method-patch">PATCH</span></td>
+  <td><code class="endpoint">/vendedores/change-estado</code></td>
+  <td><span class="auth-badge auth-role">rol</span></td>
+  <td class="role-list">super_admin</td>
+  <td><div class="dto-block">?id=&lt;uuid&gt;<br>{ <span class="key">estado</span>: <span class="type">"activo"|"inactivo"|"bloqueado"</span> }</div></td>
+  <td>VendedorListItem</td>
+</tr>
+
+</tbody>
+</table>
+</div>
+
+<!-- ═══════════ CLIENTES ═══════════ -->
+<h2><span class="badge badge-avail">●</span> Clientes</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Método</th><th>Endpoint</th><th>Auth</th><th>Roles</th><th>Request</th><th>Response</th></tr></thead>
+<tbody>
+
+<tr>
+  <td><span class="method method-get">GET</span></td>
+  <td><code class="endpoint">/clientes/list</code></td>
+  <td><span class="auth-badge auth-yes">si</span></td>
+  <td class="role-list">—</td>
+  <td><div class="dto-block">?page=&amp;limit=&amp;search=</div></td>
+  <td><div class="dto-block">PaginatedResponse&lt;ClienteListItem&gt;</div></td>
+</tr>
+
+<tr>
+  <td><span class="method method-get">GET</span></td>
+  <td><code class="endpoint">/clientes/cartera</code></td>
+  <td><span class="auth-badge auth-yes">si</span></td>
+  <td class="role-list">—</td>
+  <td><div class="dto-block">?page=&amp;limit=&amp;search=</div></td>
+  <td><div class="dto-block">PaginatedResponse&lt;ClienteListItem&gt;<br><span class="comment">// solo los clientes asignados al vendedor autenticado</span></div></td>
+</tr>
+
+<tr>
+  <td><span class="method method-get">GET</span></td>
+  <td><code class="endpoint">/clientes/get-by-id</code></td>
+  <td><span class="auth-badge auth-role">rol</span></td>
+  <td class="role-list">super_admin</td>
+  <td><div class="dto-block">?id=&lt;uuid&gt;</div></td>
+  <td>ClienteListItem</td>
+</tr>
+
+<tr>
+  <td><span class="method method-patch">PATCH</span></td>
+  <td><code class="endpoint">/clientes/update</code></td>
+  <td><span class="auth-badge auth-role">rol</span></td>
+  <td class="role-list">super_admin</td>
+  <td><div class="dto-block">?id=&lt;uuid&gt;<br>{ <span class="key">nombre</span>?: <span class="type">string</span>, <span class="key">apellido</span>?: <span class="type">string</span>,<br>
+  <span class="key">telefono</span>?: <span class="type">string</span>, <span class="key">tipoFactura</span>?: <span class="type">TipoFactura</span> }</div></td>
+  <td>ClienteListItem</td>
+</tr>
+
+<tr>
+  <td><span class="method method-patch">PATCH</span></td>
+  <td><code class="endpoint">/clientes/reassign</code></td>
+  <td><span class="auth-badge auth-role">rol</span></td>
+  <td class="role-list">super_admin</td>
+  <td><div class="dto-block">?id=&lt;uuid&gt;<br>{ <span class="key">vendedorId</span>: <span class="type">string</span> }</div></td>
+  <td>ClienteListItem</td>
+</tr>
+
+<tr>
+  <td><span class="method method-get">GET</span></td>
+  <td><code class="endpoint">/clientes/own/get-by-id</code></td>
+  <td><span class="auth-badge auth-role">rol</span></td>
+  <td class="role-list">vendedor</td>
+  <td><div class="dto-block">?id=&lt;uuid&gt;</div></td>
+  <td>ClienteListItem</td>
+</tr>
+
+<tr>
+  <td><span class="method method-patch">PATCH</span></td>
+  <td><code class="endpoint">/clientes/own/update</code></td>
+  <td><span class="auth-badge auth-role">rol</span></td>
+  <td class="role-list">vendedor</td>
+  <td><div class="dto-block">?id=&lt;uuid&gt;<br>{ <span class="key">nombre</span>?: <span class="type">string</span>, <span class="key">apellido</span>?: <span class="type">string</span>,<br>
+  <span class="key">telefono</span>?: <span class="type">string</span>,<br>
+  <span class="key">direccionEntrega</span>?: <span class="type">DireccionEntrega</span> }</div></td>
+  <td>ClienteListItem</td>
+</tr>
+
+</tbody>
+</table>
+</div>
+
+<div class="dto-block" style="margin-top:-.5rem;margin-bottom:1.5rem;">
+<span class="comment">// ClienteListItem:</span> { <span class="key">id</span>: <span class="type">string</span>, <span class="key">nombre</span>: <span class="type">string</span>, <span class="key">apellido</span>?: <span class="type">string</span>,<br>
+&nbsp;&nbsp;<span class="key">email</span>: <span class="type">string</span>, <span class="key">telefono</span>?: <span class="type">string</span>, <span class="key">tipoFactura</span>?: <span class="type">TipoFactura</span>,<br>
+&nbsp;&nbsp;<span class="key">vendedorAsignado</span>?: <span class="type">string</span>, <span class="comment">// nombre del vendedor</span><br>
+&nbsp;&nbsp;<span class="key">createdAt</span>: <span class="type">string</span> }
+</div>
+
+<!-- ═══════════ SUPER ADMIN ═══════════ -->
+<h2><span class="badge badge-avail">●</span> Super Admin</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Método</th><th>Endpoint</th><th>Roles</th><th>Request</th><th>Response</th></tr></thead>
+<tbody>
+
+<tr>
+  <td><span class="method method-get">GET</span></td>
+  <td><code class="endpoint">/super-admin/dashboard</code></td>
+  <td class="role-list">super_admin</td>
+  <td>—</td>
+  <td><div class="dto-block">{ <span class="key">totalVendedores</span>: <span class="type">number</span>,<br>
+  <span class="key">vendedoresActivos</span>: <span class="type">number</span>,<br>
+  <span class="key">vendedoresPendientes</span>: <span class="type">number</span>,<br>
+  <span class="key">totalClientes</span>: <span class="type">number</span>,<br>
+  <span class="key">clientesConVendedor</span>: <span class="type">number</span>,<br>
+  <span class="key">totalSuperAdmins</span>: <span class="type">number</span> }</div></td>
+</tr>
+
+<tr>
+  <td><span class="method method-get">GET</span></td>
+  <td><code class="endpoint">/super-admin/audit-log</code></td>
+  <td class="role-list">super_admin</td>
+  <td><div class="dto-block">?page=&amp;limit=</div></td>
+  <td><div class="dto-block">PaginatedResponse&lt;{ <span class="key">id</span>: <span class="type">string</span>, <span class="key">action</span>: <span class="type">string</span>,<br>
+  <span class="key">userId</span>: <span class="type">string</span>, <span class="key">email</span>: <span class="type">string</span>,<br>
+  <span class="key">metadata</span>?: <span class="type">object</span>, <span class="key">createdAt</span>: <span class="type">string</span> }&gt;</div></td>
+</tr>
+
+<tr>
+  <td><span class="method method-get">GET</span></td>
+  <td><code class="endpoint">/super-admin/qr-codes</code></td>
+  <td class="role-list">super_admin</td>
+  <td><div class="dto-block">?vendedorId=&amp;page=&amp;limit=</div></td>
+  <td><div class="dto-block">PaginatedResponse&lt;QRCodeItem&gt;</div></td>
+</tr>
+
+<tr>
+  <td><span class="method method-get">GET</span></td>
+  <td><code class="endpoint">/super-admin/link-invitacion</code></td>
+  <td class="role-list">super_admin</td>
+  <td><div class="dto-block">?vendedorId=&amp;page=&amp;limit=</div></td>
+  <td><div class="dto-block">PaginatedResponse&lt;LinkInvitacionItem&gt;</div></td>
+</tr>
+
+<tr>
+  <td><span class="method method-get">GET</span></td>
+  <td><code class="endpoint">/super-admin/vendedores</code></td>
+  <td class="role-list">super_admin</td>
+  <td><div class="dto-block">?page=&amp;limit=&amp;search=&amp;estado=</div></td>
+  <td><div class="dto-block">PaginatedResponse&lt;{ <span class="key">id</span>: <span class="type">string</span>, <span class="key">nombre</span>: <span class="type">string</span>,<br>
+  <span class="key">email</span>: <span class="type">string</span>, <span class="key">estado</span>: <span class="type">VendedorEstado</span>,<br>
+  <span class="key">clientesCount</span>: <span class="type">number</span>, <span class="comment">// solo cantidad, sin datos sensibles</span><br>
+  <span class="key">ventasMes</span>?: <span class="type">number</span>, <span class="key">fechaRegistro</span>: <span class="type">string</span> }&gt;</div></td>
+</tr>
+
+<tr>
+  <td><span class="method method-get">GET</span></td>
+  <td><code class="endpoint">/super-admin/profile</code></td>
+  <td class="role-list">super_admin</td>
+  <td>—</td>
+  <td><div class="dto-block">{ <span class="key">id</span>: <span class="type">string</span>, <span class="key">email</span>: <span class="type">string</span>,<br>
+  <span class="key">nombre</span>?: <span class="type">string</span>, <span class="key">apellido</span>?: <span class="type">string</span>,<br>
+  <span class="key">telefono</span>?: <span class="type">string</span> }</div></td>
+</tr>
+
+<tr>
+  <td><span class="method method-patch">PATCH</span></td>
+  <td><code class="endpoint">/super-admin/profile/update</code></td>
+  <td class="role-list">super_admin</td>
+  <td><div class="dto-block">{ <span class="key">nombre</span>?: <span class="type">string</span>, <span class="key">apellido</span>?: <span class="type">string</span>,<br>
+  <span class="key">telefono</span>?: <span class="type">string</span> }</div></td>
+  <td>mismo que GET profile</td>
+</tr>
+
+</tbody>
+</table>
+</div>
+
+<div class="dto-block" style="margin-top:-.5rem;margin-bottom:1.5rem;">
+<span class="comment">// QRCodeItem y LinkInvitacionItem (comparten estructura):</span><br>
+{ <span class="key">id</span>: <span class="type">string</span>, <span class="key">codigo</span>|<span class="key">token</span>: <span class="type">string</span>, <span class="key">activo</span>: <span class="type">boolean</span>,<br>
+&nbsp;&nbsp;<span class="key">expiresAt</span>: <span class="type">string</span>, <span class="key">createdAt</span>: <span class="type">string</span> }
+</div>
+
+<!-- ═══════════ QR ═══════════ -->
+<h2><span class="badge badge-avail">●</span> Códigos QR</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Método</th><th>Endpoint</th><th>Roles</th><th>Request</th><th>Response</th></tr></thead>
+<tbody>
+
+<tr>
+  <td><span class="method method-get">GET</span></td>
+  <td><code class="endpoint">/qr/vendor/list</code></td>
+  <td class="role-list">vendedor</td>
+  <td><div class="dto-block">?page=&amp;limit=</div></td>
+  <td><div class="dto-block">PaginatedResponse&lt;QRCodeItem&gt;</div></td>
+</tr>
+
+<tr>
+  <td><span class="method method-post">POST</span></td>
+  <td><code class="endpoint">/qr/vendor/create</code></td>
+  <td class="role-list">vendedor</td>
+  <td>—</td>
+  <td><div class="dto-block">{ <span class="key">qrCode</span>: <span class="type">string</span>,  <span class="comment">// Base64 PNG</span><br>
+  <span class="key">url</span>: <span class="type">string</span>,  <span class="comment">// URL pública</span><br>
+  <span class="key">expiresAt</span>: <span class="type">string</span> }</div></td>
+</tr>
+
+<tr>
+  <td><span class="method method-patch">PATCH</span></td>
+  <td><code class="endpoint">/qr/admin/deactivate</code></td>
+  <td class="role-list">super_admin</td>
+  <td><div class="dto-block">?id=&lt;uuid&gt;</div></td>
+  <td>QRCodeItem</td>
+</tr>
+
+<tr>
+  <td><span class="method method-patch">PATCH</span></td>
+  <td><code class="endpoint">/qr/vendor/deactivate</code></td>
+  <td class="role-list">vendedor</td>
+  <td><div class="dto-block">?id=&lt;uuid&gt;</div></td>
+  <td>QRCodeItem</td>
+</tr>
+
+</tbody>
+</table>
+</div>
+
+<!-- ═══════════ LINK INVITACION ═══════════ -->
+<h2><span class="badge badge-avail">●</span> Links de Invitación</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Método</th><th>Endpoint</th><th>Roles</th><th>Request</th><th>Response</th></tr></thead>
+<tbody>
+
+<tr>
+  <td><span class="method method-get">GET</span></td>
+  <td><code class="endpoint">/link-invitacion/vendor/list</code></td>
+  <td class="role-list">vendedor</td>
+  <td><div class="dto-block">?page=&amp;limit=</div></td>
+  <td><div class="dto-block">PaginatedResponse&lt;LinkInvitacionItem&gt;</div></td>
+</tr>
+
+<tr>
+  <td><span class="method method-post">POST</span></td>
+  <td><code class="endpoint">/link-invitacion/vendor/create</code></td>
+  <td class="role-list">vendedor</td>
+  <td>—</td>
+  <td><div class="dto-block">{ <span class="key">linkUrl</span>: <span class="type">string</span>, <span class="key">token</span>: <span class="type">string</span>,<br>
+  <span class="key">expiresAt</span>: <span class="type">string</span> }</div></td>
+</tr>
+
+<tr>
+  <td><span class="method method-patch">PATCH</span></td>
+  <td><code class="endpoint">/link-invitacion/admin/deactivate</code></td>
+  <td class="role-list">super_admin</td>
+  <td><div class="dto-block">?id=&lt;uuid&gt;</div></td>
+  <td>LinkInvitacionItem</td>
+</tr>
+
+<tr>
+  <td><span class="method method-patch">PATCH</span></td>
+  <td><code class="endpoint">/link-invitacion/vendor/deactivate</code></td>
+  <td class="role-list">vendedor</td>
+  <td><div class="dto-block">?id=&lt;uuid&gt;</div></td>
+  <td>LinkInvitacionItem</td>
+</tr>
+
+</tbody>
+</table>
+</div>
+
+<!-- ═══════════ PLANNED ═══════════ -->
+<h2 style="margin-top:3rem;"><span class="badge badge-planned">○</span> Servicios planificados (no disponibles)</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Servicio</th><th>Endpoints futuros</th></tr></thead>
+<tbody>
+<tr><td><code>products</code></td><td>CRUD de productos del vendedor</td></tr>
+<tr><td><code>categories</code></td><td>Categorías de productos</td></tr>
+<tr><td><code>brands</code></td><td>Marcas de productos</td></tr>
+<tr><td><code>cart</code></td><td>Carrito de compras del cliente</td></tr>
+<tr><td><code>orders</code></td><td>Pedidos, facturación, historial</td></tr>
+<tr><td><code>deliveries</code></td><td>Reparto / entregas / seguimiento</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="subtitle" style="margin-top:3rem;border:none;text-align:center;font-size:.8rem;">
+  Generado desde <code>ACTION_REGISTRY</code> + <code>@agua/contracts/dto</code> &nbsp;|&nbsp; 35 endpoints disponibles
+</div>
+
+</body>
+</html>
