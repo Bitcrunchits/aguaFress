@@ -2,7 +2,7 @@ import { GatewayTimeoutException, Logger } from '@nestjs/common';
 import { NEVER, of, throwError } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
 import type { ClientProxy } from '@nestjs/microservices';
-import { ENTREGAS_CLIENT, NOTIFICATIONS_CLIENT, ORDERS_CLIENT, USUARIO_CLIENT } from '../src/tcp/tcp-clients.module';
+import { ENTREGAS_CLIENT, NOTIFICATIONS_CLIENT, ORDERS_CLIENT, PRODUCTS_CLIENT, USUARIO_CLIENT } from '../src/tcp/tcp-clients.module';
 import { TcpDispatcherService, type TcpCommandPayload } from '../src/tcp/tcp-dispatcher.service';
 
 describe('TcpDispatcherService', () => {
@@ -19,21 +19,24 @@ describe('TcpDispatcherService', () => {
     ordersClient: jest.Mocked<Pick<ClientProxy, 'send' | 'emit'>>;
     notificationsClient: jest.Mocked<Pick<ClientProxy, 'send' | 'emit'>>;
     entregasClient: jest.Mocked<Pick<ClientProxy, 'send' | 'emit'>>;
+    productsClient: jest.Mocked<Pick<ClientProxy, 'send' | 'emit'>>;
   } {
     const usuarioClient = createClient();
     const ordersClient = createClient();
     const notificationsClient = createClient();
     const entregasClient = createClient();
+    const productsClient = createClient();
     const configService = { get: jest.fn().mockReturnValue(tcpTimeoutMs) } as unknown as ConfigService;
     const dispatcher = new TcpDispatcherService(
       usuarioClient as unknown as ClientProxy,
       ordersClient as unknown as ClientProxy,
       notificationsClient as unknown as ClientProxy,
       entregasClient as unknown as ClientProxy,
+      productsClient as unknown as ClientProxy,
       configService,
     );
 
-    return { dispatcher, usuarioClient, ordersClient, notificationsClient, entregasClient };
+    return { dispatcher, usuarioClient, ordersClient, notificationsClient, entregasClient, productsClient };
   }
 
   const payload: TcpCommandPayload = {
@@ -66,6 +69,14 @@ describe('TcpDispatcherService', () => {
     expect(ENTREGAS_CLIENT).not.toBe(USUARIO_CLIENT);
     expect(ENTREGAS_CLIENT).not.toBe(ORDERS_CLIENT);
     expect(ENTREGAS_CLIENT).not.toBe(NOTIFICATIONS_CLIENT);
+  });
+
+  it('exports a PRODUCTS_CLIENT token separate from existing TCP clients', () => {
+    expect(PRODUCTS_CLIENT).toBe('PRODUCTS_CLIENT');
+    expect(PRODUCTS_CLIENT).not.toBe(USUARIO_CLIENT);
+    expect(PRODUCTS_CLIENT).not.toBe(ORDERS_CLIENT);
+    expect(PRODUCTS_CLIENT).not.toBe(NOTIFICATIONS_CLIENT);
+    expect(PRODUCTS_CLIENT).not.toBe(ENTREGAS_CLIENT);
   });
 
   it('routes orders actions to ORDERS_CLIENT', async () => {

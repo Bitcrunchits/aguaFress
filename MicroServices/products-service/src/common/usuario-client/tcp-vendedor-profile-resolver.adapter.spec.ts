@@ -51,4 +51,18 @@ describe('TcpVendedorProfileResolverAdapter', () => {
 
     await expect(adapter.resolveVendedorIdByAuthUserId('auth-user-1')).rejects.toThrow('TCP down');
   });
+
+  it('llama al pattern activo para resolver vendedor activo', async () => {
+    mockUsuarioClient.send.mockReturnValue(of({ vendedorId: 'vendedor-1' }));
+
+    const result = await adapter.resolveActiveVendedorIdByAuthUserId('auth-user-1');
+
+    expect(result).toBe('vendedor-1');
+    expect(mockUsuarioClient.send).toHaveBeenCalledWith(
+      'vendedores.resolve_active_profile_id',
+      expect.objectContaining({
+        user: expect.objectContaining({ sub: 'auth-user-1', role: 'vendedor' }),
+      }),
+    );
+  });
 });
