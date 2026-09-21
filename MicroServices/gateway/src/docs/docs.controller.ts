@@ -38,6 +38,9 @@ export class DocsController {
       url: '/api/openapi.json',
       proxyUrl: 'https://proxy.scalar.com',
       persistAuth: true,
+      authentication: {
+        preferredSecurityScheme: 'bearerAuth',
+      },
     })
   </script>
 </body>
