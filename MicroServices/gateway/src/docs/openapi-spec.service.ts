@@ -494,6 +494,39 @@ const SHARED_SCHEMAS: Record<string, Schema> = {
 
 type HttpMethod = 'get' | 'post' | 'patch' | 'delete';
 
+const API_DESCRIPTION = `AguaFress API Gateway expone el contrato HTTP operativo para autenticación, perfiles de usuario, vendedores, clientes, catálogo, carritos, pedidos, entregas y flujos de auditoría. El gateway es la entrada pública; los microservicios aguas abajo quedan detrás de TCP/colas.
+
+> **Autenticación persistente**: la doc usa Scalar con \`persistAuth\` activado, por lo que el token JWT queda guardado entre recargas y navegación. Alcanza con pegarlo una vez por rol (super_admin, vendedor o cliente); no hace falta volver a pegarlo en cada endpoint.
+
+## Inicio rápido en Scalar
+1. Llamar a \`POST /api/v1/auth/login\` con un usuario seed local.
+2. Copiar \`token\` de \`LoginResponse\`.
+3. Usar Authorize de Scalar con el security scheme \`bearerAuth\`. Pegar solo el valor del JWT; Scalar envía \`Authorization: Bearer <token>\`.
+4. Verificar la sesión con \`GET /api/v1/users/profile\`.
+
+## Autenticación y roles
+Los endpoints protegidos declaran \`bearerAuth\` y requieren un JWT. Los endpoints restringidos por rol indican \`super_admin\`, \`vendedor\` o \`cliente\` en la descripción de la operación. La identidad sale del JWT; no enviar \`userId\` en el body de las requests.
+
+## Formas de respuesta
+Las operaciones exitosas devuelven el DTO documentado directamente. Las listas paginadas devuelven \`{ data, pagination }\`. Los comandos asíncronos devuelven datos de seguimiento como \`jobId\`, \`trackingId\`, \`status\` y \`statusUrl\`. Los errores usan \`ErrorResponse\` con \`statusCode\`, \`message\`, \`error\` opcional y \`details\` opcional.
+
+## Credenciales seed de dev/demo local
+Estas credenciales son solo para los seeds locales de Docker en \`docker/init-db/*.sql\`; nunca reutilizarlas en producción.
+
+| Rol | Email | Contraseña |
+| --- | --- | --- |
+| super_admin | \`admin@aguafress.com\` | \`admin123\` |
+| vendedor | \`juan@aguafress.com\` | \`admin123\` |
+| cliente | \`pedro@aguafress.com\` | \`admin123\` |
+
+## Flujos principales por actor
+1. Super admin: login, revisar dashboard, aprobar/gestionar vendedores, inspeccionar logs de auditoría.
+2. Vendedor: login, mantener perfil, gestionar catálogo, links QR/invitación, clientes, entregas y ciclo de vida de pedidos.
+3. Cliente: login o registro por invitación, seleccionar proveedor, explorar catálogo, gestionar carrito, crear pedidos y seguir el estado asíncrono.
+
+## Patrón de rutas
+Todas las acciones del gateway usan \`/api/v1/{service}/{action}\`. Los parámetros de query/path están documentados por operación; por ejemplo \`GET /api/v1/vendedores/get-by-id?id=uuid\`.`;
+
 function inferMethod(action: string, actionName: string): HttpMethod {
   // Explicit method from action registry
   if (actionName.startsWith('create') || actionName.startsWith('register')) return 'post';
@@ -643,12 +676,7 @@ export class OpenApiSpecService {
       openapi: '3.0.3',
       info: {
         title: 'AguaFress API Gateway',
-        description: `API Gateway para AguaFress — plataforma de pedidos y gestión para distribuidores de agua y soda.
-        
-**Autenticación**: Los endpoints protegidos requieren un JWT en el header \`Authorization: Bearer <token>\`.
-Los roles se especifican por endpoint: \`super_admin\`, \`vendedor\`.
-
-**IDs en parámetros de ruta**: Se pasan como query params. Ej: \`GET /api/v1/vendedores/get-by-id?id=uuid\``,
+        description: API_DESCRIPTION,
         version: '1.0.0',
       },
       servers: [
