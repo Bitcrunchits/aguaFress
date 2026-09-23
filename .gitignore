@@ -6,7 +6,9 @@ coverage/
 **/.env
 *.log
 .DS_Store
-
+AGENTS.md
+.gga
+ARCHITECTURE.md
 # SDD artifacts
 .atl/
 
