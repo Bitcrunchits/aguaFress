@@ -266,22 +266,6 @@ services:
         condition: service_started
     restart: unless-stopped
 
-  # ─── frontend-web ───────────────────────────────────────────
-  frontend:
-    build:
-      context: .
-      dockerfile: packages/frontend/Dockerfile
-    container_name: agua-frontend
-    ports:
-      - "5173:80"
-    environment:
-      TZ: America/Argentina/Buenos_Aires
-      VITE_API_URL: /api/v1
-    depends_on:
-      gateway:
-        condition: service_started
-    restart: unless-stopped
-
 volumes:
   agua-postgres-data:
   agua-redis-data:

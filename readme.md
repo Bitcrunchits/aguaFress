@@ -2,7 +2,7 @@
 
 AguaFress es un backend de microservicios para pedidos, gestion de vendedores/clientes y operacion logistica de distribuidores de agua y soda. El backend esta construido con NestJS, TypeScript, pnpm workspaces, PostgreSQL, MongoDB, Redis, Prisma y Docker Compose.
 
-> Estado actual de `main`: backend-first. El frontend React fue excluido de esta rama; el frontend futuro sera Angular. No documentar ni depender de `packages/frontend` para levantar el backend.
+> Estado actual de `main`: backend-first. El frontend React fue excluido de esta rama; el frontend futuro sera Angular.
 
 ## Indice
 
@@ -94,20 +94,29 @@ pnpm install --frozen-lockfile
 
 ## Variables de entorno
 
-El compose local usa `.env` en varios servicios. No commitear secretos reales.
+El compose local usa `.env` para inyectar configuracion explicita por servicio. No commitear secretos reales.
 
 Minimo requerido para levantar el backend desde Compose:
 
 ```env
+POSTGRES_PASSWORD="postgres"
+DATABASE_URL="postgresql://postgres:postgres@postgres:5432/agua"
+PRODUCTS_DATABASE_URL="postgresql://postgres:postgres@postgres:5432/agua_products"
 ORDERS_DATABASE_URL="postgresql://postgres:postgres@postgres:5432/agua_orders"
+ENTREGAS_DATABASE_URL="postgresql://postgres:postgres@postgres:5432/agua_entregas"
+JWT_SECRET="local-jwt-secret-minimo-32-caracteres-123"
+JWT_REFRESH_SECRET="local-refresh-secret-minimo-32-caracteres-123"
 ```
 
 Variables relevantes documentadas por `docker-compose.yml`:
 
 | Variable | Uso |
 | --- | --- |
-| `DATABASE_URL` | Prisma en servicios PostgreSQL; Compose la sobreescribe por servicio salvo `orders-service`. |
+| `POSTGRES_PASSWORD` | Password local de PostgreSQL usado por Compose y jobs init/seed. |
+| `DATABASE_URL` | Prisma en `usuario-service`. |
+| `PRODUCTS_DATABASE_URL` | Prisma en `products-service`. |
 | `ORDERS_DATABASE_URL` | Requerida por `orders-service` en Compose. |
+| `ENTREGAS_DATABASE_URL` | Prisma en `entregas-service`. |
 | `JWT_SECRET`, `JWT_REFRESH_SECRET` | Firma y refresh de JWT en desarrollo local. |
 | `JWT_EXPIRES_IN`, `JWT_REFRESH_EXPIRES_IN` | Expiracion de tokens. |
 | `PORT` | Puerto HTTP del gateway. Default Compose: `3000`. |
@@ -120,30 +129,32 @@ Para desarrollo local fuera de Docker, usar hosts locales, por ejemplo PostgreSQ
 
 ## Docker desde cero
 
-> Importante: `docker-compose.yml` todavia contiene un servicio `frontend` que apunta a `packages/frontend/Dockerfile`, pero ese Dockerfile no existe en `main`. Para backend, levantá explicitamente los servicios backend.
-
 1. Preparar `.env`.
 
 ```bash
 cp .env.example .env
 ```
 
-2. Asegurar al menos `ORDERS_DATABASE_URL` en `.env`.
+2. Reemplazar todos los placeholders `<...>` antes de levantar servicios.
 
 ```env
+POSTGRES_PASSWORD="postgres"
+DATABASE_URL="postgresql://postgres:postgres@postgres:5432/agua"
+PRODUCTS_DATABASE_URL="postgresql://postgres:postgres@postgres:5432/agua_products"
 ORDERS_DATABASE_URL="postgresql://postgres:postgres@postgres:5432/agua_orders"
+ENTREGAS_DATABASE_URL="postgresql://postgres:postgres@postgres:5432/agua_entregas"
 ```
 
 3. Construir imagenes backend.
 
 ```bash
-docker compose build postgres redis mongo usuario-service products-service orders-service entregas-service notifications-service gateway
+docker compose build
 ```
 
 4. Levantar infraestructura y servicios backend.
 
 ```bash
-docker compose up -d postgres redis mongo usuario-service products-service orders-service entregas-service notifications-service gateway
+docker compose up -d
 ```
 
 5. Verificar estado.
@@ -325,8 +336,7 @@ packages:
 
 | Sintoma | Causa probable | Accion |
 | --- | --- | --- |
-| `docker compose up -d` falla por `packages/frontend/Dockerfile` | `main` no contiene frontend React, pero Compose conserva el servicio `frontend`. | Levantar solo servicios backend explicitamente. |
-| `ORDERS_DATABASE_URL must be set in .env` | Compose exige esa variable para `orders-service`. | Agregar `ORDERS_DATABASE_URL="postgresql://postgres:postgres@postgres:5432/agua_orders"`. |
+| `POSTGRES_PASSWORD must be set in .env` o `*_DATABASE_URL must be set in .env` | Compose exige variables explicitas para evitar secretos hardcodeados. | Copiar `.env.example` a `.env` y reemplazar todos los placeholders `<...>`. |
 | Prisma falla en Alpine por OpenSSL | Prisma necesita librerias OpenSSL. | Los Dockerfiles PostgreSQL ya instalan `openssl`; revisar imagen si se cambia la base. |
 | Gateway levanta pero no responde un dominio | Servicio TCP downstream no inicio o host/puerto mal configurado. | Revisar `docker compose ps` y `docker compose logs -f <servicio>`. |
 | Cambios de schema no aparecen | Prisma Client desactualizado o DB sin push/migrate. | Ejecutar `prisma:generate` y `prisma:push`/`prisma:migrate` segun servicio. |
