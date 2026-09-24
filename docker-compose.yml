@@ -25,9 +25,9 @@ services:
     ports:
       - "5433:5432" 
     environment:
-      # TODO [AG-174]: Move Postgres credentials to .env / secrets before production.
+      # LOCAL DEVELOPMENT ONLY: credentials come from the ignored root .env.
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
       POSTGRES_DB: agua
       TZ: America/Argentina/Buenos_Aires
     volumes:
@@ -44,8 +44,8 @@ services:
     image: postgres:15-alpine
     container_name: agua-postgres-init
     environment:
-      # TODO [AG-174]: Reuse POSTGRES_PASSWORD from .env instead of duplicating it here.
-      PGPASSWORD: postgres
+      # LOCAL DEVELOPMENT ONLY: uses the same local Postgres password as postgres.
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
     volumes:
       - ./docker/init-db:/docker-entrypoint-initdb.d:ro
     command: >
@@ -61,8 +61,8 @@ services:
     image: postgres:15-alpine
     container_name: agua-products-seed
     environment:
-      # TODO [AG-174]: Reuse POSTGRES_PASSWORD from .env instead of duplicating it here.
-      PGPASSWORD: postgres
+      # LOCAL DEVELOPMENT ONLY: uses the same local Postgres password as postgres.
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
     volumes:
       - ./docker/init-db:/docker-entrypoint-initdb.d:ro
     command: >
@@ -112,16 +112,13 @@ services:
     container_name: agua-usuario-service
     ports:
       - "3011"
-    env_file:
-      - .env
     environment:
       TZ: America/Argentina/Buenos_Aires
-      # TODO [AG-174]: Move usuario-service DATABASE_URL to a service-specific env variable.
-      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/agua"
+      # LOCAL DEVELOPMENT ONLY: value comes from the ignored root .env.
+      DATABASE_URL: "${DATABASE_URL:?DATABASE_URL must be set in .env}"
       TCP_PORT: "3011"
-      # TODO [AG-174]: Move JWT secrets to .env / secrets before production.
-      JWT_SECRET: "aguafress-dev-secret-no-usar-en-prod"
-      JWT_REFRESH_SECRET: "auth-dev-refresh-secret-min-32!!"
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET required}"
+      JWT_REFRESH_SECRET: "${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET required}"
       JWT_EXPIRES_IN: "24h"
       JWT_REFRESH_EXPIRES_IN: "7d"
       UPLOAD_DIR: "/app/public/uploads"
@@ -142,13 +139,11 @@ services:
       context: .
       dockerfile: MicroServices/products-service/Dockerfile
     container_name: agua-products-service
-    env_file:
-      - .env
     environment:
       TZ: America/Argentina/Buenos_Aires
       TCP_PORT: "3013"
-      # TODO [AG-174]: Move products-service DATABASE_URL to a service-specific env variable.
-      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/agua_products"
+      # LOCAL DEVELOPMENT ONLY: value comes from the ignored root .env.
+      DATABASE_URL: "${PRODUCTS_DATABASE_URL:?PRODUCTS_DATABASE_URL must be set in .env}"
       USUARIO_SERVICE_HOST: usuario-service
       USUARIO_SERVICE_TCP_PORT: "3011"
       UPLOAD_DIR: "/app/public/uploads"
@@ -170,8 +165,6 @@ services:
       dockerfile: MicroServices/orders-service/Dockerfile
     container_name: agua-orders-service
     # No HTTP port — TCP only (internal Docker network)
-    env_file:
-      - .env
     environment:
       TZ: America/Argentina/Buenos_Aires
       TCP_PORT: "3014"
@@ -196,13 +189,11 @@ services:
       dockerfile: MicroServices/entregas-service/Dockerfile
     container_name: agua-entregas-service
     # No HTTP port — TCP only (internal Docker network)
-    env_file:
-      - .env
     environment:
       TZ: America/Argentina/Buenos_Aires
       TCP_PORT: "3015"
-      # TODO [AG-174]: Move entregas-service DATABASE_URL to a service-specific env variable.
-      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/agua_entregas"
+      # LOCAL DEVELOPMENT ONLY: value comes from the ignored root .env.
+      DATABASE_URL: "${ENTREGAS_DATABASE_URL:?ENTREGAS_DATABASE_URL must be set in .env}"
       REDIS_URL: "redis://redis:6379"
       USUARIO_SERVICE_HOST: usuario-service
       USUARIO_SERVICE_TCP_PORT: "3011"
@@ -238,16 +229,12 @@ services:
     container_name: agua-gateway
     ports:
       - "3000:3000"
-    # DEVELOPMENT ONLY:
-    # Reuses the root .env for local convenience while we iterate quickly.
-    # Before production, split gateway envs so it receives only gateway-owned
-    # config (PORT, JWT_SECRET, TCP hosts/ports, rate limits) and never domain
-    # DB credentials such as DATABASE_URL.
-    env_file:
-      - .env
+    # DEVELOPMENT ONLY: each variable is passed explicitly from the ignored
+    # root .env to avoid leaking domain DB credentials into the gateway.
     environment:
       TZ: America/Argentina/Buenos_Aires
       PORT: "3000"
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET required}"
       USUARIO_SERVICE_HOST: usuario-service
       USUARIO_SERVICE_TCP_PORT: "3011"
       ORDERS_SERVICE_HOST: orders-service
