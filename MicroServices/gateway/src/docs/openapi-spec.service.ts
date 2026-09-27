@@ -30,6 +30,11 @@ function oneOf(...schemas: Schema[]): Schema {
   return { oneOf: schemas };
 }
 
+function hasRequiredProperties(schema: Schema): boolean {
+  const required = schema.required;
+  return Array.isArray(required) && required.length > 0;
+}
+
 // ─── Shared Schemas (from @agua/contracts) ──────────────────────
 
 const SHARED_SCHEMAS: Record<string, Schema> = {
@@ -335,10 +340,10 @@ const SHARED_SCHEMAS: Record<string, Schema> = {
 
   CreateOrderRequest: obj({
     vendedorId: str('Selected provider scope validated before enqueue'),
-    metodoPago: str('Payment method'),
+    metodoPago: str('Único método de pago aceptado en el MVP', 'contra_entrega'),
     direccion: ref('#/components/schemas/DireccionEntrega'),
     observaciones: str('Optional notes'),
-  }, ['vendedorId', 'metodoPago']),
+  }, ['vendedorId', 'metodoPago', 'direccion']),
 
   AsyncAcceptedResponse: obj({
     jobId: str('Async job ID'),
@@ -458,6 +463,10 @@ const SHARED_SCHEMAS: Record<string, Schema> = {
     deleted: { type: 'boolean' },
   }, ['deleted']),
 
+  DeactivatedResponse: obj({
+    deactivated: { type: 'boolean', description: 'Siempre true — la baja es lógica (activo: false) y la fila no se elimina', example: true },
+  }, ['deactivated']),
+
   CategoriaResponse: obj({
     id: str('Categoría ID'),
     nombre: str('Nombre'),
@@ -487,6 +496,62 @@ const SHARED_SCHEMAS: Record<string, Schema> = {
   UpdateMarcaRequest: obj({
     nombre: str('Nombre de la marca'),
   }),
+
+  // ─── Pedidos ────────────────────────────────────────────────────
+
+  OrderItemResponse: obj({
+    productId: str('ID del producto (PRODUCTO.id). Es el `id` que devuelve products.create o products.list'),
+    nombre: str('Nombre del producto, copiado al momento de crear el pedido'),
+    cantidad: { type: 'integer', description: 'Unidades contratadas' },
+    precioUnitario: { type: 'number', description: 'Precio unitario sin IVA, congelado al crear el pedido' },
+  }, ['productId', 'nombre', 'cantidad', 'precioUnitario']),
+
+  OrderResponse: obj({
+    id: str('ID del pedido (ORDER.id, UUID). Es el `id` que exigen orders/get-by-id, orders/status-update, orders/cancel y orders/confirm'),
+    pedidoNumero: str('Número de pedido legible, único por vendedor'),
+    clienteId: str('AUTH_USER.id del cliente (el `sub` del JWT), NO CLIENTE.id'),
+    vendedorId: str('ID del perfil del vendedor (VENDEDOR.id) que atiende el pedido'),
+    items: arr(ref('#/components/schemas/OrderItemResponse')),
+    totalSinIva: { type: 'number', description: 'Total sin IVA' },
+    iva: { type: 'number', description: 'Monto del IVA' },
+    total: { type: 'number', description: 'Total a cobrar' },
+    estado: str('Estado del pedido: pendiente | confirmado | en_camino | entregado | cancelado | vencido'),
+    metodoPago: str('Método de pago. En el MVP solo se acepta contra_entrega', 'contra_entrega'),
+    direccion: ref('#/components/schemas/DireccionEntrega'),
+    observaciones: str('Notas opcionales del cliente'),
+    createdAt: str('ISO 8601'),
+    updatedAt: str('ISO 8601'),
+  }, ['id', 'pedidoNumero', 'clienteId', 'vendedorId', 'items', 'totalSinIva', 'iva', 'total', 'estado', 'metodoPago', 'direccion', 'createdAt', 'updatedAt']),
+
+  UpdateOrderStatusRequest: obj({
+    id: str('ID del pedido (ORDER.id). Es el `id` de cada elemento devuelto por orders/list'),
+    estado: str('Nuevo estado: pendiente | confirmado | en_camino | entregado | cancelado | vencido. El servicio rechaza transiciones inválidas'),
+    notas: str('Nota interna opcional'),
+  }, ['id', 'estado']),
+
+  CancelOrderRequest: obj({
+    id: str('ID del pedido (ORDER.id). Es el `id` de cada elemento devuelto por orders/list'),
+    motivo: str('Motivo opcional de la cancelación'),
+  }, ['id']),
+
+  ConfirmOrderRequest: obj({
+    id: str('ID del pedido (ORDER.id). Es el `id` de cada elemento devuelto por orders/list'),
+  }, ['id']),
+
+  OrderJobStatusResponse: obj({
+    jobId: str('ID interno del comando asíncrono'),
+    trackingId: str('Identificador del comando, con forma de UUID. Es el `id` que espera orders/job-status'),
+    clienteId: str('AUTH_USER.id del cliente (el `sub` del JWT), NO CLIENTE.id'),
+    idempotencyKey: str('Clave de idempotencia enviada en el header `Idempotency-Key` al crear el pedido'),
+    vendedorId: str('ID del perfil del vendedor (VENDEDOR.id) que atiende el pedido'),
+    status: str('Estado del comando: PENDING | PROCESSING | RETRYING | COMPLETED | FAILED | DEAD_LETTER'),
+    orderId: str('ID del pedido (ORDER.id) una vez que el comando termina bien'),
+    errorCode: str('Código de error, solo si el comando falló'),
+    errorMessage: str('Mensaje de error, solo si el comando falló'),
+    attempts: { type: 'integer', description: 'Intentos ejecutados hasta ahora' },
+    createdAt: str('ISO 8601'),
+    updatedAt: str('ISO 8601'),
+  }, ['jobId', 'trackingId', 'clienteId', 'idempotencyKey', 'status', 'attempts', 'createdAt', 'updatedAt']),
 };
 
 // ─── Action → HTTP method mapping ──────────────────────────────
@@ -524,7 +589,29 @@ Estas credenciales son solo para los seeds locales de Docker en \`docker/init-db
 3. Cliente: login o registro por invitación, seleccionar proveedor, explorar catálogo, gestionar carrito, crear pedidos y seguir el estado asíncrono.
 
 ## Patrón de rutas
-Todas las acciones del gateway usan \`/api/v1/{service}/{action}\`. Los parámetros de query/path están documentados por operación; por ejemplo \`GET /api/v1/vendedores/get-by-id?id=uuid\`.`;
+Todas las acciones del gateway usan \`/api/v1/{service}/{action}\`, con el detalle de que algunas aceptan un id como último segmento de la ruta. Cada operación documenta si su id va por query o por path; por ejemplo \`GET /api/v1/products/get?id=<uuid>\` lo lleva por query y \`GET /api/v1/vendedores/get-by-id/<uuid>\` por path.
+
+## Los tres ids y de dónde sale cada uno
+La API maneja tres identificadores distintos y ninguno reemplaza a otro. Confundirlos produce \`id must be a UUID\` o \`Entidad no encontrada\`.
+
+| Id | Qué es | Dónde obtenerlo | Dónde NO se usa |
+| --- | --- | --- | --- |
+| \`sub\` (JWT) | \`AUTH_USER.id\` del usuario autenticado. El gateway lo inyecta desde el token y borra cualquier \`userId\` que venga en el body | El propio token; \`GET /api/v1/users/profile\` devuelve \`id\` | Nunca se envía como parámetro de query ni de path |
+| \`vendedorId\` | \`VENDEDOR.id\`: el **perfil de dominio** del vendedor, usado para las comprobaciones de pertenencia del catálogo | \`vendedorId\` de cada producto en \`GET /api/v1/products/list\`; \`vendedorId\` de \`RegisterResponse\`; \`id\` de \`VendedorListItem\`; para clientes, \`providers[].id\` de \`GET /api/v1/clientes/providers\` | No es el \`sub\` del JWT. En \`products.create/update/delete\` y \`categories.create/update/delete\` y \`brands.create/update/delete\` **no se envía**: el servicio lo resuelve desde el token |
+| \`id\` de entidad | La fila concreta: \`CATEGORIA.id\`, \`MARCA.id\`, \`PRODUCTO.id\`, \`ORDER.id\`, \`CLIENTE.id\`, \`QR_CODE.id\`, \`LINK_INVITACION.id\` | El \`id\` devuelto por el \`create\` o el \`list\` de esa misma familia | No es un \`AUTH_USER.id\` ni un \`VENDEDOR.id\` salvo que la operación lo diga explícitamente |
+
+## Regla de URL: \`?id=<uuid>\` contra \`/<uuid>\`
+Las dos formas de pasar un id **no son intercambiables**; cada operación declara la suya:
+
+| Forma | Cómo se invoca | Operaciones que la usan |
+| --- | --- | --- |
+| Query string | \`GET /api/v1/products/get?id=<uuid>\` | products.get/update/delete, categories.update/delete, brands.update/delete, orders.get-by-id, orders.job-status |
+| Path | \`GET /api/v1/vendedores/get-by-id/<uuid>\` | vendedores.get_by_id, vendedores.change_estado, clientes.get_by_id, clientes.update, clientes.reassign, clientes.own_*, qr.*/deactivate, link_invitacion.*/deactivate |
+
+Un id en la ruta que no sea un UUID se rechaza con \`Invalid entity ID in URL path\` antes de llegar al microservicio. Enviar un \`vendedorId\` donde se espera el \`id\` de la entidad produce \`id must be a UUID\` o \`Entidad no encontrada\`.
+
+## Bajas lógicas de catálogo
+\`categories.delete\` y \`brands.delete\` no borran la fila: la marcan con \`activo: false\` y responden \`{ "deactivated": true }\`. La categoría o marca desaparece de \`categories.list\` y \`brands.list\` (que solo listan \`activo: true\`), pero los productos que la referencian **no se modifican**: siguen apuntando al mismo \`categoriaId\`/\`marcaId\`. El \`onDelete: SetNull\` de la base solo se aplicaría a un borrado físico, que estas acciones no hacen.`;
 
 function inferMethod(action: string, actionName: string): HttpMethod {
   // Explicit method from action registry
@@ -542,12 +629,102 @@ interface ActionDoc {
   method: HttpMethod;
   pathParams?: string[];
   queryParams?: string[];
+  /** Real description per parameter, keyed by parameter name. Overrides DEFAULT_PARAM_DOCS. */
+  paramDocs?: Record<string, string>;
+  /** Runnable payload emitted as requestBody.content['application/json'].example. */
+  bodyExample?: Record<string, unknown>;
   bodySchema?: string;
   responseSchema: string;
   isArray?: boolean;
   paginated?: boolean;
   roles?: string[];
 }
+
+// ─── Parameter descriptions (three-id model) ────────────────────
+// Every parameter must state which id it expects and where the caller
+// reads that value from. See the "Los tres ids" section in API_DESCRIPTION.
+
+const NOT_AUTH_USER_ID = 'No es el `sub` del JWT (AUTH_USER.id).';
+
+const PAGE_PARAM_DOC = 'Número de página. Empieza en 1.';
+const LIMIT_PARAM_DOC = 'Cantidad máxima de elementos por página.';
+
+const VENDEDOR_PROFILE_ID_PARAM_DOC =
+  'ID del perfil del vendedor (VENDEDOR.id). ' + NOT_AUTH_USER_ID +
+  ' Aparece como `vendedorId` en cada producto de `GET /api/v1/products/list`.';
+
+const CATALOG_VENDEDOR_ID_PARAM_DOC =
+  'ID del perfil del vendedor (VENDEDOR.id) cuyo catálogo se lista. ' + NOT_AUTH_USER_ID +
+  ' Obligatorio en llamadas anónimas. Con rol `vendedor` se puede omitir: el servicio lo resuelve' +
+  ' desde el token y rechaza cualquier valor que no sea el propio.';
+
+const PROVIDER_VENDEDOR_ID_PARAM_DOC =
+  'Proveedor seleccionado (VENDEDOR.id) cuya cartera se opera. ' + NOT_AUTH_USER_ID +
+  ' Se obtiene de `providers[].id` o de `defaultVendedorId` en `GET /api/v1/clientes/providers`.';
+
+const CATEGORY_ID_PARAM_DOC =
+  'ID de la categoría (CATEGORIA.id, UUID). Es el `id` que devuelve `POST /api/v1/categories/create`' +
+  ' o cada elemento de `GET /api/v1/categories/list`. No es un VENDEDOR.id ni el `sub` del JWT.';
+
+const BRAND_ID_PARAM_DOC =
+  'ID de la marca (MARCA.id, UUID). Es el `id` que devuelve `POST /api/v1/brands/create`' +
+  ' o cada elemento de `GET /api/v1/brands/list`. No es un VENDEDOR.id ni el `sub` del JWT.';
+
+const PRODUCT_ID_PARAM_DOC =
+  'ID del producto (PRODUCTO.id, UUID). Es el `id` que devuelve `POST /api/v1/products/create`' +
+  ' o cada elemento de `GET /api/v1/products/list`.';
+
+const ORDER_ID_PARAM_DOC =
+  'ID del pedido (ORDER.id, UUID). Es el campo `id` de cada elemento de `GET /api/v1/orders/list`' +
+  ' y de la respuesta de `POST /api/v1/orders/create`. No es un VENDEDOR.id ni el `sub` del JWT.';
+
+const ORDER_TRACKING_ID_PARAM_DOC =
+  'Identificador del comando asíncrono (`trackingId`), con forma de UUID. Es el `trackingId` devuelto' +
+  ' por `POST /api/v1/orders/create`, NO el `id` del pedido. Solo `super_admin` y el cliente dueño' +
+  ' del pedido pueden consultarlo.';
+
+const VENDEDOR_ROW_ID_PARAM_DOC =
+  'ID del perfil del vendedor (VENDEDOR.id). ' + NOT_AUTH_USER_ID +
+  ' Es el `id` de cada elemento de `GET /api/v1/vendedores/list`.';
+
+const CLIENTE_ROW_ID_PARAM_DOC =
+  'ID del perfil del cliente (CLIENTE.id). ' + NOT_AUTH_USER_ID +
+  ' Es el `id` de cada elemento de `GET /api/v1/clientes/list` o `GET /api/v1/clientes/cartera`.';
+
+const QR_ROW_ID_PARAM_DOC =
+  'ID del código QR (QR_CODE.id). Es el `id` de cada elemento de `GET /api/v1/qr/vendor/list`' +
+  ' o `GET /api/v1/super-admin/qr-codes`. No es un VENDEDOR.id.';
+
+const INVITATION_LINK_ID_PARAM_DOC =
+  'ID del link de invitación (LINK_INVITACION.id). Es el `id` de cada elemento de' +
+  ' `GET /api/v1/link-invitacion/vendor/list` o `GET /api/v1/super-admin/link-invitacion`.';
+
+const VENDEDOR_STATUS_PARAM_DOC =
+  'Filtra por estado del vendedor: pendiente | activo | inactivo | bloqueado.';
+
+const VENDEDOR_SEARCH_PARAM_DOC =
+  'Texto libre (máximo 100 caracteres) que se compara con nombre, apellido y empresa, sin distinguir mayúsculas.';
+
+const CLIENTE_SEARCH_PARAM_DOC =
+  'Texto libre (máximo 100 caracteres) que se compara con nombre, apellido y DNI, sin distinguir mayúsculas.';
+
+const PRODUCT_SEARCH_PARAM_DOC =
+  'Texto libre (máximo 200 caracteres) que se compara con el nombre del producto, sin distinguir mayúsculas.';
+
+const PRODUCT_CATEGORY_FILTER_PARAM_DOC =
+  'Filtra por una categoría (CATEGORIA.id, UUID). Es el `id` de cada elemento de `GET /api/v1/categories/list`.';
+
+const PRODUCT_AVAILABLE_FILTER_PARAM_DOC =
+  'Cuando es `true`, lista solo productos activos con stock mayor a 0.';
+
+/** Applied when an operation declares a parameter but no explicit `paramDocs` entry. */
+const DEFAULT_PARAM_DOCS: Record<string, string> = {
+  page: PAGE_PARAM_DOC,
+  limit: LIMIT_PARAM_DOC,
+  vendedorId: VENDEDOR_PROFILE_ID_PARAM_DOC,
+  estado: VENDEDOR_STATUS_PARAM_DOC,
+  id: 'ID de la entidad (UUID) sobre la que opera esta acción.',
+};
 
 const ACTIONS_DOC: Record<string, ActionDoc> = {
   'auth.login': { summary: 'Iniciar sesión', method: 'post', bodySchema: 'LoginRequest', responseSchema: 'LoginResponse' },
@@ -564,10 +741,10 @@ const ACTIONS_DOC: Record<string, ActionDoc> = {
   'users.profile': { summary: 'Obtener perfil propio', method: 'get', responseSchema: 'UserProfile' },
   'users.profile_update': { summary: 'Actualizar perfil propio', method: 'patch', bodySchema: 'UpdateProfileRequest', responseSchema: 'UserProfile' },
 
-  'vendedores.list': { summary: 'Listar vendedores (admin)', method: 'get', queryParams: ['page', 'limit', 'search', 'estado'], responseSchema: 'VendedorListItem', isArray: true, paginated: true, roles: ['super_admin'] },
-  'vendedores.get_by_id': { summary: 'Obtener vendedor por ID', method: 'get', pathParams: ['id'], responseSchema: 'VendedorListItem', roles: ['super_admin'] },
+  'vendedores.list': { summary: 'Listar vendedores (admin)', method: 'get', queryParams: ['page', 'limit', 'search', 'estado'], paramDocs: { search: VENDEDOR_SEARCH_PARAM_DOC }, responseSchema: 'VendedorListItem', isArray: true, paginated: true, roles: ['super_admin'] },
+  'vendedores.get_by_id': { summary: 'Obtener vendedor por ID', description: 'El id viaja en el path, no en la query: `GET /api/v1/vendedores/get-by-id/<uuid>`.', method: 'get', pathParams: ['id'], paramDocs: { id: VENDEDOR_ROW_ID_PARAM_DOC }, responseSchema: 'VendedorListItem', roles: ['super_admin'] },
   // 'vendedores.update': { summary: 'Actualizar vendedor', method: 'patch', pathParams: ['id'], bodySchema: 'UpdateVendedorRequest', responseSchema: 'VendedorListItem', roles: ['super_admin'] }, // deprecated: vendor self-manages via profile/update
-  'vendedores.change_estado': { summary: 'Cambiar estado de vendedor', method: 'patch', pathParams: ['id'], bodySchema: 'ChangeEstadoRequest', responseSchema: 'VendedorListItem', roles: ['super_admin'] },
+  'vendedores.change_estado': { summary: 'Cambiar estado de vendedor', method: 'patch', pathParams: ['id'], paramDocs: { id: VENDEDOR_ROW_ID_PARAM_DOC }, bodySchema: 'ChangeEstadoRequest', responseSchema: 'VendedorListItem', roles: ['super_admin'] },
   'vendedores.profile': { summary: 'Obtener mi perfil (vendedor)', method: 'get', responseSchema: 'VendedorProfile', roles: ['vendedor'] },
   'vendedores.profile_update': { summary: 'Actualizar mi perfil (vendedor)', description: 'El vendedor actualiza sus propios datos: nombre, apellido, dni, cuil, cuit, teléfono, empresa, logo, ciudad, zona de entrega.', method: 'patch', bodySchema: 'UpdateVendedorProfileRequest', responseSchema: 'VendedorProfile', roles: ['vendedor'] },
 
@@ -577,54 +754,59 @@ const ACTIONS_DOC: Record<string, ActionDoc> = {
   'super_admin.audit_log': { summary: 'Obtener logs de auditoría', method: 'get', queryParams: ['page', 'limit'], responseSchema: 'AuditLogItem', isArray: true, paginated: true, roles: ['super_admin'] },
   'super_admin.qr_codes': { summary: 'Listar QR codes de un vendedor', method: 'get', queryParams: ['vendedorId', 'page', 'limit'], responseSchema: 'QRCodeItem', isArray: true, paginated: true, roles: ['super_admin'] },
   'super_admin.link_invitacion': { summary: 'Listar links de invitación de un vendedor', method: 'get', queryParams: ['vendedorId', 'page', 'limit'], responseSchema: 'LinkInvitacionItem', isArray: true, paginated: true, roles: ['super_admin'] },
-  'super_admin.vendedores': { summary: 'Listar vendedores (admin)', description: 'Alias de vendedores.list', method: 'get', queryParams: ['page', 'limit', 'search', 'estado'], responseSchema: 'VendedorListItem', isArray: true, paginated: true, roles: ['super_admin'] },
+  'super_admin.vendedores': { summary: 'Listar vendedores (admin)', description: 'Alias de vendedores.list', method: 'get', queryParams: ['page', 'limit', 'search', 'estado'], paramDocs: { search: VENDEDOR_SEARCH_PARAM_DOC }, responseSchema: 'VendedorListItem', isArray: true, paginated: true, roles: ['super_admin'] },
 
-  'clientes.list': { summary: 'Listar clientes (admin)', method: 'get', queryParams: ['page', 'limit', 'search'], responseSchema: 'ClienteListItem', isArray: true, paginated: true, roles: ['super_admin'] },
-  'clientes.get_by_id': { summary: 'Obtener cliente por ID', method: 'get', pathParams: ['id'], responseSchema: 'ClienteListItem', roles: ['super_admin'] },
-  'clientes.update': { summary: 'Actualizar cliente', method: 'patch', pathParams: ['id'], bodySchema: 'UpdateClienteRequest', responseSchema: 'ClienteListItem', roles: ['super_admin'] },
-  'clientes.reassign': { summary: 'Reasignar cliente a otro vendedor', method: 'patch', pathParams: ['id'], bodySchema: 'ReasignarVendedorRequest', responseSchema: 'ClienteListItem', roles: ['super_admin'] },
+  'clientes.list': { summary: 'Listar clientes (admin)', method: 'get', queryParams: ['page', 'limit', 'search'], paramDocs: { search: CLIENTE_SEARCH_PARAM_DOC }, responseSchema: 'ClienteListItem', isArray: true, paginated: true, roles: ['super_admin'] },
+  'clientes.get_by_id': { summary: 'Obtener cliente por ID', description: 'El id viaja en el path, no en la query: `GET /api/v1/clientes/get-by-id/<uuid>`.', method: 'get', pathParams: ['id'], paramDocs: { id: CLIENTE_ROW_ID_PARAM_DOC }, responseSchema: 'ClienteListItem', roles: ['super_admin'] },
+  'clientes.update': { summary: 'Actualizar cliente', method: 'patch', pathParams: ['id'], paramDocs: { id: CLIENTE_ROW_ID_PARAM_DOC }, bodySchema: 'UpdateClienteRequest', responseSchema: 'ClienteListItem', roles: ['super_admin'] },
+  'clientes.reassign': { summary: 'Reasignar cliente a otro vendedor', method: 'patch', pathParams: ['id'], paramDocs: { id: CLIENTE_ROW_ID_PARAM_DOC }, bodySchema: 'ReasignarVendedorRequest', responseSchema: 'ClienteListItem', roles: ['super_admin'] },
   'clientes.providers': { summary: 'Listar proveedores disponibles del cliente', description: 'Lista proveedores desde RELACION_CARTERA activa usando userId/role del JWT.', method: 'get', responseSchema: 'ClienteProvidersResponse', roles: ['cliente'] },
   'clientes.providers_select': { summary: 'Seleccionar proveedor activo del cliente', description: 'Valida que vendedorId pertenezca a una RELACION_CARTERA activa para el cliente autenticado.', method: 'post', bodySchema: 'SelectClienteProviderRequest', responseSchema: 'SelectClienteProviderResponse', roles: ['cliente'] },
   'clientes.provider_add': { summary: 'Agregar proveedor activo a cliente', description: 'SUPER_ADMIN agrega una relación CLIENTE↔VENDEDOR activa; actorUserId sale del JWT.', method: 'post', bodySchema: 'AddClienteProviderRequest', responseSchema: 'ClienteProviderResponse', roles: ['super_admin'] },
-  'clientes.cartera': { summary: 'Obtener mis clientes (vendedor)', method: 'get', queryParams: ['page', 'limit', 'search'], responseSchema: 'ClienteListItem', isArray: true, paginated: true, roles: ['vendedor'] },
-  'clientes.own_get_by_id': { summary: 'Obtener cliente propio por ID', method: 'get', pathParams: ['id'], responseSchema: 'ClienteListItem', roles: ['vendedor'] },
-  'clientes.own_update': { summary: 'Actualizar cliente propio', method: 'patch', pathParams: ['id'], bodySchema: 'UpdateClienteVendedorRequest', responseSchema: 'ClienteListItem', roles: ['vendedor'] },
+  'clientes.cartera': { summary: 'Obtener mis clientes (vendedor)', method: 'get', queryParams: ['page', 'limit', 'search'], paramDocs: { search: CLIENTE_SEARCH_PARAM_DOC }, responseSchema: 'ClienteListItem', isArray: true, paginated: true, roles: ['vendedor'] },
+  'clientes.own_get_by_id': { summary: 'Obtener cliente propio por ID', method: 'get', pathParams: ['id'], paramDocs: { id: CLIENTE_ROW_ID_PARAM_DOC }, responseSchema: 'ClienteListItem', roles: ['vendedor'] },
+  'clientes.own_update': { summary: 'Actualizar cliente propio', method: 'patch', pathParams: ['id'], paramDocs: { id: CLIENTE_ROW_ID_PARAM_DOC }, bodySchema: 'UpdateClienteVendedorRequest', responseSchema: 'ClienteListItem', roles: ['vendedor'] },
 
   'qr.vendor_list': { summary: 'Listar mis QR codes (vendedor)', method: 'get', queryParams: ['page', 'limit'], responseSchema: 'QRCodeItem', isArray: true, paginated: true, roles: ['vendedor'] },
   'qr.vendor_create': { summary: 'Crear QR code (vendedor)', method: 'post', responseSchema: 'CreateQRResponse', roles: ['vendedor'] },
-  'qr.admin_deactivate': { summary: 'Desactivar QR code (admin)', method: 'patch', pathParams: ['id'], responseSchema: 'QRCodeItem', roles: ['super_admin'] },
-  'qr.vendor_deactivate': { summary: 'Desactivar QR code propio', method: 'patch', pathParams: ['id'], responseSchema: 'QRCodeItem', roles: ['vendedor'] },
+  'qr.admin_deactivate': { summary: 'Desactivar QR code (admin)', method: 'patch', pathParams: ['id'], paramDocs: { id: QR_ROW_ID_PARAM_DOC }, responseSchema: 'QRCodeItem', roles: ['super_admin'] },
+  'qr.vendor_deactivate': { summary: 'Desactivar QR code propio', method: 'patch', pathParams: ['id'], paramDocs: { id: QR_ROW_ID_PARAM_DOC }, responseSchema: 'QRCodeItem', roles: ['vendedor'] },
 
   'link_invitacion.vendor_list': { summary: 'Listar mis links de invitación', method: 'get', queryParams: ['page', 'limit'], responseSchema: 'LinkInvitacionItem', isArray: true, paginated: true, roles: ['vendedor'] },
   'link_invitacion.vendor_create': { summary: 'Crear link de invitación', method: 'post', responseSchema: 'CreateLinkResponse', roles: ['vendedor'] },
-  'link_invitacion.admin_deactivate': { summary: 'Desactivar link (admin)', method: 'patch', pathParams: ['id'], responseSchema: 'LinkInvitacionItem', roles: ['super_admin'] },
-  'link_invitacion.vendor_deactivate': { summary: 'Desactivar link propio', method: 'patch', pathParams: ['id'], responseSchema: 'LinkInvitacionItem', roles: ['vendedor'] },
+  'link_invitacion.admin_deactivate': { summary: 'Desactivar link (admin)', method: 'patch', pathParams: ['id'], paramDocs: { id: INVITATION_LINK_ID_PARAM_DOC }, responseSchema: 'LinkInvitacionItem', roles: ['super_admin'] },
+  'link_invitacion.vendor_deactivate': { summary: 'Desactivar link propio', method: 'patch', pathParams: ['id'], paramDocs: { id: INVITATION_LINK_ID_PARAM_DOC }, responseSchema: 'LinkInvitacionItem', roles: ['vendedor'] },
 
-  'cart.get': { summary: 'Obtener carrito activo', description: 'Usa userId del JWT y vendedorId seleccionado para scope de proveedor.', method: 'get', queryParams: ['vendedorId'], responseSchema: 'CartResponse', roles: ['cliente'] },
+  'cart.get': { summary: 'Obtener carrito activo', description: 'Usa userId del JWT y vendedorId seleccionado para scope de proveedor.', method: 'get', queryParams: ['vendedorId'], paramDocs: { vendedorId: PROVIDER_VENDEDOR_ID_PARAM_DOC }, responseSchema: 'CartResponse', roles: ['cliente'] },
   'cart.items_add': { summary: 'Agregar item al carrito', description: 'Valida vendedorId contra providers/select antes de despachar mutación.', method: 'post', bodySchema: 'CartItemMutationRequest', responseSchema: 'CartResponse', roles: ['cliente'] },
   'cart.items_update': { summary: 'Actualizar item del carrito', description: 'Valida vendedorId contra providers/select antes de despachar mutación.', method: 'patch', bodySchema: 'CartItemMutationRequest', responseSchema: 'CartResponse', roles: ['cliente'] },
   'cart.items_delete': { summary: 'Eliminar item del carrito', description: 'Valida vendedorId contra providers/select antes de despachar mutación.', method: 'delete', bodySchema: 'CartItemMutationRequest', responseSchema: 'CartResponse', roles: ['cliente'] },
 
   // ─── Productos ───────────────────────────────────────────────────
 
-  'products.list': { summary: 'Listar productos', description: 'Público. Lista productos con filtros. Si el usuario autenticado es vendedor, se resuelve su vendedorId automáticamente.', method: 'get', queryParams: ['vendedorId', 'categoria', 'disponibles', 'page', 'limit'], responseSchema: 'ProductResponse', isArray: true, paginated: true },
-  'products.get': { summary: 'Obtener producto por ID', method: 'get', queryParams: ['id'], responseSchema: 'ProductResponse' },
-  'products.search': { summary: 'Buscar productos', description: 'Público. Busca productos por texto libre.', method: 'get', queryParams: ['q', 'vendedorId', 'page', 'limit'], responseSchema: 'ProductResponse', isArray: true, paginated: true },
-  'products.create': { summary: 'Crear producto', description: 'El vendedor crea un producto. vendedorId se resuelve del JWT automáticamente.', method: 'post', bodySchema: 'CreateProductRequest', responseSchema: 'ProductCreatedResponse', roles: ['vendedor'] },
-  'products.update': { summary: 'Actualizar producto', description: 'El vendedor actualiza un producto propio. id se pasa por query string.', method: 'patch', queryParams: ['id'], bodySchema: 'UpdateProductRequest', responseSchema: 'ProductResponse', roles: ['vendedor'] },
-  'products.delete': { summary: 'Eliminar producto', description: 'El vendedor elimina un producto propio. id se pasa por query string.', method: 'delete', queryParams: ['id'], responseSchema: 'ProductDeletedResponse', roles: ['vendedor'] },
+  'products.list': { summary: 'Listar productos', description: 'Público. Lista productos con filtros. Si el usuario autenticado es vendedor, se resuelve su vendedorId automáticamente. El filtro de categoría se llama `categoriaId` y espera un UUID.', method: 'get', queryParams: ['vendedorId', 'categoriaId', 'disponibles', 'page', 'limit'], paramDocs: { categoriaId: PRODUCT_CATEGORY_FILTER_PARAM_DOC, disponibles: PRODUCT_AVAILABLE_FILTER_PARAM_DOC }, responseSchema: 'ProductResponse', isArray: true, paginated: true },
+  'products.get': { summary: 'Obtener producto por ID', method: 'get', queryParams: ['id'], paramDocs: { id: PRODUCT_ID_PARAM_DOC }, responseSchema: 'ProductResponse' },
+  'products.search': { summary: 'Buscar productos', description: 'Público. Busca productos por texto libre.', method: 'get', queryParams: ['q', 'vendedorId', 'page', 'limit'], paramDocs: { q: PRODUCT_SEARCH_PARAM_DOC }, responseSchema: 'ProductResponse', isArray: true, paginated: true },
+  'products.create': { summary: 'Crear producto', description: 'El vendedor crea un producto. `vendedorId` no se envía: se resuelve del JWT automáticamente.', method: 'post', bodySchema: 'CreateProductRequest', bodyExample: { nombre: 'Bidón 20L', descripcion: 'Agua sin gas', precioSinIva: 8500, stock: 40, categoriaId: '3f5a7b1e-3f0a-4c8a-9d2e-1a2b3c4d5e6f', marcaId: '7c2d9e44-5b16-4f3a-8c71-6d0e9b2a4c83', imagen: 'products/bidon-20l.webp', mostrarPrecio: true }, responseSchema: 'ProductCreatedResponse', roles: ['vendedor'] },
+  'products.update': { summary: 'Actualizar producto', description: 'El vendedor actualiza un producto propio. El `id` viaja por query string y el `vendedorId` se resuelve del JWT, no se envía.', method: 'patch', queryParams: ['id'], paramDocs: { id: PRODUCT_ID_PARAM_DOC }, bodySchema: 'UpdateProductRequest', bodyExample: { nombre: 'Bidón 20L (pack)', precioSinIva: 9200, stock: 25, activo: true }, responseSchema: 'ProductResponse', roles: ['vendedor'] },
+  'products.delete': { summary: 'Desactivar producto', description: 'Baja lógica: el producto se marca con `activo: false` y la respuesta es `{ "deleted": true }`. La fila no se elimina y el `vendedorId` se resuelve del JWT.', method: 'delete', queryParams: ['id'], paramDocs: { id: PRODUCT_ID_PARAM_DOC }, responseSchema: 'ProductDeletedResponse', roles: ['vendedor'] },
 
-  'categories.list': { summary: 'Listar categorías', description: 'Público. Lista categorías de un vendedor.', method: 'get', queryParams: ['vendedorId'], responseSchema: 'CategoriaResponse', isArray: true },
-  'categories.create': { summary: 'Crear categoría', description: 'El vendedor crea una categoría propia. El orden se asigna automáticamente.', method: 'post', bodySchema: 'CreateCategoriaRequest', responseSchema: 'CategoriaResponse', roles: ['vendedor'] },
-  'categories.update': { summary: 'Actualizar categoría', description: 'El vendedor actualiza una categoría propia. Solo si le pertenece.', method: 'patch', queryParams: ['id'], bodySchema: 'UpdateCategoriaRequest', responseSchema: 'CategoriaResponse', roles: ['vendedor'] },
-  'categories.delete': { summary: 'Eliminar categoría', description: 'El vendedor elimina una categoría propia. Productos asociados pasan a null.', method: 'delete', queryParams: ['id'], responseSchema: 'ProductDeletedResponse', roles: ['vendedor'] },
-  'brands.list': { summary: 'Listar marcas', description: 'Público. Lista marcas de un vendedor.', method: 'get', queryParams: ['vendedorId'], responseSchema: 'MarcaResponse', isArray: true },
-  'brands.create': { summary: 'Crear marca', description: 'El vendedor crea una marca propia.', method: 'post', bodySchema: 'CreateMarcaRequest', responseSchema: 'MarcaResponse', roles: ['vendedor'] },
-  'brands.update': { summary: 'Actualizar marca', description: 'El vendedor actualiza una marca propia. Solo si le pertenece.', method: 'patch', queryParams: ['id'], bodySchema: 'UpdateMarcaRequest', responseSchema: 'MarcaResponse', roles: ['vendedor'] },
-  'brands.delete': { summary: 'Eliminar marca', description: 'El vendedor elimina una marca propia. Productos asociados pasan a null.', method: 'delete', queryParams: ['id'], responseSchema: 'ProductDeletedResponse', roles: ['vendedor'] },
+  'categories.list': { summary: 'Listar categorías', description: 'Público. Lista las categorías activas de un vendedor, ordenadas por `orden`.', method: 'get', queryParams: ['vendedorId'], paramDocs: { vendedorId: CATALOG_VENDEDOR_ID_PARAM_DOC }, responseSchema: 'CategoriaResponse', isArray: true },
+  'categories.create': { summary: 'Crear categoría', description: 'El vendedor crea una categoría propia. El `vendedorId` no se envía: se resuelve del JWT. El `orden` se asigna automáticamente.', method: 'post', bodySchema: 'CreateCategoriaRequest', bodyExample: { nombre: 'Bidones' }, responseSchema: 'CategoriaResponse', roles: ['vendedor'] },
+  'categories.update': { summary: 'Actualizar categoría', description: 'El vendedor actualiza una categoría propia. Solo si le pertenece. El `vendedorId` no se envía: se resuelve del JWT.', method: 'patch', queryParams: ['id'], paramDocs: { id: CATEGORY_ID_PARAM_DOC }, bodySchema: 'UpdateCategoriaRequest', bodyExample: { nombre: 'Bidones y botellas', orden: 1 }, responseSchema: 'CategoriaResponse', roles: ['vendedor'] },
+  'categories.delete': { summary: 'Desactivar categoría', description: 'Baja lógica: la categoría se marca con `activo: false` y la respuesta es `{ "deactivated": true }`. La fila NO se elimina, deja de aparecer en categories.list y los productos que la referencian NO se modifican (siguen apuntando al mismo `categoriaId`). El `vendedorId` no se envía: se resuelve del JWT.', method: 'delete', queryParams: ['id'], paramDocs: { id: CATEGORY_ID_PARAM_DOC }, responseSchema: 'DeactivatedResponse', roles: ['vendedor'] },
+  'brands.list': { summary: 'Listar marcas', description: 'Público. Lista las marcas activas de un vendedor, ordenadas por nombre.', method: 'get', queryParams: ['vendedorId'], paramDocs: { vendedorId: CATALOG_VENDEDOR_ID_PARAM_DOC }, responseSchema: 'MarcaResponse', isArray: true },
+  'brands.create': { summary: 'Crear marca', description: 'El vendedor crea una marca propia. El `vendedorId` no se envía: se resuelve del JWT.', method: 'post', bodySchema: 'CreateMarcaRequest', bodyExample: { nombre: 'AguaFress' }, responseSchema: 'MarcaResponse', roles: ['vendedor'] },
+  'brands.update': { summary: 'Actualizar marca', description: 'El vendedor actualiza una marca propia. Solo si le pertenece. El `vendedorId` no se envía: se resuelve del JWT.', method: 'patch', queryParams: ['id'], paramDocs: { id: BRAND_ID_PARAM_DOC }, bodySchema: 'UpdateMarcaRequest', bodyExample: { nombre: 'AguaFress Premium' }, responseSchema: 'MarcaResponse', roles: ['vendedor'] },
+  'brands.delete': { summary: 'Desactivar marca', description: 'Baja lógica: la marca se marca con `activo: false` y la respuesta es `{ "deactivated": true }`. La fila NO se elimina, deja de aparecer en brands.list y los productos que la referencian NO se modifican (siguen apuntando al mismo `marcaId`). El `vendedorId` no se envía: se resuelve del JWT.', method: 'delete', queryParams: ['id'], paramDocs: { id: BRAND_ID_PARAM_DOC }, responseSchema: 'DeactivatedResponse', roles: ['vendedor'] },
 
-  'orders.create': { summary: 'Crear pedido async', description: 'Valida vendedorId seleccionado, ignora body userId y encola con userId JWT + vendedorId.', method: 'post', bodySchema: 'CreateOrderRequest', responseSchema: 'AsyncAcceptedResponse', roles: ['cliente'] },
-  'orders.job_status': { summary: 'Consultar estado de pedido async', method: 'get', queryParams: ['id'], responseSchema: 'AsyncAcceptedResponse' },
+  'orders.list': { summary: 'Listar pedidos', description: 'No acepta filtros: el alcance lo define el rol del token. `cliente` ve sus propios pedidos, `vendedor` los del perfil de vendedor resuelto desde el token, `super_admin` los de todos. Sin paginación.', method: 'get', responseSchema: 'OrderResponse', isArray: true },
+  'orders.get_by_id': { summary: 'Obtener pedido por ID', description: 'El `id` viaja por query string. Solo el cliente dueño, el vendedor que atiende el pedido o `super_admin` pueden leerlo.', method: 'get', queryParams: ['id'], paramDocs: { id: ORDER_ID_PARAM_DOC }, responseSchema: 'OrderResponse' },
+  'orders.create': { summary: 'Crear pedido async', description: 'Valida vendedorId seleccionado, ignora body userId y encola con userId JWT + vendedorId. Exige el header `Idempotency-Key`; la respuesta es el seguimiento del comando, no el pedido. Consultar el resultado con el `trackingId` en orders/job-status.', method: 'post', bodySchema: 'CreateOrderRequest', bodyExample: { vendedorId: 'c1a2b3d4-5e6f-4071-8293-a4b5c6d7e8f9', metodoPago: 'contra_entrega', direccion: { calle: 'Av. Corrientes', numero: '1234', pisoDepto: '3B', barrio: 'Balvanera', ciudad: 'Buenos Aires', provincia: 'Buenos Aires', codigoPostal: 'C1084' }, observaciones: 'Dejar en la puerta' }, responseSchema: 'AsyncAcceptedResponse', roles: ['cliente'] },
+  'orders.job_status': { summary: 'Consultar estado de pedido async', description: 'El parámetro `id` es el `trackingId` del comando, NO el `id` del pedido.', method: 'get', queryParams: ['id'], paramDocs: { id: ORDER_TRACKING_ID_PARAM_DOC }, responseSchema: 'OrderJobStatusResponse' },
+  'orders.status_update': { summary: 'Actualizar estado de pedido', description: 'El vendedor mueve el ciclo de vida de un pedido propio. El servicio valida la transición y rechaza las que no están permitidas.', method: 'patch', bodySchema: 'UpdateOrderStatusRequest', bodyExample: { id: '4b8d1c76-2a53-4e19-b7c0-95d3f8a26b71', estado: 'en_camino', notas: 'Sale del depósito' }, responseSchema: 'OrderResponse', roles: ['vendedor'] },
+  'orders.cancel': { summary: 'Cancelar pedido', description: 'El cliente cancela un pedido propio. Solo se admite mientras el pedido está en estado `pendiente`.', method: 'patch', bodySchema: 'CancelOrderRequest', bodyExample: { id: '4b8d1c76-2a53-4e19-b7c0-95d3f8a26b71', motivo: 'Compré en otro lugar' }, responseSchema: 'OrderResponse', roles: ['cliente'] },
+  'orders.confirm': { summary: 'Confirmar pedido', description: 'El vendedor confirma un pedido propio. Es equivalente a `orders.status/update` con `estado: confirmado`.', method: 'patch', bodySchema: 'ConfirmOrderRequest', bodyExample: { id: '4b8d1c76-2a53-4e19-b7c0-95d3f8a26b71' }, responseSchema: 'OrderResponse', roles: ['vendedor'] },
 };
 
 // ─── Service Family Display Names ───────────────────────────────
@@ -719,7 +901,7 @@ export class OpenApiSpecService {
         in: 'path',
         required: true,
         schema: { type: 'string', format: 'uuid' },
-        description: `ID del recurso`,
+        description: this.describeParam(doc, param, 'path'),
       });
     }
 
@@ -731,9 +913,7 @@ export class OpenApiSpecService {
         in: 'query',
         required: param === 'vendedorId' || param === 'id',
         schema: isPagination ? { type: 'integer' } : { type: 'string' },
-        description: isPagination
-          ? param === 'page' ? 'Número de página' : 'Items por página'
-          : `Filtro por ${param}`,
+        description: this.describeParam(doc, param, 'query'),
       });
     }
 
@@ -759,17 +939,29 @@ export class OpenApiSpecService {
 
     // Request body
     if (doc.bodySchema && SHARED_SCHEMAS[doc.bodySchema]) {
+      const mediaType: Schema = {
+        schema: ref(`#/components/schemas/${doc.bodySchema}`),
+      };
+      if (doc.bodyExample) {
+        mediaType.example = doc.bodyExample;
+      }
+
       operation.requestBody = {
-        required: true,
+        // Only required when the referenced schema actually declares required properties.
+        required: hasRequiredProperties(SHARED_SCHEMAS[doc.bodySchema]),
         content: {
-          'application/json': {
-            schema: ref(`#/components/schemas/${doc.bodySchema}`),
-          },
+          'application/json': mediaType,
         },
       };
     }
 
     return operation;
+  }
+
+  private describeParam(doc: ActionDoc, param: string, location: 'path' | 'query'): string {
+    return doc.paramDocs?.[param]
+      ?? DEFAULT_PARAM_DOCS[param]
+      ?? `Parámetro de ${location === 'path' ? 'ruta' : 'consulta'} de esta operación.`;
   }
 
   private buildResponse(status: number, doc: ActionDoc): Record<string, unknown> {
