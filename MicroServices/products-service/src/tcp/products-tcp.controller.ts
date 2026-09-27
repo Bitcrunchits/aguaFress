@@ -99,7 +99,9 @@ export class ProductsTcpController {
       }
     }
 
-    return this.productsService.list(filters);
+    return this.productsService.list(filters, {
+      includeInactiveTaxonomy: payload.user?.role === UserRole.SUPER_ADMIN,
+    });
   }
 
   // ─── GET /v1/products/get?id=xxx ───────────────────────────────
@@ -108,7 +110,9 @@ export class ProductsTcpController {
     const { id } = await this.payloadAdapter.query(payload, IdQueryDto);
     const vendedorIds = await this.resolveScopedVendedorIds(payload);
 
-    const producto = await this.productsService.findById(id);
+    const producto = await this.productsService.findById(id, {
+      includeInactiveTaxonomy: payload.user?.role === UserRole.SUPER_ADMIN,
+    });
 
     // Si hay scope y el producto no está en los vendedores permitidos → 404
     if (vendedorIds !== null && !vendedorIds.includes(producto.vendedorId)) {
@@ -145,7 +149,9 @@ export class ProductsTcpController {
       }
     }
 
-    return this.productsService.search(query);
+    return this.productsService.search(query, {
+      includeInactiveTaxonomy: payload.user?.role === UserRole.SUPER_ADMIN,
+    });
   }
 
   // POST /v1/products/create — auth: VENDEDOR

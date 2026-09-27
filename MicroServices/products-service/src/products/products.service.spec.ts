@@ -15,8 +15,15 @@ const mockTx = {
 };
 
 const mockPrisma = {
+  categoria: {
+    findFirst: jest.fn(),
+  },
+  marca: {
+    findFirst: jest.fn(),
+  },
   producto: {
     findMany: jest.fn(),
+    findFirst: jest.fn(),
     findUnique: jest.fn(),
     count: jest.fn(),
     create: jest.fn(),
@@ -83,19 +90,52 @@ describe('ProductsService', () => {
       expect(result.pagination.page).toBe(1);
       expect(result.pagination.limit).toBe(20);
     });
+
+    it('oculta productos vinculados a categorías o marcas inactivas por defecto', async () => {
+      (mockPrisma.$transaction as jest.Mock).mockResolvedValue([[], 0]);
+
+      await service.list({});
+
+      expect(mockPrisma.producto.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({
+          AND: [
+            { OR: [{ categoriaId: null }, { categoria: { activo: true } }] },
+            { OR: [{ marcaId: null }, { marca: { activo: true } }] },
+          ],
+        }),
+      }));
+      expect(mockPrisma.producto.count).toHaveBeenCalledWith({
+        where: expect.objectContaining({
+          AND: expect.any(Array),
+        }),
+      });
+    });
+
+    it('permite incluir taxonomía inactiva para auditoría superadmin', async () => {
+      (mockPrisma.$transaction as jest.Mock).mockResolvedValue([[], 0]);
+
+      await service.list({}, { includeInactiveTaxonomy: true });
+
+      expect(mockPrisma.producto.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: {},
+      }));
+    });
   });
 
   describe('findById', () => {
     it('devuelve el producto si existe', async () => {
-      mockPrisma.producto.findUnique.mockResolvedValue(baseProducto);
+      mockPrisma.producto.findFirst.mockResolvedValue(baseProducto);
 
       const result = await service.findById('prod-1');
 
       expect(result.id).toBe('prod-1');
+      expect(mockPrisma.producto.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({ id: 'prod-1', AND: expect.any(Array) }),
+      }));
     });
 
     it('lanza NotFoundException si no existe', async () => {
-      mockPrisma.producto.findUnique.mockResolvedValue(null);
+      mockPrisma.producto.findFirst.mockResolvedValue(null);
 
       await expect(service.findById('no-existe')).rejects.toThrow(NotFoundException);
     });
@@ -103,6 +143,7 @@ describe('ProductsService', () => {
 
   describe('create', () => {
     it('calcula precioFinal via PricingService y crea el producto con el vendedorId dado', async () => {
+      mockPrisma.categoria.findFirst.mockResolvedValue({ id: 'cat-1' });
       mockPricing.calcularPrecioFinal.mockReturnValue(new Prisma.Decimal(121));
       mockPrisma.producto.create.mockResolvedValue({ id: 'prod-nuevo' });
 
@@ -126,6 +167,34 @@ describe('ProductsService', () => {
         }),
       );
       expect(result).toEqual({ id: 'prod-nuevo', created: true });
+    });
+
+    it('rechaza crear producto en categoría inactiva o ajena', async () => {
+      mockPrisma.categoria.findFirst.mockResolvedValue(null);
+
+      await expect(service.create('vendedor-1', {
+        nombre: 'Bidón 20L',
+        precioSinIva: 100,
+        categoriaId: 'cat-inactiva',
+        stock: 5,
+      })).rejects.toThrow(NotFoundException);
+
+      expect(mockPrisma.producto.create).not.toHaveBeenCalled();
+    });
+
+    it('valida marca activa y propia cuando se informa marcaId', async () => {
+      mockPrisma.categoria.findFirst.mockResolvedValue({ id: 'cat-1' });
+      mockPrisma.marca.findFirst.mockResolvedValue(null);
+
+      await expect(service.create('vendedor-1', {
+        nombre: 'Bidón 20L',
+        precioSinIva: 100,
+        categoriaId: 'cat-1',
+        marcaId: 'marca-inactiva',
+        stock: 5,
+      })).rejects.toThrow(NotFoundException);
+
+      expect(mockPrisma.producto.create).not.toHaveBeenCalled();
     });
   });
 

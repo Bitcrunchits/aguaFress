@@ -127,9 +127,11 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
     status: 'available',
     actions: {
       list: { tcpPattern: 'categories.list', transport: 'send', authRequired: false },
+      'list-inactive': { tcpPattern: 'categories.list_inactive', transport: 'send', authRequired: true, roles: ['super_admin'] },
       create: { tcpPattern: 'categories.create', transport: 'send', authRequired: true, roles: ['vendedor'] },
       update: { tcpPattern: 'categories.update', transport: 'send', authRequired: true, roles: ['vendedor'] },
       delete: { tcpPattern: 'categories.delete', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      reactivate: { tcpPattern: 'categories.reactivate', transport: 'send', authRequired: true, roles: ['vendedor'] },
     },
   },
   brands: {
@@ -139,6 +141,7 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
       create: { tcpPattern: 'brands.create', transport: 'send', authRequired: true, roles: ['vendedor'] },
       update: { tcpPattern: 'brands.update', transport: 'send', authRequired: true, roles: ['vendedor'] },
       delete: { tcpPattern: 'brands.delete', transport: 'send', authRequired: true, roles: ['vendedor'] },
+      reactivate: { tcpPattern: 'brands.reactivate', transport: 'send', authRequired: true, roles: ['vendedor'] },
     },
   },
   orders: {

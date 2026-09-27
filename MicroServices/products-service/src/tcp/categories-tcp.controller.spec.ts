@@ -8,13 +8,16 @@ import type { TcpPayload } from './tcp-payload';
 
 const mockCategoriesService = {
   listCategorias: jest.fn(),
+  listInactiveCategorias: jest.fn(),
   listMarcas: jest.fn(),
   createCategoria: jest.fn(),
   updateCategoria: jest.fn(),
   deleteCategoria: jest.fn(),
+  reactivateCategoria: jest.fn(),
   createMarca: jest.fn(),
   updateMarca: jest.fn(),
   deleteMarca: jest.fn(),
+  reactivateMarca: jest.fn(),
 };
 
 const mockVendedorResolver = {
@@ -66,6 +69,24 @@ describe('CategoriesTcpController (integración con TcpPayloadAdapter real)', ()
     expect(mockCategoriesService.listMarcas).toHaveBeenCalledWith(VENDEDOR_ID);
   });
 
+  it('categories.list-inactive requiere super_admin y permite filtro opcional por vendedorId', async () => {
+    mockCategoriesService.listInactiveCategorias.mockResolvedValue([]);
+
+    await controller.listInactiveCategorias(basePayload({
+      user: { sub: 'admin-1', email: 'admin@example.com', role: UserRole.SUPER_ADMIN },
+    }));
+
+    expect(mockCategoriesService.listInactiveCategorias).toHaveBeenCalledWith(VENDEDOR_ID);
+  });
+
+  it('categories.list-inactive rechaza vendedores', async () => {
+    await expect(controller.listInactiveCategorias(basePayload({
+      user: { sub: AUTH_USER_ID, email: 'seller@example.com', role: UserRole.VENDEDOR },
+    }))).rejects.toThrow();
+
+    expect(mockCategoriesService.listInactiveCategorias).not.toHaveBeenCalled();
+  });
+
   it('rechaza si falta vendedorId en el query (público, pero requerido)', async () => {
     await expect(controller.listCategorias(basePayload({ query: {} }))).rejects.toThrow();
   });
@@ -78,5 +99,31 @@ describe('CategoriesTcpController (integración con TcpPayloadAdapter real)', ()
 
     expect(mockVendedorResolver.resolveVendedorIdByAuthUserId).not.toHaveBeenCalled();
     expect(mockCategoriesService.createCategoria).not.toHaveBeenCalled();
+  });
+
+  it('categories.reactivate resuelve vendedorId desde el token y delega', async () => {
+    mockVendedorResolver.resolveVendedorIdByAuthUserId.mockResolvedValue(VENDEDOR_ID);
+    mockCategoriesService.reactivateCategoria.mockResolvedValue({ id: 'cat-1' });
+
+    await controller.reactivateCategoria(basePayload({
+      query: { id: '11111111-2222-4333-8444-555555555555' },
+      user: { sub: AUTH_USER_ID, email: 'seller@example.com', role: UserRole.VENDEDOR },
+    }));
+
+    expect(mockCategoriesService.reactivateCategoria)
+      .toHaveBeenCalledWith(VENDEDOR_ID, '11111111-2222-4333-8444-555555555555');
+  });
+
+  it('brands.reactivate resuelve vendedorId desde el token y delega', async () => {
+    mockVendedorResolver.resolveVendedorIdByAuthUserId.mockResolvedValue(VENDEDOR_ID);
+    mockCategoriesService.reactivateMarca.mockResolvedValue({ id: 'brand-1' });
+
+    await controller.reactivateMarca(basePayload({
+      query: { id: '11111111-2222-4333-8444-555555555555' },
+      user: { sub: AUTH_USER_ID, email: 'seller@example.com', role: UserRole.VENDEDOR },
+    }));
+
+    expect(mockCategoriesService.reactivateMarca)
+      .toHaveBeenCalledWith(VENDEDOR_ID, '11111111-2222-4333-8444-555555555555');
   });
 });

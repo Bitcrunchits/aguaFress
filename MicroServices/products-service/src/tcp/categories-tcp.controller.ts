@@ -50,6 +50,15 @@ export class CategoriesTcpController {
     return this.categoriesService.listCategorias(vendedorId);
   }
 
+  // GET /v1/categories/list-inactive?vendedorId=xxx — auth: SUPER_ADMIN only
+  @MessagePattern('categories.list_inactive')
+  async listInactiveCategorias(@Payload() payload: TcpPayload) {
+    this.payloadAdapter.requireRole(payload, UserRole.SUPER_ADMIN);
+    const { vendedorId } = await this.payloadAdapter.query(payload, ListCatalogoDto);
+
+    return this.categoriesService.listInactiveCategorias(vendedorId);
+  }
+
   // POST /v1/categories/create — auth: VENDEDOR
   @MessagePattern('categories.create')
   async createCategoria(@Payload() payload: TcpPayload) {
@@ -79,6 +88,16 @@ export class CategoriesTcpController {
     const authUserId = this.payloadAdapter.userId(payload);
     const vendedorId = await this.vendedorResolver.resolveVendedorIdByAuthUserId(authUserId);
     return this.categoriesService.deleteCategoria(vendedorId, id);
+  }
+
+  // PATCH /v1/categories/reactivate?id=xxx — auth: VENDEDOR
+  @MessagePattern('categories.reactivate')
+  async reactivateCategoria(@Payload() payload: TcpPayload) {
+    this.payloadAdapter.requireRole(payload, UserRole.VENDEDOR);
+    const { id } = await this.payloadAdapter.query(payload, IdQueryDto);
+    const authUserId = this.payloadAdapter.userId(payload);
+    const vendedorId = await this.vendedorResolver.resolveVendedorIdByAuthUserId(authUserId);
+    return this.categoriesService.reactivateCategoria(vendedorId, id);
   }
 
   // GET /v1/brands/list?vendedorId=xxx — auth: Público|VENDEDOR
@@ -135,5 +154,15 @@ export class CategoriesTcpController {
     const authUserId = this.payloadAdapter.userId(payload);
     const vendedorId = await this.vendedorResolver.resolveVendedorIdByAuthUserId(authUserId);
     return this.categoriesService.deleteMarca(vendedorId, id);
+  }
+
+  // PATCH /v1/brands/reactivate?id=xxx — auth: VENDEDOR
+  @MessagePattern('brands.reactivate')
+  async reactivateMarca(@Payload() payload: TcpPayload) {
+    this.payloadAdapter.requireRole(payload, UserRole.VENDEDOR);
+    const { id } = await this.payloadAdapter.query(payload, IdQueryDto);
+    const authUserId = this.payloadAdapter.userId(payload);
+    const vendedorId = await this.vendedorResolver.resolveVendedorIdByAuthUserId(authUserId);
+    return this.categoriesService.reactivateMarca(vendedorId, id);
   }
 }
