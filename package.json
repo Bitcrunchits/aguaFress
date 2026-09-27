@@ -2,6 +2,10 @@
   "name": "aguafress",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=22",
+    "pnpm": "12.3.4"
+  },
   "description": "AguaFress — Plataforma de pedidos para distribuidores de agua y soda",
   "scripts": {
     "build:contracts": "pnpm --filter @agua/contracts build",

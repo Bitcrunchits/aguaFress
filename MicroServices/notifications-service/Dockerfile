@@ -1,7 +1,7 @@
 # ─── Build ───────────────────────────────────────────────────
 FROM node:22-alpine AS build
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@12.3.4 --activate
 WORKDIR /app
 
 # Copiar config del monorepo
@@ -23,7 +23,7 @@ RUN pnpm --filter @agua/notifications-service build
 # ─── Run ─────────────────────────────────────────────────────
 FROM node:22-alpine AS run
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@12.3.4 --activate
 WORKDIR /app
 
 # Copiar config

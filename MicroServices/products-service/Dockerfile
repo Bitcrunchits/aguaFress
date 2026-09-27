@@ -2,7 +2,7 @@
 FROM node:22-alpine AS build
 
 RUN apk add --no-cache openssl && \
-    corepack enable && corepack prepare pnpm@latest --activate
+    corepack enable && corepack prepare pnpm@12.3.4 --activate
 WORKDIR /app
 
 # Placeholder requerido por Prisma durante generate en build.
@@ -30,7 +30,7 @@ RUN pnpm --filter @agua/products-service build
 FROM node:22-alpine AS run
 
 RUN apk add --no-cache openssl && \
-    corepack enable && corepack prepare pnpm@latest --activate
+    corepack enable && corepack prepare pnpm@12.3.4 --activate
 WORKDIR /app
 
 # Copiar config

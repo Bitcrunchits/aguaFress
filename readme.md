@@ -84,11 +84,11 @@ Decisiones vigentes:
 
 - Docker con Docker Compose v2.
 - Node.js 22 para desarrollo local fuera de contenedores.
-- pnpm via Corepack.
+- pnpm via Corepack. Usar pnpm 12.3.4 para evitar diferencias entre entornos.
 
 ```bash
 corepack enable
-corepack prepare pnpm@latest --activate
+corepack prepare pnpm@12.3.4 --activate
 pnpm install --frozen-lockfile
 ```
 
@@ -147,14 +147,16 @@ ENTREGAS_DATABASE_URL="postgresql://postgres:postgres@postgres:5432/agua_entrega
 
 3. Construir imagenes backend.
 
+El build usa pnpm 12.3.4 via Corepack. En clones nuevos, o cuando Docker/npm registry este lento, se recomienda construir primero con un solo servicio en paralelo:
+
 ```bash
-docker compose build
+COMPOSE_PARALLEL_LIMIT=1 docker compose --env-file .env build
 ```
 
 4. Levantar infraestructura y servicios backend.
 
 ```bash
-docker compose up -d
+docker compose --env-file .env up -d
 ```
 
 5. Verificar estado.
