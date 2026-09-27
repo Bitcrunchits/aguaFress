@@ -168,7 +168,22 @@ const SHARED_SCHEMAS: Record<string, Schema> = {
     emailConfirmation: str('Confirmación de email'),
     password: str('Contraseña', '********'),
     telefono: str('Teléfono'),
-    dni: str('DNI (7 a 9 dígitos)'),
+    dni: str('DNI (8 dígitos)'),
+    direccionEntrega: ref('#/components/schemas/DireccionEntrega'),
+  }, ['nombre', 'email', 'emailConfirmation', 'password', 'telefono', 'dni', 'direccionEntrega']),
+
+  // Seller-initiated registration: no invitation token, because the service
+  // resolves the seller from the caller's JWT (auth.service.ts registerByVendor).
+  // usuario-service validates with RegisterClientByVendorDto under
+  // forbidNonWhitelisted, so sending `token` answers HTTP 400.
+  RegisterClientByVendorRequest: obj({
+    nombre: str('Nombre'),
+    apellido: str('Apellido'),
+    email: str('Email', 'cliente@email.com'),
+    emailConfirmation: str('Confirmación de email'),
+    password: str('Contraseña', '********'),
+    telefono: str('Teléfono'),
+    dni: str('DNI (8 dígitos)'),
     direccionEntrega: ref('#/components/schemas/DireccionEntrega'),
   }, ['nombre', 'email', 'emailConfirmation', 'password', 'telefono', 'dni', 'direccionEntrega']),
 
@@ -597,7 +612,7 @@ Con el \`vendedorId\` de la receta 2:
 ### Receta 4 — Cliente: crear un pedido y seguirlo
 No hay usuario cliente seed, así que el paso 1 crea el cliente. Hacé esta receta **antes** de loguearte como vendedor, o guardá el \`token\` del paso 1 para volver atrás.
 
-1. Autorizá como \`vendedor@email.com\` y llamá a \`POST /api/v1/auth/register-client-by-vendor\` con los datos del cliente. La respuesta trae el \`token\` del cliente ya listo: **no necesitás un segundo login**.
+1. Autorizá como \`vendedor@email.com\` y llamá a \`POST /api/v1/auth/register-client/by-vendor\` con los datos del cliente (sin \`token\`: el vendedor sale de tu sesión). La respuesta trae el \`token\` del cliente ya listo: **no necesitás un segundo login**.
 2. Pasá a la pestaña **Auth** de Scalar y autorizá con ese \`token\` de cliente.
 3. \`GET /api/v1/clientes/providers\` y copiá el \`id\` de un proveedor: ese es el \`vendedorId\` del pedido.
 4. \`POST /api/v1/orders/create\` — **obligatorio** el header \`Idempotency-Key\` con un valor único (por ejemplo \`qa-pedido-001\`), y el body del ejemplo ya trae \`vendedorId\`, \`metodoPago\` y \`direccion\`. Sin ese header el gateway responde \`Idempotency key is required\`.
@@ -640,7 +655,7 @@ Solo para el entorno local con Docker. Nunca reutilizarlas en producción. Los s
 | vendedor | \`vendedor2@email.com\` | \`admin123\` |
 | vendedor | \`vendedor3@email.com\` | \`admin123\` |
 
-> **No hay usuario cliente seed.** Los cuatro anteriores son \`super_admin\` y \`vendedor\`. Para probar el flujo de cliente creá uno con \`POST /api/v1/auth/register-client-by-vendor\` (autorizado como \`vendedor\`) y usá el \`token\` que devuelve esa respuesta.
+> **No hay usuario cliente seed.** Los cuatro anteriores son \`super_admin\` y \`vendedor\`. Para probar el flujo de cliente creá uno con \`POST /api/v1/auth/register-client/by-vendor\` (autorizado como \`vendedor\`) y usá el \`token\` que devuelve esa respuesta.
 >
 > El seed \`docker/init-db/seed-admin.sql\` además intenta crear \`juan@aguafress.com\` y \`maria@aguafress.com\`, pero solo si no existen: en una base ya poblada por registro vía API esas cuentas nunca se crean y esos emails no sirven para iniciar sesión. Verificá contra \`SELECT email FROM "AUTH_USER"\` si dudás.
 
@@ -815,7 +830,7 @@ const ACTIONS_DOC: Record<string, ActionDoc> = {
   'auth.admin_generate_reset_token': { summary: 'Generar token de reset (admin)', description: 'SUPER_ADMIN genera un token de un solo uso para que un usuario reseteé su contraseña. El token dura 30 min. Compartilo con el usuario por WhatsApp o llamada.', method: 'post', bodySchema: 'AdminGenerateResetTokenRequest', responseSchema: 'AdminGenerateResetTokenResponse', roles: ['super_admin'] },
   'auth.reset_password': { summary: 'Resetear contraseña con token', description: 'Público. Usa el token generado por el admin para cambiar la contraseña. Invalida refresh tokens existentes.', method: 'post', bodySchema: 'ResetPasswordRequest', responseSchema: 'ResetPasswordResponse' },
   'auth.register_client': { summary: 'Registrarse como cliente vía link de invitación', description: 'Público. Usa el token del link que el vendedor compartió. Crea el usuario, perfil CLIENTE, RELACION_CARTERA activa y devuelve JWT.', method: 'post', bodySchema: 'RegisterClientRequest', responseSchema: 'RegisterClientResponse' },
-  'auth.register_client_by_vendor': { summary: 'Registrar cliente directamente (vendedor)', description: 'El vendedor crea un cliente manualmente sin link de invitación. El cliente queda vinculado automáticamente al vendedor.', method: 'post', bodySchema: 'RegisterClientRequest', responseSchema: 'RegisterClientResponse', roles: ['vendedor'] },
+  'auth.register_client_by_vendor': { summary: 'Registrar cliente directamente (vendedor)', description: 'El vendedor crea un cliente manualmente sin link de invitación. El cuerpo NO lleva `token`: el servicio resuelve al vendedor desde tu JWT. El cliente queda vinculado automáticamente al vendedor.', method: 'post', bodySchema: 'RegisterClientByVendorRequest', responseSchema: 'RegisterClientResponse', roles: ['vendedor'] },
 
   'users.profile': { summary: 'Obtener perfil propio', method: 'get', responseSchema: 'UserProfile' },
   'users.profile_update': { summary: 'Actualizar perfil propio', method: 'patch', bodySchema: 'UpdateProfileRequest', responseSchema: 'UserProfile' },
