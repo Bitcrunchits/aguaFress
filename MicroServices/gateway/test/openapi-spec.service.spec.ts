@@ -280,6 +280,22 @@ describe('OpenApiSpecService order lifecycle documentation', () => {
 });
 
 describe('OpenApiSpecService catalog soft delete documentation', () => {
+  it('documents every category and brand action declared in the registry', () => {
+    const spec = generateSpec();
+    const paths = spec.paths as Record<string, Record<string, unknown>>;
+
+    expect(Object.keys(ACTION_REGISTRY.categories.actions)).toEqual(
+      expect.arrayContaining(['list', 'list-inactive', 'create', 'update', 'delete', 'reactivate']),
+    );
+    expect(Object.keys(ACTION_REGISTRY.brands.actions)).toEqual(
+      expect.arrayContaining(['list', 'create', 'update', 'delete', 'reactivate']),
+    );
+    expect(Object.keys(ACTION_REGISTRY.categories.actions).filter(actionName => paths[`/api/v1/categories/${actionName}`] === undefined))
+      .toEqual([]);
+    expect(Object.keys(ACTION_REGISTRY.brands.actions).filter(actionName => paths[`/api/v1/brands/${actionName}`] === undefined))
+      .toEqual([]);
+  });
+
   it('documents category and brand delete as a deactivation instead of a product deletion', () => {
     const spec = generateSpec();
 
@@ -308,8 +324,38 @@ describe('OpenApiSpecService catalog soft delete documentation', () => {
       expect(operation.summary).toContain('Desactivar');
       expect(operation.description).toContain('activo: false');
       expect(operation.description).toContain('deactivated');
+      expect(operation.description).toContain('idempotente');
       expect(operation.description).not.toMatch(/pasan a null/i);
     }
+  });
+
+  it('documents category and brand reactivation as vendor-owned restore actions', () => {
+    const spec = generateSpec();
+
+    expect(responseSchemaRef(operationAt(spec, '/api/v1/categories/reactivate', 'patch')))
+      .toBe('#/components/schemas/CategoriaResponse');
+    expect(responseSchemaRef(operationAt(spec, '/api/v1/brands/reactivate', 'patch')))
+      .toBe('#/components/schemas/MarcaResponse');
+    expect(operationAt(spec, '/api/v1/categories/reactivate', 'patch').description)
+      .toContain('conflicto');
+  });
+
+  it('documents inactive category audit as super-admin-only', () => {
+    const spec = generateSpec();
+    const operation = operationAt(spec, '/api/v1/categories/list-inactive', 'get');
+
+    expect(responseSchemaRef(operation)).toBeUndefined();
+    expect(operation.description).toContain('Solo `super_admin`');
+    expect(operation.description).toContain('activo: false');
+    expect(parameterOf(operation, 'vendedorId').required).toBe(false);
+  });
+
+  it('documents that normal catalog hides products linked to inactive taxonomy', () => {
+    const spec = generateSpec();
+
+    expect((spec.info as { description: string }).description).toContain('oculta productos vinculados');
+    expect(operationAt(spec, '/api/v1/products/list', 'get').description).toContain('categorías o marcas inactivas');
+    expect(operationAt(spec, '/api/v1/products/get', 'get').description).toContain('super_admin');
   });
 });
 
@@ -354,15 +400,25 @@ describe('OpenApiSpecService parameter provenance', () => {
     }
   });
 
+  it('marks role-dependent vendedorId query parameters as optional', () => {
+    const spec = generateSpec();
+
+    for (const path of ['/api/v1/categories/list', '/api/v1/brands/list', '/api/v1/products/list', '/api/v1/categories/list-inactive']) {
+      expect(parameterOf(operationAt(spec, path, 'get'), 'vendedorId').required).toBe(false);
+    }
+  });
+
   it('tells callers that create/update/delete resolve vendedorId from the token', () => {
     const spec = generateSpec();
     const resolvedFromToken = [
       ['/api/v1/categories/create', 'post'],
       ['/api/v1/categories/update', 'patch'],
       ['/api/v1/categories/delete', 'delete'],
+      ['/api/v1/categories/reactivate', 'patch'],
       ['/api/v1/brands/create', 'post'],
       ['/api/v1/brands/update', 'patch'],
       ['/api/v1/brands/delete', 'delete'],
+      ['/api/v1/brands/reactivate', 'patch'],
     ] as const;
 
     for (const [path, method] of resolvedFromToken) {

@@ -97,6 +97,7 @@ describe('ProductsTcpController (integración con TcpPayloadAdapter real)', () =
       expect(mockClienteVendedorResolver.resolveVendedoresByClienteUserId).toHaveBeenCalledWith(AUTH_USER_ID);
       expect(mockProductsService.list).toHaveBeenCalledWith(
         expect.objectContaining({ vendedorId: VENDEDOR_ID_REAL }),
+        { includeInactiveTaxonomy: false },
       );
     });
 
@@ -136,6 +137,7 @@ describe('ProductsTcpController (integración con TcpPayloadAdapter real)', () =
 
       expect(mockProductsService.list).toHaveBeenCalledWith(
         expect.objectContaining({ vendedorId: OTRO_VENDEDOR_ID }),
+        { includeInactiveTaxonomy: false },
       );
     });
 
@@ -164,6 +166,7 @@ describe('ProductsTcpController (integración con TcpPayloadAdapter real)', () =
       expect(mockVendedorResolver.resolveVendedorIdByAuthUserId).toHaveBeenCalledWith(AUTH_USER_ID);
       expect(mockProductsService.list).toHaveBeenCalledWith(
         expect.objectContaining({ vendedorId: VENDEDOR_ID_REAL }),
+        { includeInactiveTaxonomy: false },
       );
     });
 
@@ -179,6 +182,7 @@ describe('ProductsTcpController (integración con TcpPayloadAdapter real)', () =
 
       expect(mockProductsService.list).toHaveBeenCalledWith(
         expect.objectContaining({ vendedorId: VENDEDOR_ID_REAL }),
+        { includeInactiveTaxonomy: false },
       );
     });
 
@@ -207,6 +211,7 @@ describe('ProductsTcpController (integración con TcpPayloadAdapter real)', () =
 
       expect(mockProductsService.list).toHaveBeenCalledWith(
         expect.objectContaining({ vendedorId: VENDEDOR_ID_REAL }),
+        { includeInactiveTaxonomy: true },
       );
     });
   });
@@ -224,7 +229,7 @@ describe('ProductsTcpController (integración con TcpPayloadAdapter real)', () =
         }),
       );
 
-      expect(mockProductsService.findById).toHaveBeenCalledWith(PRODUCT_ID);
+      expect(mockProductsService.findById).toHaveBeenCalledWith(PRODUCT_ID, { includeInactiveTaxonomy: true });
       expect(result).toEqual({ id: PRODUCT_ID, vendedorId: VENDEDOR_ID_REAL });
     });
 
@@ -315,6 +320,7 @@ describe('ProductsTcpController (integración con TcpPayloadAdapter real)', () =
 
       expect(mockProductsService.search).toHaveBeenCalledWith(
         expect.objectContaining({ q: 'bidón', vendedorId: VENDEDOR_ID_REAL }),
+        { includeInactiveTaxonomy: false },
       );
     });
 
@@ -350,6 +356,7 @@ describe('ProductsTcpController (integración con TcpPayloadAdapter real)', () =
 
       expect(mockProductsService.search).toHaveBeenCalledWith(
         expect.objectContaining({ q: 'agua', vendedorId: OTRO_VENDEDOR_ID }),
+        { includeInactiveTaxonomy: false },
       );
     });
   });

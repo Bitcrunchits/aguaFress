@@ -12,6 +12,10 @@ import { SearchProductDto } from './dto/search-product.dto';
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;
 
+interface ProductCatalogVisibilityOptions {
+  includeInactiveTaxonomy?: boolean;
+}
+
 @Injectable()
 export class ProductsService {
   constructor(
@@ -20,14 +24,18 @@ export class ProductsService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  async list(filters: ListProductsDto): Promise<PaginatedResponse<ProductResponse>> {
+  async list(
+    filters: ListProductsDto,
+    options: ProductCatalogVisibilityOptions = {},
+  ): Promise<PaginatedResponse<ProductResponse>> {
     const page = filters.page ?? DEFAULT_PAGE;
     const limit = filters.limit ?? DEFAULT_LIMIT;
 
-    const where = {
+    const where: Prisma.ProductoWhereInput = {
       ...(filters.vendedorId ? { vendedorId: filters.vendedorId } : {}),
       ...(filters.categoriaId ? { categoriaId: filters.categoriaId } : {}),
       ...(filters.disponibles ? { activo: true, stock: { gt: 0 } } : {}),
+      ...this.activeCatalogWhere(options),
     };
 
     const [items, total] = await this.prisma.$transaction([
@@ -52,9 +60,12 @@ export class ProductsService {
     };
   }
 
-  async findById(id: string): Promise<ProductResponse> {
-    const producto = await this.prisma.producto.findUnique({
-      where: { id },
+  async findById(
+    id: string,
+    options: ProductCatalogVisibilityOptions = {},
+  ): Promise<ProductResponse> {
+    const producto = await this.prisma.producto.findFirst({
+      where: { id, ...this.activeCatalogWhere(options) },
       include: { categoria: true, marca: true },
     });
 
@@ -65,14 +76,18 @@ export class ProductsService {
     return this.toResponse(producto);
   }
 
-  async search(query: SearchProductDto): Promise<PaginatedResponse<ProductResponse>> {
+  async search(
+    query: SearchProductDto,
+    options: ProductCatalogVisibilityOptions = {},
+  ): Promise<PaginatedResponse<ProductResponse>> {
     const page = query.page ?? DEFAULT_PAGE;
     const limit = query.limit ?? DEFAULT_LIMIT;
 
-    const where = {
+    const where: Prisma.ProductoWhereInput = {
       activo: true,
       nombre: { contains: query.q, mode: Prisma.QueryMode.insensitive },
       ...(query.vendedorId ? { vendedorId: query.vendedorId } : {}),
+      ...this.activeCatalogWhere(options),
     };
 
     const [items, total] = await this.prisma.$transaction([
@@ -98,6 +113,8 @@ export class ProductsService {
   }
 
   async create(vendedorId: string, dto: CreateProductDto): Promise<{ id: string; created: boolean }> {
+    await this.assertActiveCatalogOwnership(vendedorId, dto.categoriaId, dto.marcaId);
+
     const porcentajeIva = dto.porcentajeIva ?? 21;
     const porcentajeImpuestos = dto.porcentajeImpuestos ?? 0;
     const precioFinal = this.pricing.calcularPrecioFinal(
@@ -141,6 +158,8 @@ export class ProductsService {
     id: string,
     dto: UpdateProductDto,
   ): Promise<{ id: string; updated: boolean }> {
+    await this.assertActiveCatalogOwnership(vendedorId, dto.categoriaId, dto.marcaId);
+
     // Transacción: ownership check + update atómicos, elimina
     // condición de carrera entre ambas operaciones.
     let updatedProduct: {
@@ -291,5 +310,46 @@ export class ProductsService {
       activo: producto.activo,
       mostrarPrecio: producto.mostrarPrecio,
     };
+  }
+
+  private activeCatalogWhere(options: ProductCatalogVisibilityOptions): Prisma.ProductoWhereInput {
+    if (options.includeInactiveTaxonomy) {
+      return {};
+    }
+
+    return {
+      AND: [
+        { OR: [{ categoriaId: null }, { categoria: { activo: true } }] },
+        { OR: [{ marcaId: null }, { marca: { activo: true } }] },
+      ],
+    };
+  }
+
+  private async assertActiveCatalogOwnership(
+    vendedorId: string,
+    categoriaId?: string,
+    marcaId?: string,
+  ): Promise<void> {
+    if (categoriaId) {
+      const categoria = await this.prisma.categoria.findFirst({
+        where: { id: categoriaId, vendedorId, activo: true },
+        select: { id: true },
+      });
+
+      if (!categoria) {
+        throw new NotFoundException('Categoría no encontrada');
+      }
+    }
+
+    if (marcaId) {
+      const marca = await this.prisma.marca.findFirst({
+        where: { id: marcaId, vendedorId, activo: true },
+        select: { id: true },
+      });
+
+      if (!marca) {
+        throw new NotFoundException('Marca no encontrada');
+      }
+    }
   }
 }
