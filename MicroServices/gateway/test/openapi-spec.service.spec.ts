@@ -394,3 +394,68 @@ describe('OpenApiSpecService request body documentation', () => {
     expect(operationAt(spec, '/api/v1/users/profile/update', 'patch').requestBody?.required).toBe(false);
   });
 });
+
+describe('OpenApiSpecService required request headers', () => {
+  it('exposes Idempotency-Key as a required header on orders.create', () => {
+    const spec = generateSpec();
+    const header = parameterOf(operationAt(spec, '/api/v1/orders/create', 'post'), 'Idempotency-Key');
+
+    expect(header.in).toBe('header');
+    expect(header.required).toBe(true);
+    expect(header.description).toContain('Idempotency key is required');
+    expect(header.description).toContain('qa-pedido-001');
+  });
+
+  it('gives every header parameter a location and a description', () => {
+    const incomplete = specOperations(generateSpec())
+      .flatMap(({ path, method, operation }) =>
+        (operation.parameters ?? [])
+          .filter(parameter => parameter.in === 'header')
+          .filter(parameter => parameter.required !== true || !parameter.description)
+          .map(parameter => `${method.toUpperCase()} ${path} ${parameter.name}`),
+      );
+
+    expect(incomplete).toEqual([]);
+  });
+
+  it('does not invent header parameters on actions that do not require them', () => {
+    const withHeaders = specOperations(generateSpec())
+      .filter(({ operation }) => (operation.parameters ?? []).some(parameter => parameter.in === 'header'))
+      .map(({ path, method }) => `${method.toUpperCase()} ${path}`);
+
+    expect(withHeaders).toEqual(['POST /api/v1/orders/create']);
+  });
+
+  it('states the idempotency requirement in the orders.create description too', () => {
+    const operation = operationAt(generateSpec(), '/api/v1/orders/create', 'post');
+
+    expect(operation.description).toContain('Idempotency-Key');
+    expect(operation.description).toContain('202');
+  });
+});
+
+describe('OpenApiSpecService Scalar walkthrough recipes', () => {
+  it('ships step-by-step recipes covering login, catalog, and orders', () => {
+    const description = (generateSpec().info as { description: string }).description;
+
+    expect(description).toContain('Recetas para probar en Scalar');
+    expect(description).toContain('Receta 1 — Vendedor: crear y desactivar una categoría');
+    expect(description).toContain('Receta 4 — Cliente: crear un pedido y seguirlo');
+  });
+
+  it('warns about the two catalog mistakes that break the delete flow', () => {
+    const description = (generateSpec().info as { description: string }).description;
+
+    expect(description).toContain('/delete?id=<id>');
+    expect(description).toContain('el servicio lo resuelve del token');
+  });
+
+  it('documents that job-status takes the trackingId, not the order id', () => {
+    const spec = generateSpec();
+    const description = (spec.info as { description: string }).description;
+
+    expect(description).toContain('orders/job-status?id=<trackingId>');
+    expect(parameterOf(operationAt(spec, '/api/v1/orders/job-status', 'get'), 'id').description)
+      .toContain('trackingId');
+  });
+});

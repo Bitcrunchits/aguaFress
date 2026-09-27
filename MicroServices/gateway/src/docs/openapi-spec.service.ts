@@ -568,6 +568,45 @@ const API_DESCRIPTION = `AguaFress API Gateway expone el contrato HTTP operativo
 3. Usar Authorize de Scalar con el security scheme \`bearerAuth\`. Pegar solo el valor del JWT; Scalar envía \`Authorization: Bearer <token>\`.
 4. Verificar la sesión con \`GET /api/v1/users/profile\`.
 
+## Recetas para probar en Scalar
+Recetas copiables de punta a punta. Cada \`<...>\` es un valor que copiás de la respuesta del paso anterior.
+
+### Receta 1 — Vendedor: crear y desactivar una categoría
+1. \`POST /api/v1/auth/login\` con \`{"email":"juan@aguafress.com","password":"admin123"}\` y copiá el campo \`token\`.
+2. En el botón **Authorize** de Scalar, elegí \`bearerAuth\` y pegá **solo** el token, sin la palabra \`Bearer \`.
+3. \`POST /api/v1/categories/create\` con \`{"nombre":"QA-Prueba"}\`. La respuesta trae **dos** ids: \`id\` (esta categoría) y \`vendedorId\` (tu perfil de vendedor). Copiá los dos.
+4. \`DELETE /api/v1/categories/delete?id=<el id del paso 3>\` con el query pegado con \`?\` y \`=\`. Responde \`{"deactivated":true}\`.
+5. Repetí con \`POST /api/v1/brands/create\` \`{"nombre":"QA-Marca"}\` y \`DELETE /api/v1/brands/delete?id=<id de la marca>\`.
+
+> Los dos errores más frecuentes en esta receta: mandar \`/delete/<id>\` en vez de \`/delete?id=<id>\`, y mandar el \`vendedorId\` en el \`id\`. El \`vendedorId\` **no se envía** en create/update/delete: el servicio lo resuelve del token.
+
+### Receta 2 — Conseguir tu \`vendedorId\`
+En orden de rapidez:
+1. \`POST /api/v1/categories/create\` y leé el \`vendedorId\` de la respuesta. Es el camino más corto.
+2. \`GET /api/v1/products/list\` y tomá el \`vendedorId\` de cualquier producto.
+3. \`GET /api/v1/products/search\` y tomá el \`vendedorId\` de un resultado.
+
+Nunca es el \`sub\` del JWT, ese valor no se envía en ningún query.
+
+### Receta 3 — Listar el catálogo del vendedor
+Con el \`vendedorId\` de la receta 2:
+- \`GET /api/v1/categories/list?vendedorId=<vendedorId>\`
+- \`GET /api/v1/brands/list?vendedorId=<vendedorId>\`
+- \`GET /api/v1/products/list?vendedorId=<vendedorId>&categoriaId=<id de categoría>\` — el filtro es \`categoriaId\`, no \`categoria\`.
+
+### Receta 4 — Cliente: crear un pedido y seguirlo
+1. \`POST /api/v1/auth/login\` con \`{"email":"pedro@aguafress.com","password":"admin123"}\` y autorizá ese token (reemplaza al del vendedor).
+2. \`GET /api/v1/clientes/providers\` y copiá el \`id\` de un proveedor: ese es el \`vendedorId\` del pedido.
+3. \`POST /api/v1/orders/create\` — **obligatorio** el header \`Idempotency-Key\` con un valor único (por ejemplo \`qa-pedido-001\`), y el body del ejemplo ya trae \`vendedorId\`, \`metodoPago\` y \`direccion\`. Sin ese header el gateway responde \`Idempotency key is required\`.
+4. La respuesta \`202\` trae el \`trackingId\`, no el pedido.
+5. \`GET /api/v1/orders/job-status?id=<trackingId>\` — acá el parámetro \`id\` es el **\`trackingId\`** del paso 4, no el id del pedido.
+6. \`GET /api/v1/orders/list\` para ver los pedidos del rol con el que autorizaste.
+
+### Receta 5 — Super admin
+1. \`POST /api/v1/auth/login\` con \`{"email":"admin@aguafress.com","password":"admin123"}\`.
+2. \`GET /api/v1/vendedores/list\` para ver vendedores y sus estados.
+3. \`PATCH /api/v1/vendedores/change-estado/<id>\` con \`{"estado":"aprobado"}\`. Este id va en el **path**, no en la query.
+
 ## Autenticación y roles
 Los endpoints protegidos declaran \`bearerAuth\` y requieren un JWT. Los endpoints restringidos por rol indican \`super_admin\`, \`vendedor\` o \`cliente\` en la descripción de la operación. La identidad sale del JWT; no enviar \`userId\` en el body de las requests.
 
@@ -629,6 +668,8 @@ interface ActionDoc {
   method: HttpMethod;
   pathParams?: string[];
   queryParams?: string[];
+  /** Required request headers, rendered as `in: 'header'` parameters. */
+  headerParams?: string[];
   /** Real description per parameter, keyed by parameter name. Overrides DEFAULT_PARAM_DOCS. */
   paramDocs?: Record<string, string>;
   /** Runnable payload emitted as requestBody.content['application/json'].example. */
@@ -718,12 +759,24 @@ const PRODUCT_AVAILABLE_FILTER_PARAM_DOC =
   'Cuando es `true`, lista solo productos activos con stock mayor a 0.';
 
 /** Applied when an operation declares a parameter but no explicit `paramDocs` entry. */
+const PARAM_LOCATION_LABEL: Record<'path' | 'query' | 'header', string> = {
+  path: 'ruta',
+  query: 'consulta',
+  header: 'cabecera',
+};
+
+const IDEMPOTENCY_KEY_PARAM_DOC =
+  'Clave de idempotencia del comando. El gateway la exige y rechaza el request con ' +
+  '`Idempotency key is required` si falta. Usá un valor único por comando, por ejemplo ' +
+  '`qa-pedido-001`. Si además la mandás en el body, ambos valores deben coincidir.';
+
 const DEFAULT_PARAM_DOCS: Record<string, string> = {
   page: PAGE_PARAM_DOC,
   limit: LIMIT_PARAM_DOC,
   vendedorId: VENDEDOR_PROFILE_ID_PARAM_DOC,
   estado: VENDEDOR_STATUS_PARAM_DOC,
   id: 'ID de la entidad (UUID) sobre la que opera esta acción.',
+  'Idempotency-Key': IDEMPOTENCY_KEY_PARAM_DOC,
 };
 
 const ACTIONS_DOC: Record<string, ActionDoc> = {
@@ -802,7 +855,7 @@ const ACTIONS_DOC: Record<string, ActionDoc> = {
 
   'orders.list': { summary: 'Listar pedidos', description: 'No acepta filtros: el alcance lo define el rol del token. `cliente` ve sus propios pedidos, `vendedor` los del perfil de vendedor resuelto desde el token, `super_admin` los de todos. Sin paginación.', method: 'get', responseSchema: 'OrderResponse', isArray: true },
   'orders.get_by_id': { summary: 'Obtener pedido por ID', description: 'El `id` viaja por query string. Solo el cliente dueño, el vendedor que atiende el pedido o `super_admin` pueden leerlo.', method: 'get', queryParams: ['id'], paramDocs: { id: ORDER_ID_PARAM_DOC }, responseSchema: 'OrderResponse' },
-  'orders.create': { summary: 'Crear pedido async', description: 'Valida vendedorId seleccionado, ignora body userId y encola con userId JWT + vendedorId. Exige el header `Idempotency-Key`; la respuesta es el seguimiento del comando, no el pedido. Consultar el resultado con el `trackingId` en orders/job-status.', method: 'post', bodySchema: 'CreateOrderRequest', bodyExample: { vendedorId: 'c1a2b3d4-5e6f-4071-8293-a4b5c6d7e8f9', metodoPago: 'contra_entrega', direccion: { calle: 'Av. Corrientes', numero: '1234', pisoDepto: '3B', barrio: 'Balvanera', ciudad: 'Buenos Aires', provincia: 'Buenos Aires', codigoPostal: 'C1084' }, observaciones: 'Dejar en la puerta' }, responseSchema: 'AsyncAcceptedResponse', roles: ['cliente'] },
+  'orders.create': { summary: 'Crear pedido async', description: '**Requiere el header `Idempotency-Key`** (ver el campo de arriba) y un `vendedorId` que sea un proveedor seleccionado por este cliente. Ignora cualquier `userId` del body: la identidad sale del JWT. Responde `202` con el seguimiento del comando, NO con el pedido; el resultado real se consulta en orders/job-status usando el `trackingId`.', method: 'post', headerParams: ['Idempotency-Key'], bodySchema: 'CreateOrderRequest', bodyExample: { vendedorId: 'c1a2b3d4-5e6f-4071-8293-a4b5c6d7e8f9', metodoPago: 'contra_entrega', direccion: { calle: 'Av. Corrientes', numero: '1234', pisoDepto: '3B', barrio: 'Balvanera', ciudad: 'Buenos Aires', provincia: 'Buenos Aires', codigoPostal: 'C1084' }, observaciones: 'Dejar en la puerta' }, responseSchema: 'AsyncAcceptedResponse', roles: ['cliente'] },
   'orders.job_status': { summary: 'Consultar estado de pedido async', description: 'El parámetro `id` es el `trackingId` del comando, NO el `id` del pedido.', method: 'get', queryParams: ['id'], paramDocs: { id: ORDER_TRACKING_ID_PARAM_DOC }, responseSchema: 'OrderJobStatusResponse' },
   'orders.status_update': { summary: 'Actualizar estado de pedido', description: 'El vendedor mueve el ciclo de vida de un pedido propio. El servicio valida la transición y rechaza las que no están permitidas.', method: 'patch', bodySchema: 'UpdateOrderStatusRequest', bodyExample: { id: '4b8d1c76-2a53-4e19-b7c0-95d3f8a26b71', estado: 'en_camino', notas: 'Sale del depósito' }, responseSchema: 'OrderResponse', roles: ['vendedor'] },
   'orders.cancel': { summary: 'Cancelar pedido', description: 'El cliente cancela un pedido propio. Solo se admite mientras el pedido está en estado `pendiente`.', method: 'patch', bodySchema: 'CancelOrderRequest', bodyExample: { id: '4b8d1c76-2a53-4e19-b7c0-95d3f8a26b71', motivo: 'Compré en otro lugar' }, responseSchema: 'OrderResponse', roles: ['cliente'] },
@@ -917,6 +970,17 @@ export class OpenApiSpecService {
       });
     }
 
+    // Required request headers
+    for (const header of doc.headerParams ?? []) {
+      parameters.push({
+        name: header,
+        in: 'header',
+        required: true,
+        schema: { type: 'string' },
+        description: this.describeParam(doc, header, 'header'),
+      });
+    }
+
     // Roles description
     const roles = doc.roles ?? mapping.roles;
     const roleDesc = roles?.length
@@ -958,10 +1022,10 @@ export class OpenApiSpecService {
     return operation;
   }
 
-  private describeParam(doc: ActionDoc, param: string, location: 'path' | 'query'): string {
+  private describeParam(doc: ActionDoc, param: string, location: 'path' | 'query' | 'header'): string {
     return doc.paramDocs?.[param]
       ?? DEFAULT_PARAM_DOCS[param]
-      ?? `Parámetro de ${location === 'path' ? 'ruta' : 'consulta'} de esta operación.`;
+      ?? `Parámetro de ${PARAM_LOCATION_LABEL[location]} de esta operación.`;
   }
 
   private buildResponse(status: number, doc: ActionDoc): Record<string, unknown> {
