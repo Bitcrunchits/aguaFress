@@ -572,7 +572,7 @@ const API_DESCRIPTION = `AguaFress API Gateway expone el contrato HTTP operativo
 Recetas copiables de punta a punta. Cada \`<...>\` es un valor que copiás de la respuesta del paso anterior.
 
 ### Receta 1 — Vendedor: crear y desactivar una categoría
-1. \`POST /api/v1/auth/login\` con \`{"email":"juan@aguafress.com","password":"admin123"}\` y copiá el campo \`token\`.
+1. \`POST /api/v1/auth/login\` con \`{"email":"vendedor@email.com","password":"admin123"}\` y copiá el campo \`token\`.
 2. En el botón **Authorize** de Scalar, elegí \`bearerAuth\` y pegá **solo** el token, sin la palabra \`Bearer \`.
 3. \`POST /api/v1/categories/create\` con \`{"nombre":"QA-Prueba"}\`. La respuesta trae **dos** ids: \`id\` (esta categoría) y \`vendedorId\` (tu perfil de vendedor). Copiá los dos.
 4. \`DELETE /api/v1/categories/delete?id=<el id del paso 3>\` con el query pegado con \`?\` y \`=\`. Responde \`{"deactivated":true}\`.
@@ -595,17 +595,34 @@ Con el \`vendedorId\` de la receta 2:
 - \`GET /api/v1/products/list?vendedorId=<vendedorId>&categoriaId=<id de categoría>\` — el filtro es \`categoriaId\`, no \`categoria\`.
 
 ### Receta 4 — Cliente: crear un pedido y seguirlo
-1. \`POST /api/v1/auth/login\` con \`{"email":"pedro@aguafress.com","password":"admin123"}\` y autorizá ese token (reemplaza al del vendedor).
-2. \`GET /api/v1/clientes/providers\` y copiá el \`id\` de un proveedor: ese es el \`vendedorId\` del pedido.
-3. \`POST /api/v1/orders/create\` — **obligatorio** el header \`Idempotency-Key\` con un valor único (por ejemplo \`qa-pedido-001\`), y el body del ejemplo ya trae \`vendedorId\`, \`metodoPago\` y \`direccion\`. Sin ese header el gateway responde \`Idempotency key is required\`.
-4. La respuesta \`202\` trae el \`trackingId\`, no el pedido.
-5. \`GET /api/v1/orders/job-status?id=<trackingId>\` — acá el parámetro \`id\` es el **\`trackingId\`** del paso 4, no el id del pedido.
-6. \`GET /api/v1/orders/list\` para ver los pedidos del rol con el que autorizaste.
+No hay usuario cliente seed, así que el paso 1 crea el cliente. Hacé esta receta **antes** de loguearte como vendedor, o guardá el \`token\` del paso 1 para volver atrás.
+
+1. Autorizá como \`vendedor@email.com\` y llamá a \`POST /api/v1/auth/register-client-by-vendor\` con los datos del cliente. La respuesta trae el \`token\` del cliente ya listo: **no necesitás un segundo login**.
+2. Pasá a la pestaña **Auth** de Scalar y autorizá con ese \`token\` de cliente.
+3. \`GET /api/v1/clientes/providers\` y copiá el \`id\` de un proveedor: ese es el \`vendedorId\` del pedido.
+4. \`POST /api/v1/orders/create\` — **obligatorio** el header \`Idempotency-Key\` con un valor único (por ejemplo \`qa-pedido-001\`), y el body del ejemplo ya trae \`vendedorId\`, \`metodoPago\` y \`direccion\`. Sin ese header el gateway responde \`Idempotency key is required\`.
+5. La respuesta \`202\` trae el \`trackingId\`, no el pedido.
+6. \`GET /api/v1/orders/job-status?id=<trackingId>\` — acá el parámetro \`id\` es el **\`trackingId\`** del paso 5, no el id del pedido.
+7. \`GET /api/v1/orders/list\` para ver los pedidos del rol con el que autorizaste.
 
 ### Receta 5 — Super admin
 1. \`POST /api/v1/auth/login\` con \`{"email":"admin@aguafress.com","password":"admin123"}\`.
 2. \`GET /api/v1/vendedores/list\` para ver vendedores y sus estados.
 3. \`PATCH /api/v1/vendedores/change-estado/<id>\` con \`{"estado":"aprobado"}\`. Este id va en el **path**, no en la query.
+
+## Errores frecuentes y qué significan
+| Error | Causa real | Cómo resolverlo |
+| --- | --- | --- |
+| \`{"statusCode":400,"message":["id must be a UUID"],"error":"Bad Request"}\` | El \`id\` falta, no es un UUID, **o no es un UUID v4**. Los DTO validan con \`@IsUUID()\`, que acá solo acepta versión 4 | Pegá el \`id\` que devolvió el \`create\` o el \`list\` de esa misma familia. Un id con versión distinta de 4 se rechaza igual |
+| \`{"statusCode":400,"message":["vendedorId must be a UUID"]}\` | Mismo caso, pero en el \`vendedorId\` de un query de listado | Usá el \`vendedorId\` de la receta 2 |
+| \`{"statusCode":404,"message":"Categoría no encontrada"}\` | El id es un v4 válido pero no existe, o no pertenece al vendedor del token | Verificá el id contra el listado del vendedor: el servicio valida pertenencia |
+| \`Invalid entity ID in URL path\` | Mandaste \`vendedorId=...\` o un \`id=\` dentro del path en vez del query | Las acciones de catálogo y pedidos llevan el id por query: \`?id=<uuid>\` |
+| \`Idempotency key is required\` | Falta el header \`Idempotency-Key\` en \`orders.create\` | Agregá el header con un valor único por comando |
+| \`Invalid credentials\` | Email o contraseña incorrectos | Usá un email de la tabla de credenciales de arriba; verificá con \`SELECT email FROM "AUTH_USER"\` |
+| \`Insufficient role for TCP handler\` / \`403\` | El token es de un rol que no puede hacer la acción | Los endpoints declaran \`super_admin\`, \`vendedor\` o \`cliente\`; cambiá la sesión |
+| \`Too Many Requests\` / \`429\` | Rate limit del gateway | Esperá la ventana o cambiá de usuario |
+
+Cuando el DTO de un body y un query fallan juntos, el array \`message\` trae **todos** los errores de una vez: corregí el array completo en un solo intento.
 
 ## Autenticación y roles
 Los endpoints protegidos declaran \`bearerAuth\` y requieren un JWT. Los endpoints restringidos por rol indican \`super_admin\`, \`vendedor\` o \`cliente\` en la descripción de la operación. La identidad sale del JWT; no enviar \`userId\` en el body de las requests.
@@ -614,13 +631,18 @@ Los endpoints protegidos declaran \`bearerAuth\` y requieren un JWT. Los endpoin
 Las operaciones exitosas devuelven el DTO documentado directamente. Las listas paginadas devuelven \`{ data, pagination }\`. Los comandos asíncronos devuelven datos de seguimiento como \`jobId\`, \`trackingId\`, \`status\` y \`statusUrl\`. Los errores usan \`ErrorResponse\` con \`statusCode\`, \`message\`, \`error\` opcional y \`details\` opcional.
 
 ## Credenciales seed de dev/demo local
-Estas credenciales son solo para los seeds locales de Docker en \`docker/init-db/*.sql\`; nunca reutilizarlas en producción.
+Solo para el entorno local con Docker. Nunca reutilizarlas en producción. Los seeds viven en \`docker/init-db/*.sql\` y todos los usuarios que crean usan la contraseña \`admin123\`.
 
 | Rol | Email | Contraseña |
 | --- | --- | --- |
 | super_admin | \`admin@aguafress.com\` | \`admin123\` |
-| vendedor | \`juan@aguafress.com\` | \`admin123\` |
-| cliente | \`pedro@aguafress.com\` | \`admin123\` |
+| vendedor | \`vendedor@email.com\` | \`admin123\` |
+| vendedor | \`vendedor2@email.com\` | \`admin123\` |
+| vendedor | \`vendedor3@email.com\` | \`admin123\` |
+
+> **No hay usuario cliente seed.** Los cuatro anteriores son \`super_admin\` y \`vendedor\`. Para probar el flujo de cliente creá uno con \`POST /api/v1/auth/register-client-by-vendor\` (autorizado como \`vendedor\`) y usá el \`token\` que devuelve esa respuesta.
+>
+> El seed \`docker/init-db/seed-admin.sql\` además intenta crear \`juan@aguafress.com\` y \`maria@aguafress.com\`, pero solo si no existen: en una base ya poblada por registro vía API esas cuentas nunca se crean y esos emails no sirven para iniciar sesión. Verificá contra \`SELECT email FROM "AUTH_USER"\` si dudás.
 
 ## Flujos principales por actor
 1. Super admin: login, revisar dashboard, aprobar/gestionar vendedores, inspeccionar logs de auditoría.

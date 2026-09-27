@@ -16,6 +16,61 @@ describe('OpenApiSpecService provider context docs', () => {
     expect(description).toContain('admin123');
   });
 
+  it('documents only credentials that exist in the local seed, never the conditional ones', () => {
+    const spec = new OpenApiSpecService().generateSpec();
+    const description = (spec.info as { description: string }).description;
+
+    // Real AUTH_USER rows in the local dev database.
+    for (const email of ['admin@aguafress.com', 'vendedor@email.com', 'vendedor2@email.com', 'vendedor3@email.com']) {
+      expect(description).toContain(email);
+    }
+
+    // seed-admin.sql creates these only when absent, so a database already
+    // populated through the API never has them. Advertising them as login
+    // credentials sends callers to a guaranteed 401. The prose below the
+    // table may still name them to explain why they are absent.
+    const credentialRows = description
+      .split('\n')
+      .filter(line => line.trimStart().startsWith('|') && line.includes('@'));
+
+    expect(credentialRows.length).toBeGreaterThan(0);
+    expect(credentialRows.join('\n')).not.toContain('juan@aguafress.com');
+    expect(credentialRows.join('\n')).not.toContain('pedro@aguafress.com');
+    expect(credentialRows.join('\n')).not.toContain('maria@aguafress.com');
+  });
+
+  it('keeps the documented seller credentials aligned with the login schema example', () => {
+    const spec = new OpenApiSpecService().generateSpec();
+    const schemas = (spec.components as { schemas: Record<string, { properties?: Record<string, { example?: unknown }> }> }).schemas;
+
+    // LoginRequest.example.email is the credential the API is actually exercised with.
+    const schemaExample = schemas.LoginRequest?.properties?.email?.example;
+
+    expect(schemaExample).toBeDefined();
+    expect((spec.info as { description: string }).description)
+      .toContain(String(schemaExample));
+  });
+
+  it('maps each documented failure to its cause and remedy', () => {
+    const description = (new OpenApiSpecService().generateSpec().info as { description: string }).description;
+
+    expect(description).toContain('Errores frecuentes y qué significan');
+    expect(description).toContain('id must be a UUID');
+    expect(description).toContain('Idempotency key is required');
+    expect(description).toContain('Invalid credentials');
+    // The UUID version requirement is the least guessable part of the contract.
+    expect(description).toContain('UUID v4');
+  });
+
+  it('tells the client recipe to create a client instead of promising a seeded one', () => {
+    const description = (new OpenApiSpecService().generateSpec().info as { description: string }).description;
+    const recipe = description.slice(description.indexOf('### Receta 4'));
+
+    expect(recipe).toContain('No hay usuario cliente seed');
+    expect(recipe).toContain('auth/register-client-by-vendor');
+    expect(recipe).not.toContain('pedro@aguafress.com');
+  });
+
   it('uses bearerAuth as the OpenAPI JWT security scheme', () => {
     const spec = new OpenApiSpecService().generateSpec();
     const components = spec.components as {
