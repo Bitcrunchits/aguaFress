@@ -467,7 +467,6 @@ const SHARED_SCHEMAS: Record<string, Schema> = {
 
   CreateCategoriaRequest: obj({
     nombre: str('Nombre de la categoría'),
-    orden: { type: 'integer', description: 'Orden de visualización (opcional)' },
   }, ['nombre']),
 
   UpdateCategoriaRequest: obj({
@@ -616,7 +615,7 @@ const ACTIONS_DOC: Record<string, ActionDoc> = {
   'products.delete': { summary: 'Eliminar producto', description: 'El vendedor elimina un producto propio. id se pasa por query string.', method: 'delete', queryParams: ['id'], responseSchema: 'ProductDeletedResponse', roles: ['vendedor'] },
 
   'categories.list': { summary: 'Listar categorías', description: 'Público. Lista categorías de un vendedor.', method: 'get', queryParams: ['vendedorId'], responseSchema: 'CategoriaResponse', isArray: true },
-  'categories.create': { summary: 'Crear categoría', description: 'El vendedor crea una categoría propia.', method: 'post', bodySchema: 'CreateCategoriaRequest', responseSchema: 'CategoriaResponse', roles: ['vendedor'] },
+  'categories.create': { summary: 'Crear categoría', description: 'El vendedor crea una categoría propia. El orden se asigna automáticamente.', method: 'post', bodySchema: 'CreateCategoriaRequest', responseSchema: 'CategoriaResponse', roles: ['vendedor'] },
   'categories.update': { summary: 'Actualizar categoría', description: 'El vendedor actualiza una categoría propia. Solo si le pertenece.', method: 'patch', queryParams: ['id'], bodySchema: 'UpdateCategoriaRequest', responseSchema: 'CategoriaResponse', roles: ['vendedor'] },
   'categories.delete': { summary: 'Eliminar categoría', description: 'El vendedor elimina una categoría propia. Productos asociados pasan a null.', method: 'delete', queryParams: ['id'], responseSchema: 'ProductDeletedResponse', roles: ['vendedor'] },
   'brands.list': { summary: 'Listar marcas', description: 'Público. Lista marcas de un vendedor.', method: 'get', queryParams: ['vendedorId'], responseSchema: 'MarcaResponse', isArray: true },

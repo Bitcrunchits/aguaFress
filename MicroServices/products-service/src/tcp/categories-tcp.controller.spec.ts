@@ -1,4 +1,5 @@
 import { Test, type TestingModule } from '@nestjs/testing';
+import { UserRole } from '@agua/contracts';
 import { CategoriesTcpController } from './categories-tcp.controller';
 import { TcpPayloadAdapter } from './tcp-payload-adapter.service';
 import { CategoriesService } from '../categories/categories.service';
@@ -21,6 +22,7 @@ const mockVendedorResolver = {
 };
 
 const VENDEDOR_ID = 'cf4439a6-395e-4b52-b33e-82ccbb6f123f';
+const AUTH_USER_ID = 'auth-user-1';
 
 function basePayload(overrides: Partial<TcpPayload> = {}): TcpPayload {
   return {
@@ -66,5 +68,15 @@ describe('CategoriesTcpController (integración con TcpPayloadAdapter real)', ()
 
   it('rechaza si falta vendedorId en el query (público, pero requerido)', async () => {
     await expect(controller.listCategorias(basePayload({ query: {} }))).rejects.toThrow();
+  });
+
+  it('rechaza orden en categories.create porque el backend lo asigna automáticamente', async () => {
+    await expect(controller.createCategoria(basePayload({
+      body: { nombre: 'Sodas', orden: 10 },
+      user: { sub: AUTH_USER_ID, email: 'seller@example.com', role: UserRole.VENDEDOR },
+    }))).rejects.toThrow();
+
+    expect(mockVendedorResolver.resolveVendedorIdByAuthUserId).not.toHaveBeenCalled();
+    expect(mockCategoriesService.createCategoria).not.toHaveBeenCalled();
   });
 });
