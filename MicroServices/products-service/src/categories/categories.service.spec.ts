@@ -1,4 +1,3 @@
-import { ConflictException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { CategoriesService } from './categories.service';
 import { PrismaService } from '../common/prisma/prisma.service';
@@ -68,10 +67,12 @@ describe('CategoriesService', () => {
       });
     });
 
-    it('rechaza nombre duplicado activo con ConflictException', async () => {
+    it('rechaza nombre duplicado aunque la categoría esté inactiva con ConflictException', async () => {
       mockPrisma.categoria.findFirst.mockResolvedValue({ id: 'existente' });
 
-      await expect(service.createCategoria('vendedor-1', { nombre: 'Aguas' })).rejects.toThrow(ConflictException);
+      await expect(service.createCategoria('vendedor-1', { nombre: 'Aguas' })).rejects.toThrow(
+        'Ya existe una categoría con ese nombre. Elegí un nombre diferente.',
+      );
       expect(mockPrisma.categoria.create).not.toHaveBeenCalled();
     });
   });
@@ -98,27 +99,16 @@ describe('CategoriesService', () => {
   });
 
   describe('reactivateCategoria', () => {
-    it('reactiva una categoría inactiva si no hay nombre activo duplicado', async () => {
+    it('reactiva una categoría inactiva sin validar duplicados imposibles por hard unique', async () => {
       const now = new Date('2025-01-01T00:00:00Z');
-      mockPrisma.categoria.findFirst
-        .mockResolvedValueOnce({ id: 'c1', nombre: 'Bidones', orden: 1, vendedorId: 'vendedor-1', activo: false, createdAt: now, updatedAt: now })
-        .mockResolvedValueOnce(null);
+      mockPrisma.categoria.findFirst.mockResolvedValueOnce({ id: 'c1', nombre: 'Bidones', orden: 1, vendedorId: 'vendedor-1', activo: false, createdAt: now, updatedAt: now });
       mockPrisma.categoria.update.mockResolvedValue({ id: 'c1', nombre: 'Bidones', orden: 1, vendedorId: 'vendedor-1', activo: true, createdAt: now, updatedAt: now });
 
       const result = await service.reactivateCategoria('vendedor-1', 'c1');
 
       expect(mockPrisma.categoria.update).toHaveBeenCalledWith({ where: { id: 'c1' }, data: { activo: true } });
+      expect(mockPrisma.categoria.findFirst).toHaveBeenCalledTimes(1);
       expect(result.activo).toBe(true);
-    });
-
-    it('rechaza reactivar si hay otra categoría activa con el mismo nombre', async () => {
-      const now = new Date('2025-01-01T00:00:00Z');
-      mockPrisma.categoria.findFirst
-        .mockResolvedValueOnce({ id: 'c1', nombre: 'Bidones', orden: 1, vendedorId: 'vendedor-1', activo: false, createdAt: now, updatedAt: now })
-        .mockResolvedValueOnce({ id: 'activa' });
-
-      await expect(service.reactivateCategoria('vendedor-1', 'c1')).rejects.toThrow(ConflictException);
-      expect(mockPrisma.categoria.update).not.toHaveBeenCalled();
     });
   });
 
@@ -157,25 +147,26 @@ describe('CategoriesService', () => {
   });
 
   describe('createMarca', () => {
-    it('rechaza nombre duplicado activo con ConflictException', async () => {
+    it('rechaza nombre duplicado aunque la marca esté inactiva con ConflictException', async () => {
       mockPrisma.marca.findFirst.mockResolvedValue({ id: 'existente' });
 
-      await expect(service.createMarca('vendedor-1', { nombre: 'AguaFress' })).rejects.toThrow(ConflictException);
+      await expect(service.createMarca('vendedor-1', { nombre: 'AguaFress' })).rejects.toThrow(
+        'Ya existe una marca con ese nombre. Elegí un nombre diferente.',
+      );
       expect(mockPrisma.marca.create).not.toHaveBeenCalled();
     });
   });
 
   describe('reactivateMarca', () => {
-    it('reactiva una marca inactiva si el nombre no está activo', async () => {
+    it('reactiva una marca inactiva sin validar duplicados imposibles por hard unique', async () => {
       const now = new Date('2025-01-01T00:00:00Z');
-      mockPrisma.marca.findFirst
-        .mockResolvedValueOnce({ id: 'm1', nombre: 'AguaFress', vendedorId: 'vendedor-1', activo: false, createdAt: now, updatedAt: now })
-        .mockResolvedValueOnce(null);
+      mockPrisma.marca.findFirst.mockResolvedValueOnce({ id: 'm1', nombre: 'AguaFress', vendedorId: 'vendedor-1', activo: false, createdAt: now, updatedAt: now });
       mockPrisma.marca.update.mockResolvedValue({ id: 'm1', nombre: 'AguaFress', vendedorId: 'vendedor-1', activo: true, createdAt: now, updatedAt: now });
 
       const result = await service.reactivateMarca('vendedor-1', 'm1');
 
       expect(mockPrisma.marca.update).toHaveBeenCalledWith({ where: { id: 'm1' }, data: { activo: true } });
+      expect(mockPrisma.marca.findFirst).toHaveBeenCalledTimes(1);
       expect(result.activo).toBe(true);
     });
   });

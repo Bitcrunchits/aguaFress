@@ -23,9 +23,7 @@ model Categoria {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  // Active names are unique per vendor via a partial SQL index in migrations.
-  // Prisma schema cannot represent `WHERE activo = true` partial indexes.
-  @@index([vendedorId, nombre])
+  @@unique([vendedorId, nombre])
   @@index([vendedorId])
   @@index([vendedorId, activo])
   @@map("CATEGORIA")
@@ -41,9 +39,7 @@ model Marca {
   createdAt  DateTime   @default(now()) @map("created_at")
   updatedAt  DateTime   @updatedAt @map("updated_at")
 
-  // Active names are unique per vendor via a partial SQL index in migrations.
-  // Prisma schema cannot represent `WHERE activo = true` partial indexes.
-  @@index([vendedorId, nombre])
+  @@unique([vendedorId, nombre])
   @@index([vendedorId])
   @@index([vendedorId, activo])
   @@map("MARCA")

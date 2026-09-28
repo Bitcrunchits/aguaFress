@@ -40,7 +40,7 @@ export class CategoriesService {
   }
 
   async createCategoria(vendedorId: string, dto: CreateCategoriaDto) {
-    await this.assertUniqueActiveCategoriaName(vendedorId, dto.nombre);
+    await this.assertUniqueCategoriaName(vendedorId, dto.nombre);
 
     const max = await this.prisma.categoria.aggregate({
       where: { vendedorId, activo: true },
@@ -63,7 +63,7 @@ export class CategoriesService {
     }
 
     if (dto.nombre !== undefined) {
-      await this.assertUniqueActiveCategoriaName(vendedorId, dto.nombre, id);
+      await this.assertUniqueCategoriaName(vendedorId, dto.nombre, id);
     }
 
     return this.prisma.categoria.update({
@@ -108,8 +108,6 @@ export class CategoriesService {
       return this.toCategoriaResponse(cat);
     }
 
-    await this.assertUniqueActiveCategoriaName(vendedorId, cat.nombre, id);
-
     const reactivated = await this.prisma.categoria.update({
       where: { id },
       data: { activo: true },
@@ -135,7 +133,7 @@ export class CategoriesService {
   }
 
   async createMarca(vendedorId: string, dto: CreateMarcaDto) {
-    await this.assertUniqueActiveMarcaName(vendedorId, dto.nombre);
+    await this.assertUniqueMarcaName(vendedorId, dto.nombre);
 
     return this.prisma.marca.create({
       data: { nombre: dto.nombre, vendedorId },
@@ -152,7 +150,7 @@ export class CategoriesService {
     }
 
     if (dto.nombre !== undefined) {
-      await this.assertUniqueActiveMarcaName(vendedorId, dto.nombre, id);
+      await this.assertUniqueMarcaName(vendedorId, dto.nombre, id);
     }
 
     return this.prisma.marca.update({
@@ -196,8 +194,6 @@ export class CategoriesService {
       return this.toMarcaResponse(marca);
     }
 
-    await this.assertUniqueActiveMarcaName(vendedorId, marca.nombre, id);
-
     const reactivated = await this.prisma.marca.update({
       where: { id },
       data: { activo: true },
@@ -206,35 +202,33 @@ export class CategoriesService {
     return this.toMarcaResponse(reactivated);
   }
 
-  private async assertUniqueActiveCategoriaName(vendedorId: string, nombre: string, excludingId?: string): Promise<void> {
+  private async assertUniqueCategoriaName(vendedorId: string, nombre: string, excludingId?: string): Promise<void> {
     const existing = await this.prisma.categoria.findFirst({
       where: {
         vendedorId,
         nombre,
-        activo: true,
         ...(excludingId ? { NOT: { id: excludingId } } : {}),
       },
       select: { id: true },
     });
 
     if (existing) {
-      throw new ConflictException('Ya existe una categoría activa con ese nombre');
+      throw new ConflictException('Ya existe una categoría con ese nombre. Elegí un nombre diferente.');
     }
   }
 
-  private async assertUniqueActiveMarcaName(vendedorId: string, nombre: string, excludingId?: string): Promise<void> {
+  private async assertUniqueMarcaName(vendedorId: string, nombre: string, excludingId?: string): Promise<void> {
     const existing = await this.prisma.marca.findFirst({
       where: {
         vendedorId,
         nombre,
-        activo: true,
         ...(excludingId ? { NOT: { id: excludingId } } : {}),
       },
       select: { id: true },
     });
 
     if (existing) {
-      throw new ConflictException('Ya existe una marca activa con ese nombre');
+      throw new ConflictException('Ya existe una marca con ese nombre. Elegí un nombre diferente.');
     }
   }
 
