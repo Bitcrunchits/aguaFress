@@ -6,9 +6,9 @@ import { TokenService } from './token.service';
 import { UsersService } from '../users/users.service';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
-import * as bcrypt from 'bcrypt';
+import bcrypt = require('bcryptjs');
 
-jest.mock('bcrypt', () => ({
+jest.mock('bcryptjs', () => ({
   hash: jest.fn(),
   compare: jest.fn(),
 }));
