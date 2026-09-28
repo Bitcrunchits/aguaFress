@@ -4,7 +4,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 const BASE = 'http://localhost:3001/api';

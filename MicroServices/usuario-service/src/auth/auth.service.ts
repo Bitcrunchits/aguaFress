@@ -2,7 +2,7 @@ import * as crypto from 'crypto';
 import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { TokenService } from './token.service';
-import * as bcrypt from 'bcrypt';
+import bcrypt = require('bcryptjs');
 import { UserRole, VendedorEstado, AuditAction } from '@agua/contracts';
 import { RegisterDto } from './dto/register.dto';
 import { RegisterClientDto } from './dto/register-client.dto';
