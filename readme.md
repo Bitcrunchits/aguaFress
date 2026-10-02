@@ -4,8 +4,49 @@ AguaFress es un backend de microservicios para pedidos, gestion de vendedores/cl
 
 > Estado actual de `main`: backend-first. El frontend React fue excluido de esta rama; el frontend futuro sera Angular.
 
+## Ejecutar estas lineas para datos de prueba
+
+Al levantar el backend, `usuario-service` deja disponible el `SUPER_ADMIN` local. Ese dato queda como seed minimo para acceso inicial.
+
+Para completar datos de prueba con vendedores, clientes, cartera y productos, levantar primero todo el stack y ejecutar estos seeds manuales una vez que los servicios hayan aplicado sus schemas Prisma:
+
+```bash
+docker compose --env-file .env up -d
+
+docker compose exec postgres psql -U postgres -d agua \
+  -f /docker-entrypoint-initdb.d/seed-mock-data.sql
+
+docker compose exec postgres psql -U postgres -d agua_products \
+  -f /docker-entrypoint-initdb.d/seed-products-mock.sql
+```
+
+Verificacion rapida:
+
+```bash
+docker compose exec postgres psql -U postgres -d agua \
+  -c 'SELECT email, role FROM "AUTH_USER" ORDER BY email;'
+
+docker compose exec postgres psql -U postgres -d agua_products \
+  -c 'SELECT nombre, precio_final, stock FROM "PRODUCTO" LIMIT 10;'
+```
+
+Estos seeds son solo para desarrollo local. No dependen de reiniciar volumenes y deben ejecutarse despues de levantar el stack para evitar choques con el orden de inicializacion de PostgreSQL y Prisma.
+
+Credenciales locales de prueba:
+
+| Rol | Email | Password |
+| --- | --- | --- |
+| Super admin | `admin@aguafress.com` | `admin123` |
+| Vendedor | `carlos@aguafress.com` | `admin123` |
+| Vendedor | `ana@aguafress.com` | `admin123` |
+| Vendedor | `luis@aguafress.com` | `admin123` |
+| Vendedor | `sofia@aguafress.com` | `admin123` |
+| Vendedor | `roberto@aguafress.com` | `admin123` |
+| Cliente | `cliente1@aguafress.com` hasta `cliente25@aguafress.com` | `admin123` |
+
 ## Indice
 
+- [Datos de prueba](#ejecutar-estas-lineas-para-datos-de-prueba)
 - [Vision general](#vision-general)
 - [Arquitectura](#arquitectura)
 - [Servicios y puertos](#servicios-y-puertos)
