@@ -40,12 +40,12 @@ A small vertical MVP prevents scope creep while still proving the product flow: 
 
 ## Tasks
 
-- [ ] FMVP-001 — Create Angular workspace app in `packages/frontend/`.
+- [x] FMVP-001 — Create Angular workspace app in `packages/frontend/`.
   - Route: delegated direct.
   - Trigger evidence: generator/configuration affects multiple files and should stay bounded in a writer task.
   - Acceptance: Angular app exists inside the pnpm workspace with routing and SCSS; no backend files changed.
   - Checks: generation command result; dependency install result; initial build if available.
-  - Evidence: pending.
+  - Evidence: Angular CLI latest was rejected by local Node `v22.16.0` because it requires at least `v22.22.3`; generated with `@angular/cli@20`, installed with pnpm `12.3.4`, and built successfully with `pnpm dlx pnpm@12.3.4 --filter @agua/frontend build`.
 
 - [ ] FMVP-002 — Configure Tailwind, PrimeNG, Heroicons, and MVP visual tokens.
   - Route: delegated direct.
@@ -72,11 +72,15 @@ A small vertical MVP prevents scope creep while still proving the product flow: 
 
 - Created task document before the first source write.
 - Recommended app location: `packages/frontend/`, because it fits existing `packages/*` pnpm workspace without changing workspace layout.
+- Completed FMVP-001 with a new Angular standalone app using routing and SCSS under `packages/frontend/`.
 
 ## Verification evidence
 
-- Pending.
+- `pnpm dlx @angular/cli@latest new frontend --directory packages/frontend --standalone --routing --style scss --skip-git --package-manager pnpm --defaults --ssr=false` failed before generation because Angular CLI latest requires Node `^22.22.3 || ^24.15.0 || >=26.0.0`; local Node is `v22.16.0`.
+- `pnpm dlx @angular/cli@20 new frontend --directory packages/frontend --standalone --routing --style scss --skip-git --package-manager pnpm --defaults --ssr=false` created the Angular files; the generator install step failed because the repository requires pnpm `12.3.4` while ambient pnpm is `11.5.3`.
+- `pnpm dlx pnpm@12.3.4 install` completed successfully after allowing Angular native build dependencies `@parcel/watcher` and `lmdb` in `pnpm-workspace.yaml`.
+- `pnpm dlx pnpm@12.3.4 --filter @agua/frontend build` completed successfully. Output: `packages/frontend/dist/frontend`.
 
 ## Next step
 
-Start FMVP-001 by creating the Angular app under `packages/frontend/` using the current Node/pnpm workspace constraints.
+Start FMVP-002 by configuring Tailwind, PrimeNG, Heroicons, and the MVP visual tokens from `frontend-visual-direction.md`.
