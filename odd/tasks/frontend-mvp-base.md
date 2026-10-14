@@ -61,12 +61,12 @@ A small vertical MVP prevents scope creep while still proving the product flow: 
   - Checks: structural readback completed; `pnpm dlx pnpm@12.3.4 --filter @agua/frontend build` completed successfully; DBS CLI unavailable, manual DBS scan completed with no critical findings.
   - Evidence: added `src/environments/environment.ts`, `src/environments/environment.development.ts`, and `src/app/core/config/api.config.ts`; configured development file replacement in `angular.json`; updated frontend README and implementation map with VPS gateway target and live docs URL candidates.
 
-- [ ] FMVP-003 — Create base app structure and shell routes.
+- [x] FMVP-003 — Create base app structure and shell routes.
   - Route: delegated direct.
   - Trigger evidence: touches routing, layout, shared/core folders and multiple components.
   - Acceptance: `core`, `layout`, `features`, and `shared` structure exists; public/auth and role shell routes are stubbed.
-  - Checks: build and route smoke if available.
-  - Evidence: pending.
+  - Checks: `pnpm dlx pnpm@12.3.4 --filter @agua/frontend build`; `git diff --check`; DBS check/manual scan; structural readback.
+  - Evidence: added `layout`, `features/auth`, `features/admin`, `features/vendedor`, `features/cliente`, and `shared` structure under `packages/frontend/src/app/`; replaced the generated Angular placeholder with the root router outlet; added standalone route stubs for `/auth/login`, `/admin`, `/vendedor`, and `/cliente`; kept auth/session and backend integration logic out of scope.
 
 - [ ] FMVP-004 — Implement login screen foundation and auth/session contracts.
   - Route: delegated direct.
@@ -82,6 +82,7 @@ A small vertical MVP prevents scope creep while still proving the product flow: 
 - Completed FMVP-001 with a new Angular standalone app using routing and SCSS under `packages/frontend/`.
 - Completed FMVP-002A with the VPS gateway API base configuration for Angular environments and core API config.
 - Completed FMVP-002 with Tailwind v4, PrimeNG Aura, Heroicons readiness, and MVP visual tokens.
+- Completed FMVP-003 with standalone Angular shell routes for login, admin, vendor, and customer workspaces.
 
 ## Verification evidence
 
@@ -91,7 +92,8 @@ A small vertical MVP prevents scope creep while still proving the product flow: 
 - `pnpm dlx pnpm@12.3.4 --filter @agua/frontend build` completed successfully. Output: `packages/frontend/dist/frontend`.
 - FMVP-002A: structural readback completed for Angular environment/core config and docs; `pnpm dlx pnpm@12.3.4 --filter @agua/frontend build` completed successfully with output `packages/frontend/dist/frontend`; `dbs` CLI was unavailable, so manual DBS scan found no `any`, `console.*`, tight coupling, god object, dead code, duplication, or untestability concerns in the changed frontend config files.
 - FMVP-002: `pnpm dlx pnpm@12.3.4 --filter @agua/frontend build` completed successfully with output `packages/frontend/dist/frontend` and a Dart Sass deprecation warning for Tailwind's required CSS `@import`; `git diff --check` completed successfully; `dbs` CLI was unavailable, so the changed files were scanned manually for DBS critical/warning concerns with no findings.
+- FMVP-003: `pnpm dlx pnpm@12.3.4 --filter @agua/frontend build` completed successfully with output `packages/frontend/dist/frontend` and the existing Dart Sass deprecation warning for Tailwind's required CSS `@import`; `git diff --check` completed successfully; `dbs` CLI was unavailable, so manual DBS scan found no `any`, `console.*`, tight coupling, god object, dead code, duplication, or untestability concerns in the changed frontend shell files; structural readback confirmed app shell routing and standalone components.
 
 ## Next step
 
-Start FMVP-003 by creating the base app structure and shell routes while preserving the visual foundation from FMVP-002.
+Start FMVP-004 by implementing the login screen foundation and auth/session contracts without inventing backend contracts.

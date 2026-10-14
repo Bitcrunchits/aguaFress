@@ -1,0 +1,37 @@
+.login-page {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+}
+
+.login-card {
+  width: min(100%, 420px);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-agua-lg);
+  padding: 32px;
+  background: var(--clean-white);
+  box-shadow: var(--shadow-agua-card);
+}
+
+.login-card__eyebrow {
+  margin: 0 0 12px;
+  color: var(--agua-primary-dark);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.login-card h1 {
+  margin: 0 0 12px;
+  color: var(--slate-ink);
+  font-family: var(--font-agua-display);
+  font-size: clamp(2rem, 6vw, 3rem);
+  line-height: 1;
+}
+
+.login-card p:last-child {
+  margin: 0;
+  color: var(--slate-muted);
+}

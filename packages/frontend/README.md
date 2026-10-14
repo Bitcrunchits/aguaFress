@@ -30,6 +30,15 @@ The MVP visual foundation is configured in the Angular app without adding screen
 
 The current MVP tokens cover the AguaFress light foundation, the future `.agua-dark` selector, the aqua route accent, semantic status colors, radii, shadows, and font roles.
 
+## Shell routes
+
+The frontend currently exposes lightweight MVP shell routes only; authentication, guards, and API-backed screens are intentionally pending:
+
+- `/auth/login` — login route stub.
+- `/admin` — admin workspace shell stub.
+- `/vendedor` — vendor workspace shell stub.
+- `/cliente` — customer workspace shell stub.
+
 ## Backend docs to verify
 
 Check the live gateway documentation before wiring each feature:
