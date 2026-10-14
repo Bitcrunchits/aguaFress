@@ -7,8 +7,9 @@ Este mapa es suficiente para arrancar el **core Angular, autenticación, sesión
 | Tema | Decisión operativa |
 | --- | --- |
 | Frontend objetivo | Angular + Tailwind + PrimeNG + Heroicons. Angular Material/ng-bootstrap solo si existe necesidad concreta no cubierta. |
-| API pública | El frontend consume únicamente el gateway: `http://localhost:3000/api/v1/{service}/{action}`. |
-| Docs vivas | Confirmar endpoints en Scalar `http://localhost:3000/api/docs` u OpenAPI `http://localhost:3000/api/openapi.json` antes de implementar cada feature. |
+| API pública | El frontend consume únicamente el gateway. Target actual VPS: `https://api-aguafress.eadev.cloud/api/v1/{service}/{action}`. Si los servicios corren localmente, `http://localhost:3000/api/v1/{service}/{action}` queda como alternativa local/dev. |
+| Config frontend | `packages/frontend/src/environments/environment.ts` y `environment.development.ts` definen `apiBaseUrl`; los servicios deben consumir `src/app/core/config/api.config.ts` para no depender de environments en cada feature. |
+| Docs vivas | Confirmar endpoints en Scalar `https://api-aguafress.eadev.cloud/api/docs` u OpenAPI `https://api-aguafress.eadev.cloud/api/openapi.json` antes de implementar cada feature. Alternativa local/dev: `http://localhost:3000/api/docs` y `http://localhost:3000/api/openapi.json` si el gateway corre local. |
 | Roles literales | Usar exactamente `super_admin`, `vendedor`, `cliente`. No inventar aliases sin mapeo explícito. |
 | Identidad | No enviar `userId` en body para identidad JWT. El actor sale del token; `clienteId` y `vendedorId` son IDs de perfiles de dominio. |
 | Cliente-proveedor | No asumir un único vendedor por cliente. El cliente puede tener proveedores activos y debe operar con proveedor seleccionado. |
@@ -16,7 +17,7 @@ Este mapa es suficiente para arrancar el **core Angular, autenticación, sesión
 
 Fuentes verificadas: `readme.md`, `SPEC.md`, `packages/documentacion/Aguafress_Arquitectura_Frontend_UX_UI_v2_API_REAL.docx`, `MicroServices/gateway/src/actions/action-registry.ts`, `MicroServices/gateway/src/docs/openapi-spec.service.ts`, `MicroServices/gateway/src/gateway.controller.ts`, `MicroServices/gateway/test/gateway.http.spec.ts`, `packages/contracts/src/dto/deliveries.dto.ts`.
 
-Limitación de validación: no se levantaron Docker ni servicios externos. No se obtuvo OpenAPI vivo desde `http://localhost:3000/api/openapi.json`; la evidencia usada es código fuente local. Además, `deliveries.*` y `activity-logs.*` están en `action-registry.ts`, pero no aparecen en `ACTIONS_DOC` de `openapi-spec.service.ts`; por eso quedan marcados como gap de OpenAPI generado aunque las rutas estén registradas en gateway.
+Limitación de validación: no se levantaron Docker ni servicios externos. No se obtuvo OpenAPI vivo desde `https://api-aguafress.eadev.cloud/api/openapi.json` ni desde `http://localhost:3000/api/openapi.json`; la evidencia usada es código fuente local. Además, `deliveries.*` y `activity-logs.*` están en `action-registry.ts`, pero no aparecen en `ACTIONS_DOC` de `openapi-spec.service.ts`; por eso quedan marcados como gap de OpenAPI generado aunque las rutas estén registradas en gateway. CORS y credenciales seed del VPS siguen pendientes de verificación.
 
 Contradicciones detectadas para no arrastrar al frontend:
 
@@ -299,7 +300,7 @@ Contradicciones detectadas para no arrastrar al frontend:
 ### Core/auth/layout
 
 - [ ] Angular compila con estructura `core`, `layout`, `features`, `shared`.
-- [ ] Login real funciona contra gateway local.
+- [ ] Login real funciona contra el gateway VPS configurado; gateway local solo aplica si los servicios se levantan localmente.
 - [ ] `Authorization: Bearer <token>` se adjunta solo donde corresponde.
 - [ ] Refresh token y expiración tienen comportamiento definido.
 - [ ] `GET /api/v1/users/profile` restaura identidad al recargar.

@@ -1,59 +1,48 @@
-# Frontend
+# AguaFress Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.37.
+Angular frontend for the AguaFress MVP. The app currently points to the VPS gateway by default so early auth and service integration can use the same backend target in development and production.
 
-## Development server
+## API target
 
-To start a local development server, run:
+| Environment | API base URL |
+| --- | --- |
+| Production/default | `https://api-aguafress.eadev.cloud` |
+| Development | `https://api-aguafress.eadev.cloud` |
 
-```bash
-ng serve
-```
+Future services should read the API base from `src/app/core/config/api.config.ts` instead of importing Angular environment files directly.
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Run against the VPS gateway
 
 ```bash
-ng generate component component-name
+pnpm dlx pnpm@12.3.4 --filter @agua/frontend start
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Open `http://localhost:4200/`. Browser requests should target the configured gateway base URL above once real HTTP services are implemented.
+
+## Backend docs to verify
+
+Check the live gateway documentation before wiring each feature:
+
+- Scalar candidate: `https://api-aguafress.eadev.cloud/api/docs`
+- OpenAPI candidate: `https://api-aguafress.eadev.cloud/api/openapi.json`
+
+Pending backend/runtime checks:
+
+- CORS from `http://localhost:4200` to the VPS gateway.
+- Seed credentials and QA users for the VPS environment.
+
+## Build
 
 ```bash
-ng generate --help
+pnpm dlx pnpm@12.3.4 --filter @agua/frontend build
 ```
 
-## Building
+The production build writes output under `packages/frontend/dist/frontend`.
 
-To build the project run:
+## Angular CLI
+
+Generate Angular artifacts from the frontend package when needed:
 
 ```bash
-ng build
+pnpm dlx pnpm@12.3.4 --filter @agua/frontend ng generate component component-name
 ```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
