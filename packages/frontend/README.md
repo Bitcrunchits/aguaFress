@@ -19,6 +19,17 @@ pnpm dlx pnpm@12.3.4 --filter @agua/frontend start
 
 Open `http://localhost:4200/`. Browser requests should target the configured gateway base URL above once real HTTP services are implemented.
 
+## Visual tooling
+
+The MVP visual foundation is configured in the Angular app without adding screens prematurely:
+
+- Tailwind CSS v4 runs through `@tailwindcss/postcss` in `postcss.config.mjs` and is imported from `src/styles.scss` with `@import "tailwindcss"`.
+- AguaFress visual tokens live in `src/styles.scss` as CSS custom properties and Tailwind v4 `@theme` tokens derived from `packages/documentacion/frontend-visual-direction.md`.
+- PrimeNG v20 is configured globally in `src/app/app.config.ts` with the Aura preset and async browser animations.
+- Heroicons is installed for future SVG/icon usage. It does not need an Angular runtime provider; import concrete icons only when a screen needs them.
+
+The current MVP tokens cover the AguaFress light foundation, the future `.agua-dark` selector, the aqua route accent, semantic status colors, radii, shadows, and font roles.
+
 ## Backend docs to verify
 
 Check the live gateway documentation before wiring each feature:

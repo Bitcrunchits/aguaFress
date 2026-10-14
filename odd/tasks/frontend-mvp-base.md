@@ -47,12 +47,12 @@ A small vertical MVP prevents scope creep while still proving the product flow: 
   - Checks: generation command result; dependency install result; initial build if available.
   - Evidence: Angular CLI latest was rejected by local Node `v22.16.0` because it requires at least `v22.22.3`; generated with `@angular/cli@20`, installed with pnpm `12.3.4`, and built successfully with `pnpm dlx pnpm@12.3.4 --filter @agua/frontend build`.
 
-- [ ] FMVP-002 — Configure Tailwind, PrimeNG, Heroicons, and MVP visual tokens.
+- [x] FMVP-002 — Configure Tailwind, PrimeNG, Heroicons, and MVP visual tokens.
   - Route: delegated direct.
   - Trigger evidence: touches Angular styles/config/package setup across multiple files.
   - Acceptance: visual tokens reflect `frontend-visual-direction.md`; app builds.
-  - Checks: build command and any style/config validation available.
-  - Evidence: pending.
+  - Checks: `pnpm dlx pnpm@12.3.4 --filter @agua/frontend build`; `git diff --check`; DBS check/manual scan; structural readback.
+  - Evidence: added Tailwind v4 PostCSS config in `packages/frontend/postcss.config.mjs`; imported Tailwind and defined AguaFress MVP CSS custom properties plus Tailwind `@theme` tokens in `packages/frontend/src/styles.scss`; configured PrimeNG v20 Aura with `provideAnimationsAsync()` and `providePrimeNG()` in `packages/frontend/src/app/app.config.ts`; documented Heroicons as installed for future concrete icon imports with no runtime provider required.
 
 - [x] FMVP-002A — Configure VPS gateway API base for the Angular frontend.
   - Route: delegated direct.
@@ -80,7 +80,8 @@ A small vertical MVP prevents scope creep while still proving the product flow: 
 - Created task document before the first source write.
 - Recommended app location: `packages/frontend/`, because it fits existing `packages/*` pnpm workspace without changing workspace layout.
 - Completed FMVP-001 with a new Angular standalone app using routing and SCSS under `packages/frontend/`.
-- Completed FMVP-002A with the VPS gateway API base configuration for Angular environments and core API config; FMVP-002 visual tooling remains separate and pending.
+- Completed FMVP-002A with the VPS gateway API base configuration for Angular environments and core API config.
+- Completed FMVP-002 with Tailwind v4, PrimeNG Aura, Heroicons readiness, and MVP visual tokens.
 
 ## Verification evidence
 
@@ -89,7 +90,8 @@ A small vertical MVP prevents scope creep while still proving the product flow: 
 - `pnpm dlx pnpm@12.3.4 install` completed successfully after allowing Angular native build dependencies `@parcel/watcher` and `lmdb` in `pnpm-workspace.yaml`.
 - `pnpm dlx pnpm@12.3.4 --filter @agua/frontend build` completed successfully. Output: `packages/frontend/dist/frontend`.
 - FMVP-002A: structural readback completed for Angular environment/core config and docs; `pnpm dlx pnpm@12.3.4 --filter @agua/frontend build` completed successfully with output `packages/frontend/dist/frontend`; `dbs` CLI was unavailable, so manual DBS scan found no `any`, `console.*`, tight coupling, god object, dead code, duplication, or untestability concerns in the changed frontend config files.
+- FMVP-002: `pnpm dlx pnpm@12.3.4 --filter @agua/frontend build` completed successfully with output `packages/frontend/dist/frontend` and a Dart Sass deprecation warning for Tailwind's required CSS `@import`; `git diff --check` completed successfully; `dbs` CLI was unavailable, so the changed files were scanned manually for DBS critical/warning concerns with no findings.
 
 ## Next step
 
-Start or continue FMVP-002 by configuring Tailwind, PrimeNG, Heroicons, and the MVP visual tokens from `frontend-visual-direction.md`.
+Start FMVP-003 by creating the base app structure and shell routes while preserving the visual foundation from FMVP-002.
