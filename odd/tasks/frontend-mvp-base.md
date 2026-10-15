@@ -73,7 +73,7 @@ A small vertical MVP prevents scope creep while still proving the product flow: 
   - Trigger evidence: touches UI, services, guards/interceptors and models.
   - Acceptance: `/auth/login` visual matches MVP direction; auth/session service and API gateway base configuration are prepared without inventing backend contracts.
   - Checks: build; unit tests if generated/applicable.
-  - Evidence: pending.
+  - Evidence: blocked before source changes. The gateway registers `auth.login` as public and `users.profile` as authenticated (`MicroServices/gateway/src/actions/action-registry.ts`); its controller exposes POST/GET actions (`MicroServices/gateway/src/gateway.controller.ts`). `LoginRequest` is `{ email, password }` and `LoginResponse` includes `token`, `refreshToken`, and `user` with `UserRole` (`packages/contracts/src/dto/auth.dto.ts`); `auth.service.ts` returns those fields and rejects inactive vendors. However, `packages/documentacion/frontend-screen-blueprints.md` explicitly leaves token storage, refresh, multi-tab logout, and session expiry policy undefined (line 395); `frontend-implementation-map.md` likewise defers how tokens/user are stored (lines 235, 288). Implementing a session service, interceptor, guard, or redirect without choosing this policy would invent security behavior. No frontend source changed and this task remains open.
 
 ## Progress
 
@@ -83,6 +83,7 @@ A small vertical MVP prevents scope creep while still proving the product flow: 
 - Completed FMVP-002A with the VPS gateway API base configuration for Angular environments and core API config.
 - Completed FMVP-002 with Tailwind v4, PrimeNG Aura, Heroicons readiness, and MVP visual tokens.
 - Completed FMVP-003 with standalone Angular shell routes for login, admin, vendor, and customer workspaces.
+- FMVP-004 paused before source changes: login API and roles are confirmed locally, but the session persistence/refresh/logout policy needs an explicit decision before a safe auth implementation.
 
 ## Verification evidence
 
@@ -93,7 +94,8 @@ A small vertical MVP prevents scope creep while still proving the product flow: 
 - FMVP-002A: structural readback completed for Angular environment/core config and docs; `pnpm dlx pnpm@12.3.4 --filter @agua/frontend build` completed successfully with output `packages/frontend/dist/frontend`; `dbs` CLI was unavailable, so manual DBS scan found no `any`, `console.*`, tight coupling, god object, dead code, duplication, or untestability concerns in the changed frontend config files.
 - FMVP-002: `pnpm dlx pnpm@12.3.4 --filter @agua/frontend build` completed successfully with output `packages/frontend/dist/frontend` and a Dart Sass deprecation warning for Tailwind's required CSS `@import`; `git diff --check` completed successfully; `dbs` CLI was unavailable, so the changed files were scanned manually for DBS critical/warning concerns with no findings.
 - FMVP-003: `pnpm dlx pnpm@12.3.4 --filter @agua/frontend build` completed successfully with output `packages/frontend/dist/frontend` and the existing Dart Sass deprecation warning for Tailwind's required CSS `@import`; `git diff --check` completed successfully; `dbs` CLI was unavailable, so manual DBS scan found no `any`, `console.*`, tight coupling, god object, dead code, duplication, or untestability concerns in the changed frontend shell files; structural readback confirmed app shell routing and standalone components.
+- FMVP-004 blocked baseline: `pnpm dlx pnpm@12.3.4 --filter @agua/frontend build` passed (existing Sass `@import` deprecation warning); `pnpm dlx pnpm@12.3.4 --filter @agua/frontend test -- --watch=false --browsers=ChromeHeadless` failed due to duplicate `--` / schema validation; corrected `pnpm dlx pnpm@12.3.4 --filter @agua/frontend test --watch=false --browsers=ChromeHeadless` passed (2 existing tests); `git diff --check` passed. `command -v dbs` found no CLI; manual DBS critical/pretest scan of this documentation-only change found no source-code violations or untestable new dependencies. No auth/UI tests were added because no source was written.
 
 ## Next step
 
-Start FMVP-004 by implementing the login screen foundation and auth/session contracts without inventing backend contracts.
+Resolve the frontend session policy (where access/refresh tokens and user are kept, whether refresh survives reload, session expiration and multi-tab logout semantics). Then implement FMVP-004 against the verified login/profile gateway contract; do not mark complete until UI/auth behavior and focused checks are observed. Commit identity to be added by the parent after an implemented work unit.
