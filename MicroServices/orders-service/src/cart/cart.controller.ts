@@ -21,18 +21,18 @@ export class CartController {
   @MessagePattern('cart.items_add')
   addItem(@Payload() payload: TcpPayload): Promise<CartResponse> {
     const user = this.payloadAdapter.requireUser(payload);
-    return this.cartService.addItem(user.userId, parseAddCartItemRequest(payload.body));
+    return this.cartService.addItem(user, parseAddCartItemRequest(payload.body));
   }
 
   @MessagePattern('cart.items_update')
   updateItem(@Payload() payload: TcpPayload): Promise<CartResponse> {
     const user = this.payloadAdapter.requireUser(payload);
-    return this.cartService.updateItem(user.userId, parseUpdateCartItemRequest(payload.body));
+    return this.cartService.updateItem(user, parseUpdateCartItemRequest(payload.body));
   }
 
   @MessagePattern('cart.items_delete')
   deleteItem(@Payload() payload: TcpPayload): Promise<CartResponse> {
     const user = this.payloadAdapter.requireUser(payload);
-    return this.cartService.deleteItem(user.userId, parseDeleteCartItemRequest(payload.body));
+    return this.cartService.deleteItem(user, parseDeleteCartItemRequest(payload.body));
   }
 }

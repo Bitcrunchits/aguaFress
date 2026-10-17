@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { MetodoPago, OrderEstado, UserRole } from '@agua/contracts';
-import type { ProductCatalogPort, ProductSnapshot } from '../products/product-catalog.port';
+import type { ProductSnapshot, ScopedProductCatalogPort } from '../products/product-catalog.port';
 import type { CartRecord } from '../cart/cart.repository';
 import type { OrderRecord, OrdersRepository } from './orders.repository';
 import { OrdersService } from './orders.service';
@@ -21,7 +21,7 @@ describe('OrdersService', () => {
     | 'findManyForVendedor'
     | 'updateStatus'
   >>;
-  let productCatalog: jest.Mocked<ProductCatalogPort>;
+  let productCatalog: jest.Mocked<ScopedProductCatalogPort>;
   let vendedorProfileResolver: jest.Mocked<VendedorProfileResolverPort>;
   let service: OrdersService;
 
@@ -36,6 +36,7 @@ describe('OrdersService', () => {
     };
     productCatalog = {
       getSnapshot: jest.fn(),
+      getScopedSnapshot: jest.fn(),
     };
     vendedorProfileResolver = {
       resolveVendedorIdByAuthUserId: jest.fn().mockResolvedValue(vendedorId),
@@ -44,7 +45,7 @@ describe('OrdersService', () => {
   });
 
   it('creates an order from persisted cart item snapshots while product lookup only validates availability', async () => {
-    productCatalog.getSnapshot.mockResolvedValue(productSnapshot({ nombre: 'Fresh product name', precioFinal: 9999 }));
+    productCatalog.getScopedSnapshot.mockResolvedValue(productSnapshot({ nombre: 'Fresh product name', precioFinal: 9999 }));
     ordersRepository.createFromCart.mockImplementation(async (input) => {
       await input.validateCartItems(cartRecord());
       return orderRecord({
@@ -62,7 +63,7 @@ describe('OrdersService', () => {
       direccion,
       observaciones: undefined,
     }));
-    expect(productCatalog.getSnapshot).toHaveBeenCalledWith('product-1');
+    expect(productCatalog.getScopedSnapshot).toHaveBeenCalledWith('product-1', clienteUser(), expect.any(Number));
     expect(order).toMatchObject({
       id: 'order-1',
       pedidoNumero: '000001',
@@ -78,7 +79,7 @@ describe('OrdersService', () => {
   });
 
   it('returns controlled unavailable and does not create or clear cart when product refresh fails', async () => {
-    productCatalog.getSnapshot.mockRejectedValue(new ServiceUnavailableException('Product catalog is unavailable'));
+    productCatalog.getScopedSnapshot.mockRejectedValue(new ServiceUnavailableException('Product catalog is unavailable'));
     ordersRepository.createFromCart.mockImplementation(async (input) => {
       await input.validateCartItems(cartRecord());
       return orderRecord();
@@ -88,7 +89,35 @@ describe('OrdersService', () => {
       ServiceUnavailableException,
     );
 
-    expect(productCatalog.getSnapshot).toHaveBeenCalledWith('product-1');
+    expect(productCatalog.getScopedSnapshot).toHaveBeenCalledWith('product-1', clienteUser(), expect.any(Number));
+  });
+
+  it.each([
+    [new NotFoundException('Product was not found'), NotFoundException],
+    [new ServiceUnavailableException('Invalid snapshot'), ServiceUnavailableException],
+  ])('does not complete checkout for catalog failure %p', async (failure, exception) => {
+    productCatalog.getScopedSnapshot.mockRejectedValue(failure);
+    let validated = false;
+    ordersRepository.createFromCart.mockImplementation(async (input) => {
+      await input.validateCartItems(cartRecord());
+      validated = true;
+      return orderRecord();
+    });
+    await expect(service.create(clienteUser(), { vendedorId, metodoPago: MetodoPago.CONTRA_ENTREGA, direccion })).rejects.toThrow(exception);
+    expect(validated).toBe(false);
+    expect(productCatalog.getScopedSnapshot).toHaveBeenCalledWith('product-1', clienteUser(), expect.any(Number));
+  });
+
+  it('does not complete checkout for insufficient stock', async () => {
+    productCatalog.getScopedSnapshot.mockResolvedValue(productSnapshot({ stock: 1 }));
+    let validated = false;
+    ordersRepository.createFromCart.mockImplementation(async (input) => {
+      await input.validateCartItems(cartRecord());
+      validated = true;
+      return orderRecord();
+    });
+    await expect(service.create(clienteUser(), { vendedorId, metodoPago: MetodoPago.CONTRA_ENTREGA, direccion })).rejects.toThrow(ServiceUnavailableException);
+    expect(validated).toBe(false);
   });
 
   it('allows a cliente to read only their own order', async () => {

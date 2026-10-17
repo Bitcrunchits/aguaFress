@@ -219,6 +219,16 @@ describe('ProductsTcpController (integración con TcpPayloadAdapter real)', () =
   // ─── GET ─────────────────────────────────────────────────────────
 
   describe('get — products.get', () => {
+    it('returns a product for a cliente whose domain seller is in their portfolio', async () => {
+      mockClienteVendedorResolver.resolveVendedoresByClienteUserId.mockResolvedValue([VENDEDOR_ID_REAL]);
+      mockProductsService.findById.mockResolvedValue({ id: PRODUCT_ID, vendedorId: VENDEDOR_ID_REAL });
+      const payload = basePayload({ user: { sub: AUTH_USER_ID, email: 'client@test.com', role: 'cliente' }, query: { id: PRODUCT_ID } });
+      await expect(controller.get(payload)).resolves.toMatchObject({ id: PRODUCT_ID });
+      expect(mockClienteVendedorResolver.resolveVendedoresByClienteUserId).toHaveBeenCalledWith(AUTH_USER_ID);
+
+      mockProductsService.findById.mockResolvedValue({ id: PRODUCT_ID, vendedorId: OTRO_VENDEDOR_ID });
+      await expect(controller.get(payload)).rejects.toThrow(NotFoundException);
+    });
     it('con SUPER_ADMIN retorna el producto sin scoping', async () => {
       mockProductsService.findById.mockResolvedValue({ id: PRODUCT_ID, vendedorId: VENDEDOR_ID_REAL });
 
