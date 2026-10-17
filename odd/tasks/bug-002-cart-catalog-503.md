@@ -43,7 +43,7 @@ Replace the unconditional product-catalog 503 in orders-service with a scoped ca
 - Provider mapping uses the confirmed domain `VENDEDOR.id`, not the JWT subject or an invented response field. Unit tests prove the mapping and both authorized and denied access.
 - Gateway and nested internal timeout budgets are explicitly checked to avoid a 5000 ms versus 5000 ms collision; no DB/container/runtime validation is claimed without authorization and execution.
 
-## Verification evidence (primary checkout, no commit)
+## Verification evidence
 
 - Each requested `pnpm --filter @agua/{orders-service,products-service} exec jest --runInBand` and `pnpm --filter @agua/{orders-service,products-service} build` command stopped before execution: `ERR_PNPM_UNSUPPORTED_ENGINE` (required pnpm 12.3.4, installed pnpm 11.5.3). No installs were performed.
 - From `MicroServices/orders-service`: `./node_modules/.bin/jest --runInBand` — 17 suites, 122 tests passed; `./node_modules/.bin/nest build` — exit 0, no output.
@@ -66,4 +66,5 @@ Replace the unconditional product-catalog 503 in orders-service with a scoped ca
 - [x] Implementation completed in this checkout (prior lost-worktree artifacts were not used as source).
 - [x] Local Jest tests and package builds passed via existing binaries; runtime TCP/DB behavior remains unverified under current restrictions.
 - [x] T5 review corrections and local verification completed; staging and strict pre-commit review remain separate delivery checks.
-- [x] T7 scoped-port correction applied and locally verified (strict HEAD-to-index re-review is the parent's step). No commit or PR exists yet.
+- [x] T7 scoped-port correction applied and locally verified.
+- [x] Strict pre-commit GGA review passed (HEAD-to-index provenance; verdict: STATUS: PASSED by openrouter/anthropic/claude-sonnet-4.5 after the primary model's quota failed). Commit `9f48bdc` — `fix(orders): connect scoped product catalog for cart and checkout`, 20 files, +615/−105. Push and PR to develop remain.
