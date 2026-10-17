@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+import { BadRequestException } from '@nestjs/common';
 import { PATTERN_METADATA } from '@nestjs/microservices/constants';
 import { UserRole } from '@agua/contracts';
 import { CartController } from './cart.controller';
@@ -53,7 +54,7 @@ describe('CartController', () => {
 
     await expect(controller.addItem(payload)).resolves.toBe(cartResponse);
 
-    expect(service.addItem).toHaveBeenCalledWith('jwt-user', { vendedorId: 'vendedor-1', productoId: 'product-1', cantidad: 2 });
+    expect(service.addItem).toHaveBeenCalledWith({ userId: 'jwt-user', email: 'jwt-user@test.com', role: UserRole.CLIENTE }, { vendedorId: 'vendedor-1', productoId: 'product-1', cantidad: 2 });
   });
 
   it('handles cart.items_update with body DTO and JWT identity', async () => {
@@ -61,7 +62,7 @@ describe('CartController', () => {
 
     await expect(controller.updateItem(payload)).resolves.toBe(cartResponse);
 
-    expect(service.updateItem).toHaveBeenCalledWith('jwt-user', {
+    expect(service.updateItem).toHaveBeenCalledWith({ userId: 'jwt-user', email: 'jwt-user@test.com', role: UserRole.CLIENTE }, {
       cartId: 'cart-1',
       vendedorId: 'vendedor-1',
       productoId: 'product-1',
@@ -74,7 +75,25 @@ describe('CartController', () => {
 
     await expect(controller.deleteItem(payload)).resolves.toBe(cartResponse);
 
-    expect(service.deleteItem).toHaveBeenCalledWith('jwt-user', { vendedorId: 'vendedor-1', cartId: 'cart-1', productoId: 'product-1' });
+    expect(service.deleteItem).toHaveBeenCalledWith({ userId: 'jwt-user', email: 'jwt-user@test.com', role: UserRole.CLIENTE }, { vendedorId: 'vendedor-1', cartId: 'cart-1', productoId: 'product-1' });
+  });
+
+  it.each([
+    ['addItem', { body: { vendedorId: 'vendedor-1', productoId: 'product-1', cantidad: 2, userId: 'body-user' } }],
+    ['updateItem', { body: { vendedorId: 'vendedor-1', cartId: 'cart-1', productoId: 'product-1', cantidad: 2, userId: 'body-user' } }],
+    ['deleteItem', { body: { vendedorId: 'vendedor-1', cartId: 'cart-1', productoId: 'product-1', userId: 'body-user' } }],
+    ['getCart', { query: { vendedorId: 'vendedor-1', userId: 'body-user' } }],
+  ] as const)('rejects untrusted userId for %s before calling the service', (method, overrides) => {
+    expect(() => controller[method](authenticatedPayload(overrides))).toThrow(BadRequestException);
+    expect(service.getActiveCart).not.toHaveBeenCalled();
+    expect(service.addItem).not.toHaveBeenCalled();
+    expect(service.updateItem).not.toHaveBeenCalled();
+    expect(service.deleteItem).not.toHaveBeenCalled();
+  });
+
+  it('rejects untrusted userId when cart.get falls back to the body', () => {
+    expect(() => controller.getCart(authenticatedPayload({ body: { vendedorId: 'vendedor-1', userId: 'body-user' } }))).toThrow(BadRequestException);
+    expect(service.getActiveCart).not.toHaveBeenCalled();
   });
 
   it('exposes the required TCP message patterns', () => {

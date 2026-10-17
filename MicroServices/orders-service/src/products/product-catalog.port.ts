@@ -1,4 +1,4 @@
-import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import type { TcpAuthenticatedUser } from '../tcp/tcp-payload';
 
 export interface ProductSnapshot {
   readonly id: string;
@@ -14,11 +14,10 @@ export interface ProductCatalogPort {
   getSnapshot(productId: string): Promise<ProductSnapshot>;
 }
 
-export const PRODUCT_CATALOG_PORT = Symbol.for('orders.product-catalog-port');
-
-@Injectable()
-export class UnavailableProductCatalog implements ProductCatalogPort {
-  getSnapshot(_productId: string): Promise<ProductSnapshot> {
-    return Promise.reject(new ServiceUnavailableException('Product catalog is unavailable'));
-  }
+export interface ScopedProductCatalogPort extends ProductCatalogPort {
+  getScopedSnapshot(productId: string, user: TcpAuthenticatedUser, timeoutMs?: number): Promise<ProductSnapshot>;
 }
+
+export const PRODUCT_CATALOG_PORT = Symbol.for('orders.product-catalog-port');
+export const SCOPED_PRODUCT_CATALOG_PORT = Symbol.for('orders.scoped-product-catalog-port');
+export const PRODUCT_CATALOG_TIMEOUT_MS = 4000;

@@ -1,4 +1,4 @@
-import { BadRequestException, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { MetodoPago, OrderEstado, OrderJobStatus, UserRole, type CreateOrderJobData } from '@agua/contracts';
 import { OrderCreateJobProcessor } from './order-create-job.processor';
 import type { OrderCommandTrackingService } from './order-command-tracking.service';
@@ -98,6 +98,16 @@ describe('OrderCreateJobProcessor', () => {
       nextStatus: OrderJobStatus.FAILED,
       attempts: 1,
     }));
+  });
+
+  it('preserves the queued JWT client ID and treats an out-of-portfolio product as terminal', async () => {
+    ordersService.create.mockRejectedValue(new NotFoundException('Product was not found'));
+    await expect(processor.process(createJobData(), { attemptsMade: 0, maxAttempts: 3 })).rejects.toThrow('TERMINAL_UNKNOWN');
+    expect(ordersService.create).toHaveBeenCalledWith(
+      { userId: clienteId, email: '', role: UserRole.CLIENTE },
+      expect.objectContaining({ vendedorId }),
+    );
+    expect(tracking.transitionStatus).toHaveBeenLastCalledWith(expect.objectContaining({ nextStatus: OrderJobStatus.FAILED }));
   });
 
   it('marks exhausted retryable failures as DEAD_LETTER and does not clear the cart through a success path', async () => {

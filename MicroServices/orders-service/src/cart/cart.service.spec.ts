@@ -1,14 +1,16 @@
 import { ForbiddenException, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
-import type { ProductCatalogPort, ProductSnapshot } from '../products/product-catalog.port';
+import type { ProductSnapshot, ScopedProductCatalogPort } from '../products/product-catalog.port';
 import { CartService } from './cart.service';
 import type { CartItemRecord, CartRecord, CartRepository } from './cart.repository';
+import { UserRole } from '@agua/contracts';
 
 describe('CartService', () => {
   const now = new Date('2026-07-16T10:00:00.000Z');
   const future = new Date('2026-07-16T11:00:00.000Z');
   const cartTtlExpiration = new Date('2026-07-17T10:00:00.000Z');
   const past = new Date('2026-07-16T09:00:00.000Z');
-  const clienteId = 'cliente-1';
+  const clienteUserId = 'cliente-1';
+  const clienteUser = { userId: clienteUserId, email: 'cliente@test.com', role: UserRole.CLIENTE };
   const vendedorId = 'vendedor-1';
 
   const productSnapshot: ProductSnapshot = {
@@ -22,7 +24,7 @@ describe('CartService', () => {
   };
 
   let repository: jest.Mocked<CartRepository>;
-  let productCatalog: jest.Mocked<ProductCatalogPort>;
+  let productCatalog: jest.Mocked<ScopedProductCatalogPort>;
   let service: CartService;
 
   beforeEach(() => {
@@ -36,6 +38,7 @@ describe('CartService', () => {
     };
     productCatalog = {
       getSnapshot: jest.fn(),
+      getScopedSnapshot: jest.fn(),
     };
     service = new CartService(repository, productCatalog, () => now);
   });
@@ -45,9 +48,9 @@ describe('CartService', () => {
       items: [cartItem({ productoId: 'product-1', cantidad: 2, precioUnitario: 1200 })],
     }));
 
-    await expect(service.getActiveCart(clienteId, vendedorId)).resolves.toEqual({
+    await expect(service.getActiveCart(clienteUserId, vendedorId)).resolves.toEqual({
       id: 'cart-1',
-      clienteId,
+      clienteId: clienteUserId,
       vendedorId,
       expiresAt: future.toISOString(),
       items: [
@@ -65,73 +68,119 @@ describe('CartService', () => {
   });
 
   it('uses only JWT cliente identity when reading an active cart', async () => {
-    repository.findActiveByCliente.mockResolvedValue(cartRecord({ usuarioId: clienteId }));
+    repository.findActiveByCliente.mockResolvedValue(cartRecord({ usuarioId: clienteUserId }));
 
-    await service.getActiveCart(clienteId, vendedorId);
+    await service.getActiveCart(clienteUserId, vendedorId);
 
-    expect(repository.findActiveByCliente).toHaveBeenCalledWith(clienteId, vendedorId, now);
+    expect(repository.findActiveByCliente).toHaveBeenCalledWith(clienteUserId, vendedorId, now);
     expect(repository.findActiveByCliente).not.toHaveBeenCalledWith('body-user', vendedorId, now);
   });
 
   it('hides another provider active cart when the cliente switches providers', async () => {
     repository.findActiveByCliente.mockResolvedValue(null);
 
-    await expect(service.getActiveCart(clienteId, 'vendedor-2')).resolves.toBeNull();
+    await expect(service.getActiveCart(clienteUserId, 'vendedor-2')).resolves.toBeNull();
 
-    expect(repository.findActiveByCliente).toHaveBeenCalledWith(clienteId, 'vendedor-2', now);
+    expect(repository.findActiveByCliente).toHaveBeenCalledWith(clienteUserId, 'vendedor-2', now);
   });
 
   it('rejects mutations for carts owned by another cliente', async () => {
     repository.findById.mockResolvedValue(cartRecord({ usuarioId: 'cliente-2' }));
 
     await expect(
-      service.updateItem(clienteId, { vendedorId, cartId: 'cart-1', productoId: 'product-1', cantidad: 3 }),
+      service.updateItem(clienteUser, { vendedorId, cartId: 'cart-1', productoId: 'product-1', cantidad: 3 }),
     ).rejects.toThrow(ForbiddenException);
 
     expect(repository.replaceItemQuantity).not.toHaveBeenCalled();
+  });
+
+  it('rejects non-cliente cart writes before catalog or repository access', async () => {
+    await expect(service.addItem({ ...clienteUser, role: UserRole.VENDEDOR }, { vendedorId, productoId: 'product-1', cantidad: 1 })).rejects.toThrow(ForbiddenException);
+    await expect(service.updateItem({ ...clienteUser, role: UserRole.VENDEDOR }, { vendedorId, cartId: 'cart-1', productoId: 'product-1', cantidad: 1 })).rejects.toThrow(ForbiddenException);
+    expect(productCatalog.getScopedSnapshot).not.toHaveBeenCalled();
+    expect(repository.findById).not.toHaveBeenCalled();
+    expect(repository.findOrCreateActiveCart).not.toHaveBeenCalled();
+    expect(repository.deleteItem).not.toHaveBeenCalled();
+  });
+
+  it.each([UserRole.VENDEDOR, UserRole.SUPER_ADMIN])('rejects cart deletion by %s before repository access', async (role) => {
+    await expect(service.deleteItem({ ...clienteUser, role }, { vendedorId, cartId: 'cart-1', productoId: 'product-1' })).rejects.toThrow(ForbiddenException);
+    expect(repository.findById).not.toHaveBeenCalled();
+    expect(repository.deleteItem).not.toHaveBeenCalled();
+  });
+
+  it('rejects deletion from a cart owned by another authenticated cliente user', async () => {
+    repository.findById.mockResolvedValue(cartRecord({ usuarioId: 'other-auth-user' }));
+
+    await expect(service.deleteItem(clienteUser, { vendedorId, cartId: 'cart-1', productoId: 'product-1' })).rejects.toThrow(ForbiddenException);
+    expect(repository.deleteItem).not.toHaveBeenCalled();
+  });
+
+  it('deletes only from the authenticated cliente user cart', async () => {
+    repository.findById.mockResolvedValue(cartRecord());
+    repository.deleteItem.mockResolvedValue(cartRecord());
+
+    await service.deleteItem(clienteUser, { vendedorId, cartId: 'cart-1', productoId: 'product-1' });
+
+    expect(repository.findById).toHaveBeenCalledWith('cart-1');
+    expect(repository.deleteItem).toHaveBeenCalledWith('cart-1', 'product-1');
   });
 
   it('rejects mutations for expired carts', async () => {
     repository.findById.mockResolvedValue(cartRecord({ expiresAt: past }));
 
     await expect(
-      service.deleteItem(clienteId, { vendedorId, cartId: 'cart-1', productoId: 'product-1' }),
+      service.deleteItem(clienteUser, { vendedorId, cartId: 'cart-1', productoId: 'product-1' }),
     ).rejects.toThrow(ForbiddenException);
 
     expect(repository.deleteItem).not.toHaveBeenCalled();
   });
 
   it('returns controlled product unavailable and does not write when catalog is unavailable', async () => {
-    productCatalog.getSnapshot.mockRejectedValue(new ServiceUnavailableException('Product catalog is unavailable'));
+    productCatalog.getScopedSnapshot.mockRejectedValue(new ServiceUnavailableException('Product catalog is unavailable'));
 
     await expect(
-      service.addItem(clienteId, { vendedorId, productoId: 'product-1', cantidad: 1, userId: 'body-user' }),
+      service.addItem(clienteUser, { vendedorId, productoId: 'product-1', cantidad: 1, userId: 'body-user' }),
     ).rejects.toThrow(ServiceUnavailableException);
 
     expect(repository.findOrCreateActiveCart).not.toHaveBeenCalled();
     expect(repository.incrementItemQuantity).not.toHaveBeenCalled();
   });
 
+  it.each([
+    [new NotFoundException('Product was not found'), NotFoundException],
+    [new ServiceUnavailableException('Invalid snapshot'), ServiceUnavailableException],
+  ])('never creates or mutates a cart when lookup fails with %p', async (failure, exception) => {
+    productCatalog.getScopedSnapshot.mockRejectedValue(failure);
+    await expect(service.addItem(clienteUser, { vendedorId, productoId: 'product-1', cantidad: 1 })).rejects.toThrow(exception);
+    expect(repository.findOrCreateActiveCart).not.toHaveBeenCalled();
+    expect(repository.incrementItemQuantity).not.toHaveBeenCalled();
+    repository.findById.mockResolvedValue(cartRecord({ items: [cartItem()] }));
+    await expect(service.updateItem(clienteUser, { vendedorId, cartId: 'cart-1', productoId: 'product-1', cantidad: 1 })).rejects.toThrow(exception);
+    expect(repository.replaceItemQuantity).not.toHaveBeenCalled();
+  });
+
   it('creates active carts through the repository invariant instead of a read-then-create service race', async () => {
-    productCatalog.getSnapshot.mockResolvedValue(productSnapshot);
+    productCatalog.getScopedSnapshot.mockResolvedValue(productSnapshot);
     repository.findActiveByCliente.mockResolvedValue(null);
     repository.findOrCreateActiveCart.mockResolvedValue(cartRecord());
     repository.incrementItemQuantity.mockResolvedValue(cartRecord({
       items: [cartItem({ cantidad: 1, precioUnitario: 1200 })],
     }));
 
-    await service.addItem(clienteId, { vendedorId, productoId: 'product-1', cantidad: 1 });
+    await service.addItem(clienteUser, { vendedorId, productoId: 'product-1', cantidad: 1 });
+    expect(productCatalog.getScopedSnapshot).toHaveBeenCalledWith('product-1', clienteUser);
 
-    expect(repository.findOrCreateActiveCart).toHaveBeenCalledWith(clienteId, vendedorId, cartTtlExpiration, now);
+    expect(repository.findOrCreateActiveCart).toHaveBeenCalledWith(clienteUserId, vendedorId, cartTtlExpiration, now);
     expect(repository.incrementItemQuantity).toHaveBeenCalledWith('cart-1', 'product-1', 'Agua 20L', 1, 1200);
   });
 
   it('rejects when concurrent active cart creation resolves to another vendor', async () => {
-    productCatalog.getSnapshot.mockResolvedValue(productSnapshot);
+    productCatalog.getScopedSnapshot.mockResolvedValue(productSnapshot);
     repository.findActiveByCliente.mockResolvedValue(null);
     repository.findOrCreateActiveCart.mockResolvedValue(cartRecord({ vendedorId: 'vendedor-2' }));
 
-    await expect(service.addItem(clienteId, { vendedorId, productoId: 'product-1', cantidad: 1 })).rejects.toThrow(
+    await expect(service.addItem(clienteUser, { vendedorId, productoId: 'product-1', cantidad: 1 })).rejects.toThrow(
       ForbiddenException,
     );
 
@@ -139,58 +188,65 @@ describe('CartService', () => {
   });
 
   it('rejects explicit add when the product vendor does not match the cart vendor', async () => {
-    productCatalog.getSnapshot.mockResolvedValue({ ...productSnapshot, vendedorId: 'vendedor-2' });
+    productCatalog.getScopedSnapshot.mockResolvedValue({ ...productSnapshot, vendedorId: 'vendedor-2' });
     repository.findById.mockResolvedValue(cartRecord({ vendedorId }));
 
     await expect(
-      service.addItem(clienteId, { vendedorId, cartId: 'cart-1', productoId: 'product-1', cantidad: 1 }),
+      service.addItem(clienteUser, { vendedorId, cartId: 'cart-1', productoId: 'product-1', cantidad: 1 }),
     ).rejects.toThrow(ForbiddenException);
 
     expect(repository.incrementItemQuantity).not.toHaveBeenCalled();
   });
 
   it('rejects update when the product vendor does not match the cart vendor', async () => {
-    productCatalog.getSnapshot.mockResolvedValue({ ...productSnapshot, vendedorId: 'vendedor-2' });
+    productCatalog.getScopedSnapshot.mockResolvedValue({ ...productSnapshot, vendedorId: 'vendedor-2' });
     repository.findById.mockResolvedValue(cartRecord({
       vendedorId,
       items: [cartItem({ productoId: 'product-1' })],
     }));
 
     await expect(
-      service.updateItem(clienteId, { vendedorId, cartId: 'cart-1', productoId: 'product-1', cantidad: 1 }),
+      service.updateItem(clienteUser, { vendedorId, cartId: 'cart-1', productoId: 'product-1', cantidad: 1 }),
     ).rejects.toThrow(ForbiddenException);
 
     expect(repository.replaceItemQuantity).not.toHaveBeenCalled();
   });
 
   it('rejects duplicate add when accumulated quantity exceeds available stock', async () => {
-    productCatalog.getSnapshot.mockResolvedValue({ ...productSnapshot, stock: 4 });
+    productCatalog.getScopedSnapshot.mockResolvedValue({ ...productSnapshot, stock: 4 });
     repository.findActiveByCliente.mockResolvedValue(cartRecord({
       items: [cartItem({ cantidad: 2, precioUnitario: 1200 })],
     }));
 
-    await expect(service.addItem(clienteId, { vendedorId, productoId: 'product-1', cantidad: 3 })).rejects.toThrow(
+    await expect(service.addItem(clienteUser, { vendedorId, productoId: 'product-1', cantidad: 3 })).rejects.toThrow(
       ServiceUnavailableException,
     );
 
     expect(repository.incrementItemQuantity).not.toHaveBeenCalled();
   });
 
+  it('does not create a new cart when requested quantity exceeds stock', async () => {
+    productCatalog.getScopedSnapshot.mockResolvedValue({ ...productSnapshot, stock: 1 });
+    await expect(service.addItem(clienteUser, { vendedorId, productoId: 'product-1', cantidad: 3 })).rejects.toThrow(ServiceUnavailableException);
+    expect(repository.findOrCreateActiveCart).not.toHaveBeenCalled();
+    expect(repository.incrementItemQuantity).not.toHaveBeenCalled();
+  });
+
   it('rejects update when requested replacement quantity exceeds available stock', async () => {
-    productCatalog.getSnapshot.mockResolvedValue({ ...productSnapshot, stock: 2 });
+    productCatalog.getScopedSnapshot.mockResolvedValue({ ...productSnapshot, stock: 2 });
     repository.findById.mockResolvedValue(cartRecord({
       items: [cartItem({ cantidad: 1, precioUnitario: 1200 })],
     }));
 
     await expect(
-      service.updateItem(clienteId, { vendedorId, cartId: 'cart-1', productoId: 'product-1', cantidad: 3 }),
+      service.updateItem(clienteUser, { vendedorId, cartId: 'cart-1', productoId: 'product-1', cantidad: 3 }),
     ).rejects.toThrow(ServiceUnavailableException);
 
     expect(repository.replaceItemQuantity).not.toHaveBeenCalled();
   });
 
   it('increments quantity when adding a duplicate item', async () => {
-    productCatalog.getSnapshot.mockResolvedValue(productSnapshot);
+    productCatalog.getScopedSnapshot.mockResolvedValue(productSnapshot);
     repository.findActiveByCliente.mockResolvedValue(cartRecord({
       items: [cartItem({ cantidad: 2, precioUnitario: 1200 })],
     }));
@@ -198,7 +254,7 @@ describe('CartService', () => {
       items: [cartItem({ cantidad: 5, precioUnitario: 1200 })],
     }));
 
-    const cart = await service.addItem(clienteId, { vendedorId, productoId: 'product-1', cantidad: 3 });
+    const cart = await service.addItem(clienteUser, { vendedorId, productoId: 'product-1', cantidad: 3 });
 
     expect(repository.incrementItemQuantity).toHaveBeenCalledWith('cart-1', 'product-1', 'Agua 20L', 3, 1200);
     expect(cart.items[0]?.cantidad).toBe(5);
@@ -206,7 +262,7 @@ describe('CartService', () => {
   });
 
   it('replaces quantity when updating an item', async () => {
-    productCatalog.getSnapshot.mockResolvedValue(productSnapshot);
+    productCatalog.getScopedSnapshot.mockResolvedValue(productSnapshot);
     repository.findById.mockResolvedValue(cartRecord({
       items: [cartItem({ cantidad: 5, precioUnitario: 1200 })],
     }));
@@ -214,7 +270,7 @@ describe('CartService', () => {
       items: [cartItem({ cantidad: 3, precioUnitario: 1200 })],
     }));
 
-    const cart = await service.updateItem(clienteId, { vendedorId, cartId: 'cart-1', productoId: 'product-1', cantidad: 3 });
+    const cart = await service.updateItem(clienteUser, { vendedorId, cartId: 'cart-1', productoId: 'product-1', cantidad: 3 });
 
     expect(repository.replaceItemQuantity).toHaveBeenCalledWith('cart-1', 'product-1', 'Agua 20L', 3, 1200);
     expect(cart.items[0]?.cantidad).toBe(3);
@@ -227,10 +283,10 @@ describe('CartService', () => {
     }));
 
     await expect(
-      service.updateItem(clienteId, { vendedorId, cartId: 'cart-1', productoId: 'missing-product', cantidad: 3 }),
+      service.updateItem(clienteUser, { vendedorId, cartId: 'cart-1', productoId: 'missing-product', cantidad: 3 }),
     ).rejects.toThrow(NotFoundException);
 
-    expect(productCatalog.getSnapshot).not.toHaveBeenCalled();
+    expect(productCatalog.getScopedSnapshot).not.toHaveBeenCalled();
     expect(repository.replaceItemQuantity).not.toHaveBeenCalled();
   });
 
@@ -238,7 +294,7 @@ describe('CartService', () => {
     repository.findById.mockResolvedValue(null);
 
     await expect(
-      service.updateItem(clienteId, { vendedorId, cartId: 'missing-cart', productoId: 'product-1', cantidad: 3 }),
+      service.updateItem(clienteUser, { vendedorId, cartId: 'missing-cart', productoId: 'product-1', cantidad: 3 }),
     ).rejects.toThrow(NotFoundException);
 
     expect(repository.replaceItemQuantity).not.toHaveBeenCalled();
@@ -247,7 +303,7 @@ describe('CartService', () => {
   function cartRecord(overrides: Partial<CartRecord> = {}): CartRecord {
     return {
       id: 'cart-1',
-      usuarioId: clienteId,
+      usuarioId: clienteUserId,
       vendedorId,
       expiresAt: future,
       items: [],

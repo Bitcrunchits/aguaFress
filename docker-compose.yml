@@ -175,6 +175,8 @@ services:
       ORDERS_CREATE_QUEUE_BACKOFF_MS: "5000"
       ORDERS_CREATE_QUEUE_REMOVE_ON_COMPLETE: "1000"
       ORDERS_CREATE_WORKER_CONCURRENCY: "1"
+      PRODUCTS_SERVICE_HOST: products-service
+      PRODUCTS_SERVICE_TCP_PORT: "3013"
     depends_on:
       postgres-init:
         condition: service_completed_successfully

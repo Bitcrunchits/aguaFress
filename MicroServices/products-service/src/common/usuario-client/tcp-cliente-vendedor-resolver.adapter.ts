@@ -1,7 +1,7 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { randomUUID } from 'node:crypto';
-import { catchError, firstValueFrom, throwError, timeout } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 import { UserRole } from '@agua/contracts';
 import { USUARIO_CLIENT } from './usuario-client.module';
 import type { ClienteVendedorResolverPort } from './cliente-vendedor-resolver.port';
@@ -14,7 +14,7 @@ import type { ClienteVendedorResolverPort } from './cliente-vendedor-resolver.po
  */
 @Injectable()
 export class TcpClienteVendedorResolverAdapter implements ClienteVendedorResolverPort {
-  private readonly timeoutMs = 5000;
+  private readonly timeoutMs = 2500;
 
   constructor(@Inject(USUARIO_CLIENT) private readonly usuarioClient: ClientProxy) {}
 
@@ -28,22 +28,20 @@ export class TcpClienteVendedorResolverAdapter implements ClienteVendedorResolve
     };
 
     const result$ = this.usuarioClient
-      .send<{ providers: readonly { vendedorId: string }[]; defaultVendedorId?: string } | null>(
+      .send<unknown>(
         'clientes.providers',
         payload,
       )
       .pipe(
         timeout(this.timeoutMs),
-        catchError((err) => throwError(() => err)),
       );
 
     const result = await firstValueFrom(result$);
 
-    if (!result?.providers?.length) {
-      return [];
+    if (!isProvidersResponse(result)) {
+      throw new ServiceUnavailableException('Cliente providers returned an invalid response');
     }
-
-    const vendedores = result.providers.map((p) => p.vendedorId);
+    const vendedores = result.providers.map((provider) => provider.id);
 
     // Si hay defaultVendedorId, ponerlo primero
     if (result.defaultVendedorId && vendedores.includes(result.defaultVendedorId)) {
@@ -55,4 +53,21 @@ export class TcpClienteVendedorResolverAdapter implements ClienteVendedorResolve
 
     return vendedores;
   }
+}
+
+interface ProviderResponse {
+  readonly id: string;
+}
+
+interface ProvidersResponse {
+  readonly providers: readonly ProviderResponse[];
+  readonly defaultVendedorId?: string;
+}
+
+function isProvidersResponse(value: unknown): value is ProvidersResponse {
+  if (typeof value !== 'object' || value === null || !('providers' in value) || !Array.isArray(value.providers)) return false;
+  if (!value.providers.every((provider: unknown) => typeof provider === 'object' && provider !== null
+    && 'id' in provider && typeof provider.id === 'string' && provider.id.trim() !== '')) return false;
+  return !('defaultVendedorId' in value) || value.defaultVendedorId === undefined
+    || (typeof value.defaultVendedorId === 'string' && value.defaultVendedorId.trim() !== '');
 }
