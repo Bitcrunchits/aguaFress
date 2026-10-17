@@ -11,6 +11,7 @@ export interface CartItemResponse {
 
 export interface CartResponse {
   readonly id: string;
+  /** V1 compatibility: AUTH_USER.id of the cliente, not CLIENTE.id. */
   readonly clienteId: string;
   readonly vendedorId: string;
   readonly expiresAt: string;
@@ -44,6 +45,7 @@ export interface GetCartRequest {
 
 export function parseAddCartItemRequest(value: unknown): AddCartItemRequest {
   const record = requireRecord(value);
+  rejectUnexpectedFields(record, ['cartId', 'vendedorId', 'productoId', 'cantidad']);
   return {
     cartId: readOptionalString(record, 'cartId'),
     vendedorId: readRequiredString(record, 'vendedorId'),
@@ -54,6 +56,7 @@ export function parseAddCartItemRequest(value: unknown): AddCartItemRequest {
 
 export function parseUpdateCartItemRequest(value: unknown): UpdateCartItemRequest {
   const record = requireRecord(value);
+  rejectUnexpectedFields(record, ['cartId', 'vendedorId', 'productoId', 'cantidad']);
   return {
     cartId: readRequiredString(record, 'cartId'),
     vendedorId: readRequiredString(record, 'vendedorId'),
@@ -64,6 +67,7 @@ export function parseUpdateCartItemRequest(value: unknown): UpdateCartItemReques
 
 export function parseDeleteCartItemRequest(value: unknown): DeleteCartItemRequest {
   const record = requireRecord(value);
+  rejectUnexpectedFields(record, ['cartId', 'vendedorId', 'productoId']);
   return {
     cartId: readRequiredString(record, 'cartId'),
     vendedorId: readRequiredString(record, 'vendedorId'),
@@ -73,7 +77,16 @@ export function parseDeleteCartItemRequest(value: unknown): DeleteCartItemReques
 
 export function parseGetCartRequest(value: unknown): GetCartRequest {
   const record = requireRecord(value);
+  rejectUnexpectedFields(record, ['vendedorId']);
   return { vendedorId: readRequiredString(record, 'vendedorId') };
+}
+
+function rejectUnexpectedFields(record: Record<string, unknown>, allowedFields: readonly string[]): void {
+  for (const key of Object.keys(record)) {
+    if (!allowedFields.includes(key)) {
+      throw new BadRequestException(`property ${key} should not exist`);
+    }
+  }
 }
 
 function requireRecord(value: unknown): Record<string, unknown> {

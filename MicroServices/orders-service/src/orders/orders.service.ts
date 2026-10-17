@@ -2,7 +2,7 @@ import { ForbiddenException, Inject, Injectable, NotFoundException, ServiceUnava
 import { OrderEstado, UserRole } from '@agua/contracts';
 import type { CartRecord } from '../cart/cart.repository';
 import { CLOCK, type Clock } from '../common/clock.provider';
-import { PRODUCT_CATALOG_PORT, type ProductCatalogPort, type ProductSnapshot } from '../products/product-catalog.port';
+import { PRODUCT_CATALOG_TIMEOUT_MS, SCOPED_PRODUCT_CATALOG_PORT, type ProductSnapshot, type ScopedProductCatalogPort } from '../products/product-catalog.port';
 import type { TcpAuthenticatedUser } from '../tcp/tcp-payload';
 import { assertOrderTransition } from './order-state';
 import type { OrderRecord, OrdersRepository } from './orders.repository';
@@ -24,7 +24,7 @@ type OrdersServiceRepository = Pick<OrdersRepository,
 export class OrdersService {
   constructor(
     @Inject(PrismaOrdersRepository) private readonly ordersRepository: OrdersServiceRepository,
-    @Inject(PRODUCT_CATALOG_PORT) private readonly productCatalog: ProductCatalogPort,
+    @Inject(SCOPED_PRODUCT_CATALOG_PORT) private readonly productCatalog: ScopedProductCatalogPort,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(VENDEDOR_PROFILE_RESOLVER_PORT) private readonly vendedorProfileResolver: VendedorProfileResolverPort,
   ) {}
@@ -32,11 +32,13 @@ export class OrdersService {
   async create(user: TcpAuthenticatedUser, request: CreateOrderRequest): Promise<OrderResponse> {
     this.assertCliente(user);
     const clienteUserId = user.userId;
+    const catalogDeadline = Date.now() + PRODUCT_CATALOG_TIMEOUT_MS;
     const order = await this.ordersRepository.createFromCart({
+      // Legacy repository input name: clienteId stores AUTH_USER.id, not CLIENTE.id.
       clienteId: clienteUserId,
       vendedorId: request.vendedorId,
       now: this.clock(),
-      validateCartItems: (cart) => this.validateCartItems(cart),
+      validateCartItems: (cart) => this.validateCartItems(cart, user, catalogDeadline),
       metodoPago: request.metodoPago,
       direccion: request.direccion,
       observaciones: request.observaciones,
@@ -88,11 +90,14 @@ export class OrdersService {
     return this.updateStatus(user, orderId, OrderEstado.CONFIRMADO, 'Order confirmed');
   }
 
-  private async validateCartItems(cart: CartRecord): Promise<void> {
+  private async validateCartItems(cart: CartRecord, user: TcpAuthenticatedUser, deadline: number): Promise<void> {
     for (const item of cart.items) {
-      const product = await this.productCatalog.getSnapshot(item.productoId);
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) throw new ServiceUnavailableException('Product catalog validation timed out');
+      const product = await this.productCatalog.getScopedSnapshot(item.productoId, user, remaining);
       this.assertAvailableProduct(product, cart.vendedorId, item.cantidad);
     }
+    if (Date.now() >= deadline) throw new ServiceUnavailableException('Product catalog validation timed out');
   }
 
   private async requireOrder(orderId: string): Promise<OrderRecord> {
