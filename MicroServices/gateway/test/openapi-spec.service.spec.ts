@@ -67,7 +67,7 @@ describe('OpenApiSpecService provider context docs', () => {
     const recipe = description.slice(description.indexOf('### Receta 4'));
 
     expect(recipe).toContain('No hay usuario cliente seed');
-    expect(recipe).toContain('auth/register-client-by-vendor');
+    expect(recipe).toContain('auth/register-client/by-vendor');
     expect(recipe).not.toContain('pedro@aguafress.com');
   });
 
@@ -155,6 +155,7 @@ interface SpecOperation {
 
 interface SpecSchema {
   required?: string[];
+  properties?: Record<string, unknown>;
 }
 
 const HTTP_METHODS = ['get', 'post', 'patch', 'delete'] as const;
@@ -192,6 +193,17 @@ function responseSchemaRef(operation: SpecOperation): string | undefined {
 
 function schemaNameFromRef(ref: string | undefined): string | undefined {
   return ref?.split('/').pop();
+}
+
+function requestBodySchemaOf(spec: Record<string, unknown>, path: string, method: string): SpecSchema {
+  const ref = operationAt(spec, path, method).requestBody?.content['application/json']?.schema?.$ref;
+  const schema = specSchemas(spec)[schemaNameFromRef(ref) ?? ''];
+
+  if (!schema) {
+    throw new Error(`Expected a named request body schema on ${method.toUpperCase()} ${path}`);
+  }
+
+  return schema;
 }
 
 function parameterOf(operation: SpecOperation, name: string): SpecParameter {
@@ -568,5 +580,44 @@ describe('OpenApiSpecService Scalar walkthrough recipes', () => {
     expect(description).toContain('orders/job-status?id=<trackingId>');
     expect(parameterOf(operationAt(spec, '/api/v1/orders/job-status', 'get'), 'id').description)
       .toContain('trackingId');
+  });
+});
+
+describe('OpenApiSpecService client registration request bodies', () => {
+  const BY_VENDOR = '/api/v1/auth/register-client/by-vendor';
+  const VIA_INVITATION_LINK = '/api/v1/auth/register-client';
+  const CLIENT_REQUIRED_FIELDS = [
+    'nombre', 'email', 'emailConfirmation', 'password', 'telefono', 'dni', 'direccionEntrega',
+  ];
+
+  // usuario-service validates this payload with RegisterClientByVendorDto under
+  // forbidNonWhitelisted, so a rendered `token` field answers HTTP 400
+  // "property token should not exist".
+  it('does not offer the invitation token on the seller-initiated registration body', () => {
+    const spec = generateSpec();
+    const schema = requestBodySchemaOf(spec, BY_VENDOR, 'post');
+
+    expect(Object.keys(schema.properties ?? {})).not.toContain('token');
+  });
+
+  it('keeps the invitation token on the self-registration link flow', () => {
+    const spec = generateSpec();
+    const schema = requestBodySchemaOf(spec, VIA_INVITATION_LINK, 'post');
+
+    expect(Object.keys(schema.properties ?? {})).toContain('token');
+  });
+
+  it('keeps the full required client field set on the seller-initiated body', () => {
+    const spec = generateSpec();
+    const schema = requestBodySchemaOf(spec, BY_VENDOR, 'post');
+
+    expect(schema.required).toEqual(CLIENT_REQUIRED_FIELDS);
+  });
+
+  it('documents the seller-initiated route with its registered slash segment', () => {
+    const description = (generateSpec().info as { description: string }).description;
+
+    expect(description).toContain('POST /api/v1/auth/register-client/by-vendor');
+    expect(description).not.toContain('register-client-by-vendor');
   });
 });
