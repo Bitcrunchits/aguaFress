@@ -47,10 +47,10 @@ describe('LoginPage', () => {
   }
 
   for (const [code, message] of [
-    ['invalid-credentials', 'The email or password is incorrect. Check your details and try again.'],
-    ['inactive-account', 'This account is inactive. Contact the administrator to regain access.'],
-    ['network', 'We could not reach the server. Check your connection and try again.'],
-    ['unexpected', 'Something went wrong. Try again in a few seconds.'],
+    ['invalid-credentials', 'El correo o la contraseña no coinciden. Revisa los datos e inténtalo de nuevo.'],
+    ['inactive-account', 'Esta cuenta está inactiva. Contacta a administración para recuperar el acceso.'],
+    ['network', 'No pudimos conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.'],
+    ['unexpected', 'No pudimos iniciar sesión. Inténtalo de nuevo en unos segundos.'],
   ] as const) {
     it(`shows the ${code} presentation message`, () => {
       login.and.returnValue(throwError(() => new AuthError(code)));
@@ -68,7 +68,7 @@ describe('LoginPage', () => {
 
     page.submit();
 
-    expect(page.errorMessage()).toBe('Something went wrong. Try again in a few seconds.');
+    expect(page.errorMessage()).toBe('No pudimos iniciar sesión. Inténtalo de nuevo en unos segundos.');
     expect(router.navigate).not.toHaveBeenCalled();
   });
 });

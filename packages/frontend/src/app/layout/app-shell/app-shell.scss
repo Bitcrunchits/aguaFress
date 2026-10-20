@@ -56,6 +56,41 @@
 .shell__nav a.shell__link--active {
   border-color: var(--agua-primary);
   color: var(--agua-primary-dark);
+  box-shadow: inset 3px 0 var(--agua-flow);
+}
+
+.shell__account {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.shell__identity {
+  color: var(--slate-muted);
+  overflow-wrap: anywhere;
+}
+
+.shell__logout {
+  flex-shrink: 0;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  padding: 8px 14px;
+  background: var(--clean-white);
+  color: var(--agua-primary-dark);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.shell__logout:hover {
+  border-color: var(--agua-primary);
+}
+
+.shell__logout:focus-visible,
+.shell__nav a:focus-visible {
+  outline: 2px solid var(--agua-primary);
+  outline-offset: 3px;
 }
 
 .shell__content {
@@ -74,6 +109,10 @@
   }
 
   .shell__nav {
+    flex-wrap: wrap;
+  }
+
+  .shell__account {
     flex-wrap: wrap;
   }
 }
