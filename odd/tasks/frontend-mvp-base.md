@@ -97,6 +97,7 @@ A small vertical MVP prevents scope creep while still proving the product flow: 
 - FMVP-004 session policy decided by the user: localStorage (single key `aguafress.session`) for access token, refresh token, and user; bootstrap restore with gateway refresh (`auth.refresh`); multi-tab logout via `storage` events; expiry handled as logout-on-401.
 - Completed FMVP-004 with the login screen, auth/session services, bearer interceptor, auth/guest guards, role-based redirects, server-validated role on bootstrap restore (`users.profile`), and focused unit tests.
 - Completed FMVP-005: both Angular serve configurations respond over loopback; manual live-browser login and VPS interaction remain outside this fix.
+- FMVP-005 work-unit commit: `bafac4e` (`fix(frontend): restore Angular development server`). GGA v2.10.1 passed. Native committed-only assessment against `057363e` returned `medium`, `review_due: false`, `review_due_reason: under_budget`; this slice remains pending review until a later due boundary. The pre-existing local `cli.analytics: false` edit was excluded from the commit and remains unstaged.
 
 ## Verification evidence
 
