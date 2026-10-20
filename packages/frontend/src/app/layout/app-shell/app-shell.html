@@ -1,0 +1,18 @@
+<main class="shell" aria-label="AguaFress role workspace">
+  <header class="shell__header">
+    <a class="shell__brand" routerLink="/auth/login" aria-label="Go to login">
+      <span class="shell__mark" aria-hidden="true">AF</span>
+      <span>AguaFress</span>
+    </a>
+
+    <nav class="shell__nav" aria-label="Role shell routes">
+      <a routerLink="/admin" routerLinkActive="shell__link--active">Admin</a>
+      <a routerLink="/vendedor" routerLinkActive="shell__link--active">Vendor</a>
+      <a routerLink="/cliente" routerLinkActive="shell__link--active">Customer</a>
+    </nav>
+  </header>
+
+  <section class="shell__content">
+    <router-outlet />
+  </section>
+</main>

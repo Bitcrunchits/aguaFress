@@ -16,5 +16,8 @@ ARCHITECTURE.md
 mcp/jira-mcp-server/jira-helper.mjs
 mcp/
 
+# Engram memory sync chunks (contain session prompts, may include secrets)
+.engram/
+
 # Build artifacts
 *.tsbuildinfo

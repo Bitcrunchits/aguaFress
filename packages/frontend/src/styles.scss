@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-display: "Manrope", "Inter", system-ui, sans-serif;
+  --font-mono: "Roboto Mono", ui-monospace, monospace;
+
+  --color-agua-primary: #0e7490;
+  --color-agua-primary-dark: #155e75;
+  --color-agua-flow: #22d3ee;
+  --color-fresh-mint: #a7f3d0;
+  --color-ice-surface: #f0fdfa;
+  --color-clean-white: #ffffff;
+  --color-slate-ink: #0f172a;
+  --color-slate-muted: #64748b;
+  --color-line-soft: #d9eef2;
+  --color-route-warning: #f59e0b;
+  --color-route-success: #16a34a;
+  --color-route-danger: #dc2626;
+
+  --radius-agua-sm: 0.5rem;
+  --radius-agua-md: 0.75rem;
+  --radius-agua-lg: 1.125rem;
+  --shadow-agua-card: 0 8px 24px rgb(14 116 144 / 0.08);
+  --shadow-agua-floating: 0 18px 48px rgb(15 23 42 / 0.16);
+}
+
+:root {
+  color-scheme: light;
+  --agua-primary: #0e7490;
+  --agua-primary-dark: #155e75;
+  --agua-flow: #22d3ee;
+  --fresh-mint: #a7f3d0;
+  --ice-surface: #f0fdfa;
+  --clean-white: #ffffff;
+  --slate-ink: #0f172a;
+  --slate-muted: #64748b;
+  --line-soft: #d9eef2;
+  --route-warning: #f59e0b;
+  --route-success: #16a34a;
+  --route-danger: #dc2626;
+  --radius-agua-sm: 8px;
+  --radius-agua-md: 12px;
+  --radius-agua-lg: 18px;
+  --shadow-agua-card: 0 8px 24px rgb(14 116 144 / 0.08);
+  --shadow-agua-floating: 0 18px 48px rgb(15 23 42 / 0.16);
+  --font-agua-sans: "Inter", system-ui, sans-serif;
+  --font-agua-display: "Manrope", "Inter", system-ui, sans-serif;
+  --font-agua-mono: "Roboto Mono", ui-monospace, monospace;
+}
+
+.agua-dark {
+  color-scheme: dark;
+  --ice-surface: #082f3a;
+  --clean-white: #0f2f3a;
+  --slate-ink: #e2f8fb;
+  --slate-muted: #9cc9d2;
+  --line-soft: #1f4c58;
+  --agua-primary: #22d3ee;
+  --agua-primary-dark: #67e8f9;
+}
+
+@layer base {
+  body {
+    min-height: 100vh;
+    margin: 0;
+    background: var(--ice-surface);
+    color: var(--slate-ink);
+    font-family: var(--font-agua-sans);
+    text-rendering: optimizeLegibility;
+  }
+
+  a {
+    color: var(--agua-primary);
+  }
+
+  :focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--agua-flow) 70%, transparent);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .role-card {
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-agua-lg);
+    padding: 32px;
+    background: var(--clean-white);
+    box-shadow: var(--shadow-agua-card);
+  }
+
+  .role-card__eyebrow {
+    margin: 0 0 12px;
+    color: var(--agua-primary-dark);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .role-card h1 {
+    margin: 0 0 12px;
+    font-family: var(--font-agua-display);
+  }
+
+  .role-card p:last-child {
+    margin: 0;
+    color: var(--slate-muted);
+  }
+}
