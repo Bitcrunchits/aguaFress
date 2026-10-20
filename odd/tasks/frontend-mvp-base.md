@@ -105,4 +105,6 @@ A small vertical MVP prevents scope creep while still proving the product flow: 
 
 ## Next step
 
-FMVP-004 is complete. Next slice candidates from the MVP: role shell layouts with logout (`RoleShellLayout`), the `/auth/register-seller` public flow, or the admin vendedores list against `vendedores.list`. Commit identity to be added by the parent; the parent owns committing/pushing this work unit.
+FMVP-004 work-unit commit: `86955d1` (`feat(frontend): add validated login session flow`); GGA v2.10.1 passed and the native review of this commit was approved and acknowledged. Native review identified six non-blocking follow-ups about login/refresh timing, route changes after cross-tab replacement, late login responses, duplicated test gateway URLs, and the logout interceptor comment; none was part of the approved correction scope. Manual live-browser smoke testing remains pending. Next slice candidates from the MVP: role shell layouts with logout (`RoleShellLayout`), the `/auth/register-seller` public flow, or the admin vendedores list against `vendedores.list`. Do not push, create a PR, or merge without separate authorization; integration target is `develop`, never `main`.
+
+Engram mirror `odd/frontend-mvp-base/tasks` is pending resynchronization: the current runtime reported multiple active sessions and refused the write. This file is the current recovery source until the mirror can be updated.
