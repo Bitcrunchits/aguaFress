@@ -1,7 +1,4 @@
-export interface EnvironmentConfig {
-  readonly production: boolean;
-  readonly apiBaseUrl: string;
-}
+import type { EnvironmentConfig } from './environment-config';
 
 export const environment: EnvironmentConfig = {
   production: true,
