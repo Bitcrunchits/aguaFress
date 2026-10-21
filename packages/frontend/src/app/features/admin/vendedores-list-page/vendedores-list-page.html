@@ -1,0 +1,69 @@
+<section class="role-card vendedores" aria-labelledby="vendedores-title">
+  <p class="role-card__eyebrow">Administración</p>
+  <h1 id="vendedores-title">Vendedores</h1>
+
+  @if (loading()) {
+    <p class="vendedores__state" role="status">Cargando vendedores</p>
+  } @else if (failed()) {
+    <div class="vendedores__state vendedores__state--error" role="alert">
+      <p>No pudimos cargar los vendedores. Inténtalo de nuevo en unos segundos.</p>
+      <button pButton type="button" label="Reintentar" (click)="retry()"></button>
+    </div>
+  } @else if (items().length === 0) {
+    <p class="vendedores__state">No hay vendedores registrados todavía.</p>
+  } @else {
+    <div class="vendedores__table-wrap">
+      <table class="vendedores__table">
+        <caption class="vendedores__caption">Listado de vendedores</caption>
+        <thead>
+          <tr>
+            <th scope="col">Vendedor</th>
+            <th scope="col">Correo</th>
+            <th scope="col">Empresa</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Clientes</th>
+            <th scope="col">Registro</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (vendedor of items(); track vendedor.id) {
+            <tr>
+              <td>{{ nombreCompleto(vendedor) }}</td>
+              <td>{{ vendedor.email }}</td>
+              <td>{{ vendedor.empresa || '—' }}</td>
+              <td>
+                <span class="vendedores__badge" [attr.data-estado]="vendedor.estado">
+                  {{ estadoLabel(vendedor.estado) }}
+                </span>
+              </td>
+              <td>{{ clientesLabel(vendedor.clientesCount) }}</td>
+              <td>{{ formatFechaRegistro(vendedor.fechaRegistro) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (pagination(); as page) {
+      <nav class="vendedores__pagination" aria-label="Paginación de vendedores">
+        <button
+          pButton
+          type="button"
+          label="Anterior"
+          (click)="previousPage()"
+          [disabled]="currentPage() <= 1"
+        ></button>
+        <span class="vendedores__page-indicator" role="status">
+          Página {{ currentPage() }} de {{ page.totalPages }}
+        </span>
+        <button
+          pButton
+          type="button"
+          label="Siguiente"
+          (click)="nextPage()"
+          [disabled]="currentPage() >= page.totalPages"
+        ></button>
+      </nav>
+    }
+  }
+</section>
