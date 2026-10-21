@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, $Enums } from '../generated/prisma';
-import { VendedorEstado, AuditAction } from '@agua/contracts';
+import { VendedorEstado, AuditAction, SuperAdminVendedorListResponse } from '@agua/contracts';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { cleanUpdateInput } from '../common/utils/prisma.utils';
 import { AuditLogService } from '../audit-log/audit-log.service';
@@ -36,7 +36,7 @@ export class VendedoresService {
     private readonly auditLogService: AuditLogService,
   ) {}
 
-  async list(params: ListVendedoresDto = {}) {
+  async list(params: ListVendedoresDto = {}): Promise<SuperAdminVendedorListResponse> {
     const page = params.page ?? 1;
     const limit = params.limit ?? 10;
     const skip = (page - 1) * limit;
@@ -73,12 +73,12 @@ export class VendedoresService {
       id: v.id,
       nombre: v.nombre,
       apellido: v.apellido,
-      empresa: v.empresa,
       email: v.auth_user.email,
       telefono: v.telefono,
-      ciudad: v.ciudad_default,
+      empresa: v.empresa ?? undefined,
       estado: this.mapPrismaEstado(v.estado),
-      _count: v._count,
+      clientesCount: v._count.clientes,
+      fechaRegistro: v.created_at.toISOString(),
     }));
 
     return {

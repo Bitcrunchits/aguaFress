@@ -1,18 +1,31 @@
-<main class="shell" aria-label="AguaFress role workspace">
+<main class="shell" aria-label="Área de trabajo de AguaFress">
   <header class="shell__header">
-    <a class="shell__brand" routerLink="/auth/login" aria-label="Go to login">
+    <div class="shell__brand">
       <span class="shell__mark" aria-hidden="true">AF</span>
       <span>AguaFress</span>
-    </a>
+    </div>
 
-    <nav class="shell__nav" aria-label="Role shell routes">
-      <a routerLink="/admin" routerLinkActive="shell__link--active">Admin</a>
-      <a routerLink="/vendedor" routerLinkActive="shell__link--active">Vendor</a>
-      <a routerLink="/cliente" routerLinkActive="shell__link--active">Customer</a>
-    </nav>
+    @if (auth.sessionReady$ | async) {
+      @if (auth.currentSession; as session) {
+        <nav class="shell__nav" aria-label="Navegación principal">
+          <a [routerLink]="homePaths[session.user.role]" routerLinkActive="shell__link--active"
+            [routerLinkActiveOptions]="{ exact: true }">Inicio</a>
+        </nav>
+        <div class="shell__account">
+          <span class="shell__identity">{{ roleLabels[session.user.role] }} · {{ session.user.email }}</span>
+          <button type="button" class="shell__logout" (click)="logout()">Cerrar sesión</button>
+        </div>
+      }
+    }
   </header>
 
-  <section class="shell__content">
-    <router-outlet />
-  </section>
+  @if (auth.sessionReady$ | async) {
+    @if (auth.currentSession; as session) {
+      @if (isCurrentRoleRoute(session.user.role)) {
+        <section class="shell__content">
+          <router-outlet />
+        </section>
+      }
+    }
+  }
 </main>

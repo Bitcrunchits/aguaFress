@@ -23,8 +23,22 @@ export const routes: Routes = [
       {
         path: 'admin',
         canActivate: [roleGuard(UserRole.SUPER_ADMIN)],
-        loadComponent: () =>
-          import('./features/admin/admin-page/admin-page').then((module) => module.AdminPage),
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./features/admin/admin-page/admin-page').then(
+                (module) => module.AdminPage,
+              ),
+          },
+          {
+            path: 'vendedores',
+            loadComponent: () =>
+              import('./features/admin/vendedores-list-page/vendedores-list-page').then(
+                (module) => module.VendedoresListPage,
+              ),
+          },
+        ],
       },
       {
         path: 'vendedor',

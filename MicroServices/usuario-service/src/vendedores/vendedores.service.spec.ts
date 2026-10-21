@@ -383,7 +383,8 @@ describe('VendedoresService', () => {
       expect(result.pagination.limit).toBe(20);
     });
 
-    it('incluye _count de clientes en cada vendedor', async () => {
+    it('mapea cada vendedor al contrato SuperAdminVendedorItem', async () => {
+      const created = new Date('2024-03-10T12:34:56.789Z');
       prisma.vendedor.findMany.mockResolvedValue([
         {
           id: 'v-1',
@@ -395,7 +396,7 @@ describe('VendedoresService', () => {
           ciudad_default: '',
           auth_user: { email: 'juan@email.com' },
           _count: { clientes: 5 },
-          created_at: new Date(),
+          created_at: created,
         },
       ]);
       prisma.vendedor.count.mockResolvedValue(1);
@@ -403,8 +404,50 @@ describe('VendedoresService', () => {
       const result = await service.list({});
 
       expect(result.data[0]).toMatchObject({
-        _count: { clientes: 5 },
+        id: 'v-1',
+        nombre: 'Juan',
+        email: 'juan@email.com',
+        estado: VendedorEstado.ACTIVO,
+        clientesCount: 5,
+        fechaRegistro: created.toISOString(),
       });
+      expect(Number.isNaN(Date.parse(result.data[0].fechaRegistro))).toBe(false);
+      expect(Object.keys(result.data[0]).sort()).toEqual([
+        'apellido',
+        'clientesCount',
+        'email',
+        'empresa',
+        'estado',
+        'fechaRegistro',
+        'id',
+        'nombre',
+        'telefono',
+      ]);
+      expect(result.data[0]).not.toHaveProperty('_count');
+      expect(result.data[0]).not.toHaveProperty('ciudad');
+    });
+
+    it('conserva empresa presente y fechaRegistro ISO 8601', async () => {
+      prisma.vendedor.findMany.mockResolvedValue([
+        {
+          id: 'v-1',
+          nombre: 'Juan',
+          apellido: 'Pérez',
+          telefono: '11-5555-0100',
+          empresa: 'Acme SA',
+          estado: VendedorEstado.ACTIVO,
+          ciudad_default: 'CABA',
+          auth_user: { email: 'juan@email.com' },
+          _count: { clientes: 0 },
+          created_at: new Date('2024-01-01T00:00:00.000Z'),
+        },
+      ]);
+      prisma.vendedor.count.mockResolvedValue(1);
+
+      const result = await service.list({});
+
+      expect(result.data[0].empresa).toBe('Acme SA');
+      expect(result.data[0].fechaRegistro).toBe('2024-01-01T00:00:00.000Z');
     });
   });
 

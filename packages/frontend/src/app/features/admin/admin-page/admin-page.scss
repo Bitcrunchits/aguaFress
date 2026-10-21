@@ -1,0 +1,12 @@
+.admin-page__link {
+  display: inline-block;
+  margin-top: 16px;
+  color: var(--agua-primary-dark);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px solid currentColor;
+
+  &:hover {
+    color: var(--agua-primary);
+  }
+}

@@ -1,8 +1,8 @@
 <main class="login-layout">
   <section class="login-card" aria-labelledby="login-title">
     <p class="login-card__eyebrow">AguaFress</p>
-    <h1 id="login-title">Sign in to AguaFress</h1>
-    <p class="login-card__help">Manage orders, catalog, and delivery from one place.</p>
+    <h1 id="login-title">Entrar a AguaFress</h1>
+    <p class="login-card__help">Gestiona pedidos, catálogo y reparto desde un solo lugar.</p>
 
     <form class="login-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
       @if (errorMessage(); as message) {
@@ -10,22 +10,22 @@
       }
 
       <div class="login-field">
-        <label for="login-email">Email</label>
+        <label for="login-email">Correo electrónico</label>
         <input
           id="login-email"
           type="email"
           formControlName="email"
           autocomplete="email"
-          placeholder="you@example.com"
+          placeholder="nombre@ejemplo.com"
           [attr.aria-invalid]="emailErrorVisible"
         />
         @if (emailErrorVisible) {
-          <span class="login-field__hint">Enter a valid email address.</span>
+          <span class="login-field__hint">Ingresa un correo electrónico válido.</span>
         }
       </div>
 
       <div class="login-field">
-        <label for="login-password">Password</label>
+        <label for="login-password">Contraseña</label>
         <input
           id="login-password"
           type="password"
@@ -34,7 +34,7 @@
           [attr.aria-invalid]="passwordErrorVisible"
         />
         @if (passwordErrorVisible) {
-          <span class="login-field__hint">Password is required.</span>
+          <span class="login-field__hint">Ingresa tu contraseña.</span>
         }
       </div>
 
@@ -42,7 +42,7 @@
         pButton
         type="submit"
         class="login-form__submit"
-        label="Sign in"
+        label="Iniciar sesión"
         icon="pi pi-sign-in"
         [loading]="submitting()"
         [disabled]="submitting()"
@@ -50,23 +50,23 @@
     </form>
   </section>
 
-  <aside class="login-brand" aria-label="AguaFress workflow">
+  <aside class="login-brand" aria-label="Ruta de AguaFress">
     <div class="login-brand__route">
       <span class="login-brand__step">
         <span class="login-brand__dot" aria-hidden="true"></span>
-        Supplier
+        Proveedor
       </span>
       <span class="login-brand__line" aria-hidden="true"></span>
       <span class="login-brand__step">
         <span class="login-brand__dot" aria-hidden="true"></span>
-        Order
+        Pedido
       </span>
       <span class="login-brand__line" aria-hidden="true"></span>
       <span class="login-brand__step">
         <span class="login-brand__dot" aria-hidden="true"></span>
-        Delivery
+        Entrega
       </span>
     </div>
-    <p class="login-brand__copy">One water route from supplier to doorstep.</p>
+    <p class="login-brand__copy">Una ruta de agua desde el proveedor hasta tu puerta.</p>
   </aside>
 </main>
