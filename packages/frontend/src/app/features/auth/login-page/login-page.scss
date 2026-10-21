@@ -10,7 +10,6 @@
   margin: auto;
   padding: 32px;
   border: 1px solid var(--line-soft);
-  border-radius: var(--radius-agua-lg);
   background: var(--clean-white);
   box-shadow: var(--shadow-agua-card);
 }
@@ -46,7 +45,6 @@
   margin: 0;
   padding: 12px 16px;
   border: 1px solid color-mix(in srgb, var(--route-danger) 35%, transparent);
-  border-radius: var(--radius-agua-sm);
   background: color-mix(in srgb, var(--route-danger) 8%, var(--clean-white));
   color: var(--route-danger);
   font-size: 0.9rem;
@@ -67,7 +65,6 @@
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--line-soft);
-  border-radius: var(--radius-agua-sm);
   background: var(--clean-white);
   color: var(--slate-ink);
   font: inherit;
@@ -135,7 +132,6 @@
   .login-brand__dot {
     width: 10px;
     height: 10px;
-    border-radius: 999px;
     background: var(--agua-primary);
   }
 

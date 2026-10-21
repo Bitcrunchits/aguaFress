@@ -18,9 +18,6 @@
   --color-route-success: #16a34a;
   --color-route-danger: #dc2626;
 
-  --radius-agua-sm: 0.5rem;
-  --radius-agua-md: 0.75rem;
-  --radius-agua-lg: 1.125rem;
   --shadow-agua-card: 0 8px 24px rgb(14 116 144 / 0.08);
   --shadow-agua-floating: 0 18px 48px rgb(15 23 42 / 0.16);
 }
@@ -39,9 +36,6 @@
   --route-warning: #f59e0b;
   --route-success: #16a34a;
   --route-danger: #dc2626;
-  --radius-agua-sm: 8px;
-  --radius-agua-md: 12px;
-  --radius-agua-lg: 18px;
   --shadow-agua-card: 0 8px 24px rgb(14 116 144 / 0.08);
   --shadow-agua-floating: 0 18px 48px rgb(15 23 42 / 0.16);
   --font-agua-sans: "Inter", system-ui, sans-serif;
@@ -58,6 +52,12 @@
   --line-soft: #1f4c58;
   --agua-primary: #22d3ee;
   --agua-primary-dark: #67e8f9;
+}
+
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
 }
 
 @layer base {
@@ -83,7 +83,6 @@
 @layer components {
   .role-card {
     border: 1px solid var(--line-soft);
-    border-radius: var(--radius-agua-lg);
     padding: 32px;
     background: var(--clean-white);
     box-shadow: var(--shadow-agua-card);

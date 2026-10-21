@@ -1,6 +1,8 @@
-import type { EnvironmentConfig } from './environment-config';
+import type { EnvironmentConfigV2 } from './environment-config';
 
-export const environment: EnvironmentConfig = {
+export const environment: EnvironmentConfigV2 = {
   production: false,
-  apiBaseUrl: 'https://api-aguafress.eadev.cloud'
+  environmentName: 'development',
+  showEnvironmentBanner: true,
+  apiBaseUrl: 'https://api-aguafress.eadev.cloud',
 } as const;

@@ -1,0 +1,36 @@
+:host {
+  --environment-banner-height: 2.5rem;
+  --environment-banner-background: #facc15;
+  --environment-banner-foreground: #991b1b;
+
+  display: block;
+}
+
+.environment-banner {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: var(--environment-banner-height);
+  margin: 0;
+  padding: 8px 16px;
+  background: var(--environment-banner-background);
+  color: var(--environment-banner-foreground);
+  font-family: var(--font-agua-sans);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+  text-align: center;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.environment-banner__spacer {
+  height: var(--environment-banner-height);
+}

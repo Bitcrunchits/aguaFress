@@ -1,1 +1,4 @@
 <router-outlet />
+@if (environment.showEnvironmentBanner) {
+  <app-environment-banner [environmentName]="environment.environmentName" />
+}

@@ -32,7 +32,6 @@
   width: 40px;
   height: 40px;
   place-items: center;
-  border-radius: 999px;
   background: var(--agua-primary);
   color: var(--clean-white);
   font-size: 0.8rem;
@@ -45,7 +44,6 @@
 
 .shell__nav a {
   border: 1px solid var(--line-soft);
-  border-radius: 999px;
   padding: 8px 14px;
   background: var(--clean-white);
   color: var(--slate-muted);
@@ -74,7 +72,6 @@
 .shell__logout {
   flex-shrink: 0;
   border: 1px solid var(--line-soft);
-  border-radius: 12px;
   padding: 8px 14px;
   background: var(--clean-white);
   color: var(--agua-primary-dark);
