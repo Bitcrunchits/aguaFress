@@ -1,5 +1,59 @@
-<article class="role-card" aria-labelledby="customer-title">
+<section class="role-card cliente" aria-labelledby="cliente-title">
   <p class="role-card__eyebrow">Cliente</p>
-  <h1 id="customer-title">Inicio de cliente</h1>
-  <p>El catálogo y los pedidos todavía no están disponibles en esta versión.</p>
-</article>
+  <h1 id="cliente-title">Inicio de cliente</h1>
+
+  @if (vm.loading()) {
+    <p class="cliente__state" role="status">Cargando proveedores</p>
+  } @else if (vm.failed()) {
+    <div class="cliente__state cliente__state--error" role="alert">
+      <p>No pudimos cargar tus proveedores. Inténtalo de nuevo en unos segundos.</p>
+      <button type="button" class="cliente__button" (click)="vm.retry()">Reintentar</button>
+    </div>
+  } @else if (vm.providers().length === 0) {
+    <p class="cliente__state">
+      Todavía no tienes proveedores asociados. Contacta a tu vendedor para empezar.
+    </p>
+  } @else {
+    @if (vm.selectedProvider(); as provider) {
+      <article class="cliente__active" aria-labelledby="cliente-active-title">
+        <p class="cliente__label">Proveedor activo</p>
+        <h2 id="cliente-active-title">{{ providerName(provider) }}</h2>
+
+        @if (provider.empresa || provider.ciudad || provider.telefono) {
+          <dl class="cliente__details">
+            @if (provider.empresa) {
+              <div class="cliente__detail">
+                <dt>Empresa</dt>
+                <dd>{{ provider.empresa }}</dd>
+              </div>
+            }
+            @if (provider.ciudad) {
+              <div class="cliente__detail">
+                <dt>Ciudad</dt>
+                <dd>{{ provider.ciudad }}</dd>
+              </div>
+            }
+            @if (provider.telefono) {
+              <div class="cliente__detail">
+                <dt>Teléfono</dt>
+                <dd>{{ provider.telefono }}</dd>
+              </div>
+            }
+          </dl>
+        }
+      </article>
+    }
+
+    <section class="cliente__access" aria-labelledby="cliente-access-title">
+      <h2 id="cliente-access-title">Catálogo y pedidos</h2>
+      @if (vm.selectedProvider()) {
+        <p class="cliente__hint">
+          Tu proveedor está activo. El catálogo y los pedidos estarán disponibles en la próxima
+          versión.
+        </p>
+      } @else {
+        <p class="cliente__hint">Tu proveedor aún no está seleccionado.</p>
+      }
+    </section>
+  }
+</section>
