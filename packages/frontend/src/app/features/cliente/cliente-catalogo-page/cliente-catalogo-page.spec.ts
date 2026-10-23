@@ -145,12 +145,13 @@ describe('ClienteCatalogoPage', () => {
   });
 
   it('renders products with name, price, stock, and metadata', () => {
-    products.set([PRODUCT]);
+    products.set([{ ...PRODUCT, descripcion: 'Botella de agua mineral' }]);
     fixture.detectChanges();
 
     expect(element.textContent).toContain(PRODUCT.nombre);
     expect(element.textContent).toContain(PRODUCT.marca);
     expect(element.textContent).toContain(PRODUCT.categoria);
+    expect(element.textContent).toContain('Botella de agua mineral');
     expect(element.textContent).toContain('1.210');
     expect(element.textContent).toContain('Stock: 12');
     expect(element.textContent).not.toContain('No disponible');
@@ -161,6 +162,16 @@ describe('ClienteCatalogoPage', () => {
     fixture.detectChanges();
 
     expect(element.textContent).toContain('No disponible');
+  });
+
+  it('labels hidden-price products as unavailable without enabling their action', () => {
+    products.set([{ ...PRODUCT, mostrarPrecio: false }]);
+    fixture.detectChanges();
+
+    expect(element.querySelector('.cliente__availability')?.textContent).toContain('No disponible');
+    expect(element.querySelector('.cliente__price')?.textContent).toBeUndefined();
+    expect(element.textContent).toContain('Precio no disponible');
+    expect(element.querySelector<HTMLButtonElement>('.cliente__add')?.disabled).toBeTrue();
   });
 
   it('renders a labeled search input and forwards typing to the facade', () => {
@@ -274,7 +285,7 @@ describe('ClienteCatalogoPage', () => {
   it('shows the mapped Spanish feedback for add errors', () => {
     feedback.set({ kind: ClienteCarritoFeedbackKind.Forbidden, productId: PRODUCT.id });
     fixture.detectChanges();
-    expect(element.textContent).toContain('No tenes permiso para agregar este producto');
+    expect(element.textContent).toContain('No tienes permiso para agregar este producto');
 
     feedback.set({ kind: ClienteCarritoFeedbackKind.OutOfStock, productId: PRODUCT.id });
     fixture.detectChanges();

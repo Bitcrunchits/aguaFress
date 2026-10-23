@@ -23,6 +23,7 @@ export class AppShell {
   readonly router = inject(Router);
   readonly homePaths = ROLE_HOME_PATHS;
   readonly roleLabels = ROLE_LABELS;
+  readonly clienteRole = UserRole.CLIENTE;
 
   constructor() {
     const destroyRef = inject(DestroyRef);
