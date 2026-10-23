@@ -12,6 +12,7 @@ import { EMPTY, Observable, of } from 'rxjs';
 import { routes } from './app.routes';
 import { AuthService } from './core/auth/auth.service';
 import { AdminVendedoresService } from './features/admin/admin-vendedores.service';
+import { ClienteCarritoService } from './features/cliente/cliente-carrito.service';
 import { ClienteCatalogoService } from './features/cliente/cliente-catalogo.service';
 import { ClienteProviderStateService } from './features/cliente/cliente-provider-state.service';
 
@@ -54,6 +55,7 @@ describe('application routes', () => {
         { provide: AuthService, useValue: authServiceStub },
         { provide: AdminVendedoresService, useValue: { list: () => of(EMPTY_LIST) } },
         { provide: ClienteCatalogoService, useValue: { list: () => of(EMPTY_PRODUCTS) } },
+        { provide: ClienteCarritoService, useValue: { addToCart: () => EMPTY } },
         {
           provide: ClienteProviderStateService,
           useValue: {
@@ -105,7 +107,7 @@ describe('application routes', () => {
 
     expect(TestBed.inject(Router).url).toBe('/cliente/catalogo');
     expect(harness.routeNativeElement?.querySelector('h1')?.textContent?.trim()).toBe(
-      'Catalogo del proveedor',
+      'Catálogo del proveedor',
     );
   });
 

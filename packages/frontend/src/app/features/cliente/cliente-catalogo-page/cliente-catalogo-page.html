@@ -1,6 +1,32 @@
 <section class="role-card cliente" aria-labelledby="cliente-catalogo-title">
   <p class="role-card__eyebrow">Cliente</p>
-  <h1 id="cliente-catalogo-title">Catalogo del proveedor</h1>
+  <h1 id="cliente-catalogo-title">Catálogo del proveedor</h1>
+  <p class="cliente__intro">
+    Explora los productos de tu proveedor y agrega lo que necesites al carrito.
+  </p>
+
+  <div class="cliente__search">
+    <label class="cliente__search-label" for="cliente-catalogo-search">Buscar productos</label>
+    <input
+      id="cliente-catalogo-search"
+      class="cliente__search-input"
+      type="search"
+      autocomplete="off"
+      placeholder="Nombre del producto"
+      [value]="vm.query()"
+      (input)="onSearchInput($event)"
+    />
+  </div>
+
+  <p
+    id="cliente-catalogo-feedback"
+    class="cliente__feedback"
+    [class.cliente__feedback--visible]="carrito.feedback() !== null"
+    role="status"
+    aria-live="polite"
+  >
+    {{ feedbackMessage(carrito.feedback()) }}
+  </p>
 
   @if (vm.loading()) {
     <p class="cliente__state" role="status">Cargando productos</p>
@@ -10,12 +36,27 @@
       <button type="button" class="cliente__button" (click)="vm.retry()">Reintentar</button>
     </div>
   } @else if (vm.products().length === 0) {
-    <p class="cliente__state">No hay productos disponibles para este proveedor.</p>
+    <p class="cliente__state">
+      @if (vm.hasQuery()) {
+        No encontramos productos para tu búsqueda.
+      } @else {
+        No hay productos disponibles para este proveedor.
+      }
+    </p>
   } @else {
     <ul class="cliente__products">
       @for (product of vm.products(); track product.id) {
-        <li class="cliente__product">
+        <li
+          class="cliente__product"
+          [attr.aria-describedby]="
+            carrito.feedback()?.productId === product.id ? 'cliente-catalogo-feedback' : null
+          "
+        >
           <h2>{{ product.nombre }}</h2>
+
+          @if (product.descripcion) {
+            <p class="cliente__description">{{ product.descripcion }}</p>
+          }
 
           @if (product.marca || product.categoria) {
             <p class="cliente__meta">
@@ -28,14 +69,66 @@
             </p>
           }
 
-          <p class="cliente__price">{{ formatPrice(product.precioFinal) }}</p>
-          <p class="cliente__stock">Stock: {{ product.stock }}</p>
+          <div class="cliente__purchase">
+            @if (product.mostrarPrecio === false) {
+              <p class="cliente__price-unavailable">Precio no disponible</p>
+            } @else {
+              <p class="cliente__price">{{ formatPrice(product.precioFinal) }}</p>
+            }
+            <p class="cliente__stock">Stock: {{ product.stock }}</p>
+          </div>
 
-          @if (!product.activo || product.stock < 1) {
+          @if (!product.activo || product.stock < 1 || product.mostrarPrecio === false) {
             <p class="cliente__availability">No disponible</p>
           }
+
+          <button
+            type="button"
+            class="cliente__button cliente__add"
+            [attr.aria-label]="'Agregar ' + product.nombre + ' al carrito'"
+            [attr.aria-busy]="carrito.addingProductId() === product.id"
+            [disabled]="
+              !product.activo ||
+              product.stock < 1 ||
+              product.mostrarPrecio === false ||
+              carrito.addingProductId() !== null
+            "
+            (click)="addToCart(product)"
+          >
+            @if (carrito.addingProductId() === product.id) {
+              Agregando…
+            } @else {
+              Agregar al carrito
+            }
+          </button>
         </li>
       }
     </ul>
+  }
+
+  @if (vm.pagination(); as pagination) {
+    @if (pagination.totalPages > 0) {
+      <nav class="cliente__pagination" aria-label="Paginación del catálogo">
+        <button
+          type="button"
+          class="cliente__button"
+          [disabled]="vm.page() <= 1"
+          (click)="vm.previousPage()"
+        >
+          Anterior
+        </button>
+        <span class="cliente__page-indicator" role="status">
+          Página {{ vm.page() }} de {{ pagination.totalPages }}
+        </span>
+        <button
+          type="button"
+          class="cliente__button"
+          [disabled]="vm.page() >= pagination.totalPages"
+          (click)="vm.nextPage()"
+        >
+          Siguiente
+        </button>
+      </nav>
+    }
   }
 </section>

@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import type { ClienteProviderResponse } from '@agua/contracts';
 import { ClienteHomeFacade, ClienteSelectionError } from '../cliente-home.facade';
 
@@ -8,6 +9,7 @@ import { ClienteHomeFacade, ClienteSelectionError } from '../cliente-home.facade
  */
 @Component({
   selector: 'app-cliente-page',
+  imports: [RouterLink],
   templateUrl: './cliente-page.html',
   styleUrl: './cliente-page.scss',
   providers: [ClienteHomeFacade],

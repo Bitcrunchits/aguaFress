@@ -10,6 +10,9 @@
         <nav class="shell__nav" aria-label="Navegación principal">
           <a [routerLink]="homePaths[session.user.role]" routerLinkActive="shell__link--active"
             [routerLinkActiveOptions]="{ exact: true }">Inicio</a>
+          @if (session.user.role === clienteRole) {
+            <a routerLink="/cliente/catalogo" routerLinkActive="shell__link--active">Catálogo</a>
+          }
         </nav>
         <div class="shell__account">
           <span class="shell__identity">{{ roleLabels[session.user.role] }} · {{ session.user.email }}</span>

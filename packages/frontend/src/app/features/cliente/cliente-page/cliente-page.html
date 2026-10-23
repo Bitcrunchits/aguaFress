@@ -112,10 +112,10 @@
     <section class="cliente__access" aria-labelledby="cliente-access-title">
       <h2 id="cliente-access-title">Catálogo y pedidos</h2>
       @if (vm.selectedProvider()) {
-        <p class="cliente__hint">
-          Tu proveedor está activo. El catálogo y los pedidos estarán disponibles en la próxima
-          versión.
-        </p>
+        <p class="cliente__hint">Explora los productos de tu proveedor y agrégalos al carrito.</p>
+        <a class="cliente__button cliente__access-link" routerLink="/cliente/catalogo">
+          Ver catálogo
+        </a>
       } @else {
         <p class="cliente__hint">Elige un proveedor para continuar.</p>
       }

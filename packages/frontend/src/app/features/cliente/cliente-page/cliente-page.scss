@@ -160,3 +160,20 @@
     color: var(--agua-primary-dark);
   }
 }
+
+.cliente__access-link {
+  display: inline-block;
+  margin-top: 16px;
+  text-decoration: none;
+
+  &:focus-visible {
+    outline: 3px solid var(--agua-flow);
+    outline-offset: 2px;
+  }
+
+  &:hover {
+    background: var(--agua-primary-dark);
+    border-color: var(--agua-primary-dark);
+    color: var(--clean-white);
+  }
+}

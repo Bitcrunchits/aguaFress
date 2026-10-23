@@ -44,9 +44,13 @@ describe('AppShell', () => {
       ready.next(true);
       fixture.detectChanges();
       const links = element.querySelectorAll('a');
-      expect(links.length).toBe(1);
+      expect(links.length).toBe(role === UserRole.CLIENTE ? 2 : 1);
       expect(links[0].getAttribute('href')).toBe(path);
       expect(links[0].textContent?.trim()).toBe('Inicio');
+      if (role === UserRole.CLIENTE) {
+        expect(links[1].getAttribute('href')).toBe('/cliente/catalogo');
+        expect(links[1].textContent?.trim()).toBe('Catálogo');
+      }
       expect(element.querySelector('.shell__identity')?.textContent).toContain(label);
       const button = element.querySelector('button');
       expect(button?.textContent?.trim()).toBe('Cerrar sesión');
