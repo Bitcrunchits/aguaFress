@@ -3,10 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import type { PaginatedResponse, ProductResponse } from '@agua/contracts';
 import { API_CONFIG } from '../../core/config/api.config';
-import type {
-  ClienteCatalogoGateway,
-  ClienteCatalogoSearchGateway,
-} from './cliente-catalogo.gateway';
+import type { ClienteCatalogoGateway, ClienteCatalogoSearchGateway } from './cliente-catalogo.gateway';
 
 const LIST_PRODUCTS_URL = `${API_CONFIG.baseUrl}/api/v1/products/list`;
 const SEARCH_PRODUCTS_URL = `${API_CONFIG.baseUrl}/api/v1/products/search`;
