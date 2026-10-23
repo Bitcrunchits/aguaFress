@@ -11,6 +11,19 @@ export interface ClienteProviderStore {
   clear(userId: string): void;
 }
 
+/**
+ * Narrow provider lookup used by cart writes: they only read the selected
+ * provider and clear it when it turns stale, never save a selection.
+ */
+export interface ClienteProviderReader {
+  read(userId: string): string | null;
+  clear(userId: string): void;
+}
+
 export const CLIENTE_PROVIDER_STORE = new InjectionToken<ClienteProviderStore>(
   'CLIENTE_PROVIDER_STORE',
+);
+
+export const CLIENTE_PROVIDER_READER = new InjectionToken<ClienteProviderReader>(
+  'CLIENTE_PROVIDER_READER',
 );

@@ -12,8 +12,8 @@ import { ClienteCatalogoFacade } from './cliente-catalogo.facade';
 import {
   CLIENTE_CATALOGO_GATEWAY,
   CLIENTE_CATALOGO_SEARCH_GATEWAY,
-  ClienteCatalogoServerMessage,
 } from './cliente-catalogo.gateway';
+import { ClienteProviderServerMessage } from './cliente-provider-contract';
 import { CLIENTE_PROVIDER_STORE } from './cliente-provider.store';
 
 const USER_ID = 'user-1';
@@ -273,7 +273,7 @@ describe('ClienteCatalogoFacade', () => {
         () =>
           new HttpErrorResponse({
             status: 400,
-            error: { message: ClienteCatalogoServerMessage.RequiresSelection },
+            error: { message: ClienteProviderServerMessage.RequiresSelection },
           }),
       ),
     );
@@ -453,7 +453,7 @@ describe('ClienteCatalogoFacade', () => {
         () =>
           new HttpErrorResponse({
             status: 400,
-            error: { message: ClienteCatalogoServerMessage.RequiresSelection },
+            error: { message: ClienteProviderServerMessage.RequiresSelection },
           }),
       ),
     );

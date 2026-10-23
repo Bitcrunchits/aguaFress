@@ -2,6 +2,11 @@ import { computed, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import type { PaginationResponse, ProductResponse } from '@agua/contracts';
+import {
+  ClienteCarritoFacade,
+  ClienteCarritoFeedbackKind,
+  type ClienteCarritoFeedback,
+} from '../cliente-carrito.facade';
 import { ClienteCatalogoFacade } from '../cliente-catalogo.facade';
 import { ClienteCatalogoPage } from './cliente-catalogo-page';
 
@@ -33,11 +38,15 @@ describe('ClienteCatalogoPage', () => {
   const loading = signal(false);
   const failed = signal(false);
   const redirectToHome = signal(false);
+  const cartRedirectToHome = signal(false);
+  const addingProductId = signal<string | null>(null);
+  const feedback = signal<ClienteCarritoFeedback | null>(null);
   const load = jasmine.createSpy('load');
   const retry = jasmine.createSpy('retry');
   const setQuery = jasmine.createSpy('setQuery');
   const previousPage = jasmine.createSpy('previousPage');
   const nextPage = jasmine.createSpy('nextPage');
+  const addToCart = jasmine.createSpy('addToCart');
 
   beforeEach(async () => {
     products.set([]);
@@ -47,11 +56,15 @@ describe('ClienteCatalogoPage', () => {
     loading.set(false);
     failed.set(false);
     redirectToHome.set(false);
+    cartRedirectToHome.set(false);
+    addingProductId.set(null);
+    feedback.set(null);
     load.calls.reset();
     retry.calls.reset();
     setQuery.calls.reset();
     previousPage.calls.reset();
     nextPage.calls.reset();
+    addToCart.calls.reset();
 
     await TestBed.configureTestingModule({
       imports: [ClienteCatalogoPage],
@@ -76,6 +89,15 @@ describe('ClienteCatalogoPage', () => {
                 setQuery,
                 previousPage,
                 nextPage,
+              },
+            },
+            {
+              provide: ClienteCarritoFacade,
+              useValue: {
+                addingProductId,
+                feedback,
+                redirectToHome: cartRedirectToHome,
+                addToCart,
               },
             },
           ],
@@ -199,6 +221,68 @@ describe('ClienteCatalogoPage', () => {
 
     previous?.click();
     expect(previousPage).toHaveBeenCalled();
+  });
+
+  it('disables the add action for unavailable products', () => {
+    products.set([
+      { ...PRODUCT, id: 'producto-inactivo', activo: false },
+      { ...PRODUCT, id: 'producto-sin-stock', stock: 0 },
+      { ...PRODUCT, id: 'producto-sin-precio', mostrarPrecio: false },
+    ]);
+    fixture.detectChanges();
+
+    const buttons = Array.from(
+      element.querySelectorAll<HTMLButtonElement>('.cliente__add'),
+    );
+    expect(buttons.length).toBe(3);
+    expect(buttons.every((button) => button.disabled)).toBeTrue();
+  });
+
+  it('forwards an add click and shows the success feedback in a polite live region', () => {
+    products.set([PRODUCT]);
+    fixture.detectChanges();
+
+    const button = element.querySelector<HTMLButtonElement>('.cliente__add');
+    expect(button?.disabled).toBeFalse();
+
+    button?.click();
+    expect(addToCart).toHaveBeenCalledWith(PRODUCT);
+
+    feedback.set({ kind: ClienteCarritoFeedbackKind.Added, productId: PRODUCT.id });
+    fixture.detectChanges();
+
+    const region = element.querySelector<HTMLElement>('[aria-live="polite"]');
+    expect(region?.textContent).toContain('Producto agregado al carrito');
+
+    const product = element.querySelector<HTMLElement>('.cliente__product');
+    expect(product?.getAttribute('aria-describedby')).toBe('cliente-catalogo-feedback');
+  });
+
+  it('marks the adding product busy', () => {
+    products.set([PRODUCT, { ...PRODUCT, id: 'producto-2', nombre: 'Agua con gas' }]);
+    addingProductId.set(PRODUCT.id);
+    fixture.detectChanges();
+
+    const buttons = Array.from(
+      element.querySelectorAll<HTMLButtonElement>('.cliente__add'),
+    );
+    expect(buttons[0]?.getAttribute('aria-busy')).toBe('true');
+    expect(buttons[0]?.textContent).toContain('Agregando');
+    expect(buttons[1]?.getAttribute('aria-busy')).toBe('false');
+  });
+
+  it('shows the mapped Spanish feedback for add errors', () => {
+    feedback.set({ kind: ClienteCarritoFeedbackKind.Forbidden, productId: PRODUCT.id });
+    fixture.detectChanges();
+    expect(element.textContent).toContain('No tenes permiso para agregar este producto');
+
+    feedback.set({ kind: ClienteCarritoFeedbackKind.OutOfStock, productId: PRODUCT.id });
+    fixture.detectChanges();
+    expect(element.textContent).toContain('Producto sin stock o no disponible');
+
+    feedback.set({ kind: ClienteCarritoFeedbackKind.Network, productId: PRODUCT.id });
+    fixture.detectChanges();
+    expect(element.textContent).toContain('No pudimos conectar con el servidor');
   });
 
   function findButton(label: string): HTMLButtonElement | undefined {

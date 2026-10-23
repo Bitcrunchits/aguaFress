@@ -1,4 +1,3 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import type { PaginationResponse, ProductResponse } from '@agua/contracts';
@@ -7,8 +6,8 @@ import { AuthService } from '../../core/auth/auth.service';
 import {
   CLIENTE_CATALOGO_GATEWAY,
   CLIENTE_CATALOGO_SEARCH_GATEWAY,
-  ClienteCatalogoServerMessage,
 } from './cliente-catalogo.gateway';
+import { isStaleProviderError } from './cliente-provider-error';
 import { CLIENTE_PROVIDER_STORE } from './cliente-provider.store';
 
 const PAGE_SIZE = 20;
@@ -183,29 +182,4 @@ export class ClienteCatalogoFacade {
   private isCurrentUser(userId: string): boolean {
     return this.auth.currentSession?.user.id === userId;
   }
-}
-
-function isStaleProviderError(error: unknown): boolean {
-  if (!(error instanceof HttpErrorResponse)) {
-    return false;
-  }
-  if (error.status === 404) {
-    return true;
-  }
-  return (
-    error.status === 400 &&
-    readServerMessage(error) === ClienteCatalogoServerMessage.RequiresSelection
-  );
-}
-
-function readServerMessage(error: HttpErrorResponse): string {
-  const body: unknown = error.error;
-  if (typeof body === 'string') {
-    return body;
-  }
-  if (typeof body === 'object' && body !== null && 'message' in body) {
-    const message: unknown = (body as { message?: unknown }).message;
-    return typeof message === 'string' ? message : '';
-  }
-  return '';
 }

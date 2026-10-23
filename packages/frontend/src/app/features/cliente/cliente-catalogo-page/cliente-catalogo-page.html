@@ -14,6 +14,10 @@
     />
   </div>
 
+  <p id="cliente-catalogo-feedback" class="cliente__feedback" role="status" aria-live="polite">
+    {{ feedbackMessage(carrito.feedback()) }}
+  </p>
+
   @if (vm.loading()) {
     <p class="cliente__state" role="status">Cargando productos</p>
   } @else if (vm.failed()) {
@@ -32,7 +36,12 @@
   } @else {
     <ul class="cliente__products">
       @for (product of vm.products(); track product.id) {
-        <li class="cliente__product">
+        <li
+          class="cliente__product"
+          [attr.aria-describedby]="
+            carrito.feedback()?.productId === product.id ? 'cliente-catalogo-feedback' : null
+          "
+        >
           <h2>{{ product.nombre }}</h2>
 
           @if (product.marca || product.categoria) {
@@ -52,6 +61,26 @@
           @if (!product.activo || product.stock < 1) {
             <p class="cliente__availability">No disponible</p>
           }
+
+          <button
+            type="button"
+            class="cliente__button cliente__add"
+            [attr.aria-label]="'Agregar ' + product.nombre + ' al carrito'"
+            [attr.aria-busy]="carrito.addingProductId() === product.id"
+            [disabled]="
+              !product.activo ||
+              product.stock < 1 ||
+              product.mostrarPrecio === false ||
+              carrito.addingProductId() !== null
+            "
+            (click)="addToCart(product)"
+          >
+            @if (carrito.addingProductId() === product.id) {
+              Agregando…
+            } @else {
+              Agregar al carrito
+            }
+          </button>
         </li>
       }
     </ul>
