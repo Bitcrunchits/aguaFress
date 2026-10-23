@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import type { ClienteProviderStore } from './cliente-provider.store';
 
 const STORAGE_KEY_PREFIX = 'aguafress.cliente.provider.';
 
@@ -11,7 +12,7 @@ const STORAGE_KEY_PREFIX = 'aguafress.cliente.provider.';
  * no persistence and never breaks the page.
  */
 @Injectable({ providedIn: 'root' })
-export class ClienteProviderStateService {
+export class ClienteProviderStateService implements ClienteProviderStore {
   read(userId: string): string | null {
     try {
       return window.localStorage.getItem(this.key(userId));

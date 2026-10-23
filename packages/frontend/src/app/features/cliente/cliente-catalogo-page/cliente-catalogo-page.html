@@ -1,0 +1,41 @@
+<section class="role-card cliente" aria-labelledby="cliente-catalogo-title">
+  <p class="role-card__eyebrow">Cliente</p>
+  <h1 id="cliente-catalogo-title">Catalogo del proveedor</h1>
+
+  @if (vm.loading()) {
+    <p class="cliente__state" role="status">Cargando productos</p>
+  } @else if (vm.failed()) {
+    <div class="cliente__state cliente__state--error" role="alert">
+      <p>No pudimos cargar los productos. Inténtalo de nuevo en unos segundos.</p>
+      <button type="button" class="cliente__button" (click)="vm.retry()">Reintentar</button>
+    </div>
+  } @else if (vm.products().length === 0) {
+    <p class="cliente__state">No hay productos disponibles para este proveedor.</p>
+  } @else {
+    <ul class="cliente__products">
+      @for (product of vm.products(); track product.id) {
+        <li class="cliente__product">
+          <h2>{{ product.nombre }}</h2>
+
+          @if (product.marca || product.categoria) {
+            <p class="cliente__meta">
+              @if (product.marca) {
+                <span>{{ product.marca }}</span>
+              }
+              @if (product.categoria) {
+                <span>{{ product.categoria }}</span>
+              }
+            </p>
+          }
+
+          <p class="cliente__price">{{ formatPrice(product.precioFinal) }}</p>
+          <p class="cliente__stock">Stock: {{ product.stock }}</p>
+
+          @if (!product.activo || product.stock < 1) {
+            <p class="cliente__availability">No disponible</p>
+          }
+        </li>
+      }
+    </ul>
+  }
+</section>
