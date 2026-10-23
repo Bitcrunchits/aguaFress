@@ -107,7 +107,7 @@ describe('application routes', () => {
 
     expect(TestBed.inject(Router).url).toBe('/cliente/catalogo');
     expect(harness.routeNativeElement?.querySelector('h1')?.textContent?.trim()).toBe(
-      'Catalogo del proveedor',
+      'Catálogo del proveedor',
     );
   });
 

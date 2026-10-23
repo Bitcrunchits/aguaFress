@@ -22,7 +22,7 @@ import { CLIENTE_SESSION_READER } from '../cliente-session.contract';
 const CARRITO_FEEDBACK_MESSAGES: Record<ClienteCarritoFeedbackKind, string> = {
   [ClienteCarritoFeedbackKind.Added]: 'Producto agregado al carrito',
   [ClienteCarritoFeedbackKind.OutOfStock]: 'Producto sin stock o no disponible',
-  [ClienteCarritoFeedbackKind.Forbidden]: 'No tenes permiso para agregar este producto',
+  [ClienteCarritoFeedbackKind.Forbidden]: 'No tienes permiso para agregar este producto',
   [ClienteCarritoFeedbackKind.Network]: 'No pudimos conectar con el servidor',
   [ClienteCarritoFeedbackKind.Unexpected]:
     'No pudimos agregar el producto. Inténtalo de nuevo en unos segundos.',
@@ -37,6 +37,7 @@ const CARRITO_FEEDBACK_MESSAGES: Record<ClienteCarritoFeedbackKind, string> = {
 @Component({
   selector: 'app-cliente-catalogo-page',
   templateUrl: './cliente-catalogo-page.html',
+  styleUrl: './cliente-catalogo-page.scss',
   providers: [
     ClienteCatalogoFacade,
     ClienteCarritoFacade,
