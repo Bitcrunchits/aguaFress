@@ -24,6 +24,22 @@ export interface ClienteCatalogoGateway {
   ): Observable<PaginatedResponse<ProductResponse>>;
 }
 
+/**
+ * Search is a separate read capability so list-only consumers never have
+ * to implement or depend on it.
+ */
+export interface ClienteCatalogoSearchGateway {
+  search(
+    query: string,
+    vendedorId: string,
+    page?: number,
+    limit?: number,
+  ): Observable<PaginatedResponse<ProductResponse>>;
+}
+
 export const CLIENTE_CATALOGO_GATEWAY = new InjectionToken<ClienteCatalogoGateway>(
   'CLIENTE_CATALOGO_GATEWAY',
 );
+
+export const CLIENTE_CATALOGO_SEARCH_GATEWAY =
+  new InjectionToken<ClienteCatalogoSearchGateway>('CLIENTE_CATALOGO_SEARCH_GATEWAY');

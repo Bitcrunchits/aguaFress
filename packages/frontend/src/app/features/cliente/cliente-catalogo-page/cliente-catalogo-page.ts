@@ -1,7 +1,10 @@
 import { Component, effect, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { ClienteCatalogoFacade } from '../cliente-catalogo.facade';
-import { CLIENTE_CATALOGO_GATEWAY } from '../cliente-catalogo.gateway';
+import {
+  CLIENTE_CATALOGO_GATEWAY,
+  CLIENTE_CATALOGO_SEARCH_GATEWAY,
+} from '../cliente-catalogo.gateway';
 import { ClienteCatalogoService } from '../cliente-catalogo.service';
 import { ClienteProviderStateService } from '../cliente-provider-state.service';
 import { CLIENTE_PROVIDER_STORE } from '../cliente-provider.store';
@@ -17,6 +20,7 @@ import { CLIENTE_PROVIDER_STORE } from '../cliente-provider.store';
   providers: [
     ClienteCatalogoFacade,
     { provide: CLIENTE_CATALOGO_GATEWAY, useExisting: ClienteCatalogoService },
+    { provide: CLIENTE_CATALOGO_SEARCH_GATEWAY, useExisting: ClienteCatalogoService },
     { provide: CLIENTE_PROVIDER_STORE, useExisting: ClienteProviderStateService },
   ],
 })
@@ -39,6 +43,13 @@ export class ClienteCatalogoPage implements OnInit {
 
   ngOnInit(): void {
     this.vm.load();
+  }
+
+  onSearchInput(event: Event): void {
+    const target = event.target;
+    if (target instanceof HTMLInputElement) {
+      this.vm.setQuery(target.value);
+    }
   }
 
   formatPrice(value: number): string {

@@ -2,6 +2,18 @@
   <p class="role-card__eyebrow">Cliente</p>
   <h1 id="cliente-catalogo-title">Catalogo del proveedor</h1>
 
+  <div class="cliente__search">
+    <label class="cliente__search-label" for="cliente-catalogo-search">Buscar productos</label>
+    <input
+      id="cliente-catalogo-search"
+      class="cliente__search-input"
+      type="search"
+      autocomplete="off"
+      [value]="vm.query()"
+      (input)="onSearchInput($event)"
+    />
+  </div>
+
   @if (vm.loading()) {
     <p class="cliente__state" role="status">Cargando productos</p>
   } @else if (vm.failed()) {
@@ -10,7 +22,13 @@
       <button type="button" class="cliente__button" (click)="vm.retry()">Reintentar</button>
     </div>
   } @else if (vm.products().length === 0) {
-    <p class="cliente__state">No hay productos disponibles para este proveedor.</p>
+    <p class="cliente__state">
+      @if (vm.hasQuery()) {
+        No encontramos productos para tu búsqueda.
+      } @else {
+        No hay productos disponibles para este proveedor.
+      }
+    </p>
   } @else {
     <ul class="cliente__products">
       @for (product of vm.products(); track product.id) {
@@ -37,5 +55,31 @@
         </li>
       }
     </ul>
+  }
+
+  @if (vm.pagination(); as pagination) {
+    @if (pagination.totalPages > 0) {
+      <nav class="cliente__pagination" aria-label="Paginación del catálogo">
+        <button
+          type="button"
+          class="cliente__button"
+          [disabled]="vm.page() <= 1"
+          (click)="vm.previousPage()"
+        >
+          Anterior
+        </button>
+        <span class="cliente__page-indicator" role="status">
+          Página {{ vm.page() }} de {{ pagination.totalPages }}
+        </span>
+        <button
+          type="button"
+          class="cliente__button"
+          [disabled]="vm.page() >= pagination.totalPages"
+          (click)="vm.nextPage()"
+        >
+          Siguiente
+        </button>
+      </nav>
+    }
   }
 </section>
