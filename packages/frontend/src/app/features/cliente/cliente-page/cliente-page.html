@@ -1,5 +1,124 @@
-<article class="role-card" aria-labelledby="customer-title">
+<section class="role-card cliente" aria-labelledby="cliente-title">
   <p class="role-card__eyebrow">Cliente</p>
-  <h1 id="customer-title">Inicio de cliente</h1>
-  <p>El catálogo y los pedidos todavía no están disponibles en esta versión.</p>
-</article>
+  <h1 id="cliente-title">Inicio de cliente</h1>
+
+  @if (vm.loading()) {
+    <p class="cliente__state" role="status">Cargando proveedores</p>
+  } @else if (vm.failed()) {
+    <div class="cliente__state cliente__state--error" role="alert">
+      <p>No pudimos cargar tus proveedores. Inténtalo de nuevo en unos segundos.</p>
+      <button type="button" class="cliente__button" (click)="vm.retry()">Reintentar</button>
+    </div>
+  } @else if (vm.providers().length === 0) {
+    <p class="cliente__state">
+      Todavía no tienes proveedores asociados. Contacta a tu vendedor para empezar.
+    </p>
+  } @else {
+    @if (vm.selectedProvider(); as provider) {
+      <article class="cliente__active" aria-labelledby="cliente-active-title">
+        <p class="cliente__label">Proveedor activo</p>
+        <h2 id="cliente-active-title">{{ providerName(provider) }}</h2>
+
+        @if (provider.empresa || provider.ciudad || provider.telefono) {
+          <dl class="cliente__details">
+            @if (provider.empresa) {
+              <div class="cliente__detail">
+                <dt>Empresa</dt>
+                <dd>{{ provider.empresa }}</dd>
+              </div>
+            }
+            @if (provider.ciudad) {
+              <div class="cliente__detail">
+                <dt>Ciudad</dt>
+                <dd>{{ provider.ciudad }}</dd>
+              </div>
+            }
+            @if (provider.telefono) {
+              <div class="cliente__detail">
+                <dt>Teléfono</dt>
+                <dd>{{ provider.telefono }}</dd>
+              </div>
+            }
+          </dl>
+        }
+
+        <button
+          type="button"
+          class="cliente__button cliente__button--secondary"
+          (click)="vm.changeProvider()"
+        >
+          Cambiar proveedor
+        </button>
+      </article>
+    }
+
+    @if (vm.selectionError(); as error) {
+      <p class="cliente__state cliente__state--error" role="alert">
+        {{ selectionErrorMessage(error) }}
+      </p>
+    }
+
+    @if (vm.showSelector()) {
+      <section class="cliente__selector" aria-labelledby="cliente-selector-title">
+        <h2 id="cliente-selector-title">Elige un proveedor</h2>
+        <p class="cliente__hint">Selecciona el proveedor con el que quieres trabajar.</p>
+
+        <ul class="cliente__provider-list">
+          @for (provider of vm.providers(); track provider.id) {
+            <li class="cliente__provider">
+              <div class="cliente__provider-info">
+                <p class="cliente__provider-name">
+                  {{ providerName(provider) }}
+                  @if (isSelected(provider.id)) {
+                    <span class="cliente__badge">Actual</span>
+                  }
+                </p>
+                <p class="cliente__provider-meta">
+                  @if (provider.empresa) {
+                    <span>{{ provider.empresa }}</span>
+                  }
+                  @if (provider.ciudad) {
+                    <span>{{ provider.ciudad }}</span>
+                  }
+                  @if (provider.telefono) {
+                    <span>{{ provider.telefono }}</span>
+                  }
+                  @if (!provider.empresa && !provider.ciudad && !provider.telefono) {
+                    <span>Proveedor disponible</span>
+                  }
+                </p>
+              </div>
+
+              <button
+                type="button"
+                class="cliente__button"
+                (click)="vm.select(provider)"
+                [disabled]="vm.selectingId() !== null"
+                [attr.aria-busy]="vm.selectingId() === provider.id"
+                [attr.aria-label]="'Seleccionar ' + providerName(provider)"
+              >
+                @if (vm.selectingId() === provider.id) {
+                  Seleccionando…
+                } @else {
+                  Seleccionar
+                }
+              </button>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
+    <section class="cliente__access" aria-labelledby="cliente-access-title">
+      <h2 id="cliente-access-title">Catálogo y pedidos</h2>
+      @if (vm.selectedProvider()) {
+        <p class="cliente__hint">
+          Tu proveedor está activo. El catálogo y los pedidos estarán disponibles en la próxima
+          versión.
+        </p>
+      } @else {
+        <p class="cliente__hint">Elige un proveedor para continuar.</p>
+      }
+    </section>
+  }
+</section>
