@@ -51,10 +51,22 @@ export const routes: Routes = [
       {
         path: 'cliente',
         canActivate: [roleGuard(UserRole.CLIENTE)],
-        loadComponent: () =>
-          import('./features/cliente/cliente-page/cliente-page').then(
-            (module) => module.ClientePage,
-          ),
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./features/cliente/cliente-page/cliente-page').then(
+                (module) => module.ClientePage,
+              ),
+          },
+          {
+            path: 'catalogo',
+            loadComponent: () =>
+              import(
+                './features/cliente/cliente-catalogo-page/cliente-catalogo-page'
+              ).then((module) => module.ClienteCatalogoPage),
+          },
+        ],
       },
     ],
   },
