@@ -51,6 +51,10 @@ export class ClienteProviderSelectionService {
     return null;
   }
 
+  remember(userId: string | null, vendedorId: string): void {
+    this.persistIfChanged(userId, vendedorId);
+  }
+
   private persistIfChanged(userId: string | null, vendedorId: string): void {
     if (userId === null || this.state.read(userId) === vendedorId) {
       return;

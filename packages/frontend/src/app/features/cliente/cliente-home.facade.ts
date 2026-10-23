@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import type { ClienteProviderResponse } from '@agua/contracts';
@@ -5,6 +6,13 @@ import { AuthService } from '../../core/auth/auth.service';
 import { SessionStorageService } from '../../core/auth/session-storage.service';
 import { ClienteProviderSelectionService } from './cliente-provider-selection.service';
 import { ClienteProvidersService } from './cliente-providers.service';
+
+export enum ClienteSelectionError {
+  FORBIDDEN = 'forbidden',
+  NOT_FOUND = 'not-found',
+  NETWORK = 'network',
+  UNEXPECTED = 'unexpected',
+}
 
 /**
  * Coordinates the cliente home state: loads providers, resolves the active
@@ -23,6 +31,9 @@ export class ClienteHomeFacade {
   readonly selectedProvider = signal<ClienteProviderResponse | null>(null);
   readonly loading = signal(false);
   readonly failed = signal(false);
+  readonly selectingId = signal<string | null>(null);
+  readonly selectionError = signal<ClienteSelectionError | null>(null);
+  readonly showSelector = signal(false);
 
   private requestId = 0;
   private activeUserId: string | null = null;
@@ -48,6 +59,9 @@ export class ClienteHomeFacade {
   load(): void {
     this.loading.set(true);
     this.failed.set(false);
+    this.selectingId.set(null);
+    this.selectionError.set(null);
+    this.showSelector.set(false);
     const requestId = ++this.requestId;
     const requestUserId = this.authUserId;
 
@@ -65,6 +79,9 @@ export class ClienteHomeFacade {
           }
           this.providers.set([...response.providers]);
           this.selectedProvider.set(this.providerSelection.resolve(requestUserId, response));
+          this.showSelector.set(
+            response.requiresSelection && this.selectedProvider() === null,
+          );
           this.loading.set(false);
         },
         error: () => {
@@ -85,11 +102,59 @@ export class ClienteHomeFacade {
     this.load();
   }
 
+  select(provider: ClienteProviderResponse): void {
+    if (this.selectingId() !== null) {
+      return;
+    }
+
+    this.selectingId.set(provider.id);
+    this.selectionError.set(null);
+    const requestUserId = this.authUserId;
+    const loadRequestId = this.requestId;
+
+    this.providersService
+      .selectProvider(provider.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          if (loadRequestId !== this.requestId) {
+            return;
+          }
+          if (this.authUserId !== requestUserId) {
+            this.recoverFromIdentityChange();
+            return;
+          }
+          this.selectedProvider.set(response.selectedProvider);
+          this.providerSelection.remember(requestUserId, response.selectedProvider.id);
+          this.showSelector.set(false);
+          this.selectingId.set(null);
+        },
+        error: (error: unknown) => {
+          if (loadRequestId !== this.requestId) {
+            return;
+          }
+          if (this.authUserId !== requestUserId) {
+            return;
+          }
+          this.selectionError.set(mapSelectionError(error));
+          this.selectingId.set(null);
+        },
+      });
+  }
+
+  changeProvider(): void {
+    this.selectionError.set(null);
+    this.showSelector.set(true);
+  }
+
   private resetState(): void {
     this.providers.set([]);
     this.selectedProvider.set(null);
     this.loading.set(false);
     this.failed.set(false);
+    this.selectingId.set(null);
+    this.selectionError.set(null);
+    this.showSelector.set(false);
   }
 
   private recoverFromIdentityChange(): void {
@@ -101,5 +166,19 @@ export class ClienteHomeFacade {
 
   private get authUserId(): string | null {
     return this.auth.currentSession?.user.id ?? null;
+  }
+}
+
+function mapSelectionError(error: unknown): ClienteSelectionError {
+  const status = error instanceof HttpErrorResponse ? error.status : -1;
+  switch (status) {
+    case 403:
+      return ClienteSelectionError.FORBIDDEN;
+    case 404:
+      return ClienteSelectionError.NOT_FOUND;
+    case 0:
+      return ClienteSelectionError.NETWORK;
+    default:
+      return ClienteSelectionError.UNEXPECTED;
   }
 }

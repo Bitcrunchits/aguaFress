@@ -5,11 +5,12 @@ import {
   type ClienteProviderResponse,
   type ClienteProvidersResponse,
   type LoginResponse,
+  type SelectClienteProviderResponse,
 } from '@agua/contracts';
 import { Subject, of, throwError } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { SessionStorageService } from '../../core/auth/session-storage.service';
-import { ClienteHomeFacade } from './cliente-home.facade';
+import { ClienteHomeFacade, ClienteSelectionError } from './cliente-home.facade';
 import { ClienteProviderSelectionService } from './cliente-provider-selection.service';
 import { ClienteProviderStateService } from './cliente-provider-state.service';
 import { ClienteProvidersService } from './cliente-providers.service';
@@ -52,12 +53,16 @@ function providersResponse(
 }
 
 describe('ClienteHomeFacade', () => {
-  const providersStub = { listProviders: jasmine.createSpy('listProviders') };
+  const providersStub = {
+    listProviders: jasmine.createSpy('listProviders'),
+    selectProvider: jasmine.createSpy('selectProvider'),
+  };
   const authStub: { currentSession: LoginResponse | null } = { currentSession: SESSION };
   const sessionSubject = new Subject<LoginResponse | null>();
 
   beforeEach(() => {
     providersStub.listProviders.calls.reset();
+    providersStub.selectProvider.calls.reset();
     authStub.currentSession = SESSION;
     window.localStorage.clear();
 
@@ -200,5 +205,159 @@ describe('ClienteHomeFacade', () => {
     first.complete();
 
     expect(facade.selectedProvider()?.id).toBe(PROVIDER_B.id);
+  });
+
+  it('shows the selector when multiple providers exist and none is selected', () => {
+    providersStub.listProviders.and.returnValue(
+      of(providersResponse([PROVIDER_A, PROVIDER_B])),
+    );
+
+    const facade = create();
+
+    expect(facade.showSelector()).toBeTrue();
+  });
+
+  it('selects and persists a provider', () => {
+    providersStub.listProviders.and.returnValue(
+      of(providersResponse([PROVIDER_A, PROVIDER_B])),
+    );
+    providersStub.selectProvider.and.returnValue(of({ selectedProvider: PROVIDER_A }));
+
+    const facade = create();
+    facade.select(PROVIDER_A);
+
+    expect(facade.selectedProvider()?.id).toBe(PROVIDER_A.id);
+    expect(facade.showSelector()).toBeFalse();
+    expect(window.localStorage.getItem(STORAGE_KEY)).toBe(PROVIDER_A.id);
+  });
+
+  it('shows a selection error and keeps the selector open', () => {
+    providersStub.listProviders.and.returnValue(
+      of(providersResponse([PROVIDER_A, PROVIDER_B])),
+    );
+    providersStub.selectProvider.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 404 })),
+    );
+
+    const facade = create();
+    facade.select(PROVIDER_A);
+
+    expect(facade.selectionError()).toBe(ClienteSelectionError.NOT_FOUND);
+    expect(facade.showSelector()).toBeTrue();
+  });
+
+  it('ignores a selection error from a previous user', () => {
+    providersStub.listProviders.and.returnValue(
+      of(providersResponse([PROVIDER_A, PROVIDER_B])),
+    );
+    const selection = new Subject<never>();
+    providersStub.selectProvider.and.returnValue(selection.asObservable());
+
+    const facade = create();
+    facade.select(PROVIDER_A);
+
+    authStub.currentSession = OTHER_SESSION;
+    sessionSubject.next(OTHER_SESSION);
+    selection.error(new HttpErrorResponse({ status: 404 }));
+
+    expect(facade.selectionError()).toBeNull();
+  });
+
+  it('ignores a selection response after the session switches away and back', () => {
+    providersStub.listProviders.and.returnValue(
+      of(providersResponse([PROVIDER_A, PROVIDER_B])),
+    );
+    const selection = new Subject<SelectClienteProviderResponse>();
+    providersStub.selectProvider.and.returnValue(selection.asObservable());
+
+    const facade = create();
+    facade.select(PROVIDER_A);
+
+    authStub.currentSession = OTHER_SESSION;
+    sessionSubject.next(OTHER_SESSION);
+    authStub.currentSession = SESSION;
+    sessionSubject.next(SESSION);
+
+    selection.next({ selectedProvider: PROVIDER_A });
+    selection.complete();
+
+    expect(facade.selectedProvider()).toBeNull();
+    expect(facade.selectionError()).toBeNull();
+  });
+
+  it('ignores a selection response after the provider list was reloaded', () => {
+    providersStub.listProviders.and.returnValue(
+      of(providersResponse([PROVIDER_A, PROVIDER_B])),
+    );
+    const selection = new Subject<SelectClienteProviderResponse>();
+    providersStub.selectProvider.and.returnValue(selection.asObservable());
+
+    const facade = create();
+    facade.select(PROVIDER_A);
+    facade.load();
+
+    selection.next({ selectedProvider: PROVIDER_A });
+    selection.complete();
+
+    expect(facade.selectedProvider()).toBeNull();
+  });
+
+  it('allows selecting again after a reload cancels the pending selection', () => {
+    providersStub.listProviders.and.returnValue(
+      of(providersResponse([PROVIDER_A, PROVIDER_B])),
+    );
+    const pending = new Subject<SelectClienteProviderResponse>();
+    providersStub.selectProvider.and.returnValues(
+      pending.asObservable(),
+      of({ selectedProvider: PROVIDER_A }),
+    );
+
+    const facade = create();
+    facade.select(PROVIDER_A);
+    facade.load();
+    facade.select(PROVIDER_A);
+
+    expect(providersStub.selectProvider).toHaveBeenCalledTimes(2);
+    expect(facade.selectedProvider()?.id).toBe(PROVIDER_A.id);
+  });
+
+  const mappingCases: Array<[number, ClienteSelectionError]> = [
+    [403, ClienteSelectionError.FORBIDDEN],
+    [0, ClienteSelectionError.NETWORK],
+    [500, ClienteSelectionError.UNEXPECTED],
+  ];
+
+  for (const [status, expected] of mappingCases) {
+    it(`maps a selection error with status ${status} to ${expected}`, () => {
+      providersStub.listProviders.and.returnValue(
+        of(providersResponse([PROVIDER_A, PROVIDER_B])),
+      );
+      providersStub.selectProvider.and.returnValue(
+        throwError(() => new HttpErrorResponse({ status })),
+      );
+
+      const facade = create();
+      facade.select(PROVIDER_A);
+
+      expect(facade.selectionError()).toBe(expected);
+    });
+  }
+
+  it('opens the selector and clears the previous error when changing provider', () => {
+    providersStub.listProviders.and.returnValue(
+      of(providersResponse([PROVIDER_A, PROVIDER_B])),
+    );
+    providersStub.selectProvider.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 404 })),
+    );
+
+    const facade = create();
+    facade.select(PROVIDER_A);
+    expect(facade.selectionError()).toBe(ClienteSelectionError.NOT_FOUND);
+
+    facade.changeProvider();
+
+    expect(facade.showSelector()).toBeTrue();
+    expect(facade.selectionError()).toBeNull();
   });
 });
