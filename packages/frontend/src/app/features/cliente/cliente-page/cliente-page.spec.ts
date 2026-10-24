@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import type { ClienteProviderResponse } from '@agua/contracts';
 import { ClienteHomeFacade, ClienteSelectionError } from '../cliente-home.facade';
 import { ClientePage } from './cliente-page';
@@ -50,7 +51,7 @@ describe('ClientePage', () => {
     select.calls.reset();
     changeProvider.calls.reset();
 
-    await TestBed.configureTestingModule({ imports: [ClientePage] })
+    await TestBed.configureTestingModule({ imports: [ClientePage], providers: [provideRouter([])] })
       .overrideComponent(ClientePage, {
         set: {
           providers: [
@@ -112,6 +113,18 @@ describe('ClientePage', () => {
 
     expect(element.textContent).toContain('Ana Gómez');
     expect(element.textContent).toContain('Aguas del Sur');
+    const catalog = element.querySelector<HTMLAnchorElement>('.cliente__access-link');
+    expect(catalog?.getAttribute('href')).toBe('/cliente/catalogo');
+    expect(catalog?.textContent?.trim()).toBe('Ver catálogo');
+  });
+
+  it('does not offer catalog access until a provider is selected', () => {
+    providers.set([PROVIDER_A]);
+    showSelector.set(true);
+    fixture.detectChanges();
+
+    expect(element.querySelector('.cliente__access-link')).toBeNull();
+    expect(element.textContent).toContain('Elige un proveedor para continuar');
   });
 
   it('renders the selector and forwards the chosen provider', () => {

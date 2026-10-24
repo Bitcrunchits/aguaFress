@@ -74,6 +74,14 @@ export class AuthService {
    */
   readonly sessionReady$: Observable<boolean> = this.sessionReadySubject.asObservable();
 
+  /**
+   * Emits only when a different session replaces the stored one (another
+   * tab's login or logout), never for a token rotation of the same
+   * principal. Consumers can discard state tied to the previous session
+   * without stranding valid requests during a refresh.
+   */
+  readonly sessionReplacement$: Observable<void> = this.sessionStorage.sessionReplacement$;
+
   constructor() {
     this.sessionStorage.session$.subscribe((session) => {
       if (session === null && this.hasSession) {
