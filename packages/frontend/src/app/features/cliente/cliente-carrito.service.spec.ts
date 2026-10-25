@@ -2,9 +2,10 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import type { AddCartItemV2Request, CartResponse } from '@agua/contracts';
+import { API_CONFIG } from '../../core/config/api.config';
 import { ClienteCarritoService } from './cliente-carrito.service';
 
-const ADD_CART_ITEM_URL = 'https://api-aguafress.eadev.cloud/api/v1/cart/items/add';
+const ADD_CART_ITEM_URL = `${API_CONFIG.baseUrl}/api/v1/cart/items/add`;
 
 const CART_RESPONSE: CartResponse = {
   id: 'cart-1',
