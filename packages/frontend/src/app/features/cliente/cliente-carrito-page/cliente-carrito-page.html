@@ -1,0 +1,103 @@
+<section class="role-card cliente" aria-labelledby="cliente-carrito-title">
+  <p class="role-card__eyebrow">Cliente</p>
+  <h1 id="cliente-carrito-title">Carrito</h1>
+  <p class="cliente__intro">
+    Revisa los productos de tu proveedor y confirma el pedido cuando esté listo.
+  </p>
+
+  <p
+    id="cliente-carrito-feedback"
+    class="cliente__feedback"
+    [class.cliente__feedback--visible]="vm.feedback() !== null"
+    role="status"
+    aria-live="polite"
+  >
+    {{ cartFeedbackMessage(vm.feedback()) }}
+  </p>
+
+  @if (vm.loading()) {
+    <p class="cliente__state" role="status">Cargando carrito</p>
+  } @else if (vm.failed()) {
+    <div class="cliente__state cliente__state--error" role="alert">
+      <p>No pudimos cargar el carrito. Inténtalo de nuevo en unos segundos.</p>
+      <button type="button" class="cliente__button" (click)="vm.retry()">Reintentar</button>
+    </div>
+  } @else if (vm.isEmpty()) {
+    <div class="cliente__state">
+      <p>Tu carrito está vacío.</p>
+      <a class="cliente__button" routerLink="/cliente/catalogo">Ir al catálogo</a>
+    </div>
+  } @else if (vm.cart(); as cart) {
+    <ul class="cliente__items">
+      @for (item of cart.items; track item.id) {
+        <li
+          class="cliente__item"
+          [attr.aria-busy]="vm.mutatingProductId() === item.productoId"
+          [attr.aria-describedby]="
+            vm.feedback()?.productId === item.productoId ? 'cliente-carrito-feedback' : null
+          "
+        >
+          <div class="cliente__item-main">
+            <h2>{{ item.nombre }}</h2>
+            <p class="cliente__meta">
+              <span>{{ formatPrice(item.precioUnitario) }} por unidad</span>
+              <span>Subtotal: {{ formatPrice(item.subtotal) }}</span>
+            </p>
+          </div>
+
+          <div class="cliente__quantity" role="group" [attr.aria-label]="'Cantidad de ' + item.nombre">
+            <button
+              type="button"
+              class="cliente__quantity-button"
+              [disabled]="vm.mutatingProductId() !== null || cartLocked() || item.cantidad <= 1"
+              (click)="decreaseQuantity(item)"
+              [attr.aria-label]="'Quitar una unidad de ' + item.nombre"
+            >
+              −
+            </button>
+            <span class="cliente__quantity-value" aria-live="polite">{{ item.cantidad }}</span>
+            <button
+              type="button"
+              class="cliente__quantity-button"
+              [disabled]="vm.mutatingProductId() !== null || cartLocked()"
+              (click)="increaseQuantity(item)"
+              [attr.aria-label]="'Agregar una unidad de ' + item.nombre"
+            >
+              +
+            </button>
+          </div>
+
+          <button
+            type="button"
+            class="cliente__button cliente__button--ghost"
+            [disabled]="vm.mutatingProductId() !== null || cartLocked()"
+            (click)="removeItem(item)"
+          >
+            Eliminar
+          </button>
+        </li>
+      }
+    </ul>
+
+    <p class="cliente__total">Total: {{ formatPrice(cart.total) }}</p>
+
+    @if (pedido.accepted(); as accepted) {
+      <div class="cliente__accepted" role="status" aria-live="polite">
+        <h2>Pedido recibido</h2>
+        <p>Estamos procesando tu pedido. Guarda el número de seguimiento:</p>
+        <p class="cliente__tracking">{{ accepted.trackingId }}</p>
+        <p class="cliente__meta">Estado: {{ accepted.status }}</p>
+        <p class="cliente__meta">
+          Podrás seguir el estado desde la pantalla de pedidos, disponible próximamente.
+        </p>
+      </div>
+    } @else {
+      <app-cliente-checkout-form
+        [submitting]="pedido.submitting()"
+        [mutationInFlight]="vm.mutatingProductId() !== null"
+        [feedback]="pedido.feedback()"
+        (confirm)="confirmOrder($event)"
+      />
+    }
+  }
+</section>
