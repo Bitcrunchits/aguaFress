@@ -8,7 +8,7 @@ import type { ClienteCarritoGateway } from './cliente-carrito.gateway';
 const ADD_CART_ITEM_URL = `${API_CONFIG.baseUrl}/api/v1/cart/items/add`;
 
 /**
- * Cart write HTTP access. The backend reads the cliente identity from the
+ * Add-to-cart HTTP access. The backend reads the cliente identity from the
  * JWT and returns `CartResponse` directly (no `{ data }` envelope). The body
  * is provider-scoped and never carries identity fields.
  */
