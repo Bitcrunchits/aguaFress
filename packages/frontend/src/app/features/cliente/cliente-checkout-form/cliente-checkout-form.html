@@ -1,0 +1,99 @@
+<form class="cliente__checkout" [formGroup]="form" (ngSubmit)="submit()">
+  <h2>Datos de entrega</h2>
+
+  @if (showValidationSummary()) {
+    <p id="cliente-carrito-validation-summary" class="cliente__validation-summary" role="alert">
+      Revisa los datos de entrega e inténtalo de nuevo.
+    </p>
+  }
+
+  <div class="cliente__field">
+    <label for="cliente-carrito-calle">Calle</label>
+    <input
+      #calleInput
+      id="cliente-carrito-calle"
+      type="text"
+      formControlName="calle"
+      autocomplete="address-line1"
+      aria-required="true"
+      [attr.aria-invalid]="showCalleError()"
+      [attr.aria-describedby]="showCalleError() ? 'cliente-carrito-calle-error' : null"
+    />
+    @if (showCalleError()) {
+      <p id="cliente-carrito-calle-error" class="cliente__field-error">
+        Ingresa la calle de entrega.
+      </p>
+    }
+  </div>
+
+  <div class="cliente__field">
+    <label for="cliente-carrito-numero">Número</label>
+    <input
+      #numeroInput
+      id="cliente-carrito-numero"
+      type="text"
+      formControlName="numero"
+      autocomplete="address-line2"
+      aria-required="true"
+      [attr.aria-invalid]="showNumeroError()"
+      [attr.aria-describedby]="showNumeroError() ? 'cliente-carrito-numero-error' : null"
+    />
+    @if (showNumeroError()) {
+      <p id="cliente-carrito-numero-error" class="cliente__field-error">
+        Ingresa el número de la dirección.
+      </p>
+    }
+  </div>
+
+  <div class="cliente__field">
+    <label for="cliente-carrito-piso">Piso o departamento (opcional)</label>
+    <input id="cliente-carrito-piso" type="text" formControlName="pisoDepto" />
+  </div>
+
+  <div class="cliente__field">
+    <label for="cliente-carrito-referencia">Referencia (opcional)</label>
+    <input id="cliente-carrito-referencia" type="text" formControlName="referencia" />
+  </div>
+
+  <div class="cliente__field">
+    <label for="cliente-carrito-barrio">Barrio (opcional)</label>
+    <input id="cliente-carrito-barrio" type="text" formControlName="barrio" />
+  </div>
+
+  <div class="cliente__field">
+    <label for="cliente-carrito-ciudad">Ciudad (opcional)</label>
+    <input id="cliente-carrito-ciudad" type="text" formControlName="ciudad" />
+  </div>
+
+  <div class="cliente__field">
+    <label for="cliente-carrito-provincia">Provincia (opcional)</label>
+    <input id="cliente-carrito-provincia" type="text" formControlName="provincia" />
+  </div>
+
+  <div class="cliente__field">
+    <label for="cliente-carrito-codigo-postal">Código postal (opcional)</label>
+    <input id="cliente-carrito-codigo-postal" type="text" formControlName="codigoPostal" />
+  </div>
+
+  <div class="cliente__field">
+    <label for="cliente-carrito-observaciones">Observaciones (opcional)</label>
+    <textarea id="cliente-carrito-observaciones" rows="3" formControlName="observaciones"></textarea>
+  </div>
+
+  <p
+    class="cliente__feedback"
+    [class.cliente__feedback--visible]="feedback() !== null"
+    role="alert"
+  >
+    {{ feedbackMessage() }}
+  </p>
+
+  <button
+    type="submit"
+    class="cliente__button"
+    [disabled]="submitting() || mutationInFlight()"
+    [attr.aria-busy]="submitting()"
+  >
+    {{ submitting() ? 'Confirmando pedido' : 'Confirmar pedido' }}
+  </button>
+</form>
