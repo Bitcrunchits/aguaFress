@@ -1,3 +1,4 @@
+import { InjectionToken } from '@angular/core';
 import type { Observable } from 'rxjs';
 import type { OrderJobStatusResponse, OrderResponse } from '@agua/contracts';
 
@@ -11,3 +12,26 @@ export interface ClientePedidosGateway {
   getJobStatus(trackingId: string): Observable<OrderJobStatusResponse>;
 }
 
+/**
+ * List capability for consumers that only render the orders list. Order
+ * detail and polling are separate contracts.
+ */
+export interface ClientePedidosListGateway {
+  listOrders(): Observable<OrderResponse[]>;
+}
+
+/**
+ * Polling capability for consumers that follow async order jobs. The list
+ * view must not depend on job status, and the tracking view must not depend
+ * on the full orders list.
+ */
+export interface ClientePedidosTrackingGateway {
+  getJobStatus(trackingId: string): Observable<OrderJobStatusResponse>;
+}
+
+export const CLIENTE_PEDIDOS_LIST_GATEWAY = new InjectionToken<ClientePedidosListGateway>(
+  'CLIENTE_PEDIDOS_LIST_GATEWAY',
+);
+
+export const CLIENTE_PEDIDOS_TRACKING_GATEWAY =
+  new InjectionToken<ClientePedidosTrackingGateway>('CLIENTE_PEDIDOS_TRACKING_GATEWAY');

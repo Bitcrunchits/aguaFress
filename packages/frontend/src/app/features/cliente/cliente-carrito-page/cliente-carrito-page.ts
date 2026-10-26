@@ -20,6 +20,8 @@ import { ClienteProviderStateService } from '../cliente-provider-state.service';
 import { CLIENTE_PROVIDER_READER } from '../cliente-provider.store';
 import { CLIENTE_SESSION_READER } from '../cliente-session.contract';
 import { CLIENTE_SESSION_READINESS_READER } from '../cliente-session-readiness.contract';
+import { CLIENTE_TRACKING_WRITER } from '../cliente-tracking.contract';
+import { ClienteTrackingStore } from '../cliente-tracking.store';
 
 const CART_FEEDBACK_MESSAGES: Record<ClienteCarritoDetalleFeedbackKind, string> = {
   [ClienteCarritoDetalleFeedbackKind.Updated]: 'Cantidad actualizada',
@@ -52,6 +54,7 @@ const CART_FEEDBACK_MESSAGES: Record<ClienteCarritoDetalleFeedbackKind, string> 
     { provide: CLIENTE_PROVIDER_READER, useExisting: ClienteProviderStateService },
     { provide: CLIENTE_SESSION_READER, useExisting: AuthService },
     { provide: CLIENTE_SESSION_READINESS_READER, useExisting: AuthService },
+    { provide: CLIENTE_TRACKING_WRITER, useExisting: ClienteTrackingStore },
   ],
 })
 export class ClienteCarritoPage {

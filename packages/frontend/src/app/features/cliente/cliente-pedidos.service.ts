@@ -3,7 +3,11 @@ import { Injectable, inject } from '@angular/core';
 import type { Observable } from 'rxjs';
 import type { OrderJobStatusResponse, OrderResponse } from '@agua/contracts';
 import { API_CONFIG } from '../../core/config/api.config';
-import type { ClientePedidosGateway } from './cliente-pedidos.gateway';
+import type {
+  ClientePedidosGateway,
+  ClientePedidosListGateway,
+  ClientePedidosTrackingGateway,
+} from './cliente-pedidos.gateway';
 
 const LIST_ORDERS_URL = `${API_CONFIG.baseUrl}/api/v1/orders/list`;
 const GET_ORDER_URL = `${API_CONFIG.baseUrl}/api/v1/orders/get-by-id`;
@@ -15,7 +19,9 @@ const GET_JOB_STATUS_URL = `${API_CONFIG.baseUrl}/api/v1/orders/job-status`;
  * sent as an encoded query param, never as a path segment.
  */
 @Injectable({ providedIn: 'root' })
-export class ClientePedidosService implements ClientePedidosGateway {
+export class ClientePedidosService
+  implements ClientePedidosGateway, ClientePedidosListGateway, ClientePedidosTrackingGateway
+{
   private readonly http = inject(HttpClient);
 
   listOrders(): Observable<OrderResponse[]> {

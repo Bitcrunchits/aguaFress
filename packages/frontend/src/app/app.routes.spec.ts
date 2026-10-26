@@ -21,7 +21,9 @@ import { ClienteCarritoLecturaService } from './features/cliente/cliente-carrito
 import { ClienteCarritoService } from './features/cliente/cliente-carrito.service';
 import { ClienteCatalogoService } from './features/cliente/cliente-catalogo.service';
 import { ClientePedidoService } from './features/cliente/cliente-pedido.service';
+import { ClientePedidosService } from './features/cliente/cliente-pedidos.service';
 import { ClienteProviderStateService } from './features/cliente/cliente-provider-state.service';
+import { CLIENTE_TRACKING_SESSION_READER } from './features/cliente/cliente-tracking.contract';
 
 const EMPTY_LIST: SuperAdminVendedorListResponse = {
   data: [],
@@ -76,6 +78,7 @@ describe('application routes', () => {
   };
   let lecturaStub: { getCart: jasmine.Spy };
   let pedidoStub: { createOrder: jasmine.Spy };
+  let pedidosStub: { listOrders: jasmine.Spy; getJobStatus: jasmine.Spy };
 
   beforeEach(() => {
     authServiceStub = {
@@ -86,10 +89,22 @@ describe('application routes', () => {
     };
     lecturaStub = { getCart: jasmine.createSpy('getCart').and.returnValue(of(CART)) };
     pedidoStub = { createOrder: jasmine.createSpy('createOrder').and.returnValue(of(ACCEPTED)) };
+    pedidosStub = {
+      listOrders: jasmine.createSpy('listOrders').and.returnValue(of([])),
+      getJobStatus: jasmine.createSpy('getJobStatus').and.returnValue(EMPTY),
+    };
     TestBed.configureTestingModule({
       providers: [
         provideRouter(routes),
         { provide: AuthService, useValue: authServiceStub },
+        {
+          provide: CLIENTE_TRACKING_SESSION_READER,
+          useValue: {
+            get session() {
+              return authServiceStub.currentSession;
+            },
+          },
+        },
         { provide: AdminVendedoresService, useValue: { list: () => of(EMPTY_LIST) } },
         { provide: ClienteCatalogoService, useValue: { list: () => of(EMPTY_PRODUCTS) } },
         { provide: ClienteCarritoService, useValue: { addToCart: () => EMPTY } },
@@ -99,6 +114,7 @@ describe('application routes', () => {
           useValue: { updateItem: () => EMPTY, deleteItem: () => EMPTY },
         },
         { provide: ClientePedidoService, useValue: pedidoStub },
+        { provide: ClientePedidosService, useValue: pedidosStub },
         {
           provide: ClienteProviderStateService,
           useValue: {
@@ -215,6 +231,24 @@ describe('application routes', () => {
     expect(TestBed.inject(Router).url).toBe('/auth/login');
   });
 
+  it('renders the cliente orders list for a cliente session', async () => {
+    authServiceStub.currentSession = sessionWithRole(UserRole.CLIENTE);
+
+    const harness = await RouterTestingHarness.create('/cliente/pedidos');
+
+    expect(TestBed.inject(Router).url).toBe('/cliente/pedidos');
+    expect(harness.routeNativeElement?.querySelector('h1')?.textContent?.trim()).toBe('Mis pedidos');
+    expect(pedidosStub.listOrders).toHaveBeenCalledTimes(1);
+  });
+
+  it('redirects unauthenticated navigation to the cliente orders to login', async () => {
+    authServiceStub.currentSession = null;
+
+    await RouterTestingHarness.create('/cliente/pedidos');
+
+    expect(TestBed.inject(Router).url).toBe('/auth/login');
+  });
+
   it('declares the catalog under the cliente parent as a lazy route', () => {
     const shellRoute = routes.find((route) => route.children !== undefined);
     const clienteRoute = shellRoute?.children?.find((route) => route.path === 'cliente');
@@ -223,14 +257,19 @@ describe('application routes', () => {
     expect(clienteRoute?.canActivate?.length).toBe(1);
     const carritoRoute = clienteRoute?.children?.find((route) => route.path === 'carrito');
 
+    const pedidosRoute = clienteRoute?.children?.find((route) => route.path === 'pedidos');
+
     expect(clienteRoute?.children?.map((route) => route.path)).toEqual([
       '',
       'catalogo',
       'carrito',
+      'pedidos',
     ]);
     expect(typeof catalogoRoute?.loadComponent).toBe('function');
     expect(catalogoRoute?.canActivate).toBeUndefined();
     expect(typeof carritoRoute?.loadComponent).toBe('function');
     expect(carritoRoute?.canActivate).toBeUndefined();
+    expect(typeof pedidosRoute?.loadComponent).toBe('function');
+    expect(pedidosRoute?.canActivate).toBeUndefined();
   });
 });
