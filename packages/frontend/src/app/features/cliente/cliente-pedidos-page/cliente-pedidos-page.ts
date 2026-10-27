@@ -14,6 +14,11 @@ import {
 } from '../cliente-pedidos.gateway';
 import { ClientePedidosService } from '../cliente-pedidos.service';
 import { ClientePedidosListError } from '../cliente-pedidos-error';
+import {
+  ORDER_ESTADO_LABELS,
+  formatIsoDate,
+  isoDateOf,
+} from '../cliente-pedidos-format';
 import { CLIENTE_SESSION_READER } from '../cliente-session.contract';
 import { CLIENTE_SESSION_READINESS_READER } from '../cliente-session-readiness.contract';
 import { CLIENTE_TRACKING_READER } from '../cliente-tracking.contract';
@@ -26,18 +31,6 @@ const LIST_ERROR_MESSAGES: Record<ClientePedidosListError, string> = {
   [ClientePedidosListError.Unexpected]:
     'No pudimos cargar tus pedidos. Inténtalo de nuevo en unos segundos.',
 };
-
-const ESTADO_LABELS: Record<OrderEstado, string> = {
-  [OrderEstado.PENDIENTE]: 'Pendiente',
-  [OrderEstado.CONFIRMADO]: 'Confirmado',
-  [OrderEstado.EN_CAMINO]: 'En camino',
-  [OrderEstado.ENTREGADO]: 'Entregado',
-  [OrderEstado.CANCELADO]: 'Cancelado',
-  [OrderEstado.VENCIDO]: 'Vencido',
-};
-
-const ISO_DATE_PATTERN =
-  /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?)?$/;
 
 const TRACKING_STATUS_LABELS: Record<OrderJobStatus, string> = {
   [OrderJobStatus.PENDING]: 'Pendiente',
@@ -92,7 +85,7 @@ export class ClientePedidosPage implements OnInit {
   }
 
   estadoLabel(estado: OrderEstado): string {
-    return ESTADO_LABELS[estado];
+    return ORDER_ESTADO_LABELS[estado];
   }
 
   trackingStatusLabel(status: OrderJobStatus): string {
@@ -127,28 +120,10 @@ export class ClientePedidosPage implements OnInit {
   }
 
   isoDate(value: string): string | null {
-    if (!ISO_DATE_PATTERN.test(value)) {
-      return null;
-    }
-
-    const dateOnly = value.slice(0, 10);
-    const dateAtMidnight = new Date(`${dateOnly}T00:00:00.000Z`);
-    if (
-      Number.isNaN(dateAtMidnight.getTime()) ||
-      dateAtMidnight.toISOString().slice(0, 10) !== dateOnly
-    ) {
-      return null;
-    }
-
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
-      return null;
-    }
-
-    return parsed.toISOString().slice(0, 10);
+    return isoDateOf(value);
   }
 
   formatDate(value: string): string {
-    return this.isoDate(value) ?? '—';
+    return formatIsoDate(value);
   }
 }

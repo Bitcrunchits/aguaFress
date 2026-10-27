@@ -1,0 +1,105 @@
+<section class="role-card cliente" aria-labelledby="cliente-pedido-detalle-title">
+  <p class="role-card__eyebrow">Cliente</p>
+  <a class="cliente__back" routerLink="/cliente/pedidos">Volver a mis pedidos</a>
+  <h1 id="cliente-pedido-detalle-title">Detalle del pedido</h1>
+
+  @if (vm.loading()) {
+    <p class="cliente__state" role="status">Cargando pedido</p>
+  } @else if (vm.notFound()) {
+    <div class="cliente__state cliente__state--error" role="alert">
+      <p>No encontramos este pedido. Puede que ya no esté disponible.</p>
+      <a class="cliente__button" routerLink="/cliente/pedidos">Volver a mis pedidos</a>
+    </div>
+  } @else if (vm.error(); as error) {
+    <div class="cliente__state cliente__state--error" role="alert">
+      <p>{{ errorMessage(error) }}</p>
+      <button type="button" class="cliente__button" (click)="retry()">Reintentar</button>
+    </div>
+  } @else if (vm.order(); as order) {
+    <article class="cliente__detail" aria-labelledby="cliente-pedido-title">
+      <header class="cliente__detail-head">
+        <h2 id="cliente-pedido-title">Pedido {{ order.pedidoNumero }}</h2>
+        <span class="cliente__order-estado">{{ estadoLabel(order.estado) }}</span>
+      </header>
+
+      <dl class="cliente__meta">
+        <div class="cliente__meta-item">
+          <dt>Creado</dt>
+          <dd>
+            <time [attr.datetime]="isoDate(order.createdAt)">
+              {{ formatDate(order.createdAt) }}
+            </time>
+          </dd>
+        </div>
+        <div class="cliente__meta-item">
+          <dt>Actualizado</dt>
+          <dd>
+            <time [attr.datetime]="isoDate(order.updatedAt)">
+              {{ formatDate(order.updatedAt) }}
+            </time>
+          </dd>
+        </div>
+        <div class="cliente__meta-item cliente__payment">
+          <dt>Método de pago</dt>
+          <dd>{{ metodoPagoLabel(order.metodoPago) }}</dd>
+        </div>
+      </dl>
+
+      <section class="cliente__section" aria-labelledby="cliente-pedido-items-title">
+        <h3 id="cliente-pedido-items-title">Productos</h3>
+        <ul class="cliente__items">
+          @for (item of order.items; track item.productId) {
+            <li class="cliente__item">
+              <div class="cliente__item-main">
+                <p class="cliente__item-name">{{ item.nombre }}</p>
+                <p class="cliente__item-meta">
+                  <span>Cantidad: {{ item.cantidad }}</span>
+                  <span>Precio unitario: {{ formatPrice(item.precioUnitario) }}</span>
+                </p>
+              </div>
+              <p class="cliente__item-subtotal">Subtotal: {{ formatPrice(subtotal(item)) }}</p>
+            </li>
+          }
+        </ul>
+      </section>
+
+      <dl class="cliente__totals">
+        <div class="cliente__total-row">
+          <dt>Subtotal</dt>
+          <dd>{{ formatPrice(order.totalSinIva) }}</dd>
+        </div>
+        <div class="cliente__total-row">
+          <dt>IVA</dt>
+          <dd>{{ formatPrice(order.iva) }}</dd>
+        </div>
+        <div class="cliente__total-row cliente__total-row--grand">
+          <dt>Total</dt>
+          <dd>{{ formatPrice(order.total) }}</dd>
+        </div>
+      </dl>
+
+      <section class="cliente__section" aria-labelledby="cliente-pedido-address-title">
+        <h3 id="cliente-pedido-address-title">Dirección de entrega</h3>
+        <address class="cliente__address">
+          <p>{{ order.direccion.calle }} {{ order.direccion.numero }}</p>
+          @if (order.direccion.pisoDepto) {
+            <p>{{ order.direccion.pisoDepto }}</p>
+          }
+          @if (order.direccion.referencia) {
+            <p>{{ order.direccion.referencia }}</p>
+          }
+          @if (direccionDetalle(order.direccion); as detail) {
+            <p>{{ detail }}</p>
+          }
+        </address>
+      </section>
+
+      @if (order.observaciones) {
+        <section class="cliente__section cliente__observaciones" aria-labelledby="cliente-pedido-observaciones-title">
+          <h3 id="cliente-pedido-observaciones-title">Observaciones</h3>
+          <p>{{ order.observaciones }}</p>
+        </section>
+      }
+    </article>
+  }
+</section>
