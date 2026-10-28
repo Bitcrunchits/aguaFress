@@ -107,9 +107,6 @@ export class ClientePedidosPage implements OnInit {
     if (!tracking.terminal) {
       return '';
     }
-    if (tracking.errorMessage !== undefined && tracking.errorMessage.length > 0) {
-      return tracking.errorMessage;
-    }
     if (tracking.errorCode === ClientePedidosTrackingError.NotFound) {
       return 'No encontramos el seguimiento de este pedido. Actualiza la lista e inténtalo de nuevo.';
     }
@@ -117,6 +114,17 @@ export class ClientePedidosPage implements OnInit {
       tracking.status === OrderJobStatus.FAILED ||
       tracking.status === OrderJobStatus.DEAD_LETTER
     ) {
+      switch (tracking.errorCode) {
+        case 'TERMINAL_BAD_REQUEST':
+          return 'No pudimos procesar los datos de tu pedido. Revísalo e inténtalo de nuevo.';
+        case 'TERMINAL_FORBIDDEN':
+          return 'No tienes permiso para procesar este pedido.';
+        case 'TERMINAL_CONFLICT':
+          return 'No pudimos procesar tu pedido por un conflicto. Revísalo e inténtalo de nuevo.';
+        case 'RETRYABLE_SERVICE_UNAVAILABLE':
+        case 'DEAD_LETTER_SERVICE_UNAVAILABLE':
+          return 'El servicio no está disponible en este momento. Inténtalo de nuevo más tarde.';
+      }
       return 'No pudimos procesar tu pedido. Inténtalo de nuevo o contacta al vendedor.';
     }
     return '';
