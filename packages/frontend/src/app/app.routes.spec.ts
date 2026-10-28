@@ -3,11 +3,13 @@ import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import {
   MetodoPago,
+  OrderEstado,
   OrderJobStatus,
   UserRole,
   type AsyncAcceptedResponse,
   type CartResponse,
   type LoginResponse,
+  type OrderResponse,
   type PaginatedResponse,
   type ProductResponse,
   type SuperAdminVendedorListResponse,
@@ -61,6 +63,29 @@ const ACCEPTED: AsyncAcceptedResponse = {
   acceptedAt: '2026-10-24T12:00:00.000Z',
 };
 
+const ORDER: OrderResponse = {
+  id: 'order-1',
+  pedidoNumero: 'P-0001',
+  clienteId: 'cliente-profile-1',
+  vendedorId: 'vendedor-1',
+  items: [
+    {
+      productId: 'producto-1',
+      nombre: 'Agua mineral 500 ml',
+      cantidad: 2,
+      precioUnitario: 1000,
+    },
+  ],
+  totalSinIva: 2000,
+  iva: 420,
+  total: 2420,
+  estado: OrderEstado.PENDIENTE,
+  metodoPago: MetodoPago.CONTRA_ENTREGA,
+  direccion: { calle: 'Av. Corrientes', numero: '1234' },
+  createdAt: '2026-10-24T00:00:00.000Z',
+  updatedAt: '2026-10-24T00:00:00.000Z',
+};
+
 function sessionWithRole(role: UserRole): LoginResponse {
   return {
     token: 'access-token-1',
@@ -78,7 +103,11 @@ describe('application routes', () => {
   };
   let lecturaStub: { getCart: jasmine.Spy };
   let pedidoStub: { createOrder: jasmine.Spy };
-  let pedidosStub: { listOrders: jasmine.Spy; getJobStatus: jasmine.Spy };
+  let pedidosStub: {
+    listOrders: jasmine.Spy;
+    getOrder: jasmine.Spy;
+    getJobStatus: jasmine.Spy;
+  };
 
   beforeEach(() => {
     authServiceStub = {
@@ -91,6 +120,7 @@ describe('application routes', () => {
     pedidoStub = { createOrder: jasmine.createSpy('createOrder').and.returnValue(of(ACCEPTED)) };
     pedidosStub = {
       listOrders: jasmine.createSpy('listOrders').and.returnValue(of([])),
+      getOrder: jasmine.createSpy('getOrder').and.returnValue(of(ORDER)),
       getJobStatus: jasmine.createSpy('getJobStatus').and.returnValue(EMPTY),
     };
     TestBed.configureTestingModule({
@@ -249,6 +279,27 @@ describe('application routes', () => {
     expect(TestBed.inject(Router).url).toBe('/auth/login');
   });
 
+  it('renders the cliente order detail for a cliente session', async () => {
+    authServiceStub.currentSession = sessionWithRole(UserRole.CLIENTE);
+
+    const harness = await RouterTestingHarness.create('/cliente/pedidos/order-1');
+
+    expect(TestBed.inject(Router).url).toBe('/cliente/pedidos/order-1');
+    expect(harness.routeNativeElement?.querySelector('h1')?.textContent?.trim()).toBe(
+      'Detalle del pedido',
+    );
+    expect(pedidosStub.getOrder).toHaveBeenCalledOnceWith('order-1');
+    expect(harness.routeNativeElement?.textContent).toContain('P-0001');
+  });
+
+  it('redirects unauthenticated navigation to the cliente order detail to login', async () => {
+    authServiceStub.currentSession = null;
+
+    await RouterTestingHarness.create('/cliente/pedidos/order-1');
+
+    expect(TestBed.inject(Router).url).toBe('/auth/login');
+  });
+
   it('declares the catalog under the cliente parent as a lazy route', () => {
     const shellRoute = routes.find((route) => route.children !== undefined);
     const clienteRoute = shellRoute?.children?.find((route) => route.path === 'cliente');
@@ -258,12 +309,16 @@ describe('application routes', () => {
     const carritoRoute = clienteRoute?.children?.find((route) => route.path === 'carrito');
 
     const pedidosRoute = clienteRoute?.children?.find((route) => route.path === 'pedidos');
+    const pedidoDetalleRoute = clienteRoute?.children?.find(
+      (route) => route.path === 'pedidos/:id',
+    );
 
     expect(clienteRoute?.children?.map((route) => route.path)).toEqual([
       '',
       'catalogo',
       'carrito',
       'pedidos',
+      'pedidos/:id',
     ]);
     expect(typeof catalogoRoute?.loadComponent).toBe('function');
     expect(catalogoRoute?.canActivate).toBeUndefined();
@@ -271,5 +326,7 @@ describe('application routes', () => {
     expect(carritoRoute?.canActivate).toBeUndefined();
     expect(typeof pedidosRoute?.loadComponent).toBe('function');
     expect(pedidosRoute?.canActivate).toBeUndefined();
+    expect(typeof pedidoDetalleRoute?.loadComponent).toBe('function');
+    expect(pedidoDetalleRoute?.canActivate).toBeUndefined();
   });
 });

@@ -1,5 +1,6 @@
 import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
 import { OrderEstado, OrderJobStatus } from '@agua/contracts';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ClientePedidosFacade } from '../cliente-pedidos.facade';
@@ -14,6 +15,11 @@ import {
 } from '../cliente-pedidos.gateway';
 import { ClientePedidosService } from '../cliente-pedidos.service';
 import { ClientePedidosListError } from '../cliente-pedidos-error';
+import {
+  ORDER_ESTADO_LABELS,
+  formatIsoDate,
+  isoDateOf,
+} from '../cliente-pedidos-format';
 import { CLIENTE_SESSION_READER } from '../cliente-session.contract';
 import { CLIENTE_SESSION_READINESS_READER } from '../cliente-session-readiness.contract';
 import { CLIENTE_TRACKING_READER } from '../cliente-tracking.contract';
@@ -27,18 +33,6 @@ const LIST_ERROR_MESSAGES: Record<ClientePedidosListError, string> = {
     'No pudimos cargar tus pedidos. Inténtalo de nuevo en unos segundos.',
 };
 
-const ESTADO_LABELS: Record<OrderEstado, string> = {
-  [OrderEstado.PENDIENTE]: 'Pendiente',
-  [OrderEstado.CONFIRMADO]: 'Confirmado',
-  [OrderEstado.EN_CAMINO]: 'En camino',
-  [OrderEstado.ENTREGADO]: 'Entregado',
-  [OrderEstado.CANCELADO]: 'Cancelado',
-  [OrderEstado.VENCIDO]: 'Vencido',
-};
-
-const ISO_DATE_PATTERN =
-  /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})?)?$/;
-
 const TRACKING_STATUS_LABELS: Record<OrderJobStatus, string> = {
   [OrderJobStatus.PENDING]: 'Pendiente',
   [OrderJobStatus.PROCESSING]: 'Procesando',
@@ -51,12 +45,13 @@ const TRACKING_STATUS_LABELS: Record<OrderJobStatus, string> = {
 /**
  * Cliente orders list presentation. List state lives in
  * `ClientePedidosFacade` and polling in `ClientePedidosTrackingFacade`; this
- * page renders both, owns the Spanish copy, forwards the retry action, and
- * reloads the list when a pending tracking completes. Order detail is a later
- * slice.
+ * page renders both, owns the Spanish copy, forwards the retry action,
+ * reloads the list when a pending tracking completes, and links each loaded
+ * order to its detail page.
  */
 @Component({
   selector: 'app-cliente-pedidos-page',
+  imports: [RouterLink],
   templateUrl: './cliente-pedidos-page.html',
   styleUrl: './cliente-pedidos-page.scss',
   providers: [
@@ -92,7 +87,7 @@ export class ClientePedidosPage implements OnInit {
   }
 
   estadoLabel(estado: OrderEstado): string {
-    return ESTADO_LABELS[estado];
+    return ORDER_ESTADO_LABELS[estado];
   }
 
   trackingStatusLabel(status: OrderJobStatus): string {
@@ -127,28 +122,10 @@ export class ClientePedidosPage implements OnInit {
   }
 
   isoDate(value: string): string | null {
-    if (!ISO_DATE_PATTERN.test(value)) {
-      return null;
-    }
-
-    const dateOnly = value.slice(0, 10);
-    const dateAtMidnight = new Date(`${dateOnly}T00:00:00.000Z`);
-    if (
-      Number.isNaN(dateAtMidnight.getTime()) ||
-      dateAtMidnight.toISOString().slice(0, 10) !== dateOnly
-    ) {
-      return null;
-    }
-
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
-      return null;
-    }
-
-    return parsed.toISOString().slice(0, 10);
+    return isoDateOf(value);
   }
 
   formatDate(value: string): string {
-    return this.isoDate(value) ?? '—';
+    return formatIsoDate(value);
   }
 }
