@@ -61,6 +61,12 @@
             <span class="cliente__order-provider">Proveedor: {{ order.vendedorId }}</span>
           </p>
           <p class="cliente__order-total">Total: {{ formatPrice(order.total) }}</p>
+          <a
+            class="cliente__button cliente__order-link"
+            [routerLink]="['/cliente/pedidos', order.id]"
+          >
+            Ver pedido {{ order.pedidoNumero }}
+          </a>
         </li>
       }
     </ul>

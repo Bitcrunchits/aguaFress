@@ -1,5 +1,6 @@
 import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
 import { OrderEstado, OrderJobStatus } from '@agua/contracts';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ClientePedidosFacade } from '../cliente-pedidos.facade';
@@ -44,12 +45,13 @@ const TRACKING_STATUS_LABELS: Record<OrderJobStatus, string> = {
 /**
  * Cliente orders list presentation. List state lives in
  * `ClientePedidosFacade` and polling in `ClientePedidosTrackingFacade`; this
- * page renders both, owns the Spanish copy, forwards the retry action, and
- * reloads the list when a pending tracking completes. Order detail is a later
- * slice.
+ * page renders both, owns the Spanish copy, forwards the retry action,
+ * reloads the list when a pending tracking completes, and links each loaded
+ * order to its detail page.
  */
 @Component({
   selector: 'app-cliente-pedidos-page',
+  imports: [RouterLink],
   templateUrl: './cliente-pedidos-page.html',
   styleUrl: './cliente-pedidos-page.scss',
   providers: [
