@@ -73,6 +73,13 @@ export const routes: Routes = [
                 './features/cliente/cliente-carrito-page/cliente-carrito-page'
               ).then((module) => module.ClienteCarritoPage),
           },
+          {
+            path: 'pedidos',
+            loadComponent: () =>
+              import(
+                './features/cliente/cliente-pedidos-page/cliente-pedidos-page'
+              ).then((module) => module.ClientePedidosPage),
+          },
         ],
       },
     ],

@@ -1,0 +1,68 @@
+<section class="role-card cliente" aria-labelledby="cliente-pedidos-title">
+  <p class="role-card__eyebrow">Cliente</p>
+  <h1 id="cliente-pedidos-title">Mis pedidos</h1>
+  <p class="cliente__intro">
+    Consulta el estado de tus pedidos y sigue los que todavía se están procesando.
+  </p>
+
+  @if (trackingVm.trackings().length > 0) {
+    <section class="cliente__trackings" aria-labelledby="cliente-pedidos-tracking-title">
+      <h2 id="cliente-pedidos-tracking-title">Pedidos en proceso</h2>
+      <ul class="cliente__tracking-list">
+        @for (tracking of trackingVm.trackings(); track tracking.trackingId) {
+          <li class="cliente__tracking" [attr.aria-busy]="!tracking.terminal">
+            <p class="cliente__tracking-status" role="status">
+              {{ trackingStatusLabel(tracking.status) }}
+              <span class="cliente__tracking-attempts">Intentos: {{ tracking.attempts }}</span>
+            </p>
+            @if (trackingMessage(tracking); as message) {
+              <p class="cliente__tracking-message" role="alert">{{ message }}</p>
+            }
+            @if (tracking.terminal) {
+              <button
+                type="button"
+                class="cliente__button cliente__tracking-dismiss"
+                (click)="trackingVm.dismiss(tracking.trackingId)"
+              >
+                Descartar
+              </button>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  @if (vm.loading()) {
+    <p class="cliente__state" role="status">Cargando pedidos</p>
+  } @else if (vm.error(); as error) {
+    <div class="cliente__state cliente__state--error" role="alert">
+      <p>{{ listErrorMessage(error) }}</p>
+      <button type="button" class="cliente__button" (click)="vm.loadOrders()">Reintentar</button>
+    </div>
+  } @else if (vm.orders().length === 0 && trackingVm.trackings().length === 0) {
+    <p class="cliente__state">Todavía no tenés pedidos.</p>
+  } @else if (vm.orders().length === 0) {
+    <p class="cliente__state">
+      Estamos procesando tu pedido. Cuando esté listo aparecerá en esta lista.
+    </p>
+  } @else {
+    <ul class="cliente__orders">
+      @for (order of vm.orders(); track order.id) {
+        <li class="cliente__order">
+          <div class="cliente__order-head">
+            <h2>Pedido {{ order.pedidoNumero }}</h2>
+            <span class="cliente__order-estado">{{ estadoLabel(order.estado) }}</span>
+          </div>
+          <p class="cliente__meta">
+            <time class="cliente__order-date" [attr.datetime]="isoDate(order.createdAt)">
+              {{ formatDate(order.createdAt) }}
+            </time>
+            <span class="cliente__order-provider">Proveedor: {{ order.vendedorId }}</span>
+          </p>
+          <p class="cliente__order-total">Total: {{ formatPrice(order.total) }}</p>
+        </li>
+      }
+    </ul>
+  }
+</section>
