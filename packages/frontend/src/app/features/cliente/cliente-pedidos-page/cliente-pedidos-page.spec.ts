@@ -285,22 +285,41 @@ describe('ClientePedidosPage', () => {
     expect(element.textContent).not.toContain('Procesando');
   });
 
-  it('shows the server message for a terminal tracking failure', () => {
+  it('shows safe code-based feedback instead of an internal tracking failure message', () => {
     trackings.set([
       {
         trackingId: 'tracking-1',
         status: OrderJobStatus.FAILED,
         attempts: 5,
-        errorCode: 'STOCK_UNAVAILABLE',
-        errorMessage: 'No hay stock suficiente',
+        errorCode: 'TERMINAL_CONFLICT',
+        errorMessage: 'Prisma P2002: duplicate key on internal.order_jobs (db.internal:5432)',
         terminal: true,
       },
     ]);
     fixture.detectChanges();
 
-    expect(element.querySelector('.cliente__tracking-message')?.textContent).toContain(
-      'No hay stock suficiente',
-    );
+    const message = element.querySelector('.cliente__tracking-message')?.textContent;
+    expect(message).toContain('conflicto');
+    expect(message).not.toContain('Prisma');
+    expect(element.textContent).not.toContain('db.internal:5432');
+  });
+
+  it('shows generic feedback for an unknown tracking failure code', () => {
+    trackings.set([
+      {
+        trackingId: 'tracking-2',
+        status: OrderJobStatus.DEAD_LETTER,
+        attempts: 5,
+        errorCode: 'UNRECOGNIZED_FAILURE',
+        errorMessage: 'InternalError: secret connection string',
+        terminal: true,
+      },
+    ]);
+    fixture.detectChanges();
+
+    const message = element.querySelector('.cliente__tracking-message')?.textContent;
+    expect(message).toContain('No pudimos procesar tu pedido');
+    expect(element.textContent).not.toContain('secret connection string');
   });
 
   it('falls back to neutral Spanish when a tracking is not found', () => {
