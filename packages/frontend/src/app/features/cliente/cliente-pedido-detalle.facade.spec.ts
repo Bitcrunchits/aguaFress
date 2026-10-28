@@ -112,6 +112,21 @@ describe('ClientePedidoDetalleFacade', () => {
     expect(facade.loading()).toBeFalse();
   });
 
+  it('exposes the same non-retryable state for a forbidden order', () => {
+    gatewayStub.getOrder.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 403 })),
+    );
+    const facade = create();
+
+    facade.loadOrder('inaccessible-order');
+
+    expect(gatewayStub.getOrder).toHaveBeenCalledOnceWith('inaccessible-order');
+    expect(facade.notFound()).toBeTrue();
+    expect(facade.error()).toBeNull();
+    expect(facade.order()).toBeNull();
+    expect(facade.loading()).toBeFalse();
+  });
+
   it('exposes a typed error when the detail request fails', () => {
     gatewayStub.getOrder.and.returnValue(
       throwError(() => new HttpErrorResponse({ status: 500 })),

@@ -15,6 +15,12 @@ describe('classifyPedidoDetalleError', () => {
     );
   });
 
+  it('maps a forbidden order to the same inaccessible state as a missing order', () => {
+    expect(classifyPedidoDetalleError(httpError(403))).toBe(
+      ClientePedidoDetalleError.NotFound,
+    );
+  });
+
   it('maps a transport failure to Network', () => {
     expect(classifyPedidoDetalleError(httpError(0))).toBe(
       ClientePedidoDetalleError.Network,
@@ -23,9 +29,6 @@ describe('classifyPedidoDetalleError', () => {
 
   it('maps any other HTTP status to Unexpected', () => {
     expect(classifyPedidoDetalleError(httpError(500))).toBe(
-      ClientePedidoDetalleError.Unexpected,
-    );
-    expect(classifyPedidoDetalleError(httpError(403))).toBe(
       ClientePedidoDetalleError.Unexpected,
     );
   });

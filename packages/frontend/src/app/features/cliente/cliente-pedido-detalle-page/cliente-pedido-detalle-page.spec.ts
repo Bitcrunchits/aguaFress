@@ -123,6 +123,21 @@ describe('ClientePedidoDetallePage', () => {
     expect(findButton('Reintentar')).toBeUndefined();
   });
 
+  it('removes retry feedback when the detail becomes inaccessible', () => {
+    error.set(ClientePedidoDetalleError.Network);
+    fixture.detectChanges();
+    expect(findButton('Reintentar')).toBeDefined();
+
+    error.set(null);
+    notFound.set(true);
+    fixture.detectChanges();
+
+    expect(element.textContent).toContain('No encontramos este pedido');
+    expect(element.textContent).not.toContain('No pudimos conectar');
+    expect(findButton('Reintentar')).toBeUndefined();
+    expect(element.querySelector('.cliente__state a[href="/cliente/pedidos"]')).not.toBeNull();
+  });
+
   it('renders the generic error and retries the current order', () => {
     error.set(ClientePedidoDetalleError.Network);
     fixture.detectChanges();
