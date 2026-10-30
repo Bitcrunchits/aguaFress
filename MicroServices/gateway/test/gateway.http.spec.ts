@@ -439,6 +439,40 @@ describe('Gateway HTTP routing', () => {
     }));
   });
 
+  it('rejects an isolated surrogate in an orders.create JSON body before enqueue', async () => {
+    mockDispatch.mockResolvedValue({ selectedProvider: { id: 'vendedor-1' } });
+
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/orders/create')
+      .set('Authorization', `Bearer ${clienteToken}`)
+      .send({ vendedorId: 'vendedor-1', metodoPago: 'contra_entrega', idempotencyKey: '\uD800' })
+      .expect(400);
+
+    expect(response.body.message).toBe('Idempotency key must be well-formed UTF-16 for orders.create');
+    expect(mockDispatch).toHaveBeenCalledTimes(1);
+    expect(mockDispatch).toHaveBeenCalledWith(
+      'clientes',
+      expect.objectContaining({ body: { vendedorId: 'vendedor-1' }, user: expect.objectContaining({ sub: 'cliente-user-id' }) }),
+      expect.objectContaining({ tcpPattern: 'clientes.providers_select' }),
+    );
+    expect(mockEnqueueOrderCreate).not.toHaveBeenCalled();
+  });
+
+  it('rejects mismatched orders.create HTTP header and body keys before enqueue', async () => {
+    mockDispatch.mockResolvedValue({ selectedProvider: { id: 'vendedor-1' } });
+
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/orders/create')
+      .set('Authorization', `Bearer ${clienteToken}`)
+      .set('Idempotency-Key', 'header-key')
+      .send({ vendedorId: 'vendedor-1', metodoPago: 'contra_entrega', idempotencyKey: 'body-key' })
+      .expect(400);
+
+    expect(response.body.message).toBe('Idempotency-Key header must match body idempotencyKey');
+    expect(mockDispatch).toHaveBeenCalledTimes(1);
+    expect(mockEnqueueOrderCreate).not.toHaveBeenCalled();
+  });
+
   it('dispatches orders.job-status through TCP using the action-router shape', async () => {
     mockDispatch.mockResolvedValue({ trackingId: 'tracking-http', status: 'PENDING' });
 

@@ -107,7 +107,8 @@ export class GatewayController {
       await this.validateProviderContext(req, vendedorId);
       res?.status(HttpStatus.ACCEPTED);
       return this.ordersCreateQueue.enqueue({
-        clienteId: readAuthenticatedClienteId(req),
+        // Public V1 clienteId is clienteUserId (JWT sub / AUTH_USER.id), not CLIENTE.id.
+        clienteId: readAuthenticatedClienteUserId(req),
         vendedorId,
         idempotencyKey: readOrdersCreateIdempotencyKey(req, sanitizedBody),
         body: sanitizeAsyncMetadata(sanitizedBody),
@@ -311,11 +312,31 @@ function readOrdersCreateIdempotencyKey(req: Request, body: unknown): string {
   if (idempotencyKey === undefined || idempotencyKey.length === 0) {
     throw new BadRequestException('Idempotency key is required for orders.create');
   }
+  if (hasUnpairedSurrogate(idempotencyKey)) {
+    throw new BadRequestException('Idempotency key must be well-formed UTF-16 for orders.create');
+  }
 
   return idempotencyKey;
 }
 
-function readAuthenticatedClienteId(req: Request): string {
+function hasUnpairedSurrogate(value: string): boolean {
+  for (let index = 0; index < value.length; index++) {
+    const codeUnit = value.charCodeAt(index);
+    if (codeUnit >= 0xd800 && codeUnit <= 0xdbff) {
+      const nextCodeUnit = value.charCodeAt(index + 1);
+      if (index + 1 === value.length || nextCodeUnit < 0xdc00 || nextCodeUnit > 0xdfff) {
+        return true;
+      }
+      index++;
+    } else if (codeUnit >= 0xdc00 && codeUnit <= 0xdfff) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function readAuthenticatedClienteUserId(req: Request): string {
   const user = readAuthenticatedUser(req);
 
   if (typeof user?.sub !== 'string' || user.sub.trim().length === 0) {
@@ -378,5 +399,4 @@ function readDeliveriesIdempotencyKey(req: Request, body: unknown): string {
 
   return idempotencyKey;
 }
-
 

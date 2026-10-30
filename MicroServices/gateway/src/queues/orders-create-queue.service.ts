@@ -13,7 +13,15 @@ export interface EnqueueOrderCreateInput {
 }
 
 export function buildOrdersCreateJobId(clienteId: string, vendedorId: string, idempotencyKey: string): string {
-  return `orders.create:${clienteId}:${vendedorId}:${idempotencyKey}`;
+  // Length-prefix each component so the preimage stays unambiguous even when an
+  // identifier contains a delimiter, then hash to a bounded, colon-free value
+  // that BullMQ accepts as a custom job id.
+  const fingerprint = [clienteId, vendedorId, idempotencyKey]
+    .map((component) => `${component.length}:${component}`)
+    .join('|');
+  const digest = createHash('sha256').update(fingerprint).digest('hex');
+
+  return `orders.create.${digest}`;
 }
 
 export function buildOrdersCreateTrackingId(clienteId: string, vendedorId: string, idempotencyKey: string): string {

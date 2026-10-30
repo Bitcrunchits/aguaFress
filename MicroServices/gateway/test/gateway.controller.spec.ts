@@ -108,6 +108,70 @@ describe('GatewayController', () => {
       }));
     });
 
+    describe('orders.create idempotency key validation', () => {
+      beforeEach(() => {
+        mockResolver.resolve.mockReturnValue({
+          tcpPattern: 'orders.create',
+          transport: 'send',
+          authRequired: true,
+          roles: ['cliente'],
+          asyncQueue: 'orders.create',
+        });
+        mockDispatcher.dispatch.mockResolvedValue({ selectedProvider: { id: 'vendedor-1' } });
+      });
+
+      it.each([
+        ['isolated high surrogate', '\uD800'],
+        ['isolated low surrogate', '\uDC00'],
+        ['embedded high surrogate', 'prefix\uD800suffix'],
+        ['embedded low surrogate', 'prefix\uDC00suffix'],
+      ])('rejects a body key with an %s before enqueue', async (_label, idempotencyKey) => {
+        await expect(controller.handlePostAction(
+          'orders',
+          'create',
+          { idempotencyKey, vendedorId: 'vendedor-1' },
+          {},
+          { headers: {}, user: { sub: 'cliente-1', email: 'c@agua.com', role: 'cliente' } } as never,
+        )).rejects.toThrow(BadRequestException);
+
+        expect(mockOrdersCreateQueue.enqueue).not.toHaveBeenCalled();
+      });
+
+      it('rejects an isolated surrogate in a header before enqueue when invoked directly', async () => {
+        // Node's HTTP client rejects this header value before it reaches the gateway.
+        await expect(controller.handlePostAction(
+          'orders',
+          'create',
+          { vendedorId: 'vendedor-1' },
+          {},
+          {
+            headers: { 'idempotency-key': '\uDC00' },
+            user: { sub: 'cliente-1', email: 'c@agua.com', role: 'cliente' },
+          } as never,
+        )).rejects.toThrow('Idempotency key must be well-formed UTF-16 for orders.create');
+
+        expect(mockDispatcher.dispatch).toHaveBeenCalledTimes(1);
+        expect(mockOrdersCreateQueue.enqueue).not.toHaveBeenCalled();
+      });
+
+      it('accepts matching trimmed header and body keys with a valid surrogate pair and colons', async () => {
+        await controller.handlePostAction(
+          'orders',
+          'create',
+          { idempotencyKey: ' :key:\uD83D\uDE00: ', vendedorId: 'vendedor-1' },
+          {},
+          {
+            headers: { 'idempotency-key': '  :key:\uD83D\uDE00:  ' },
+            user: { sub: 'cliente-1', email: 'c@agua.com', role: 'cliente' },
+          } as never,
+        );
+
+        expect(mockOrdersCreateQueue.enqueue).toHaveBeenCalledWith(expect.objectContaining({
+          idempotencyKey: ':key:\uD83D\uDE00:',
+        }));
+      });
+    });
+
     it('resolves and dispatches PATCH actions', async () => {
       mockResolver.resolve.mockReturnValue({
         tcpPattern: 'users.profile_update',
