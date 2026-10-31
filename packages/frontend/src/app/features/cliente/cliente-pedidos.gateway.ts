@@ -10,4 +10,3 @@ export interface ClientePedidosGateway {
   getOrder(orderId: string): Observable<OrderResponse>;
   getJobStatus(trackingId: string): Observable<OrderJobStatusResponse>;
 }
-
