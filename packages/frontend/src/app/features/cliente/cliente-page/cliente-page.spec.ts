@@ -113,9 +113,10 @@ describe('ClientePage', () => {
 
     expect(element.textContent).toContain('Ana Gómez');
     expect(element.textContent).toContain('Aguas del Sur');
-    const catalog = element.querySelector<HTMLAnchorElement>('.cliente__access-link');
-    expect(catalog?.getAttribute('href')).toBe('/cliente/catalogo');
+    const catalog = element.querySelector<HTMLAnchorElement>('a[href="/cliente/catalogo"]');
     expect(catalog?.textContent?.trim()).toBe('Ver catálogo');
+    const orders = element.querySelector<HTMLAnchorElement>('a[href="/cliente/pedidos"]');
+    expect(orders?.textContent?.trim()).toBe('Ver mis pedidos');
   });
 
   it('does not offer catalog access until a provider is selected', () => {
@@ -123,7 +124,9 @@ describe('ClientePage', () => {
     showSelector.set(true);
     fixture.detectChanges();
 
-    expect(element.querySelector('.cliente__access-link')).toBeNull();
+    expect(element.querySelector('a[href="/cliente/catalogo"]')).toBeNull();
+    const orders = element.querySelector<HTMLAnchorElement>('a[href="/cliente/pedidos"]');
+    expect(orders?.textContent?.trim()).toBe('Ver mis pedidos');
     expect(element.textContent).toContain('Elige un proveedor para continuar');
   });
 

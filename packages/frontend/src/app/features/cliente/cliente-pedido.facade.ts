@@ -14,6 +14,7 @@ import type { ClientePedidoDraft } from './cliente-pedido-draft.contract';
 import { CLIENTE_PEDIDO_GATEWAY } from './cliente-pedido.gateway';
 import { CLIENTE_PROVIDER_READER } from './cliente-provider.store';
 import { CLIENTE_SESSION_READER } from './cliente-session.contract';
+import { CLIENTE_TRACKING_WRITER } from './cliente-tracking.contract';
 
 /** Generates the idempotency key for one confirmation intent. */
 export const CLIENTE_IDEMPOTENCY_KEY_FACTORY = new InjectionToken<() => string>(
@@ -42,6 +43,7 @@ export class ClientePedidoFacade {
   private readonly gateway = inject(CLIENTE_PEDIDO_GATEWAY);
   private readonly providerStore = inject(CLIENTE_PROVIDER_READER);
   private readonly session = inject(CLIENTE_SESSION_READER);
+  private readonly trackingWriter = inject(CLIENTE_TRACKING_WRITER);
   private readonly newKey = inject(CLIENTE_IDEMPOTENCY_KEY_FACTORY);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -108,6 +110,9 @@ export class ClientePedidoFacade {
           }
           this.submitting.set(false);
           this.accepted.set(accepted);
+          // The orders list does not expose trackingId: persist it for the
+          // orders page. `add` is idempotent, so a replayed acceptance is safe.
+          this.trackingWriter.add(accepted.trackingId);
           // The intent completed: the next order must use a fresh key.
           this.pendingKey = null;
           this.pendingFingerprint = null;
