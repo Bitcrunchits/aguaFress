@@ -17,6 +17,7 @@ import { ClienteCarritoLecturaService } from '../cliente-carrito-lectura.service
 import type { ClientePedidoDraft } from '../cliente-pedido-draft.contract';
 import { ClientePedidoService } from '../cliente-pedido.service';
 import { ClienteProviderStateService } from '../cliente-provider-state.service';
+import { ClienteTrackingStore } from '../cliente-tracking.store';
 import { ClienteCarritoPage } from './cliente-carrito-page';
 
 const CART: CartResponse = {
@@ -84,6 +85,7 @@ describe('ClienteCarritoPage', () => {
   let edicion: { updateItem: jasmine.Spy; deleteItem: jasmine.Spy };
   let pedido: { createOrder: jasmine.Spy };
   let providerStore: { read: jasmine.Spy; save: jasmine.Spy; clear: jasmine.Spy };
+  let trackingStore: { add: jasmine.Spy };
 
   beforeEach(async () => {
     auth = {
@@ -102,6 +104,7 @@ describe('ClienteCarritoPage', () => {
       save: jasmine.createSpy('save'),
       clear: jasmine.createSpy('clear'),
     };
+    trackingStore = { add: jasmine.createSpy('add') };
 
     await TestBed.configureTestingModule({
       imports: [ClienteCarritoPage],
@@ -112,6 +115,7 @@ describe('ClienteCarritoPage', () => {
         { provide: ClienteCarritoLecturaService, useValue: lectura },
         { provide: ClienteCarritoEdicionService, useValue: edicion },
         { provide: ClientePedidoService, useValue: pedido },
+        { provide: ClienteTrackingStore, useValue: trackingStore },
       ],
     }).compileComponents();
   });
@@ -234,6 +238,10 @@ describe('ClienteCarritoPage', () => {
     expect(idempotencyKey.length).toBeGreaterThan(0);
     expect(element.textContent).toContain('Pedido recibido');
     expect(element.textContent).toContain('tracking-1');
+    expect(trackingStore.add).toHaveBeenCalledOnceWith('tracking-1');
+
+    const ordersLink = element.querySelector<HTMLAnchorElement>('a[href="/cliente/pedidos"]');
+    expect(ordersLink?.textContent?.trim()).toBe('Ver mis pedidos');
   });
 
   it('does not confirm the order while a cart mutation is in flight', () => {

@@ -161,9 +161,15 @@
   }
 }
 
+.cliente__access-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
 .cliente__access-link {
   display: inline-block;
-  margin-top: 16px;
   text-decoration: none;
 
   &:focus-visible {

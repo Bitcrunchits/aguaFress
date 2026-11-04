@@ -12,6 +12,7 @@ import { CLIENTE_PEDIDO_GATEWAY } from './cliente-pedido.gateway';
 import { ClientePedidoFailure } from './cliente-pedido-error';
 import { CLIENTE_PROVIDER_READER } from './cliente-provider.store';
 import { CLIENTE_SESSION_READER } from './cliente-session.contract';
+import { CLIENTE_TRACKING_WRITER } from './cliente-tracking.contract';
 
 const USER_ID = 'user-1';
 const PROVIDER_ID = 'vendedor-1';
@@ -67,6 +68,7 @@ describe('ClientePedidoFacade', () => {
     currentSession: LoginResponse | null;
     sessionReplacement$: Observable<void>;
   } = { currentSession: SESSION, sessionReplacement$: EMPTY };
+  const trackingWriterStub = { add: jasmine.createSpy('add') };
   let sessionReplacement: Subject<void>;
   let keySequence: number;
 
@@ -83,6 +85,7 @@ describe('ClientePedidoFacade', () => {
     providerStoreStub.read.calls.reset();
     providerStoreStub.read.and.returnValue(PROVIDER_ID);
     providerStoreStub.clear.calls.reset();
+    trackingWriterStub.add.calls.reset();
 
     TestBed.configureTestingModule({
       providers: [
@@ -90,6 +93,7 @@ describe('ClientePedidoFacade', () => {
         { provide: CLIENTE_PEDIDO_GATEWAY, useValue: gatewayStub },
         { provide: CLIENTE_PROVIDER_READER, useValue: providerStoreStub },
         { provide: CLIENTE_SESSION_READER, useValue: authStub },
+        { provide: CLIENTE_TRACKING_WRITER, useValue: trackingWriterStub },
         { provide: CLIENTE_IDEMPOTENCY_KEY_FACTORY, useValue: () => `key-${++keySequence}` },
       ],
     });
@@ -109,6 +113,7 @@ describe('ClientePedidoFacade', () => {
     expect('clienteId' in request).toBeFalse();
     expect(facade.accepted()).toEqual(ACCEPTED);
     expect(facade.submitting()).toBeFalse();
+    expect(trackingWriterStub.add).toHaveBeenCalledOnceWith('tracking-1');
   });
 
   it('returns to the home without submitting when no provider is stored', () => {
@@ -163,6 +168,7 @@ describe('ClientePedidoFacade', () => {
 
     facade.submit(DRAFT, PROVIDER_ID);
     expect(facade.feedback()).toBe(ClientePedidoFailure.Forbidden);
+    expect(trackingWriterStub.add).not.toHaveBeenCalled();
 
     gatewayStub.createOrder.and.returnValue(of(ACCEPTED));
     facade.submit(DRAFT, PROVIDER_ID);
@@ -212,5 +218,6 @@ describe('ClientePedidoFacade', () => {
     pending.next(ACCEPTED);
 
     expect(facade.accepted()).toBeNull();
+    expect(trackingWriterStub.add).not.toHaveBeenCalled();
   });
 });

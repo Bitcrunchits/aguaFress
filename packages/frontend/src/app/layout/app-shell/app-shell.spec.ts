@@ -44,7 +44,7 @@ describe('AppShell', () => {
       ready.next(true);
       fixture.detectChanges();
       const links = element.querySelectorAll('a');
-      expect(links.length).toBe(role === UserRole.CLIENTE ? 3 : 1);
+      expect(links.length).toBe(role === UserRole.CLIENTE ? 4 : 1);
       expect(links[0].getAttribute('href')).toBe(path);
       expect(links[0].textContent?.trim()).toBe('Inicio');
       if (role === UserRole.CLIENTE) {
@@ -52,6 +52,8 @@ describe('AppShell', () => {
         expect(links[1].textContent?.trim()).toBe('Catálogo');
         expect(links[2].getAttribute('href')).toBe('/cliente/carrito');
         expect(links[2].textContent?.trim()).toBe('Carrito');
+        expect(links[3].getAttribute('href')).toBe('/cliente/pedidos');
+        expect(links[3].textContent?.trim()).toBe('Pedidos');
       }
       expect(element.querySelector('.shell__identity')?.textContent).toContain(label);
       const button = element.querySelector('button');
