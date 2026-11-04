@@ -29,9 +29,20 @@ export interface ClientePedidosTrackingGateway {
   getJobStatus(trackingId: string): Observable<OrderJobStatusResponse>;
 }
 
+/**
+ * Detail capability for consumers that only render a single order. The
+ * orders list and the polling view must not depend on this contract.
+ */
+export interface ClientePedidosDetailGateway {
+  getOrder(orderId: string): Observable<OrderResponse>;
+}
+
 export const CLIENTE_PEDIDOS_LIST_GATEWAY = new InjectionToken<ClientePedidosListGateway>(
   'CLIENTE_PEDIDOS_LIST_GATEWAY',
 );
 
 export const CLIENTE_PEDIDOS_TRACKING_GATEWAY =
   new InjectionToken<ClientePedidosTrackingGateway>('CLIENTE_PEDIDOS_TRACKING_GATEWAY');
+
+export const CLIENTE_PEDIDOS_DETAIL_GATEWAY =
+  new InjectionToken<ClientePedidosDetailGateway>('CLIENTE_PEDIDOS_DETAIL_GATEWAY');

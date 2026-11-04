@@ -1,9 +1,11 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
+import type { Route } from '@angular/router';
 import { MetodoPago, OrderEstado, OrderJobStatus } from '@agua/contracts';
 import type { OrderResponse } from '@agua/contracts';
 import { Subject } from 'rxjs';
+import { routes } from '../../../app.routes';
 import { ClientePedidosFacade } from '../cliente-pedidos.facade';
 import {
   ClientePedidosTrackingError,
@@ -12,6 +14,16 @@ import {
 } from '../cliente-pedidos-tracking.facade';
 import { ClientePedidosListError } from '../cliente-pedidos-error';
 import { ClientePedidosPage } from './cliente-pedidos-page';
+
+function findClienteOrderDetailRoute(): Route {
+  const shellRoute = routes.find((route) => route.children !== undefined);
+  const clienteRoute = shellRoute?.children?.find((route) => route.path === 'cliente');
+  const detailRoute = clienteRoute?.children?.find((route) => route.path === 'pedidos/:id');
+  if (detailRoute === undefined) {
+    throw new Error('Cliente order detail route is not declared');
+  }
+  return detailRoute;
+}
 
 const ORDER: OrderResponse = {
   id: 'order-1',
@@ -63,7 +75,7 @@ describe('ClientePedidosPage', () => {
 
     await TestBed.configureTestingModule({
       imports: [ClientePedidosPage],
-      providers: [provideRouter([])],
+      providers: [provideRouter([{ path: 'cliente', children: [findClienteOrderDetailRoute()] }])],
     })
       .overrideComponent(ClientePedidosPage, {
         set: {
@@ -131,6 +143,45 @@ describe('ClientePedidosPage', () => {
     expect(element.textContent).toContain('Pendiente');
     expect(element.querySelector('.cliente__order-total')?.textContent).toContain('2.420');
     expect(element.textContent).toContain('Proveedor: vendedor-1');
+  });
+
+  it('links each loaded order to its detail page', () => {
+    orders.set([ORDER]);
+    fixture.detectChanges();
+
+    const link = element.querySelector<HTMLAnchorElement>(
+      'a[href="/cliente/pedidos/order-1"]',
+    );
+    expect(link?.textContent?.trim()).toBe('Ver pedido P-0001');
+  });
+
+  it('navigates to the order detail route declared by the application', async () => {
+    orders.set([ORDER]);
+    fixture.detectChanges();
+
+    element
+      .querySelector<HTMLAnchorElement>('a[href="/cliente/pedidos/order-1"]')
+      ?.click();
+    await fixture.whenStable();
+
+    expect(TestBed.inject(Router).url).toBe('/cliente/pedidos/order-1');
+  });
+
+  it('does not link tracking cards that have no order id', () => {
+    trackings.set([
+      {
+        trackingId: 'tracking-1',
+        status: OrderJobStatus.PROCESSING,
+        attempts: 1,
+        terminal: false,
+      },
+    ]);
+    fixture.detectChanges();
+
+    const tracking = element.querySelector('.cliente__tracking');
+    expect(tracking).not.toBeNull();
+    expect(tracking?.querySelector('a')).toBeNull();
+    expect(element.querySelector('a[href^="/cliente/pedidos/"]')).toBeNull();
   });
 
   it('renders an em dash when the order date is parseable but not ISO 8601', () => {

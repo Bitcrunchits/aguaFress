@@ -4,6 +4,7 @@ import type { Observable } from 'rxjs';
 import type { OrderJobStatusResponse, OrderResponse } from '@agua/contracts';
 import { API_CONFIG } from '../../core/config/api.config';
 import type {
+  ClientePedidosDetailGateway,
   ClientePedidosGateway,
   ClientePedidosListGateway,
   ClientePedidosTrackingGateway,
@@ -20,7 +21,11 @@ const GET_JOB_STATUS_URL = `${API_CONFIG.baseUrl}/api/v1/orders/job-status`;
  */
 @Injectable({ providedIn: 'root' })
 export class ClientePedidosService
-  implements ClientePedidosGateway, ClientePedidosListGateway, ClientePedidosTrackingGateway
+  implements
+    ClientePedidosGateway,
+    ClientePedidosListGateway,
+    ClientePedidosTrackingGateway,
+    ClientePedidosDetailGateway
 {
   private readonly http = inject(HttpClient);
 
