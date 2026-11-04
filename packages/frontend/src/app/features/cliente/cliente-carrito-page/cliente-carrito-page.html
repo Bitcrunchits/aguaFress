@@ -87,9 +87,7 @@
         <p>Estamos procesando tu pedido. Guarda el número de seguimiento:</p>
         <p class="cliente__tracking">{{ accepted.trackingId }}</p>
         <p class="cliente__meta">Estado: {{ accepted.status }}</p>
-        <p class="cliente__meta">
-          Podrás seguir el estado desde la pantalla de pedidos, disponible próximamente.
-        </p>
+        <a class="cliente__button" routerLink="/cliente/pedidos">Ver mis pedidos</a>
       </div>
     } @else {
       <app-cliente-checkout-form

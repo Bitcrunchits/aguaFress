@@ -113,12 +113,22 @@
       <h2 id="cliente-access-title">Catálogo y pedidos</h2>
       @if (vm.selectedProvider()) {
         <p class="cliente__hint">Explora los productos de tu proveedor y agrégalos al carrito.</p>
-        <a class="cliente__button cliente__access-link" routerLink="/cliente/catalogo">
-          Ver catálogo
-        </a>
       } @else {
         <p class="cliente__hint">Elige un proveedor para continuar.</p>
       }
+      <div class="cliente__access-actions">
+        @if (vm.selectedProvider()) {
+          <a class="cliente__button cliente__access-link" routerLink="/cliente/catalogo">
+            Ver catálogo
+          </a>
+        }
+        <a
+          class="cliente__button cliente__button--secondary cliente__access-link"
+          routerLink="/cliente/pedidos"
+        >
+          Ver mis pedidos
+        </a>
+      </div>
     </section>
   }
 </section>
