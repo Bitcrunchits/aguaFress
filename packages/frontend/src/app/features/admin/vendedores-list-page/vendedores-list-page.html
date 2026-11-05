@@ -2,6 +2,81 @@
   <p class="role-card__eyebrow">Administración</p>
   <h1 id="vendedores-title">Vendedores</h1>
 
+  <div class="vendedores__filters" role="search" aria-label="Filtros de vendedores">
+    <label class="vendedores__field">
+      <span class="vendedores__field-label">Buscar</span>
+      <input
+        id="vendedores-search"
+        type="search"
+        [value]="searchInput()"
+        (input)="onSearchInput($event)"
+        placeholder="Nombre, apellido, email o empresa"
+      />
+    </label>
+
+    <label class="vendedores__field">
+      <span class="vendedores__field-label">Estado</span>
+      <select
+        id="vendedores-estado"
+        [value]="estadoInput() ?? ''"
+        (change)="onEstadoChange($event)"
+      >
+        @for (option of estadoOptions; track option.value) {
+          <option [value]="option.value ?? ''">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+
+    <div class="vendedores__filter-actions">
+      <button
+        pButton
+        id="vendedores-apply"
+        type="button"
+        label="Aplicar filtros"
+        (click)="applyFilters()"
+      ></button>
+      <button
+        pButton
+        id="vendedores-clear"
+        type="button"
+        label="Limpiar"
+        (click)="clearFilters()"
+        [disabled]="!hasActiveFilters()"
+      ></button>
+    </div>
+  </div>
+
+  @if (hasActiveFilters()) {
+    <div class="vendedores__chips" aria-label="Filtros activos">
+      @if (search(); as searchValue) {
+        <span class="vendedores__chip">
+          Búsqueda: {{ searchValue }}
+          <button
+            type="button"
+            class="vendedores__chip-clear"
+            (click)="clearSearch()"
+            aria-label="Quitar filtro de búsqueda"
+          >
+            ×
+          </button>
+        </span>
+      }
+      @if (estado(); as estadoValue) {
+        <span class="vendedores__chip">
+          Estado: {{ estadoLabel(estadoValue) }}
+          <button
+            type="button"
+            class="vendedores__chip-clear"
+            (click)="clearEstado()"
+            aria-label="Quitar filtro de estado"
+          >
+            ×
+          </button>
+        </span>
+      }
+    </div>
+  }
+
   @if (loading()) {
     <p class="vendedores__state" role="status">Cargando vendedores</p>
   } @else if (failed()) {
