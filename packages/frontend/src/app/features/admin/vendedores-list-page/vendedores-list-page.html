@@ -98,6 +98,7 @@
             <th scope="col">Estado</th>
             <th scope="col">Clientes</th>
             <th scope="col">Registro</th>
+            <th scope="col">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -113,6 +114,14 @@
               </td>
               <td>{{ clientesLabel(vendedor.clientesCount) }}</td>
               <td>{{ formatFechaRegistro(vendedor.fechaRegistro) }}</td>
+              <td>
+                <button
+                  pButton
+                  type="button"
+                  label="Cambiar estado"
+                  (click)="openCambiarEstado(vendedor)"
+                ></button>
+              </td>
             </tr>
           }
         </tbody>
@@ -140,5 +149,36 @@
         ></button>
       </nav>
     }
+  }
+
+  @if (dialogOpen() && dialogVendor(); as vendedor) {
+    <app-confirm-dialog
+      title="Cambiar estado de vendedor"
+      [loading]="mutating()"
+      (confirm)="confirmChangeEstado()"
+      (cancel)="cancelChangeEstado()"
+    >
+      <p class="vendedores__dialog-vendor">
+        Vendedor: <strong>{{ nombreCompleto(vendedor) }}</strong>
+      </p>
+
+      <label class="vendedores__dialog-field">
+        <span class="vendedores__field-label">Nuevo estado</span>
+        <select
+          [value]="dialogEstado() ?? ''"
+          (change)="onDialogEstadoChange($event)"
+        >
+          @for (option of changeEstadoOptions; track option) {
+            <option [value]="option">{{ estadoLabel(option) }}</option>
+          }
+        </select>
+      </label>
+
+      <p class="vendedores__dialog-consequence">{{ consequenceText() }}</p>
+
+      @if (mutationError()) {
+        <p class="vendedores__dialog-error" role="alert">{{ mutationError() }}</p>
+      }
+    </app-confirm-dialog>
   }
 </section>
