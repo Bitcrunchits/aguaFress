@@ -1,0 +1,102 @@
+<section class="role-card productos" aria-labelledby="productos-title">
+  <header class="productos__header">
+    <div>
+      <p class="role-card__eyebrow">Vendedor</p>
+      <h1 id="productos-title">Mis productos</h1>
+    </div>
+    <button pButton type="button" label="Nuevo producto" (click)="nuevoProducto()"></button>
+  </header>
+
+  @if (loading()) {
+    <p class="productos__state" role="status">Cargando productos</p>
+  } @else if (failed()) {
+    <div class="productos__state productos__state--error" role="alert">
+      <p>No pudimos cargar los productos. Inténtalo de nuevo en unos segundos.</p>
+      <button pButton type="button" label="Reintentar" (click)="retry()"></button>
+    </div>
+  } @else if (items().length === 0) {
+    <p class="productos__state">No hay productos cargados todavía.</p>
+  } @else {
+    <div class="productos__table-wrap">
+      <table class="productos__table">
+        <caption class="productos__caption">Listado de productos</caption>
+        <thead>
+          <tr>
+            <th scope="col">Producto</th>
+            <th scope="col">Categoría</th>
+            <th scope="col">Precio final</th>
+            <th scope="col">Stock</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (product of items(); track product.id) {
+            <tr>
+              <td>{{ product.nombre }}</td>
+              <td>{{ categoriaLabel(product) }}</td>
+              <td>{{ formatPrice(product.precioFinal) }}</td>
+              <td>{{ product.stock }}</td>
+              <td>
+                <span class="productos__badge" [attr.data-estado]="product.activo ? 'activo' : 'inactivo'">
+                  {{ estadoLabel(product.activo) }}
+                </span>
+              </td>
+              <td class="productos__actions">
+                <button pButton type="button" label="Editar" (click)="editar(product)"></button>
+                @if (product.activo) {
+                  <button
+                    pButton
+                    type="button"
+                    label="Desactivar"
+                    (click)="desactivar(product)"
+                  ></button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (pagination(); as page) {
+      <nav class="productos__pagination" aria-label="Paginación de productos">
+        <button
+          pButton
+          type="button"
+          label="Anterior"
+          (click)="previousPage()"
+          [disabled]="currentPage() <= 1"
+        ></button>
+        <span class="productos__page-indicator" role="status">
+          Página {{ currentPage() }} de {{ page.totalPages }}
+        </span>
+        <button
+          pButton
+          type="button"
+          label="Siguiente"
+          (click)="nextPage()"
+          [disabled]="currentPage() >= page.totalPages"
+        ></button>
+      </nav>
+    }
+  }
+
+  @if (dialogOpen() && dialogProduct(); as product) {
+    <app-confirm-dialog
+      title="Desactivar producto"
+      [loading]="mutating()"
+      (confirm)="confirmarDesactivacion()"
+      (cancel)="cancelarDesactivacion()"
+    >
+      <p class="productos__dialog-product">
+        Producto: <strong>{{ product.nombre }}</strong>
+      </p>
+      <p class="productos__dialog-consequence">{{ consequenceText() }}</p>
+
+      @if (mutationError()) {
+        <p class="productos__dialog-error" role="alert">{{ mutationError() }}</p>
+      }
+    </app-confirm-dialog>
+  }
+</section>
