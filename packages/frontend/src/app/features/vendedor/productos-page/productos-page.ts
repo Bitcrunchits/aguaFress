@@ -24,6 +24,8 @@ export class VendedorProductosPage implements OnInit {
   private readonly productosService = inject(VendedorProductosService);
   private readonly router = inject(Router);
 
+  private loadSequence = 0;
+
   readonly items = signal<ProductResponse[]>([]);
   readonly pagination = signal<PaginationResponse | null>(null);
   readonly currentPage = signal(1);
@@ -54,18 +56,25 @@ export class VendedorProductosPage implements OnInit {
   }
 
   loadPage(page: number): void {
+    const sequence = ++this.loadSequence;
     this.currentPage.set(page);
     this.loading.set(true);
     this.failed.set(false);
 
     this.productosService.list(page, PAGE_SIZE).subscribe({
       next: (response) => {
+        if (sequence !== this.loadSequence) {
+          return;
+        }
         this.items.set(response.data);
         this.pagination.set(response.pagination);
         this.currentPage.set(response.pagination.page);
         this.loading.set(false);
       },
       error: () => {
+        if (sequence !== this.loadSequence) {
+          return;
+        }
         this.failed.set(true);
         this.loading.set(false);
       },

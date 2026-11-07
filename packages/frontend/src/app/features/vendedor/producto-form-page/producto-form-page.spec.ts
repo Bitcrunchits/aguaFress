@@ -73,6 +73,7 @@ describe('VendedorProductoFormPage', () => {
           provide: ActivatedRoute,
           useValue: {
             snapshot: { paramMap: convertToParamMap(routeId === null ? {} : { id: routeId }) },
+            paramMap: of(convertToParamMap(routeId === null ? {} : { id: routeId })),
           },
         },
         { provide: VendedorCatalogoService, useValue: catalogoServiceStub },

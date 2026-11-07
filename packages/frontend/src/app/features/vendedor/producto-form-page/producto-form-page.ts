@@ -1,4 +1,5 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import type { AbstractControl, ValidationErrors } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -52,10 +53,9 @@ export class VendedorProductoFormPage implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly formBuilder = inject(FormBuilder);
+  private readonly destroyRef = inject(DestroyRef);
 
-  private readonly productId = signal<string | null>(
-    this.route.snapshot.paramMap.get('id') ?? null,
-  );
+  private readonly productId = signal<string | null>(null);
   readonly isEdit = computed(() => this.productId() !== null);
 
   readonly categorias = signal<CategoriaResponse[]>([]);
@@ -86,10 +86,14 @@ export class VendedorProductoFormPage implements OnInit {
   });
 
   ngOnInit(): void {
-    this.bootstrap();
+    this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      this.productId.set(params.get('id'));
+      this.bootstrap();
+    });
   }
 
   private bootstrap(): void {
+    this.form.reset();
     this.lookupsLoading.set(true);
     this.lookupsFailed.set(false);
 
