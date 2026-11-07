@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { VendedorEstado } from '@agua/contracts';
 import type {
   PaginationResponse,
@@ -16,6 +16,11 @@ const ESTADO_LABELS: Record<VendedorEstado, string> = {
   [VendedorEstado.INACTIVO]: 'Inactivo',
   [VendedorEstado.BLOQUEADO]: 'Bloqueado',
 };
+
+interface EstadoOption {
+  value: VendedorEstado | null;
+  label: string;
+}
 
 /**
  * Admin vendedores list for the gateway `vendedores.list` action. Cells
@@ -38,6 +43,26 @@ export class VendedoresListPage implements OnInit {
   readonly loading = signal(false);
   readonly failed = signal(false);
 
+  // Applied filters: what the list request actually sends. Only non-empty
+  // values are included in the payload (see loadPage below).
+  readonly search = signal('');
+  readonly estado = signal<VendedorEstado | null>(null);
+
+  // Draft filters: what the user is typing/selecting before hitting
+  // "Aplicar filtros". Committed into the applied signals by applyFilters().
+  readonly searchInput = signal('');
+  readonly estadoInput = signal<VendedorEstado | null>(null);
+
+  readonly estadoOptions: EstadoOption[] = [
+    { value: null, label: 'Todos' },
+    { value: VendedorEstado.PENDIENTE, label: ESTADO_LABELS[VendedorEstado.PENDIENTE] },
+    { value: VendedorEstado.ACTIVO, label: ESTADO_LABELS[VendedorEstado.ACTIVO] },
+    { value: VendedorEstado.INACTIVO, label: ESTADO_LABELS[VendedorEstado.INACTIVO] },
+    { value: VendedorEstado.BLOQUEADO, label: ESTADO_LABELS[VendedorEstado.BLOQUEADO] },
+  ];
+
+  readonly hasActiveFilters = computed(() => this.search() !== '' || this.estado() !== null);
+
   ngOnInit(): void {
     this.loadPage(1);
   }
@@ -50,6 +75,15 @@ export class VendedoresListPage implements OnInit {
     this.failed.set(false);
 
     const filters: SuperAdminVendedorListFilters = { page, limit: PAGE_SIZE };
+    const search = this.search();
+    if (search !== '') {
+      filters.search = search;
+    }
+    const estado = this.estado();
+    if (estado !== null) {
+      filters.estado = estado;
+    }
+
     this.vendedoresService.list(filters).subscribe({
       next: (response) => {
         this.items.set(response.data);
@@ -66,6 +100,42 @@ export class VendedoresListPage implements OnInit {
 
   retry(): void {
     this.loadPage(this.currentPage());
+  }
+
+  onSearchInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.searchInput.set(input.value);
+  }
+
+  onEstadoChange(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    this.estadoInput.set(select.value === '' ? null : (select.value as VendedorEstado));
+  }
+
+  applyFilters(): void {
+    this.search.set(this.searchInput().trim());
+    this.estado.set(this.estadoInput());
+    this.loadPage(1);
+  }
+
+  clearFilters(): void {
+    this.search.set('');
+    this.searchInput.set('');
+    this.estado.set(null);
+    this.estadoInput.set(null);
+    this.loadPage(1);
+  }
+
+  clearSearch(): void {
+    this.search.set('');
+    this.searchInput.set('');
+    this.loadPage(1);
+  }
+
+  clearEstado(): void {
+    this.estado.set(null);
+    this.estadoInput.set(null);
+    this.loadPage(1);
   }
 
   previousPage(): void {

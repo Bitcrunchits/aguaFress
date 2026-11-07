@@ -1,3 +1,68 @@
+.vendedores__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.vendedores__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vendedores__field-label {
+  color: var(--slate-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.vendedores__field input,
+.vendedores__field select {
+  min-width: 180px;
+  padding: 8px 12px;
+  border: 1px solid var(--line-soft);
+  background: var(--ice-surface);
+  color: var(--agua-primary-dark);
+  font-size: 0.95rem;
+}
+
+.vendedores__filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.vendedores__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.vendedores__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background: var(--ice-surface);
+  color: var(--agua-primary-dark);
+  font-size: 0.85rem;
+}
+
+.vendedores__chip-clear {
+  border: 0;
+  padding: 0 2px;
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
 .vendedores__state {
   margin: 24px 0 0;
   color: var(--slate-muted);

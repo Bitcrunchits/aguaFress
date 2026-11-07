@@ -103,7 +103,9 @@ describe('VendedoresListPage', () => {
     fixture.detectChanges();
     expect(element.textContent).toContain('No pudimos cargar los vendedores');
 
-    const retryButton = element.querySelector<HTMLButtonElement>('button');
+    const retryButton = element.querySelector<HTMLButtonElement>(
+      '.vendedores__state--error button',
+    );
     retryButton?.click();
     fixture.detectChanges();
 
@@ -120,12 +122,16 @@ describe('VendedoresListPage', () => {
     );
 
     fixture.detectChanges();
-    const next = element.querySelectorAll<HTMLButtonElement>('button')[1];
+    const next = element.querySelectorAll<HTMLButtonElement>(
+      '.vendedores__pagination button',
+    )[1];
     next.click();
     fixture.detectChanges();
     expect(element.textContent).toContain('No pudimos cargar los vendedores');
 
-    element.querySelector<HTMLButtonElement>('button')?.click();
+    element
+      .querySelector<HTMLButtonElement>('.vendedores__state--error button')
+      ?.click();
     fixture.detectChanges();
 
     expect(serviceStub.list).toHaveBeenCalledTimes(3);
@@ -141,7 +147,9 @@ describe('VendedoresListPage', () => {
 
     fixture.detectChanges();
 
-    let [previous, next] = element.querySelectorAll<HTMLButtonElement>('button');
+    let [previous, next] = element.querySelectorAll<HTMLButtonElement>(
+      '.vendedores__pagination button',
+    );
     expect(element.textContent).toContain('Página 1 de 2');
     expect(previous.disabled).toBeTrue();
     expect(next.disabled).toBeFalse();
@@ -151,7 +159,9 @@ describe('VendedoresListPage', () => {
 
     expect(serviceStub.list.calls.mostRecent().args).toEqual([{ page: 2, limit: 10 }]);
     expect(element.textContent).toContain('Página 2 de 2');
-    [previous, next] = element.querySelectorAll<HTMLButtonElement>('button');
+    [previous, next] = element.querySelectorAll<HTMLButtonElement>(
+      '.vendedores__pagination button',
+    );
     expect(previous.disabled).toBeFalse();
     expect(next.disabled).toBeTrue();
   });
@@ -173,5 +183,130 @@ describe('VendedoresListPage', () => {
     expect(cells[2].textContent?.trim()).toBe('—');
     expect(cells[4].textContent?.trim()).toBe('—');
     expect(cells[5].textContent?.trim()).toBe('—');
+  });
+
+  it('sends the search filter when applied', () => {
+    serviceStub.list.and.returnValue(of(pageResponse([VENDEDOR])));
+
+    fixture.detectChanges();
+
+    const searchInput = element.querySelector<HTMLInputElement>('#vendedores-search')!;
+    searchInput.value = 'ana';
+    searchInput.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    element.querySelector<HTMLButtonElement>('#vendedores-apply')!.click();
+    fixture.detectChanges();
+
+    expect(serviceStub.list.calls.mostRecent().args).toEqual([
+      { page: 1, limit: 10, search: 'ana' },
+    ]);
+  });
+
+  it('sends the estado filter when applied', () => {
+    serviceStub.list.and.returnValue(of(pageResponse([VENDEDOR])));
+
+    fixture.detectChanges();
+
+    const select = element.querySelector<HTMLSelectElement>('#vendedores-estado')!;
+    select.value = VendedorEstado.INACTIVO;
+    select.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    element.querySelector<HTMLButtonElement>('#vendedores-apply')!.click();
+    fixture.detectChanges();
+
+    expect(serviceStub.list.calls.mostRecent().args).toEqual([
+      { page: 1, limit: 10, estado: VendedorEstado.INACTIVO },
+    ]);
+  });
+
+  it('resets to page 1 when filters are applied from page 2', () => {
+    serviceStub.list.and.returnValues(
+      of(pageResponse([VENDEDOR], 1, 3)),
+      of(pageResponse([{ ...VENDEDOR, id: 'vendedor-2' }], 2, 3)),
+      of(pageResponse([VENDEDOR], 1, 3)),
+    );
+
+    fixture.detectChanges();
+
+    element.querySelectorAll<HTMLButtonElement>('.vendedores__pagination button')[1].click();
+    fixture.detectChanges();
+    expect(element.textContent).toContain('Página 2 de 3');
+
+    const searchInput = element.querySelector<HTMLInputElement>('#vendedores-search')!;
+    searchInput.value = 'ana';
+    searchInput.dispatchEvent(new Event('input'));
+    element.querySelector<HTMLButtonElement>('#vendedores-apply')!.click();
+    fixture.detectChanges();
+
+    expect(serviceStub.list.calls.mostRecent().args).toEqual([
+      { page: 1, limit: 10, search: 'ana' },
+    ]);
+    expect(element.textContent).toContain('Página 1 de 3');
+  });
+
+  it('sends only page and limit when filters are cleared', () => {
+    serviceStub.list.and.returnValue(of(pageResponse([VENDEDOR])));
+
+    fixture.detectChanges();
+
+    const searchInput = element.querySelector<HTMLInputElement>('#vendedores-search')!;
+    searchInput.value = 'ana';
+    searchInput.dispatchEvent(new Event('input'));
+    const select = element.querySelector<HTMLSelectElement>('#vendedores-estado')!;
+    select.value = VendedorEstado.INACTIVO;
+    select.dispatchEvent(new Event('change'));
+    element.querySelector<HTMLButtonElement>('#vendedores-apply')!.click();
+    fixture.detectChanges();
+
+    expect(serviceStub.list.calls.mostRecent().args).toEqual([
+      { page: 1, limit: 10, search: 'ana', estado: VendedorEstado.INACTIVO },
+    ]);
+
+    element.querySelector<HTMLButtonElement>('#vendedores-clear')!.click();
+    fixture.detectChanges();
+
+    expect(serviceStub.list.calls.mostRecent().args).toEqual([{ page: 1, limit: 10 }]);
+  });
+
+  it('renders active-filter chips and clears them individually', () => {
+    serviceStub.list.and.returnValue(of(pageResponse([VENDEDOR])));
+
+    fixture.detectChanges();
+
+    const searchInput = element.querySelector<HTMLInputElement>('#vendedores-search')!;
+    searchInput.value = 'ana';
+    searchInput.dispatchEvent(new Event('input'));
+    const select = element.querySelector<HTMLSelectElement>('#vendedores-estado')!;
+    select.value = VendedorEstado.ACTIVO;
+    select.dispatchEvent(new Event('change'));
+    element.querySelector<HTMLButtonElement>('#vendedores-apply')!.click();
+    fixture.detectChanges();
+
+    const chips = element.querySelector('.vendedores__chips');
+    expect(chips).not.toBeNull();
+    expect(chips!.textContent).toContain('Búsqueda: ana');
+    expect(chips!.textContent).toContain('Estado: Activo');
+
+    const estadoChipClear = element.querySelector<HTMLButtonElement>(
+      'button[aria-label="Quitar filtro de estado"]',
+    );
+    estadoChipClear!.click();
+    fixture.detectChanges();
+
+    expect(serviceStub.list.calls.mostRecent().args).toEqual([
+      { page: 1, limit: 10, search: 'ana' },
+    ]);
+    expect(element.textContent).not.toContain('Estado: Activo');
+  });
+
+  it('disables the Limpiar button when no filters are active', () => {
+    serviceStub.list.and.returnValue(of(pageResponse([VENDEDOR])));
+
+    fixture.detectChanges();
+
+    const clearButton = element.querySelector<HTMLButtonElement>('#vendedores-clear')!;
+    expect(clearButton.disabled).toBeTrue();
   });
 });
