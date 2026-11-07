@@ -71,4 +71,13 @@ describe('LoginPage', () => {
     expect(page.errorMessage()).toBe('No pudimos iniciar sesión. Inténtalo de nuevo en unos segundos.');
     expect(router.navigate).not.toHaveBeenCalled();
   });
+
+  it('links to the seller registration page', () => {
+    const fixture = TestBed.createComponent(LoginPage);
+    fixture.detectChanges();
+
+    const link = fixture.nativeElement.querySelector('a[href="/auth/register-seller"]');
+
+    expect(link).not.toBeNull();
+  });
 });

@@ -89,6 +89,19 @@
   width: 100%;
 }
 
+.login-card__register {
+  margin: 24px 0 0;
+  color: var(--slate-muted);
+  font-size: 0.9rem;
+  text-align: center;
+
+  a {
+    color: var(--agua-primary-dark);
+    font-weight: 600;
+    text-underline-offset: 3px;
+  }
+}
+
 .login-brand {
   display: none;
 }

@@ -1,0 +1,166 @@
+<main class="register-layout">
+  @if (registered()) {
+    <section class="register-card" aria-labelledby="register-success-title">
+      <p class="register-card__eyebrow">AguaFress</p>
+      <h1 id="register-success-title">Solicitud recibida</h1>
+      <p class="register-card__help">Tu cuenta quedó pendiente de aprobación.</p>
+      <a class="register-card__link" href="/auth/login">Volver al inicio de sesión</a>
+    </section>
+  } @else {
+    <section class="register-card" aria-labelledby="register-title">
+      <p class="register-card__eyebrow">AguaFress</p>
+      <h1 id="register-title">Crear cuenta de vendedor</h1>
+      <p class="register-card__help">Completa tus datos para solicitar el alta como vendedor.</p>
+
+      <form class="register-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        @if (errorMessage(); as message) {
+          <p class="register-form__error" role="alert">{{ message }}</p>
+        }
+
+        <div class="register-field">
+          <label for="register-email">Correo electrónico</label>
+          <input
+            id="register-email"
+            type="email"
+            formControlName="email"
+            autocomplete="email"
+            placeholder="nombre@ejemplo.com"
+            [attr.aria-invalid]="emailHintVisible"
+          />
+          @if (emailHintVisible) {
+            <span class="register-field__hint">Ingresa un correo electrónico válido.</span>
+          }
+        </div>
+
+        <div class="register-field">
+          <label for="register-email-confirmation">Confirma tu correo electrónico</label>
+          <input
+            id="register-email-confirmation"
+            type="email"
+            formControlName="emailConfirmation"
+            autocomplete="email"
+            placeholder="nombre@ejemplo.com"
+            [attr.aria-invalid]="emailConfirmationHintVisible"
+          />
+          @if (emailConfirmationHintVisible) {
+            <span class="register-field__hint">{{ emailConfirmationHint }}</span>
+          }
+        </div>
+
+        <div class="register-field">
+          <label for="register-password">Contraseña</label>
+          <input
+            id="register-password"
+            type="password"
+            formControlName="password"
+            autocomplete="new-password"
+            [attr.aria-invalid]="passwordHintVisible"
+          />
+          @if (passwordHintVisible) {
+            <span class="register-field__hint"
+              >La contraseña debe tener al menos 8 caracteres.</span
+            >
+          }
+        </div>
+
+        <div class="register-field">
+          <label for="register-nombre">Nombre</label>
+          <input
+            id="register-nombre"
+            type="text"
+            formControlName="nombre"
+            autocomplete="given-name"
+            [attr.aria-invalid]="nombreHintVisible"
+          />
+          @if (nombreHintVisible) {
+            <span class="register-field__hint">Ingresa tu nombre.</span>
+          }
+        </div>
+
+        <div class="register-field">
+          <label for="register-apellido">Apellido</label>
+          <input
+            id="register-apellido"
+            type="text"
+            formControlName="apellido"
+            autocomplete="family-name"
+            [attr.aria-invalid]="apellidoHintVisible"
+          />
+          @if (apellidoHintVisible) {
+            <span class="register-field__hint">Ingresa tu apellido.</span>
+          }
+        </div>
+
+        <div class="register-field">
+          <label for="register-dni">DNI</label>
+          <input
+            id="register-dni"
+            type="text"
+            inputmode="numeric"
+            maxlength="8"
+            formControlName="dni"
+            autocomplete="off"
+            [attr.aria-invalid]="dniHintVisible"
+          />
+          @if (dniHintVisible) {
+            <span class="register-field__hint">El DNI debe tener 8 dígitos.</span>
+          }
+        </div>
+
+        <div class="register-field">
+          <label for="register-telefono">Teléfono</label>
+          <input
+            id="register-telefono"
+            type="tel"
+            formControlName="telefono"
+            autocomplete="tel"
+            [attr.aria-invalid]="telefonoHintVisible"
+          />
+          @if (telefonoHintVisible) {
+            <span class="register-field__hint">Ingresa tu teléfono.</span>
+          }
+        </div>
+
+        <div class="register-field">
+          <label for="register-ciudad">Ciudad</label>
+          <input
+            id="register-ciudad"
+            type="text"
+            formControlName="ciudad"
+            autocomplete="address-level2"
+            [attr.aria-invalid]="ciudadHintVisible"
+          />
+          @if (ciudadHintVisible) {
+            <span class="register-field__hint">Ingresa tu ciudad.</span>
+          }
+        </div>
+
+        <div class="register-field">
+          <label for="register-empresa">Empresa (opcional)</label>
+          <input
+            id="register-empresa"
+            type="text"
+            formControlName="empresa"
+            autocomplete="organization"
+            [attr.aria-invalid]="empresaHintVisible"
+          />
+          @if (empresaHintVisible) {
+            <span class="register-field__hint"
+              >La empresa no puede superar los 255 caracteres.</span
+            >
+          }
+        </div>
+
+        <button
+          pButton
+          type="submit"
+          class="register-form__submit"
+          label="Enviar solicitud"
+          icon="pi pi-user-plus"
+          [loading]="submitting()"
+          [disabled]="submitting()"
+        ></button>
+      </form>
+    </section>
+  }
+</main>
