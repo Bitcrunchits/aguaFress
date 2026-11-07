@@ -104,3 +104,7 @@ export interface CategoriaResponse {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface CreateCategoriaRequest {
+  nombre: string;
+}
