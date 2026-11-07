@@ -160,3 +160,38 @@
   color: var(--slate-muted);
   font-size: 0.9rem;
 }
+
+.vendedores__dialog-vendor {
+  margin: 0 0 16px;
+  color: var(--slate-muted);
+
+  strong {
+    color: var(--slate-ink);
+  }
+}
+
+.vendedores__dialog-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+
+  select {
+    min-width: 180px;
+    padding: 8px 12px;
+    border: 1px solid var(--line-soft);
+    background: var(--ice-surface);
+    color: var(--agua-primary-dark);
+    font-size: 0.95rem;
+  }
+}
+
+.vendedores__dialog-consequence {
+  margin: 0;
+  color: var(--slate-muted);
+}
+
+.vendedores__dialog-error {
+  margin: 16px 0 0;
+  color: var(--route-danger);
+}

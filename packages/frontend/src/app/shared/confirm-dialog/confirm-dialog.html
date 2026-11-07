@@ -1,0 +1,35 @@
+<div class="confirm-dialog__backdrop">
+  <div
+    #dialog
+    class="confirm-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="confirm-dialog-title"
+    tabindex="-1"
+  >
+    <h2 id="confirm-dialog-title" class="confirm-dialog__title">{{ title() }}</h2>
+
+    <div class="confirm-dialog__body">
+      <ng-content></ng-content>
+    </div>
+
+    <div class="confirm-dialog__actions">
+      <button
+        type="button"
+        class="confirm-dialog__button confirm-dialog__button--cancel"
+        [disabled]="loading()"
+        (click)="cancel.emit()"
+      >
+        {{ cancelLabel() }}
+      </button>
+      <button
+        type="button"
+        class="confirm-dialog__button confirm-dialog__button--confirm"
+        [disabled]="loading()"
+        (click)="confirm.emit()"
+      >
+        {{ confirmLabel() }}
+      </button>
+    </div>
+  </div>
+</div>

@@ -6,6 +6,7 @@ import type {
   SuperAdminVendedorListFilters,
 } from '@agua/contracts';
 import { ButtonModule } from 'primeng/button';
+import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog';
 import { AdminVendedoresService } from '../admin-vendedores.service';
 
 const PAGE_SIZE = 10;
@@ -30,7 +31,7 @@ interface EstadoOption {
  */
 @Component({
   selector: 'app-vendedores-list-page',
-  imports: [ButtonModule],
+  imports: [ButtonModule, ConfirmDialogComponent],
   templateUrl: './vendedores-list-page.html',
   styleUrl: './vendedores-list-page.scss',
 })
@@ -62,6 +63,29 @@ export class VendedoresListPage implements OnInit {
   ];
 
   readonly hasActiveFilters = computed(() => this.search() !== '' || this.estado() !== null);
+
+  // Estado-change dialog state. Valid targets are the operational states
+  // only; `pendiente` is never offered as a target.
+  readonly changeEstadoOptions: VendedorEstado[] = [
+    VendedorEstado.ACTIVO,
+    VendedorEstado.INACTIVO,
+    VendedorEstado.BLOQUEADO,
+  ];
+
+  readonly dialogOpen = signal(false);
+  readonly dialogVendor = signal<SuperAdminVendedorItem | null>(null);
+  readonly dialogEstado = signal<VendedorEstado | null>(null);
+  readonly mutating = signal(false);
+  readonly mutationError = signal<string | null>(null);
+
+  readonly consequenceText = computed(() => {
+    const vendor = this.dialogVendor();
+    const target = this.dialogEstado();
+    if (vendor === null || target === null) {
+      return '';
+    }
+    return `Se cambiará el estado de ${this.nombreCompleto(vendor)} de ${this.estadoLabel(vendor.estado)} a ${this.estadoLabel(target)}.`;
+  });
 
   ngOnInit(): void {
     this.loadPage(1);
@@ -136,6 +160,60 @@ export class VendedoresListPage implements OnInit {
     this.estado.set(null);
     this.estadoInput.set(null);
     this.loadPage(1);
+  }
+
+  openCambiarEstado(vendedor: SuperAdminVendedorItem): void {
+    this.dialogVendor.set(vendedor);
+    this.dialogEstado.set(vendedor.estado);
+    this.mutationError.set(null);
+    this.dialogOpen.set(true);
+  }
+
+  onDialogEstadoChange(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    this.dialogEstado.set(select.value as VendedorEstado);
+  }
+
+  confirmChangeEstado(): void {
+    const vendor = this.dialogVendor();
+    const target = this.dialogEstado();
+    if (vendor === null || target === null || this.mutating()) {
+      return;
+    }
+
+    this.mutating.set(true);
+    this.mutationError.set(null);
+
+    this.vendedoresService.changeEstado(vendor.id, { estado: target }).subscribe({
+      next: (response) => {
+        this.updateItemEstado(vendor.id, response.estadoNuevo);
+        this.mutating.set(false);
+        this.closeDialog();
+      },
+      error: () => {
+        this.mutating.set(false);
+        this.mutationError.set(
+          'No pudimos cambiar el estado. Inténtalo de nuevo en unos segundos.',
+        );
+      },
+    });
+  }
+
+  cancelChangeEstado(): void {
+    this.closeDialog();
+  }
+
+  private closeDialog(): void {
+    this.dialogOpen.set(false);
+    this.dialogVendor.set(null);
+    this.dialogEstado.set(null);
+    this.mutationError.set(null);
+  }
+
+  private updateItemEstado(id: string, estado: VendedorEstado): void {
+    this.items.update((items) =>
+      items.map((item) => (item.id === id ? { ...item, estado } : item)),
+    );
   }
 
   previousPage(): void {

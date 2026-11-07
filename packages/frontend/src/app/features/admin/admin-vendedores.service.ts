@@ -1,13 +1,16 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { VendedorEstado } from '@agua/contracts';
 import type {
+  SuperAdminAccionResponse,
   SuperAdminVendedorListFilters,
   SuperAdminVendedorListResponse,
 } from '@agua/contracts';
 import { API_CONFIG } from '../../core/config/api.config';
 
 const VENDEDORES_LIST_URL = `${API_CONFIG.baseUrl}/api/v1/vendedores/list`;
+const VENDEDORES_CHANGE_ESTADO_URL = `${API_CONFIG.baseUrl}/api/v1/vendedores/change-estado`;
 
 /**
  * Super-admin vendedores list against the gateway `vendedores.list` action.
@@ -26,6 +29,21 @@ export class AdminVendedoresService {
     return this.http.post<SuperAdminVendedorListResponse>(VENDEDORES_LIST_URL, filters, {
       params: mirrorFiltersAsQueryParams(filters),
     });
+  }
+
+  /**
+   * Change a vendedor's estado against the gateway `vendedores.change-estado`
+   * action. The id travels in the path and the target estado in the JSON body,
+   * matching the HTTP contract `PATCH /api/v1/vendedores/change-estado/{id}`.
+   */
+  changeEstado(
+    id: string,
+    body: { estado: VendedorEstado },
+  ): Observable<SuperAdminAccionResponse> {
+    return this.http.patch<SuperAdminAccionResponse>(
+      `${VENDEDORES_CHANGE_ESTADO_URL}/${id}`,
+      body,
+    );
   }
 }
 

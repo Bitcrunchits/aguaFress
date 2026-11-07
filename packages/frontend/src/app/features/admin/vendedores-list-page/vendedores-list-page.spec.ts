@@ -29,10 +29,14 @@ function pageResponse(
 describe('VendedoresListPage', () => {
   let fixture: ComponentFixture<VendedoresListPage>;
   let element: HTMLElement;
-  const serviceStub = { list: jasmine.createSpy('list') };
+  const serviceStub = {
+    list: jasmine.createSpy('list'),
+    changeEstado: jasmine.createSpy('changeEstado'),
+  };
 
   beforeEach(async () => {
     serviceStub.list.calls.reset();
+    serviceStub.changeEstado.calls.reset();
     await TestBed.configureTestingModule({
       imports: [VendedoresListPage],
       providers: [{ provide: AdminVendedoresService, useValue: serviceStub }],
@@ -308,5 +312,121 @@ describe('VendedoresListPage', () => {
 
     const clearButton = element.querySelector<HTMLButtonElement>('#vendedores-clear')!;
     expect(clearButton.disabled).toBeTrue();
+  });
+
+  function openDialog(): void {
+    element.querySelector<HTMLButtonElement>('tbody tr button')!.click();
+    fixture.detectChanges();
+  }
+
+  function confirmButton(): HTMLButtonElement {
+    return element.querySelector<HTMLButtonElement>('.confirm-dialog__button--confirm')!;
+  }
+
+  it('opens the confirmation dialog naming the vendor', () => {
+    serviceStub.list.and.returnValue(of(pageResponse([VENDEDOR])));
+    fixture.detectChanges();
+
+    openDialog();
+
+    const dialog = element.querySelector('.confirm-dialog');
+    expect(dialog).not.toBeNull();
+    expect(dialog!.textContent).toContain('Ana Gómez');
+    expect(dialog!.textContent).toContain('Activo');
+  });
+
+  it('calls changeEstado with the selected estado on confirm', () => {
+    serviceStub.list.and.returnValue(of(pageResponse([VENDEDOR])));
+    serviceStub.changeEstado.and.returnValue(
+      of({
+        vendedorId: 'vendedor-1',
+        estadoAnterior: VendedorEstado.ACTIVO,
+        estadoNuevo: VendedorEstado.INACTIVO,
+        updated: true,
+      }),
+    );
+    fixture.detectChanges();
+
+    openDialog();
+
+    const select = element.querySelector<HTMLSelectElement>(
+      '.vendedores__dialog-field select',
+    )!;
+    select.value = VendedorEstado.INACTIVO;
+    select.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    confirmButton().click();
+    fixture.detectChanges();
+
+    expect(serviceStub.changeEstado).toHaveBeenCalledWith('vendedor-1', {
+      estado: VendedorEstado.INACTIVO,
+    });
+  });
+
+  it('updates the row estado on success without a full reload', () => {
+    serviceStub.list.and.returnValue(of(pageResponse([VENDEDOR])));
+    serviceStub.changeEstado.and.returnValue(
+      of({
+        vendedorId: 'vendedor-1',
+        estadoAnterior: VendedorEstado.ACTIVO,
+        estadoNuevo: VendedorEstado.BLOQUEADO,
+        updated: true,
+      }),
+    );
+    fixture.detectChanges();
+
+    openDialog();
+
+    const select = element.querySelector<HTMLSelectElement>(
+      '.vendedores__dialog-field select',
+    )!;
+    select.value = VendedorEstado.BLOQUEADO;
+    select.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    confirmButton().click();
+    fixture.detectChanges();
+
+    // The row reflects the new estado, the dialog is closed, and the list
+    // was not re-requested.
+    expect(element.textContent).toContain('Bloqueado');
+    expect(element.querySelector('.confirm-dialog')).toBeNull();
+    expect(serviceStub.list).toHaveBeenCalledTimes(1);
+  });
+
+  it('surfaces an error and keeps the previous estado on failure', () => {
+    serviceStub.list.and.returnValue(of(pageResponse([VENDEDOR])));
+    serviceStub.changeEstado.and.returnValue(throwError(() => new Error('boom')));
+    fixture.detectChanges();
+
+    openDialog();
+    confirmButton().click();
+    fixture.detectChanges();
+
+    expect(element.querySelector('.vendedores__dialog-error')).not.toBeNull();
+    expect(element.textContent).toContain('No pudimos cambiar el estado');
+    // Dialog stays open and the row is untouched.
+    expect(element.querySelector('.confirm-dialog')).not.toBeNull();
+    expect(element.textContent).toContain('Activo');
+  });
+
+  it('prevents a double submit while the mutation is in flight', () => {
+    serviceStub.list.and.returnValue(of(pageResponse([VENDEDOR])));
+    serviceStub.changeEstado.and.returnValue(pendingList());
+    fixture.detectChanges();
+
+    openDialog();
+
+    const button = confirmButton();
+    button.click();
+    fixture.detectChanges();
+
+    expect(button.disabled).toBeTrue();
+
+    button.click();
+    fixture.detectChanges();
+
+    expect(serviceStub.changeEstado).toHaveBeenCalledTimes(1);
   });
 });
