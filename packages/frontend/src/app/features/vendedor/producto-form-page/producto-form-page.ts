@@ -1,4 +1,5 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import type { AbstractControl, ValidationErrors } from '@angular/forms';
@@ -43,7 +44,7 @@ function maxTwoDecimals(control: AbstractControl): ValidationErrors | null {
  */
 @Component({
   selector: 'app-producto-form-page',
-  imports: [ReactiveFormsModule, ButtonModule],
+  imports: [ReactiveFormsModule, ButtonModule, NgTemplateOutlet],
   templateUrl: './producto-form-page.html',
   styleUrl: './producto-form-page.scss',
 })
@@ -66,6 +67,17 @@ export class VendedorProductoFormPage implements OnInit {
   readonly productFailed = signal(false);
   readonly submitting = signal(false);
   readonly submitError = signal<string | null>(null);
+
+  readonly categoriaFormOpen = signal(false);
+  readonly creatingCategoria = signal(false);
+  readonly categoriaCreateError = signal<string | null>(null);
+  readonly categoriaCreatedMessage = signal<string | null>(null);
+
+  readonly nuevaCategoriaNombre = this.formBuilder.nonNullable.control('', [
+    nonBlankText,
+    Validators.minLength(2),
+    Validators.maxLength(255),
+  ]);
 
   readonly form = this.formBuilder.nonNullable.group({
     nombre: ['', [nonBlankText, Validators.minLength(2), Validators.maxLength(255)]],
@@ -169,6 +181,58 @@ export class VendedorProductoFormPage implements OnInit {
     this.lookupsFailed.set(false);
     this.productFailed.set(false);
     this.bootstrap();
+  }
+
+  abrirCategoriaForm(): void {
+    this.nuevaCategoriaNombre.reset();
+    this.categoriaCreateError.set(null);
+    this.categoriaCreatedMessage.set(null);
+    this.categoriaFormOpen.set(true);
+  }
+
+  cancelarCategoria(): void {
+    this.categoriaFormOpen.set(false);
+    this.nuevaCategoriaNombre.reset();
+    this.categoriaCreateError.set(null);
+  }
+
+  crearCategoria(): void {
+    if (this.creatingCategoria()) {
+      return;
+    }
+    if (this.nuevaCategoriaNombre.invalid) {
+      this.nuevaCategoriaNombre.markAsTouched();
+      return;
+    }
+
+    const nombre = this.nuevaCategoriaNombre.value.trim();
+    this.creatingCategoria.set(true);
+    this.categoriaCreateError.set(null);
+
+    this.catalogoService.createCategoria({ nombre }).subscribe({
+      next: (categoria) => this.onCategoriaCreated(categoria),
+      error: () => {
+        this.creatingCategoria.set(false);
+        this.categoriaCreateError.set(
+          'No pudimos crear la categoría. Inténtalo de nuevo en unos segundos.',
+        );
+      },
+    });
+  }
+
+  private onCategoriaCreated(categoria: CategoriaResponse): void {
+    this.categorias.update((items) => [...items, categoria]);
+    this.form.get('categoriaId')?.setValue(categoria.id);
+    this.creatingCategoria.set(false);
+    this.categoriaCreateError.set(null);
+    this.categoriaFormOpen.set(false);
+    this.nuevaCategoriaNombre.reset();
+    this.categoriaCreatedMessage.set('Categoría creada');
+  }
+
+  showNuevaCategoriaError(): boolean {
+    const control = this.nuevaCategoriaNombre;
+    return control.invalid && (control.touched || control.dirty);
   }
 
   submit(): void {

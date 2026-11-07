@@ -1,10 +1,15 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import type { Observable } from 'rxjs';
-import type { CategoriaResponse, MarcaResponse } from '@agua/contracts';
+import type {
+  CategoriaResponse,
+  CreateCategoriaRequest,
+  MarcaResponse,
+} from '@agua/contracts';
 import { API_CONFIG } from '../../core/config/api.config';
 
 const LIST_CATEGORIAS_URL = `${API_CONFIG.baseUrl}/api/v1/categories/list`;
+const CREATE_CATEGORIA_URL = `${API_CONFIG.baseUrl}/api/v1/categories/create`;
 const LIST_MARCAS_URL = `${API_CONFIG.baseUrl}/api/v1/brands/list`;
 
 /**
@@ -18,6 +23,10 @@ export class VendedorCatalogoService {
 
   listCategorias(): Observable<CategoriaResponse[]> {
     return this.http.get<CategoriaResponse[]>(LIST_CATEGORIAS_URL);
+  }
+
+  createCategoria(body: CreateCategoriaRequest): Observable<CategoriaResponse> {
+    return this.http.post<CategoriaResponse>(CREATE_CATEGORIA_URL, body);
   }
 
   listMarcas(): Observable<MarcaResponse[]> {

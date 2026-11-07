@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import type { PaginationResponse, ProductResponse } from '@agua/contracts';
 import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog';
+import { VendedorCatalogoService } from '../vendedor-catalogo.service';
 import { VendedorProductosService } from '../vendedor-productos.service';
 
 const PAGE_SIZE = 10;
@@ -21,6 +22,7 @@ const PRODUCTOS_BASE_PATH = '/vendedor/catalogo/productos';
   styleUrl: './productos-page.scss',
 })
 export class VendedorProductosPage implements OnInit {
+  private readonly catalogoService = inject(VendedorCatalogoService);
   private readonly productosService = inject(VendedorProductosService);
   private readonly router = inject(Router);
 
@@ -36,6 +38,12 @@ export class VendedorProductosPage implements OnInit {
   readonly dialogProduct = signal<ProductResponse | null>(null);
   readonly mutating = signal(false);
   readonly mutationError = signal<string | null>(null);
+
+  readonly categoriaFormOpen = signal(false);
+  readonly categoriaNombre = signal('');
+  readonly creatingCategoria = signal(false);
+  readonly categoriaCreateError = signal<string | null>(null);
+  readonly categoriaCreatedMessage = signal<string | null>(null);
 
   private readonly priceFormatter = new Intl.NumberFormat('es-AR', {
     style: 'currency',
@@ -101,6 +109,54 @@ export class VendedorProductosPage implements OnInit {
 
   nuevoProducto(): void {
     void this.router.navigate([`${PRODUCTOS_BASE_PATH}/nuevo`]);
+  }
+
+  abrirCategoriaForm(): void {
+    this.categoriaNombre.set('');
+    this.categoriaCreateError.set(null);
+    this.categoriaCreatedMessage.set(null);
+    this.categoriaFormOpen.set(true);
+  }
+
+  cancelarCategoria(): void {
+    this.categoriaFormOpen.set(false);
+    this.categoriaNombre.set('');
+    this.categoriaCreateError.set(null);
+  }
+
+  onCategoriaNombreInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.categoriaNombre.set(target.value);
+  }
+
+  crearCategoria(): void {
+    if (this.creatingCategoria()) {
+      return;
+    }
+
+    const nombre = this.categoriaNombre().trim();
+    if (nombre.length < 2 || nombre.length > 255) {
+      this.categoriaCreateError.set('Ingresa un nombre de entre 2 y 255 caracteres.');
+      return;
+    }
+
+    this.creatingCategoria.set(true);
+    this.categoriaCreateError.set(null);
+
+    this.catalogoService.createCategoria({ nombre }).subscribe({
+      next: () => {
+        this.creatingCategoria.set(false);
+        this.categoriaFormOpen.set(false);
+        this.categoriaNombre.set('');
+        this.categoriaCreatedMessage.set('Categoría creada');
+      },
+      error: () => {
+        this.creatingCategoria.set(false);
+        this.categoriaCreateError.set(
+          'No pudimos crear la categoría. Inténtalo de nuevo en unos segundos.',
+        );
+      },
+    });
   }
 
   editar(product: ProductResponse): void {

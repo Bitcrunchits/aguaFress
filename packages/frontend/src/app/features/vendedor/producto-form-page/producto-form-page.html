@@ -2,6 +2,44 @@
   <p class="role-card__eyebrow">Vendedor</p>
   <h1 id="producto-form-title">{{ isEdit() ? 'Editar producto' : 'Nuevo producto' }}</h1>
 
+  <ng-template #nuevaCategoriaForm>
+    <div class="producto-form__categoria-create">
+      <label for="nueva-categoria-nombre">Nombre de la categoría</label>
+      <div class="producto-form__categoria-create-row">
+        <input
+          id="nueva-categoria-nombre"
+          type="text"
+          [formControl]="nuevaCategoriaNombre"
+          [attr.aria-invalid]="showNuevaCategoriaError()"
+          placeholder="Ej. Agua"
+        />
+        <button
+          pButton
+          type="button"
+          label="Crear"
+          [loading]="creatingCategoria()"
+          [disabled]="creatingCategoria()"
+          (click)="crearCategoria()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          label="Cancelar"
+          [disabled]="creatingCategoria()"
+          (click)="cancelarCategoria()"
+        ></button>
+      </div>
+      @if (showNuevaCategoriaError()) {
+        <span class="producto-form__hint">Ingresa un nombre de entre 2 y 255 caracteres.</span>
+      }
+      @if (categoriaCreateError()) {
+        <p class="producto-form__error producto-form__error--inline" role="alert">
+          {{ categoriaCreateError() }}
+        </p>
+      }
+    </div>
+  </ng-template>
+
   @if (lookupsLoading() || productLoading()) {
     <p class="producto-form__state" role="status">Cargando formulario</p>
   } @else if (lookupsFailed()) {
@@ -15,7 +53,14 @@
       <button pButton type="button" label="Reintentar" (click)="retry()"></button>
     </div>
   } @else if (categorias().length === 0) {
-    <p class="producto-form__state">No tienes categorías creadas todavía.</p>
+    <div class="producto-form__empty">
+      <p class="producto-form__state">No tienes categorías creadas todavía.</p>
+      @if (categoriaFormOpen()) {
+        <ng-container *ngTemplateOutlet="nuevaCategoriaForm"></ng-container>
+      } @else {
+        <button pButton type="button" label="Nueva categoría" (click)="abrirCategoriaForm()"></button>
+      }
+    </div>
   } @else {
     <form class="producto-form__form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
       @if (submitError()) {
@@ -101,6 +146,14 @@
         </select>
         @if (showCategoriaError()) {
           <span class="producto-form__hint">Elige una categoría.</span>
+        }
+        @if (categoriaFormOpen()) {
+          <ng-container *ngTemplateOutlet="nuevaCategoriaForm"></ng-container>
+        } @else {
+          <button pButton type="button" label="Nueva categoría" (click)="abrirCategoriaForm()"></button>
+        }
+        @if (categoriaCreatedMessage()) {
+          <p class="producto-form__success" role="status">{{ categoriaCreatedMessage() }}</p>
         }
       </div>
 

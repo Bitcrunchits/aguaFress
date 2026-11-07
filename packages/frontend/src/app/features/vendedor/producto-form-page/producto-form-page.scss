@@ -93,3 +93,60 @@
 .producto-form__submit {
   justify-self: start;
 }
+
+.producto-form__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.producto-form__categoria-create {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+
+  label {
+    color: var(--slate-ink);
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+}
+
+.producto-form__categoria-create-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+
+  input {
+    min-width: 200px;
+    padding: 10px 12px;
+    border: 1px solid var(--line-soft);
+    background: var(--clean-white);
+    color: var(--slate-ink);
+    font: inherit;
+
+    &:focus-visible {
+      border-color: var(--agua-flow);
+      outline: 3px solid color-mix(in srgb, var(--agua-flow) 45%, transparent);
+      outline-offset: 1px;
+    }
+
+    &[aria-invalid='true'] {
+      border-color: var(--route-danger);
+    }
+  }
+}
+
+.producto-form__error--inline {
+  max-width: 420px;
+}
+
+.producto-form__success {
+  margin: 0;
+  color: var(--route-success);
+  font-size: 0.9rem;
+}

@@ -4,7 +4,46 @@
       <p class="role-card__eyebrow">Vendedor</p>
       <h1 id="productos-title">Mis productos</h1>
     </div>
-    <button pButton type="button" label="Nuevo producto" (click)="nuevoProducto()"></button>
+    <div class="productos__header-actions">
+      <button pButton type="button" label="Nuevo producto" (click)="nuevoProducto()"></button>
+      @if (categoriaFormOpen()) {
+        <div class="productos__categoria-create">
+          <label for="nueva-categoria-nombre">Nombre de la categoría</label>
+          <div class="productos__categoria-create-row">
+            <input
+              id="nueva-categoria-nombre"
+              type="text"
+              [value]="categoriaNombre()"
+              (input)="onCategoriaNombreInput($event)"
+              placeholder="Ej. Agua"
+            />
+            <button
+              pButton
+              type="button"
+              label="Crear"
+              [loading]="creatingCategoria()"
+              [disabled]="creatingCategoria()"
+              (click)="crearCategoria()"
+            ></button>
+            <button
+              pButton
+              type="button"
+              label="Cancelar"
+              [disabled]="creatingCategoria()"
+              (click)="cancelarCategoria()"
+            ></button>
+          </div>
+          @if (categoriaCreateError()) {
+            <p class="productos__categoria-error" role="alert">{{ categoriaCreateError() }}</p>
+          }
+        </div>
+      } @else {
+        <button pButton type="button" label="Nueva categoría" (click)="abrirCategoriaForm()"></button>
+      }
+      @if (categoriaCreatedMessage()) {
+        <p class="productos__categoria-success" role="status">{{ categoriaCreatedMessage() }}</p>
+      }
+    </div>
   </header>
 
   @if (loading()) {

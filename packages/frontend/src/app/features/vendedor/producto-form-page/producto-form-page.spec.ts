@@ -25,6 +25,16 @@ const MARCA: MarcaResponse = {
   updatedAt: '2026-01-01T00:00:00.000Z',
 };
 
+const NUEVA_CATEGORIA: CategoriaResponse = {
+  id: 'categoria-2',
+  nombre: 'Agua saborizada',
+  orden: 2,
+  vendedorId: 'vendedor-1',
+  activo: true,
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z',
+};
+
 const PRODUCT: ProductResponse = {
   id: 'producto-1',
   nombre: 'Agua mineral 500 ml',
@@ -51,6 +61,7 @@ describe('VendedorProductoFormPage', () => {
   const catalogoServiceStub = {
     listCategorias: jasmine.createSpy('listCategorias'),
     listMarcas: jasmine.createSpy('listMarcas'),
+    createCategoria: jasmine.createSpy('createCategoria'),
   };
   const productosServiceStub = {
     get: jasmine.createSpy('get'),
@@ -61,6 +72,7 @@ describe('VendedorProductoFormPage', () => {
   async function configure(routeId: string | null): Promise<void> {
     catalogoServiceStub.listCategorias.calls.reset();
     catalogoServiceStub.listMarcas.calls.reset();
+    catalogoServiceStub.createCategoria.calls.reset();
     productosServiceStub.get.calls.reset();
     productosServiceStub.create.calls.reset();
     productosServiceStub.update.calls.reset();
@@ -107,6 +119,19 @@ describe('VendedorProductoFormPage', () => {
       marcaId: '',
       mostrarPrecio: true,
     });
+  }
+
+  function findButton(label: string): HTMLButtonElement | undefined {
+    return Array.from(element.querySelectorAll('button')).find(
+      (candidate) => candidate.textContent?.trim() === label,
+    );
+  }
+
+  function setCategoriaNombre(value: string): void {
+    const input = element.querySelector<HTMLInputElement>('#nueva-categoria-nombre');
+    input!.value = value;
+    input!.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
   }
 
   it('renders the create form and submits a body without vendedorId', async () => {
@@ -192,5 +217,85 @@ describe('VendedorProductoFormPage', () => {
       'No pudimos guardar el producto. Inténtalo de nuevo en unos segundos.',
     );
     expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('creates a categoria inline and auto-selects it in the form', async () => {
+    await configure(null);
+    catalogoServiceStub.createCategoria.and.returnValue(of(NUEVA_CATEGORIA));
+    renderWithLookups();
+
+    findButton('Nueva categoría')?.click();
+    fixture.detectChanges();
+    setCategoriaNombre('Agua saborizada');
+
+    findButton('Crear')?.click();
+    fixture.detectChanges();
+
+    expect(catalogoServiceStub.createCategoria).toHaveBeenCalledWith({
+      nombre: 'Agua saborizada',
+    });
+    expect(component.categorias().some((categoria) => categoria.id === 'categoria-2')).toBeTrue();
+    expect(component.form.get('categoriaId')?.value).toBe('categoria-2');
+    expect(element.textContent).toContain('Categoría creada');
+  });
+
+  it('creates the first categoria from the empty state and reveals the form', async () => {
+    await configure(null);
+    catalogoServiceStub.listCategorias.and.returnValue(of([]));
+    catalogoServiceStub.listMarcas.and.returnValue(of([]));
+    catalogoServiceStub.createCategoria.and.returnValue(of(NUEVA_CATEGORIA));
+    fixture.detectChanges();
+
+    expect(element.textContent).toContain('No tienes categorías creadas todavía.');
+    expect(element.querySelector('form')).toBeNull();
+
+    findButton('Nueva categoría')?.click();
+    fixture.detectChanges();
+    setCategoriaNombre('Agua saborizada');
+
+    findButton('Crear')?.click();
+    fixture.detectChanges();
+
+    expect(catalogoServiceStub.createCategoria).toHaveBeenCalledWith({
+      nombre: 'Agua saborizada',
+    });
+    expect(component.categorias().length).toBe(1);
+    expect(component.form.get('categoriaId')?.value).toBe('categoria-2');
+    expect(element.querySelector('form')).not.toBeNull();
+  });
+
+  it('validates the new categoria name without calling the service', async () => {
+    await configure(null);
+    renderWithLookups();
+
+    findButton('Nueva categoría')?.click();
+    fixture.detectChanges();
+    setCategoriaNombre('A');
+
+    findButton('Crear')?.click();
+    fixture.detectChanges();
+
+    expect(catalogoServiceStub.createCategoria).not.toHaveBeenCalled();
+    expect(element.textContent).toContain('Ingresa un nombre de entre 2 y 255 caracteres.');
+  });
+
+  it('shows an error message when categoria creation fails', async () => {
+    await configure(null);
+    catalogoServiceStub.createCategoria.and.returnValue(throwError(() => new Error('boom')));
+    renderWithLookups();
+
+    findButton('Nueva categoría')?.click();
+    fixture.detectChanges();
+    setCategoriaNombre('Agua saborizada');
+
+    findButton('Crear')?.click();
+    fixture.detectChanges();
+
+    expect(catalogoServiceStub.createCategoria).toHaveBeenCalledWith({
+      nombre: 'Agua saborizada',
+    });
+    expect(element.textContent).toContain(
+      'No pudimos crear la categoría. Inténtalo de nuevo en unos segundos.',
+    );
   });
 });

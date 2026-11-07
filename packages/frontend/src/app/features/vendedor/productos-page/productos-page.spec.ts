@@ -1,7 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import type { PaginatedResponse, ProductResponse } from '@agua/contracts';
+import type { CategoriaResponse, PaginatedResponse, ProductResponse } from '@agua/contracts';
 import { Observable, of, throwError } from 'rxjs';
+import { VendedorCatalogoService } from '../vendedor-catalogo.service';
 import { VendedorProductosService } from '../vendedor-productos.service';
 import { VendedorProductosPage } from './productos-page';
 
@@ -33,6 +34,16 @@ function pageResponse(
   };
 }
 
+const CATEGORIA: CategoriaResponse = {
+  id: 'categoria-1',
+  nombre: 'Agua',
+  orden: 1,
+  vendedorId: 'vendedor-1',
+  activo: true,
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z',
+};
+
 describe('VendedorProductosPage', () => {
   let fixture: ComponentFixture<VendedorProductosPage>;
   let component: VendedorProductosPage;
@@ -43,16 +54,21 @@ describe('VendedorProductosPage', () => {
     list: jasmine.createSpy('list'),
     delete: jasmine.createSpy('delete'),
   };
+  const catalogoServiceStub = {
+    createCategoria: jasmine.createSpy('createCategoria'),
+  };
 
   beforeEach(async () => {
     serviceStub.list.calls.reset();
     serviceStub.delete.calls.reset();
+    catalogoServiceStub.createCategoria.calls.reset();
 
     await TestBed.configureTestingModule({
       imports: [VendedorProductosPage],
       providers: [
         provideRouter([]),
         { provide: VendedorProductosService, useValue: serviceStub },
+        { provide: VendedorCatalogoService, useValue: catalogoServiceStub },
       ],
     }).compileComponents();
 
@@ -66,6 +82,24 @@ describe('VendedorProductosPage', () => {
 
   function pendingList(): Observable<PaginatedResponse<ProductResponse>> {
     return new Observable<PaginatedResponse<ProductResponse>>(() => {});
+  }
+
+  function findButton(label: string): HTMLButtonElement | undefined {
+    return Array.from(element.querySelectorAll('button')).find(
+      (candidate) => candidate.textContent?.trim() === label,
+    );
+  }
+
+  function openCategoriaForm(): void {
+    findButton('Nueva categoría')?.click();
+    fixture.detectChanges();
+  }
+
+  function setCategoriaNombre(value: string): void {
+    const input = element.querySelector<HTMLInputElement>('#nueva-categoria-nombre');
+    input!.value = value;
+    input!.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
   }
 
   it('shows the loading state while the list request is in flight', () => {
@@ -241,5 +275,52 @@ describe('VendedorProductosPage', () => {
         (candidate) => candidate.textContent?.trim() === 'Desactivar',
       ),
     ).toBeUndefined();
+  });
+
+  it('creates a categoria from the inline form and shows a success message', () => {
+    serviceStub.list.and.returnValue(of(pageResponse([PRODUCT])));
+    catalogoServiceStub.createCategoria.and.returnValue(of(CATEGORIA));
+
+    fixture.detectChanges();
+    openCategoriaForm();
+    setCategoriaNombre('Agua');
+
+    findButton('Crear')?.click();
+    fixture.detectChanges();
+
+    expect(catalogoServiceStub.createCategoria).toHaveBeenCalledWith({ nombre: 'Agua' });
+    expect(element.textContent).toContain('Categoría creada');
+    expect(findButton('Nueva categoría')).toBeDefined();
+  });
+
+  it('validates the categoria name before creating', () => {
+    serviceStub.list.and.returnValue(of(pageResponse([PRODUCT])));
+
+    fixture.detectChanges();
+    openCategoriaForm();
+    setCategoriaNombre('A');
+
+    findButton('Crear')?.click();
+    fixture.detectChanges();
+
+    expect(catalogoServiceStub.createCategoria).not.toHaveBeenCalled();
+    expect(element.textContent).toContain('Ingresa un nombre de entre 2 y 255 caracteres.');
+  });
+
+  it('shows an error message when categoria creation fails', () => {
+    serviceStub.list.and.returnValue(of(pageResponse([PRODUCT])));
+    catalogoServiceStub.createCategoria.and.returnValue(throwError(() => new Error('boom')));
+
+    fixture.detectChanges();
+    openCategoriaForm();
+    setCategoriaNombre('Agua');
+
+    findButton('Crear')?.click();
+    fixture.detectChanges();
+
+    expect(catalogoServiceStub.createCategoria).toHaveBeenCalledWith({ nombre: 'Agua' });
+    expect(element.textContent).toContain(
+      'No pudimos crear la categoría. Inténtalo de nuevo en unos segundos.',
+    );
   });
 });
