@@ -26,6 +26,7 @@ import { ClientePedidoService } from './features/cliente/cliente-pedido.service'
 import { ClientePedidosService } from './features/cliente/cliente-pedidos.service';
 import { ClienteProviderStateService } from './features/cliente/cliente-provider-state.service';
 import { CLIENTE_TRACKING_SESSION_READER } from './features/cliente/cliente-tracking.contract';
+import { VendedorProfileService } from './features/vendedor/vendedor-profile.service';
 
 const EMPTY_LIST: SuperAdminVendedorListResponse = {
   data: [],
@@ -136,6 +137,7 @@ describe('application routes', () => {
           },
         },
         { provide: AdminVendedoresService, useValue: { list: () => of(EMPTY_LIST) } },
+        { provide: VendedorProfileService, useValue: { getProfile: () => EMPTY } },
         { provide: ClienteCatalogoService, useValue: { list: () => of(EMPTY_PRODUCTS) } },
         { provide: ClienteCarritoService, useValue: { addToCart: () => EMPTY } },
         { provide: ClienteCarritoLecturaService, useValue: lecturaStub },

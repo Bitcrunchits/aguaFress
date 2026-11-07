@@ -1,5 +1,58 @@
-<article class="role-card" aria-labelledby="vendor-title">
+<section class="role-card vendedor" aria-labelledby="vendedor-title">
   <p class="role-card__eyebrow">Vendedor</p>
-  <h1 id="vendor-title">Inicio de vendedor</h1>
-  <p>La gestión del catálogo todavía no está disponible en esta versión.</p>
-</article>
+  <h1 id="vendedor-title">Inicio de vendedor</h1>
+
+  @if (loading()) {
+    <p class="vendedor__state" role="status">Cargando tu perfil</p>
+  } @else if (failed()) {
+    <div class="vendedor__state vendedor__state--error" role="alert">
+      <p>No pudimos cargar tu perfil. Inténtalo de nuevo en unos segundos.</p>
+      <button type="button" class="vendedor__button" (click)="retry()">Reintentar</button>
+    </div>
+  } @else if (profile(); as profile) {
+    <article class="vendedor__profile" aria-labelledby="vendedor-profile-title">
+      <p class="vendedor__label">Tu perfil</p>
+      <h2 id="vendedor-profile-title">{{ empresaLabel(profile) }}</h2>
+
+      @if (nombreCompleto(profile)) {
+        <p class="vendedor__name">{{ nombreCompleto(profile) }}</p>
+      }
+
+      <dl class="vendedor__details">
+        <div class="vendedor__detail">
+          <dt>Estado</dt>
+          <dd>
+            <span class="vendedor__badge" [attr.data-estado]="profile.estado">
+              {{ estadoLabel(profile.estado) }}
+            </span>
+          </dd>
+        </div>
+        @if (profile.zonaEntrega) {
+          <div class="vendedor__detail">
+            <dt>Zona de entrega</dt>
+            <dd>{{ profile.zonaEntrega }}</dd>
+          </div>
+        }
+        @if (profile.ciudadDefault) {
+          <div class="vendedor__detail">
+            <dt>Ciudad</dt>
+            <dd>{{ profile.ciudadDefault }}</dd>
+          </div>
+        }
+      </dl>
+    </article>
+
+    <section class="vendedor__access" aria-labelledby="vendedor-access-title">
+      <h2 id="vendedor-access-title">Accesos rápidos</h2>
+      <p class="vendedor__hint">Administra los productos que ven tus clientes.</p>
+      <div class="vendedor__access-actions">
+        <a
+          class="vendedor__button vendedor__access-link"
+          routerLink="/vendedor/catalogo/productos"
+        >
+          Gestionar catálogo
+        </a>
+      </div>
+    </section>
+  }
+</section>

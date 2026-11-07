@@ -1,0 +1,132 @@
+<section class="role-card producto-form" aria-labelledby="producto-form-title">
+  <p class="role-card__eyebrow">Vendedor</p>
+  <h1 id="producto-form-title">{{ isEdit() ? 'Editar producto' : 'Nuevo producto' }}</h1>
+
+  @if (lookupsLoading() || productLoading()) {
+    <p class="producto-form__state" role="status">Cargando formulario</p>
+  } @else if (lookupsFailed()) {
+    <div class="producto-form__state producto-form__state--error" role="alert">
+      <p>No pudimos cargar las categorías. Inténtalo de nuevo en unos segundos.</p>
+      <button pButton type="button" label="Reintentar" (click)="retry()"></button>
+    </div>
+  } @else if (productFailed()) {
+    <div class="producto-form__state producto-form__state--error" role="alert">
+      <p>No pudimos cargar el producto. Inténtalo de nuevo en unos segundos.</p>
+      <button pButton type="button" label="Reintentar" (click)="retry()"></button>
+    </div>
+  } @else if (categorias().length === 0) {
+    <p class="producto-form__state">No tienes categorías creadas todavía.</p>
+  } @else {
+    <form class="producto-form__form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      @if (submitError()) {
+        <p class="producto-form__error" role="alert">{{ submitError() }}</p>
+      }
+
+      <div class="producto-form__field">
+        <label for="producto-nombre">Nombre</label>
+        <input
+          id="producto-nombre"
+          type="text"
+          formControlName="nombre"
+          [attr.aria-invalid]="showNombreError()"
+        />
+        @if (showNombreError()) {
+          <span class="producto-form__hint">Ingresa un nombre de entre 2 y 255 caracteres.</span>
+        }
+      </div>
+
+      <div class="producto-form__field">
+        <label for="producto-descripcion">Descripción</label>
+        <textarea id="producto-descripcion" formControlName="descripcion" rows="3"></textarea>
+      </div>
+
+      <div class="producto-form__field">
+        <label for="producto-precio">Precio sin IVA</label>
+        <input
+          id="producto-precio"
+          type="number"
+          step="0.01"
+          min="0"
+          formControlName="precioSinIva"
+          [attr.aria-invalid]="showPrecioSinIvaError()"
+        />
+        @if (showPrecioSinIvaError()) {
+          <span class="producto-form__hint">Ingresa un precio mayor a 0 con hasta 2 decimales.</span>
+        }
+      </div>
+
+      <div class="producto-form__grid">
+        <div class="producto-form__field">
+          <label for="producto-iva">IVA (%)</label>
+          <input id="producto-iva" type="number" step="0.01" min="0" formControlName="porcentajeIva" />
+        </div>
+        <div class="producto-form__field">
+          <label for="producto-impuestos">Otros impuestos (%)</label>
+          <input
+            id="producto-impuestos"
+            type="number"
+            step="0.01"
+            min="0"
+            formControlName="porcentajeImpuestos"
+          />
+        </div>
+      </div>
+
+      <div class="producto-form__field">
+        <label for="producto-stock">Stock</label>
+        <input
+          id="producto-stock"
+          type="number"
+          step="1"
+          min="0"
+          formControlName="stock"
+          [attr.aria-invalid]="showStockError()"
+        />
+        @if (showStockError()) {
+          <span class="producto-form__hint">Ingresa un stock mayor o igual a 0.</span>
+        }
+      </div>
+
+      <div class="producto-form__field">
+        <label for="producto-categoria">Categoría</label>
+        <select
+          id="producto-categoria"
+          formControlName="categoriaId"
+          [attr.aria-invalid]="showCategoriaError()"
+        >
+          <option value="" disabled>Elige una categoría</option>
+          @for (categoria of categorias(); track categoria.id) {
+            <option [value]="categoria.id">{{ categoria.nombre }}</option>
+          }
+        </select>
+        @if (showCategoriaError()) {
+          <span class="producto-form__hint">Elige una categoría.</span>
+        }
+      </div>
+
+      <div class="producto-form__field">
+        <label for="producto-marca">Marca</label>
+        <select id="producto-marca" formControlName="marcaId">
+          <option value="">Sin marca</option>
+          @for (marca of marcas(); track marca.id) {
+            <option [value]="marca.id">{{ marca.nombre }}</option>
+          }
+        </select>
+      </div>
+
+      <label class="producto-form__checkbox">
+        <input type="checkbox" formControlName="mostrarPrecio" />
+        Mostrar precio a los clientes
+      </label>
+
+      <button
+        pButton
+        type="submit"
+        class="producto-form__submit"
+        [label]="isEdit() ? 'Guardar cambios' : 'Crear producto'"
+        [loading]="submitting()"
+        [disabled]="submitting()"
+      ></button>
+    </form>
+  }
+</section>
