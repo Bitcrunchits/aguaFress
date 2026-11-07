@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { VendedorEstado } from '@agua/contracts';
 import type { VendedorProfile } from '@agua/contracts';
-import { Observable, of, throwError } from 'rxjs';
+import { EMPTY, Observable, of, throwError } from 'rxjs';
 import { VendedorProfileService } from '../vendedor-profile.service';
 import { VendedorPage } from './vendedor-page';
 
@@ -87,6 +87,23 @@ describe('VendedorPage', () => {
 
     expect(serviceStub.getProfile).toHaveBeenCalledTimes(2);
     expect(element.textContent).toContain('Aguas del Sur');
+  });
+
+  it('settles into the failed state when the profile observable completes without emitting', () => {
+    serviceStub.getProfile.and.returnValue(EMPTY);
+
+    fixture.detectChanges();
+
+    expect(element.textContent).toContain('No pudimos cargar tu perfil');
+    expect(element.textContent).not.toContain('Cargando tu perfil');
+  });
+
+  it('settles into the failed state when the profile observable emits null', () => {
+    serviceStub.getProfile.and.returnValue(of(null as unknown as VendedorProfile));
+
+    fixture.detectChanges();
+
+    expect(element.textContent).toContain('No pudimos cargar tu perfil');
   });
 
   it('links to the product catalog', () => {

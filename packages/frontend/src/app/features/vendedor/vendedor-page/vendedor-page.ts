@@ -39,11 +39,22 @@ export class VendedorPage implements OnInit {
 
     this.profileService.getProfile().subscribe({
       next: (profile) => {
+        if (profile === null || profile === undefined) {
+          this.failed.set(true);
+          this.loading.set(false);
+          return;
+        }
         this.profile.set(profile);
         this.loading.set(false);
       },
       error: () => {
         this.failed.set(true);
+        this.loading.set(false);
+      },
+      complete: () => {
+        if (this.profile() === null) {
+          this.failed.set(true);
+        }
         this.loading.set(false);
       },
     });
