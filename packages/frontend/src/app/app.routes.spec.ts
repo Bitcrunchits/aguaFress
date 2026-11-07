@@ -191,6 +191,13 @@ describe('application routes', () => {
     expect(TestBed.inject(Router).url).toBe('/auth/login');
   });
 
+  it('declares the seller registration as a public guest-guarded lazy route', () => {
+    const registerRoute = routes.find((route) => route.path === 'auth/register-seller');
+
+    expect(registerRoute?.canActivate?.length).toBe(1);
+    expect(typeof registerRoute?.loadComponent).toBe('function');
+  });
+
   it('renders the cliente catalog for a cliente session with a provider', async () => {
     authServiceStub.currentSession = sessionWithRole(UserRole.CLIENTE);
 

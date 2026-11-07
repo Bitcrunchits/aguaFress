@@ -17,6 +17,8 @@ import type {
   LoginResponse,
   RefreshTokenRequest,
   RefreshTokenResponse,
+  RegisterRequest,
+  RegisterResponse,
   UserProfile,
 } from '@agua/contracts';
 import { API_CONFIG } from '../config/api.config';
@@ -121,6 +123,16 @@ export class AuthService {
       tap((session) => this.sessionStorage.set(session)),
       catchError((error: unknown) => throwError(() => this.mapHttpError(error))),
     );
+  }
+
+  /**
+   * Public seller registration against the gateway `auth.register` action.
+   * The response carries no token and this never touches
+   * `SessionStorageService`: a new seller stays `pendiente` until an admin
+   * approves the account, so there is no session to install.
+   */
+  register(body: RegisterRequest): Observable<RegisterResponse> {
+    return this.http.post<RegisterResponse>(`${AUTH_URL}/register`, body);
   }
 
   /**

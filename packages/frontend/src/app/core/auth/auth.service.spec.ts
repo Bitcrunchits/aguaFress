@@ -2,13 +2,20 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { UserRole, type LoginResponse, type UserProfile } from '@agua/contracts';
+import {
+  UserRole,
+  type LoginResponse,
+  type RegisterRequest,
+  type RegisterResponse,
+  type UserProfile,
+} from '@agua/contracts';
 import { LOGIN_PATH, SESSION_STORAGE_KEY } from './auth.models';
 import { AuthError, AuthService } from './auth.service';
 import { SessionStorageService } from './session-storage.service';
 
 const API_V1 = 'https://api-aguafress.eadev.cloud/api/v1';
 const LOGIN_URL = `${API_V1}/auth/login`;
+const REGISTER_URL = `${API_V1}/auth/register`;
 const REFRESH_URL = `${API_V1}/auth/refresh`;
 const LOGOUT_URL = `${API_V1}/auth/logout`;
 const PROFILE_URL = `${API_V1}/users/profile`;
@@ -133,6 +140,38 @@ describe('AuthService', () => {
 
     expect(caught instanceof AuthError).toBeTrue();
     expect((caught as AuthError).code).toBe('invalid-credentials');
+    expect(readStoredSession()).toBeNull();
+    expect(auth.currentSession).toBeNull();
+  });
+
+  it('posts the seller registration body and returns the pending response without a session', () => {
+    const auth = TestBed.inject(AuthService);
+    const body: RegisterRequest = {
+      email: 'vendor@example.com',
+      emailConfirmation: 'vendor@example.com',
+      password: 'secret123',
+      nombre: 'Juan',
+      apellido: 'Pérez',
+      dni: '12345678',
+      telefono: '1234567890',
+      ciudad: 'Córdoba',
+      empresa: 'Agua SA',
+    };
+    const response: RegisterResponse = {
+      status: 'pendiente',
+      vendedorId: 'vendedor-1',
+      message: 'Solicitud recibida',
+    };
+    let result: RegisterResponse | undefined;
+
+    auth.register(body).subscribe((registered) => (result = registered));
+
+    const request = httpMock.expectOne(REGISTER_URL);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual(body);
+    request.flush(response);
+
+    expect(result).toEqual(response);
     expect(readStoredSession()).toBeNull();
     expect(auth.currentSession).toBeNull();
   });

@@ -1,0 +1,97 @@
+.register-layout {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 24px;
+  background: var(--ice-surface);
+}
+
+.register-card {
+  width: min(100%, 480px);
+  padding: 32px;
+  border: 1px solid var(--line-soft);
+  background: var(--clean-white);
+  box-shadow: var(--shadow-agua-card);
+}
+
+.register-card__eyebrow {
+  margin: 0 0 12px;
+  color: var(--agua-primary-dark);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.register-card h1 {
+  margin: 0 0 8px;
+  color: var(--slate-ink);
+  font-family: var(--font-agua-display);
+  font-size: clamp(1.6rem, 4vw, 2rem);
+  line-height: 1.15;
+}
+
+.register-card__help {
+  margin: 0 0 24px;
+  color: var(--slate-muted);
+}
+
+.register-card__link {
+  display: inline-block;
+  color: var(--agua-primary-dark);
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+
+.register-form {
+  display: grid;
+  gap: 20px;
+}
+
+.register-form__error {
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid color-mix(in srgb, var(--route-danger) 35%, transparent);
+  background: color-mix(in srgb, var(--route-danger) 8%, var(--clean-white));
+  color: var(--route-danger);
+  font-size: 0.9rem;
+}
+
+.register-field {
+  display: grid;
+  gap: 6px;
+}
+
+.register-field label {
+  color: var(--slate-ink);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.register-field input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line-soft);
+  background: var(--clean-white);
+  color: var(--slate-ink);
+  font: inherit;
+
+  &:focus-visible {
+    border-color: var(--agua-flow);
+    outline: 3px solid color-mix(in srgb, var(--agua-flow) 45%, transparent);
+    outline-offset: 1px;
+  }
+
+  &[aria-invalid='true'] {
+    border-color: var(--route-danger);
+  }
+}
+
+.register-field__hint {
+  color: var(--route-danger);
+  font-size: 0.8rem;
+}
+
+.register-form__submit {
+  width: 100%;
+}
