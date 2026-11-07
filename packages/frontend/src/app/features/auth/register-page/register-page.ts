@@ -23,6 +23,12 @@ function emailsMatch(group: AbstractControl): ValidationErrors | null {
   return email === emailConfirmation ? null : { emailMismatch: true };
 }
 
+/** Rejects values that are empty after trimming surrounding whitespace. */
+function nonWhitespace(control: AbstractControl): ValidationErrors | null {
+  const value: unknown = control.value;
+  return typeof value === 'string' && value.trim() === '' ? { whitespace: true } : null;
+}
+
 @Component({
   selector: 'app-register-page',
   imports: [ReactiveFormsModule, ButtonModule],
@@ -38,11 +44,11 @@ export class RegisterPage {
       email: ['', [Validators.required, Validators.email]],
       emailConfirmation: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(8)]],
-      nombre: ['', [Validators.required, Validators.minLength(2)]],
-      apellido: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+      nombre: ['', [Validators.required, nonWhitespace, Validators.minLength(2)]],
+      apellido: ['', [Validators.required, nonWhitespace, Validators.minLength(2), Validators.maxLength(100)]],
       dni: ['', [Validators.required, Validators.pattern(/^\d{8}$/)]],
-      telefono: ['', [Validators.required]],
-      ciudad: ['', [Validators.required, Validators.minLength(2)]],
+      telefono: ['', [Validators.required, nonWhitespace]],
+      ciudad: ['', [Validators.required, nonWhitespace, Validators.minLength(2)]],
       empresa: ['', [Validators.maxLength(255)]],
     },
     { validators: emailsMatch },

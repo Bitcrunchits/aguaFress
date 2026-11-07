@@ -80,6 +80,22 @@ describe('RegisterPage', () => {
     expect(page.form.controls.dni.hasError('pattern')).toBeTrue();
   });
 
+  it('rejects whitespace-only values for required text fields', () => {
+    page.form.setValue({
+      ...VALID_VALUES,
+      nombre: '   ',
+      apellido: '   ',
+      ciudad: '   ',
+      telefono: '   ',
+    });
+
+    expect(page.form.invalid).toBeTrue();
+    expect(page.form.controls.nombre.hasError('whitespace')).toBeTrue();
+    expect(page.form.controls.apellido.hasError('whitespace')).toBeTrue();
+    expect(page.form.controls.ciudad.hasError('whitespace')).toBeTrue();
+    expect(page.form.controls.telefono.hasError('whitespace')).toBeTrue();
+  });
+
   it('accepts an empty optional empresa', () => {
     page.form.setValue({ ...VALID_VALUES, empresa: '' });
 
