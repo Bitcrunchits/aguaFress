@@ -206,6 +206,31 @@ describe('VendedorProductosPage', () => {
     ).toBeUndefined();
   });
 
+  it('keeps the dialog open and the product active when deactivation fails', () => {
+    serviceStub.list.and.returnValue(of(pageResponse([PRODUCT])));
+    serviceStub.delete.and.returnValue(throwError(() => new Error('boom')));
+
+    fixture.detectChanges();
+
+    const deactivateButton = Array.from(element.querySelectorAll('button')).find(
+      (candidate) => candidate.textContent?.trim() === 'Desactivar',
+    );
+    deactivateButton?.click();
+    fixture.detectChanges();
+
+    const confirmButton = element.querySelector<HTMLButtonElement>(
+      '.confirm-dialog__button--confirm',
+    );
+    confirmButton?.click();
+    fixture.detectChanges();
+
+    expect(serviceStub.delete).toHaveBeenCalledWith('producto-1');
+    expect(element.textContent).toContain('No pudimos desactivar el producto');
+    expect(element.textContent).toContain('Desactivar producto');
+    expect(element.textContent).toContain('Activo');
+    expect(element.textContent).not.toContain('Inactivo');
+  });
+
   it('does not offer Desactivar for an already inactive product', () => {
     serviceStub.list.and.returnValue(of(pageResponse([{ ...PRODUCT, activo: false }])));
 
