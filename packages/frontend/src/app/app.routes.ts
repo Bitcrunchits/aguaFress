@@ -80,6 +80,13 @@ export const routes: Routes = [
                 (module) => module.VendedorProductoFormPage,
               ),
           },
+          {
+            path: 'clientes',
+            loadComponent: () =>
+              import('./features/vendedor/clientes-page/clientes-page').then(
+                (module) => module.VendedorClientesPage,
+              ),
+          },
         ],
       },
       {

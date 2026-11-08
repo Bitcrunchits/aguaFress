@@ -169,6 +169,18 @@ export interface ClienteResponse {
   tipoFactura?: TipoFactura;
 }
 
+/**
+ * List item for the vendedor's own cartera (`GET /api/v1/clientes/cartera`).
+ * Read-only in this phase: only the fields the list renders are consumed, so
+ * the raw row's snake_case fields, `_count.cartera` and `vendedor` are ignored.
+ */
+export interface VendedorClienteItem {
+  id: string;
+  nombre: string;
+  apellido?: string;
+  telefono?: string;
+}
+
 export interface VendedorResponse {
   id: string;
   nombre: string;

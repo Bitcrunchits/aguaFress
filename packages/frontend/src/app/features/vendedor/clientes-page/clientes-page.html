@@ -1,0 +1,106 @@
+<section class="role-card clientes" aria-labelledby="clientes-title">
+  <p class="role-card__eyebrow">Vendedor</p>
+  <h1 id="clientes-title">Mis clientes</h1>
+
+  <div class="clientes__filters" role="search" aria-label="Filtros de clientes">
+    <label class="clientes__field">
+      <span class="clientes__field-label">Buscar</span>
+      <input
+        id="clientes-search"
+        type="search"
+        [value]="searchInput()"
+        (input)="onSearchInput($event)"
+        placeholder="Nombre o apellido"
+      />
+    </label>
+
+    <div class="clientes__filter-actions">
+      <button
+        pButton
+        id="clientes-apply"
+        type="button"
+        label="Aplicar filtros"
+        (click)="applyFilters()"
+      ></button>
+      <button
+        pButton
+        id="clientes-clear"
+        type="button"
+        label="Limpiar"
+        (click)="clearFilters()"
+        [disabled]="!hasActiveFilters()"
+      ></button>
+    </div>
+  </div>
+
+  @if (hasActiveFilters()) {
+    <div class="clientes__chips" aria-label="Filtros activos">
+      @if (search(); as searchValue) {
+        <span class="clientes__chip">
+          Búsqueda: {{ searchValue }}
+          <button
+            type="button"
+            class="clientes__chip-clear"
+            (click)="clearFilters()"
+            aria-label="Quitar filtro de búsqueda"
+          >
+            ×
+          </button>
+        </span>
+      }
+    </div>
+  }
+
+  @if (loading()) {
+    <p class="clientes__state" role="status">Cargando clientes</p>
+  } @else if (failed()) {
+    <div class="clientes__state clientes__state--error" role="alert">
+      <p>No pudimos cargar los clientes. Inténtalo de nuevo en unos segundos.</p>
+      <button pButton type="button" label="Reintentar" (click)="retry()"></button>
+    </div>
+  } @else if (items().length === 0) {
+    <p class="clientes__state">No tienes clientes todavía.</p>
+  } @else {
+    <div class="clientes__table-wrap">
+      <table class="clientes__table">
+        <caption class="clientes__caption">Listado de clientes de tu cartera</caption>
+        <thead>
+          <tr>
+            <th scope="col">Cliente</th>
+            <th scope="col">Teléfono</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (cliente of items(); track cliente.id) {
+            <tr>
+              <td>{{ nombreCompleto(cliente) }}</td>
+              <td>{{ telefonoLabel(cliente.telefono) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (pagination(); as page) {
+      <nav class="clientes__pagination" aria-label="Paginación de clientes">
+        <button
+          pButton
+          type="button"
+          label="Anterior"
+          (click)="previousPage()"
+          [disabled]="currentPage() <= 1"
+        ></button>
+        <span class="clientes__page-indicator" role="status">
+          Página {{ currentPage() }} de {{ page.totalPages }}
+        </span>
+        <button
+          pButton
+          type="button"
+          label="Siguiente"
+          (click)="nextPage()"
+          [disabled]="currentPage() >= page.totalPages"
+        ></button>
+      </nav>
+    }
+  }
+</section>
