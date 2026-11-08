@@ -11,6 +11,7 @@ import {
   SuperAdminVendedorListResponse,
   VENDEDOR_ESTADO_TRANSITIONS,
   VendedorEstado,
+  VendedorProfile,
 } from '@agua/contracts';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { cleanUpdateInput } from '../common/utils/prisma.utils';
@@ -102,7 +103,7 @@ export class VendedoresService {
     };
   }
 
-  async getById(id: string) {
+  async getById(id: string): Promise<SuperAdminVendedorItem> {
     const vendedor = await this.prisma.vendedor.findUnique({
       where: { id },
       include: {
@@ -115,7 +116,7 @@ export class VendedoresService {
       throw new NotFoundException('Vendedor not found');
     }
 
-    return vendedor;
+    return this.toVendedorItem(vendedor);
   }
 
   async update(id: string, dto: UpdateVendedorDto) {
@@ -142,10 +143,14 @@ export class VendedoresService {
     return result;
   }
 
-  async changeEstado(id: string, dto: ChangeEstadoDto): Promise<SuperAdminVendedorItem> {
+  async changeEstado(
+    id: string,
+    dto: ChangeEstadoDto,
+    actorUserId: string,
+  ): Promise<SuperAdminVendedorItem> {
     const vendedor = await this.prisma.vendedor.findUnique({
       where: { id },
-      select: { id: true, estado: true, auth_user_id: true },
+      select: { id: true, estado: true },
     });
 
     if (!vendedor) {
@@ -172,7 +177,7 @@ export class VendedoresService {
       },
     });
 
-    await this.auditLogService.record(AuditAction.VENDEDOR_STATUS_CHANGED, vendedor.auth_user_id, {
+    await this.auditLogService.record(AuditAction.VENDEDOR_STATUS_CHANGED, actorUserId, {
       targetId: id,
       detail: { estadoAnterior: currentEstado, estadoNuevo: targetEstado },
     });
@@ -180,7 +185,7 @@ export class VendedoresService {
     return this.toVendedorItem(result);
   }
 
-  async getMyProfile(userId: string) {
+  async getMyProfile(userId: string): Promise<VendedorProfile> {
     const vendedor = await this.prisma.vendedor.findUnique({
       where: { auth_user_id: userId },
       include: {
@@ -207,7 +212,16 @@ export class VendedoresService {
       );
     }
 
-    return vendedor;
+    return {
+      nombre: vendedor.nombre,
+      apellido: vendedor.apellido || undefined,
+      empresa: vendedor.empresa ?? undefined,
+      logo: vendedor.logo ?? undefined,
+      estado,
+      qrCode: vendedor.qr_token ?? undefined,
+      ciudadDefault: vendedor.ciudad_default || undefined,
+      zonaEntrega: vendedor.zona_entrega ?? undefined,
+    };
   }
 
   async updateMyProfile(userId: string, dto: UpdateVendedorProfileDto) {

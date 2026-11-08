@@ -91,7 +91,11 @@ export class UsuarioDomainTcpController {
   async changeVendedorEstado(@Payload() payload: TcpPayload) {
     this.payloadAdapter.requireRole(payload, UserRole.SUPER_ADMIN);
     const dto = await this.payloadAdapter.body(payload, ChangeEstadoDto);
-    return this.vendedoresService.changeEstado(this.requireParamId(payload), dto);
+    return this.vendedoresService.changeEstado(
+      this.requireParamId(payload),
+      dto,
+      this.payloadAdapter.userId(payload),
+    );
   }
 
   // ─── SUPER ADMIN PROFILE ────────────────────────────────────────

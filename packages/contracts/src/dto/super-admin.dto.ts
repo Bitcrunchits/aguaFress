@@ -63,21 +63,6 @@ export interface SuperAdminPendienteItem {
 export type SuperAdminPendientesResponse = PaginatedResponse<SuperAdminPendienteItem>;
 
 // ════════════════════════════════════════════
-//  ACTIVAR / SUSPENDER
-// ════════════════════════════════════════════
-
-export interface SuperAdminAccionRequest {
-  motivo?: string;
-}
-
-export interface SuperAdminAccionResponse {
-  vendedorId: string;
-  estadoAnterior: VendedorEstado;
-  estadoNuevo: VendedorEstado;
-  updated: boolean;
-}
-
-// ════════════════════════════════════════════
 //  MÉTRICAS DE VENDEDOR ESPECÍFICO
 // ════════════════════════════════════════════
 

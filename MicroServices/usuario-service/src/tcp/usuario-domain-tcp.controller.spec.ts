@@ -245,7 +245,11 @@ describe('UsuarioDomainTcpController', () => {
       });
       const result = await controller.changeVendedorEstado(payload);
 
-      expect(vendedoresService.changeEstado).toHaveBeenCalledWith('v-1', expect.objectContaining({ estado: 'activo' }));
+      expect(vendedoresService.changeEstado).toHaveBeenCalledWith(
+        'v-1',
+        expect.objectContaining({ estado: 'activo' }),
+        'admin-user-id',
+      );
       expect(result).toBe(expected);
     });
   });

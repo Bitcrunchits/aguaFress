@@ -80,7 +80,7 @@ describe('VendedoresService', () => {
 
       const result = await service.changeEstado('vendedor-1', {
         estado: VendedorEstado.ACTIVO,
-      });
+      }, 'super-admin-1');
 
       expect(prisma.vendedor.update).toHaveBeenCalledWith({
         where: { id: 'vendedor-1' },
@@ -99,7 +99,7 @@ describe('VendedoresService', () => {
 
       const result = await service.changeEstado('vendedor-1', {
         estado: VendedorEstado.INACTIVO,
-      });
+      }, 'super-admin-1');
 
       expect(prisma.vendedor.update).toHaveBeenCalledWith({
         where: { id: 'vendedor-1' },
@@ -118,7 +118,7 @@ describe('VendedoresService', () => {
 
       const result = await service.changeEstado('vendedor-1', {
         estado: VendedorEstado.BLOQUEADO,
-      });
+      }, 'super-admin-1');
 
       expect(prisma.vendedor.update).toHaveBeenCalledWith({
         where: { id: 'vendedor-1' },
@@ -137,7 +137,7 @@ describe('VendedoresService', () => {
 
       const result = await service.changeEstado('vendedor-1', {
         estado: VendedorEstado.ACTIVO,
-      });
+      }, 'super-admin-1');
 
       expect(prisma.vendedor.update).toHaveBeenCalledWith({
         where: { id: 'vendedor-1' },
@@ -156,7 +156,7 @@ describe('VendedoresService', () => {
 
       const result = await service.changeEstado('vendedor-1', {
         estado: VendedorEstado.INACTIVO,
-      });
+      }, 'super-admin-1');
 
       expect(prisma.vendedor.update).toHaveBeenCalledWith({
         where: { id: 'vendedor-1' },
@@ -191,7 +191,7 @@ describe('VendedoresService', () => {
       mockCurrentVendedor(current);
 
       await expect(
-        service.changeEstado('vendedor-1', { estado: target }),
+        service.changeEstado('vendedor-1', { estado: target }, 'super-admin-1'),
       ).rejects.toThrow(BadRequestException);
 
       expect(prisma.vendedor.update).not.toHaveBeenCalled();
@@ -266,7 +266,7 @@ describe('VendedoresService', () => {
       try {
         await service.changeEstado('vendedor-1', {
           estate: VendedorEstado.INACTIVO,
-        } as any);
+        } as any, 'super-admin-1');
       } catch (err) {
         expect(err).toBeInstanceOf(BadRequestException);
         expect((err as BadRequestException).message).toContain('pendiente');
@@ -278,7 +278,7 @@ describe('VendedoresService', () => {
       prisma.vendedor.findUnique.mockResolvedValue(null);
 
       await expect(
-        service.changeEstado('fake-id', { estado: VendedorEstado.ACTIVO }),
+        service.changeEstado('fake-id', { estado: VendedorEstado.ACTIVO }, 'super-admin-1'),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -517,8 +517,8 @@ describe('VendedoresService', () => {
       });
       expect(result).toBeDefined();
       expect(result.id).toBe('vendedor-1');
-      expect(result.auth_user.email).toBe('juan@test.com');
-      expect(result._count.clientes).toBe(7);
+      expect(result.email).toBe('juan@test.com');
+      expect(result.clientesCount).toBe(7);
     });
 
     it('lanza NotFoundException cuando no existe', async () => {
@@ -540,8 +540,8 @@ describe('VendedoresService', () => {
       expect(result.nombre).toBe('Juan Pérez');
       expect(result.empresa).toBe('Acme SA');
       expect(result.estado).toBe(VendedorEstado.ACTIVO);
-      expect(result.ciudad_default).toBe('CABA');
-      expect(result.zona_entrega).toBe('Palermo');
+      expect(result.telefono).toBe('11-5555-0100');
+      expect(result.fechaRegistro).toBe('2024-01-01T00:00:00.000Z');
     });
   });
 
@@ -656,8 +656,10 @@ describe('VendedoresService', () => {
         },
       });
       expect(result).toBeDefined();
-      expect(result.id).toBe('vendedor-1');
-      expect(result.auth_user.email).toBe('juan@test.com');
+      expect(result.nombre).toBe('Juan Pérez');
+      expect(result.estado).toBe(VendedorEstado.ACTIVO);
+      expect(result.ciudadDefault).toBe('CABA');
+      expect(result.zonaEntrega).toBe('Palermo');
     });
 
     it('lanza ForbiddenException si el vendedor está inactivo', async () => {
