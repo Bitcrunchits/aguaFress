@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { VendedorEstado } from '@agua/contracts';
 import type {
-  SuperAdminAccionResponse,
+  SuperAdminVendedorItem,
   SuperAdminVendedorListFilters,
   SuperAdminVendedorListResponse,
 } from '@agua/contracts';
@@ -35,12 +35,16 @@ export class AdminVendedoresService {
    * Change a vendedor's estado against the gateway `vendedores.change-estado`
    * action. The id travels in the path and the target estado in the JSON body,
    * matching the HTTP contract `PATCH /api/v1/vendedores/change-estado/{id}`.
+   *
+   * The backend responds with the updated vendedor row (OpenAPI `VendedorListItem`),
+   * not a shaped action response. The caller uses its own validated target, so
+   * the body is typed here for completeness only.
    */
   changeEstado(
     id: string,
     body: { estado: VendedorEstado },
-  ): Observable<SuperAdminAccionResponse> {
-    return this.http.patch<SuperAdminAccionResponse>(
+  ): Observable<SuperAdminVendedorItem> {
+    return this.http.patch<SuperAdminVendedorItem>(
       `${VENDEDORES_CHANGE_ESTADO_URL}/${id}`,
       body,
     );

@@ -13,6 +13,17 @@ export enum VendedorEstado {
   BLOQUEADO = 'bloqueado',
 }
 
+// ─── Transiciones válidas de estado de vendedor ───
+// Fuente de verdad única de la máquina de estados. La consumen tanto el
+// frontend (diálogo super_admin) como el backend (usuario-service changeEstado)
+// para que las reglas de transición no se desincronicen entre capas.
+export const VENDEDOR_ESTADO_TRANSITIONS: Record<VendedorEstado, VendedorEstado[]> = {
+  [VendedorEstado.PENDIENTE]: [VendedorEstado.ACTIVO],
+  [VendedorEstado.ACTIVO]: [VendedorEstado.INACTIVO, VendedorEstado.BLOQUEADO],
+  [VendedorEstado.INACTIVO]: [VendedorEstado.ACTIVO],
+  [VendedorEstado.BLOQUEADO]: [VendedorEstado.INACTIVO],
+};
+
 // ─── Estados de un pedido ───
 export enum OrderEstado {
   PENDIENTE = 'pendiente',

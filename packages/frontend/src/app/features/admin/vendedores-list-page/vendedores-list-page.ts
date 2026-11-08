@@ -1,5 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { VendedorEstado } from '@agua/contracts';
+import { VENDEDOR_ESTADO_TRANSITIONS, VendedorEstado } from '@agua/contracts';
 import type {
   PaginationResponse,
   SuperAdminVendedorItem,
@@ -64,13 +64,10 @@ export class VendedoresListPage implements OnInit {
 
   readonly hasActiveFilters = computed(() => this.search() !== '' || this.estado() !== null);
 
-  // Estado-change dialog state. Valid targets are the operational states
-  // only; `pendiente` is never offered as a target.
-  readonly changeEstadoOptions: VendedorEstado[] = [
-    VendedorEstado.ACTIVO,
-    VendedorEstado.INACTIVO,
-    VendedorEstado.BLOQUEADO,
-  ];
+  // Estado-change dialog state. `dialogTargets` holds only the valid targets
+  // for the vendor's current estado (mirror of TRANSICIONES_VALIDAS), so the
+  // select never offers a transition the backend would reject.
+  readonly dialogTargets = signal<VendedorEstado[]>([]);
 
   readonly dialogOpen = signal(false);
   readonly dialogVendor = signal<SuperAdminVendedorItem | null>(null);
@@ -164,7 +161,11 @@ export class VendedoresListPage implements OnInit {
 
   openCambiarEstado(vendedor: SuperAdminVendedorItem): void {
     this.dialogVendor.set(vendedor);
-    this.dialogEstado.set(vendedor.estado);
+    const targets = VENDEDOR_ESTADO_TRANSITIONS[vendedor.estado] ?? [];
+    this.dialogTargets.set(targets);
+    // Initialize to the first valid target (e.g. `activo` for `pendiente`),
+    // never to the current estado, which is not a valid target.
+    this.dialogEstado.set(targets[0] ?? vendedor.estado);
     this.mutationError.set(null);
     this.dialogOpen.set(true);
   }
@@ -185,8 +186,11 @@ export class VendedoresListPage implements OnInit {
     this.mutationError.set(null);
 
     this.vendedoresService.changeEstado(vendor.id, { estado: target }).subscribe({
-      next: (response) => {
-        this.updateItemEstado(vendor.id, response.estadoNuevo);
+      next: () => {
+        // The backend returns the raw Prisma row (snake_case, `estado` field),
+        // not a shaped response with `estadoNuevo`. Use the locally-validated
+        // target instead of reading state back from the response.
+        this.updateItemEstado(vendor.id, target);
         this.mutating.set(false);
         this.closeDialog();
       },
@@ -207,6 +211,7 @@ export class VendedoresListPage implements OnInit {
     this.dialogOpen.set(false);
     this.dialogVendor.set(null);
     this.dialogEstado.set(null);
+    this.dialogTargets.set([]);
     this.mutationError.set(null);
   }
 

@@ -429,4 +429,85 @@ describe('VendedoresListPage', () => {
 
     expect(serviceStub.changeEstado).toHaveBeenCalledTimes(1);
   });
+
+  function dialogOptionValues(): string[] {
+    const options = element.querySelectorAll<HTMLOptionElement>(
+      '.vendedores__dialog-field select option',
+    );
+    return Array.from(options).map((option) => option.value);
+  }
+
+  function renderAndOpenDialog(estado: VendedorEstado): void {
+    serviceStub.list.and.returnValue(
+      of(pageResponse([{ ...VENDEDOR, estado }])),
+    );
+    fixture.detectChanges();
+    openDialog();
+  }
+
+  it('from pendiente the dialog offers only activo', () => {
+    renderAndOpenDialog(VendedorEstado.PENDIENTE);
+
+    expect(dialogOptionValues()).toEqual([VendedorEstado.ACTIVO]);
+  });
+
+  it('from activo the dialog offers inactivo and bloqueado', () => {
+    renderAndOpenDialog(VendedorEstado.ACTIVO);
+
+    expect(dialogOptionValues()).toEqual([
+      VendedorEstado.INACTIVO,
+      VendedorEstado.BLOQUEADO,
+    ]);
+  });
+
+  it('from inactivo the dialog offers only activo, not bloqueado', () => {
+    renderAndOpenDialog(VendedorEstado.INACTIVO);
+
+    expect(dialogOptionValues()).toEqual([VendedorEstado.ACTIVO]);
+  });
+
+  it('from bloqueado the dialog offers only inactivo, not activo', () => {
+    renderAndOpenDialog(VendedorEstado.BLOQUEADO);
+
+    expect(dialogOptionValues()).toEqual([VendedorEstado.INACTIVO]);
+  });
+
+  it('initializes the dialog to the first valid target, not the current estado', () => {
+    renderAndOpenDialog(VendedorEstado.PENDIENTE);
+
+    const select = element.querySelector<HTMLSelectElement>(
+      '.vendedores__dialog-field select',
+    )!;
+    expect(select.value).toBe(VendedorEstado.ACTIVO);
+    expect(element.querySelector('.confirm-dialog')!.textContent).toContain(
+      'de Pendiente a Activo',
+    );
+  });
+
+  it('updates the row from the local target, ignoring the response body', () => {
+    serviceStub.list.and.returnValue(of(pageResponse([VENDEDOR])));
+    // The backend returns the raw vendedor row, not a shaped `estadoNuevo`.
+    // Even if that body disagrees with the chosen target, the optimistic
+    // update must reflect what the user selected.
+    serviceStub.changeEstado.and.returnValue(of({ ...VENDEDOR }));
+    fixture.detectChanges();
+
+    openDialog();
+
+    const select = element.querySelector<HTMLSelectElement>(
+      '.vendedores__dialog-field select',
+    )!;
+    select.value = VendedorEstado.BLOQUEADO;
+    select.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    confirmButton().click();
+    fixture.detectChanges();
+
+    expect(serviceStub.changeEstado).toHaveBeenCalledWith('vendedor-1', {
+      estado: VendedorEstado.BLOQUEADO,
+    });
+    expect(element.textContent).toContain('Bloqueado');
+    expect(element.querySelector('.confirm-dialog')).toBeNull();
+  });
 });

@@ -5,7 +5,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, $Enums } from '../generated/prisma';
-import { VendedorEstado, AuditAction, SuperAdminVendedorListResponse } from '@agua/contracts';
+import {
+  AuditAction,
+  SuperAdminVendedorItem,
+  SuperAdminVendedorListResponse,
+  VENDEDOR_ESTADO_TRANSITIONS,
+  VendedorEstado,
+} from '@agua/contracts';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { cleanUpdateInput } from '../common/utils/prisma.utils';
 import { AuditLogService } from '../audit-log/audit-log.service';
@@ -14,12 +20,12 @@ import { UpdateVendedorDto } from './dto/update-vendedor.dto';
 import { UpdateVendedorProfileDto } from './dto/update-vendedor-profile.dto';
 import { ListVendedoresDto } from './dto/list-vendedores.dto';
 
-const VALID_TRANSITIONS: Record<VendedorEstado, VendedorEstado[]> = {
-  [VendedorEstado.PENDIENTE]: [VendedorEstado.ACTIVO],
-  [VendedorEstado.ACTIVO]: [VendedorEstado.INACTIVO, VendedorEstado.BLOQUEADO],
-  [VendedorEstado.INACTIVO]: [VendedorEstado.ACTIVO],
-  [VendedorEstado.BLOQUEADO]: [VendedorEstado.INACTIVO],
-};
+type VendedorWithIncludes = Prisma.VendedorGetPayload<{
+  include: {
+    auth_user: { select: { email: true } };
+    _count: { select: { clientes: true } };
+  };
+}>;
 
 @Injectable()
 export class VendedoresService {
@@ -29,6 +35,20 @@ export class VendedoresService {
 
   private mapPrismaEstado(state: $Enums.VendedorEstado): VendedorEstado {
     return state as unknown as VendedorEstado;
+  }
+
+  private toVendedorItem(v: VendedorWithIncludes): SuperAdminVendedorItem {
+    return {
+      id: v.id,
+      nombre: v.nombre,
+      apellido: v.apellido ?? undefined,
+      email: v.auth_user.email,
+      telefono: v.telefono ?? undefined,
+      empresa: v.empresa ?? undefined,
+      estado: this.mapPrismaEstado(v.estado),
+      clientesCount: v._count.clientes,
+      fechaRegistro: v.created_at.toISOString(),
+    };
   }
 
   constructor(
@@ -69,17 +89,7 @@ export class VendedoresService {
       this.prisma.vendedor.count({ where }),
     ]);
 
-    const data = vendedores.map((v) => ({
-      id: v.id,
-      nombre: v.nombre,
-      apellido: v.apellido,
-      email: v.auth_user.email,
-      telefono: v.telefono,
-      empresa: v.empresa ?? undefined,
-      estado: this.mapPrismaEstado(v.estado),
-      clientesCount: v._count.clientes,
-      fechaRegistro: v.created_at.toISOString(),
-    }));
+    const data = vendedores.map((v) => this.toVendedorItem(v));
 
     return {
       data,
@@ -132,7 +142,7 @@ export class VendedoresService {
     return result;
   }
 
-  async changeEstado(id: string, dto: ChangeEstadoDto) {
+  async changeEstado(id: string, dto: ChangeEstadoDto): Promise<SuperAdminVendedorItem> {
     const vendedor = await this.prisma.vendedor.findUnique({
       where: { id },
       select: { id: true, estado: true, auth_user_id: true },
@@ -144,7 +154,7 @@ export class VendedoresService {
 
     const currentEstado = this.mapPrismaEstado(vendedor.estado);
     const targetEstado = dto.estado;
-    const allowed = VALID_TRANSITIONS[currentEstado];
+    const allowed = VENDEDOR_ESTADO_TRANSITIONS[currentEstado];
 
     if (!allowed || !allowed.includes(targetEstado)) {
       const validTransitions = allowed?.join(', ') ?? 'none';
@@ -156,6 +166,10 @@ export class VendedoresService {
     const result = await this.prisma.vendedor.update({
       where: { id },
       data: { estado: this.mapEstado(targetEstado) },
+      include: {
+        auth_user: { select: { email: true } },
+        _count: { select: { clientes: true } },
+      },
     });
 
     await this.auditLogService.record(AuditAction.VENDEDOR_STATUS_CHANGED, vendedor.auth_user_id, {
@@ -163,7 +177,7 @@ export class VendedoresService {
       detail: { estadoAnterior: currentEstado, estadoNuevo: targetEstado },
     });
 
-    return result;
+    return this.toVendedorItem(result);
   }
 
   async getMyProfile(userId: string) {

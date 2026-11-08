@@ -168,7 +168,7 @@
           [value]="dialogEstado() ?? ''"
           (change)="onDialogEstadoChange($event)"
         >
-          @for (option of changeEstadoOptions; track option) {
+          @for (option of dialogTargets(); track option) {
             <option [value]="option">{{ estadoLabel(option) }}</option>
           }
         </select>

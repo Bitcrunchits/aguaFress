@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import {
   VendedorEstado,
-  type SuperAdminAccionResponse,
+  type SuperAdminVendedorItem,
   type SuperAdminVendedorListFilters,
   type SuperAdminVendedorListResponse,
 } from '@agua/contracts';
@@ -12,11 +12,16 @@ import { AdminVendedoresService } from './admin-vendedores.service';
 const LIST_URL = 'https://api-aguafress.eadev.cloud/api/v1/vendedores/list';
 const CHANGE_ESTADO_URL = 'https://api-aguafress.eadev.cloud/api/v1/vendedores/change-estado';
 
-const ACCION_RESPONSE: SuperAdminAccionResponse = {
-  vendedorId: 'vendedor-1',
-  estadoAnterior: VendedorEstado.ACTIVO,
-  estadoNuevo: VendedorEstado.BLOQUEADO,
-  updated: true,
+// The backend returns the updated vendedor row (OpenAPI `VendedorListItem`),
+// not a shaped action response with `estadoNuevo`.
+const VENDEDOR_RESPONSE: SuperAdminVendedorItem = {
+  id: 'vendedor-1',
+  nombre: 'Ana',
+  apellido: 'Gómez',
+  email: 'ana@example.com',
+  estado: VendedorEstado.BLOQUEADO,
+  clientesCount: 3,
+  fechaRegistro: '2026-01-15T12:00:00.000Z',
 };
 
 const LIST_RESPONSE: SuperAdminVendedorListResponse = {
@@ -84,7 +89,7 @@ describe('AdminVendedoresService', () => {
   });
 
   it('patches the target estado to the change-estado action for a vendedor', () => {
-    let response: SuperAdminAccionResponse | undefined;
+    let response: SuperAdminVendedorItem | undefined;
 
     service
       .changeEstado('vendedor-1', { estado: VendedorEstado.BLOQUEADO })
@@ -94,7 +99,7 @@ describe('AdminVendedoresService', () => {
     expect(request.request.method).toBe('PATCH');
     expect(request.request.body).toEqual({ estado: VendedorEstado.BLOQUEADO });
 
-    request.flush(ACCION_RESPONSE);
-    expect(response).toEqual(ACCION_RESPONSE);
+    request.flush(VENDEDOR_RESPONSE);
+    expect(response).toEqual(VENDEDOR_RESPONSE);
   });
 });

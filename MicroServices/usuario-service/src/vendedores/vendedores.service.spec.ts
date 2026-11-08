@@ -63,7 +63,13 @@ describe('VendedoresService', () => {
         (_args: { where: { id: string }; data: { estado: string } }) =>
           Promise.resolve({
             ...vendedorBase,
+            apellido: 'Pérez',
+            telefono: '1234567890',
+            empresa: null,
             estado: _args.data.estado as VendedorEstado,
+            created_at: new Date('2024-01-01T00:00:00.000Z'),
+            auth_user: { email: 'vendedor@example.com' },
+            _count: { clientes: 0 },
           }),
       );
     }
@@ -79,6 +85,10 @@ describe('VendedoresService', () => {
       expect(prisma.vendedor.update).toHaveBeenCalledWith({
         where: { id: 'vendedor-1' },
         data: { estado: VendedorEstado.ACTIVO },
+        include: {
+          auth_user: { select: { email: true } },
+          _count: { select: { clientes: true } },
+        },
       });
       expect(result).toBeDefined();
     });
@@ -94,6 +104,10 @@ describe('VendedoresService', () => {
       expect(prisma.vendedor.update).toHaveBeenCalledWith({
         where: { id: 'vendedor-1' },
         data: { estado: VendedorEstado.INACTIVO },
+        include: {
+          auth_user: { select: { email: true } },
+          _count: { select: { clientes: true } },
+        },
       });
       expect(result).toBeDefined();
     });
@@ -109,6 +123,10 @@ describe('VendedoresService', () => {
       expect(prisma.vendedor.update).toHaveBeenCalledWith({
         where: { id: 'vendedor-1' },
         data: { estado: VendedorEstado.BLOQUEADO },
+        include: {
+          auth_user: { select: { email: true } },
+          _count: { select: { clientes: true } },
+        },
       });
       expect(result).toBeDefined();
     });
@@ -124,6 +142,10 @@ describe('VendedoresService', () => {
       expect(prisma.vendedor.update).toHaveBeenCalledWith({
         where: { id: 'vendedor-1' },
         data: { estado: VendedorEstado.ACTIVO },
+        include: {
+          auth_user: { select: { email: true } },
+          _count: { select: { clientes: true } },
+        },
       });
       expect(result).toBeDefined();
     });
@@ -139,6 +161,10 @@ describe('VendedoresService', () => {
       expect(prisma.vendedor.update).toHaveBeenCalledWith({
         where: { id: 'vendedor-1' },
         data: { estado: VendedorEstado.INACTIVO },
+        include: {
+          auth_user: { select: { email: true } },
+          _count: { select: { clientes: true } },
+        },
       });
       expect(result).toBeDefined();
     });
