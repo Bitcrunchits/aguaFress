@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import type { CategoriaResponse, CreateCategoriaRequest, MarcaResponse } from '@agua/contracts';
+import type { CategoriaResponse, CreateCategoriaRequest, CreateMarcaRequest, MarcaResponse } from '@agua/contracts';
 import { VendedorCatalogoService } from './vendedor-catalogo.service';
 
 const BASE = 'https://api-aguafress.eadev.cloud';
@@ -89,5 +89,19 @@ describe('VendedorCatalogoService', () => {
 
     request.flush(CATEGORIAS[0]);
     expect(response).toEqual(CATEGORIAS[0]);
+  });
+
+  it('creates a marca sending only { nombre } (no vendedorId)', () => {
+    const body: CreateMarcaRequest = { nombre: 'Manantial' };
+    let response: MarcaResponse | undefined;
+
+    service.createMarca(body).subscribe((value) => (response = value));
+
+    const request = httpMock.expectOne(`${BASE}/api/v1/brands/create`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ nombre: 'Manantial' });
+
+    request.flush(MARCAS[0]);
+    expect(response).toEqual(MARCAS[0]);
   });
 });

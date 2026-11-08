@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import type { CategoriaResponse, PaginatedResponse, ProductResponse } from '@agua/contracts';
+import type { CategoriaResponse, MarcaResponse, PaginatedResponse, ProductResponse } from '@agua/contracts';
 import { Observable, of, throwError } from 'rxjs';
 import { VendedorCatalogoService } from '../vendedor-catalogo.service';
 import { VendedorProductosService } from '../vendedor-productos.service';
@@ -44,6 +44,15 @@ const CATEGORIA: CategoriaResponse = {
   updatedAt: '2026-01-01T00:00:00.000Z',
 };
 
+const MARCA: MarcaResponse = {
+  id: 'marca-1',
+  nombre: 'Manantial',
+  vendedorId: 'vendedor-1',
+  activo: true,
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z',
+};
+
 describe('VendedorProductosPage', () => {
   let fixture: ComponentFixture<VendedorProductosPage>;
   let component: VendedorProductosPage;
@@ -56,12 +65,14 @@ describe('VendedorProductosPage', () => {
   };
   const catalogoServiceStub = {
     createCategoria: jasmine.createSpy('createCategoria'),
+    createMarca: jasmine.createSpy('createMarca'),
   };
 
   beforeEach(async () => {
     serviceStub.list.calls.reset();
     serviceStub.delete.calls.reset();
     catalogoServiceStub.createCategoria.calls.reset();
+    catalogoServiceStub.createMarca.calls.reset();
 
     await TestBed.configureTestingModule({
       imports: [VendedorProductosPage],
@@ -97,6 +108,18 @@ describe('VendedorProductosPage', () => {
 
   function setCategoriaNombre(value: string): void {
     const input = element.querySelector<HTMLInputElement>('#nueva-categoria-nombre');
+    input!.value = value;
+    input!.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+  }
+
+  function openMarcaForm(): void {
+    findButton('Nueva marca')?.click();
+    fixture.detectChanges();
+  }
+
+  function setMarcaNombre(value: string): void {
+    const input = element.querySelector<HTMLInputElement>('#nueva-marca-nombre');
     input!.value = value;
     input!.dispatchEvent(new Event('input'));
     fixture.detectChanges();
@@ -321,6 +344,53 @@ describe('VendedorProductosPage', () => {
     expect(catalogoServiceStub.createCategoria).toHaveBeenCalledWith({ nombre: 'Agua' });
     expect(element.textContent).toContain(
       'No pudimos crear la categoría. Inténtalo de nuevo en unos segundos.',
+    );
+  });
+
+  it('creates a marca from the inline form and shows a success message', () => {
+    serviceStub.list.and.returnValue(of(pageResponse([PRODUCT])));
+    catalogoServiceStub.createMarca.and.returnValue(of(MARCA));
+
+    fixture.detectChanges();
+    openMarcaForm();
+    setMarcaNombre('Manantial');
+
+    findButton('Crear')?.click();
+    fixture.detectChanges();
+
+    expect(catalogoServiceStub.createMarca).toHaveBeenCalledWith({ nombre: 'Manantial' });
+    expect(element.textContent).toContain('Marca creada');
+    expect(findButton('Nueva marca')).toBeDefined();
+  });
+
+  it('validates the marca name before creating', () => {
+    serviceStub.list.and.returnValue(of(pageResponse([PRODUCT])));
+
+    fixture.detectChanges();
+    openMarcaForm();
+    setMarcaNombre('A');
+
+    findButton('Crear')?.click();
+    fixture.detectChanges();
+
+    expect(catalogoServiceStub.createMarca).not.toHaveBeenCalled();
+    expect(element.textContent).toContain('Ingresa un nombre de entre 2 y 255 caracteres.');
+  });
+
+  it('shows an error message when marca creation fails', () => {
+    serviceStub.list.and.returnValue(of(pageResponse([PRODUCT])));
+    catalogoServiceStub.createMarca.and.returnValue(throwError(() => new Error('boom')));
+
+    fixture.detectChanges();
+    openMarcaForm();
+    setMarcaNombre('Manantial');
+
+    findButton('Crear')?.click();
+    fixture.detectChanges();
+
+    expect(catalogoServiceStub.createMarca).toHaveBeenCalledWith({ nombre: 'Manantial' });
+    expect(element.textContent).toContain(
+      'No pudimos crear la marca. Inténtalo de nuevo en unos segundos.',
     );
   });
 });

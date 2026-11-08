@@ -35,6 +35,15 @@ const NUEVA_CATEGORIA: CategoriaResponse = {
   updatedAt: '2026-01-01T00:00:00.000Z',
 };
 
+const NUEVA_MARCA: MarcaResponse = {
+  id: 'marca-2',
+  nombre: 'Agua del sur',
+  vendedorId: 'vendedor-1',
+  activo: true,
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z',
+};
+
 const PRODUCT: ProductResponse = {
   id: 'producto-1',
   nombre: 'Agua mineral 500 ml',
@@ -62,6 +71,7 @@ describe('VendedorProductoFormPage', () => {
     listCategorias: jasmine.createSpy('listCategorias'),
     listMarcas: jasmine.createSpy('listMarcas'),
     createCategoria: jasmine.createSpy('createCategoria'),
+    createMarca: jasmine.createSpy('createMarca'),
   };
   const productosServiceStub = {
     get: jasmine.createSpy('get'),
@@ -73,6 +83,7 @@ describe('VendedorProductoFormPage', () => {
     catalogoServiceStub.listCategorias.calls.reset();
     catalogoServiceStub.listMarcas.calls.reset();
     catalogoServiceStub.createCategoria.calls.reset();
+    catalogoServiceStub.createMarca.calls.reset();
     productosServiceStub.get.calls.reset();
     productosServiceStub.create.calls.reset();
     productosServiceStub.update.calls.reset();
@@ -129,6 +140,13 @@ describe('VendedorProductoFormPage', () => {
 
   function setCategoriaNombre(value: string): void {
     const input = element.querySelector<HTMLInputElement>('#nueva-categoria-nombre');
+    input!.value = value;
+    input!.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+  }
+
+  function setMarcaNombre(value: string): void {
+    const input = element.querySelector<HTMLInputElement>('#nueva-marca-nombre');
     input!.value = value;
     input!.dispatchEvent(new Event('input'));
     fixture.detectChanges();
@@ -296,6 +314,61 @@ describe('VendedorProductoFormPage', () => {
     });
     expect(element.textContent).toContain(
       'No pudimos crear la categoría. Inténtalo de nuevo en unos segundos.',
+    );
+  });
+
+  it('creates a marca inline and auto-selects it in the form', async () => {
+    await configure(null);
+    catalogoServiceStub.createMarca.and.returnValue(of(NUEVA_MARCA));
+    renderWithLookups();
+
+    findButton('Nueva marca')?.click();
+    fixture.detectChanges();
+    setMarcaNombre('Agua del sur');
+
+    findButton('Crear')?.click();
+    fixture.detectChanges();
+
+    expect(catalogoServiceStub.createMarca).toHaveBeenCalledWith({
+      nombre: 'Agua del sur',
+    });
+    expect(component.marcas().some((marca) => marca.id === 'marca-2')).toBeTrue();
+    expect(component.form.get('marcaId')?.value).toBe('marca-2');
+    expect(element.textContent).toContain('Marca creada');
+  });
+
+  it('validates the new marca name without calling the service', async () => {
+    await configure(null);
+    renderWithLookups();
+
+    findButton('Nueva marca')?.click();
+    fixture.detectChanges();
+    setMarcaNombre('A');
+
+    findButton('Crear')?.click();
+    fixture.detectChanges();
+
+    expect(catalogoServiceStub.createMarca).not.toHaveBeenCalled();
+    expect(element.textContent).toContain('Ingresa un nombre de entre 2 y 255 caracteres.');
+  });
+
+  it('shows an error message when marca creation fails', async () => {
+    await configure(null);
+    catalogoServiceStub.createMarca.and.returnValue(throwError(() => new Error('boom')));
+    renderWithLookups();
+
+    findButton('Nueva marca')?.click();
+    fixture.detectChanges();
+    setMarcaNombre('Agua del sur');
+
+    findButton('Crear')?.click();
+    fixture.detectChanges();
+
+    expect(catalogoServiceStub.createMarca).toHaveBeenCalledWith({
+      nombre: 'Agua del sur',
+    });
+    expect(element.textContent).toContain(
+      'No pudimos crear la marca. Inténtalo de nuevo en unos segundos.',
     );
   });
 });

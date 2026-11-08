@@ -108,3 +108,7 @@ export interface CategoriaResponse {
 export interface CreateCategoriaRequest {
   nombre: string;
 }
+
+export interface CreateMarcaRequest {
+  nombre: string;
+}

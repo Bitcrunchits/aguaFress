@@ -4,6 +4,7 @@ import type { Observable } from 'rxjs';
 import type {
   CategoriaResponse,
   CreateCategoriaRequest,
+  CreateMarcaRequest,
   MarcaResponse,
 } from '@agua/contracts';
 import { API_CONFIG } from '../../core/config/api.config';
@@ -11,6 +12,7 @@ import { API_CONFIG } from '../../core/config/api.config';
 const LIST_CATEGORIAS_URL = `${API_CONFIG.baseUrl}/api/v1/categories/list`;
 const CREATE_CATEGORIA_URL = `${API_CONFIG.baseUrl}/api/v1/categories/create`;
 const LIST_MARCAS_URL = `${API_CONFIG.baseUrl}/api/v1/brands/list`;
+const CREATE_MARCA_URL = `${API_CONFIG.baseUrl}/api/v1/brands/create`;
 
 /**
  * Vendedor catalog taxonomy access for the product form selects. Both
@@ -31,5 +33,9 @@ export class VendedorCatalogoService {
 
   listMarcas(): Observable<MarcaResponse[]> {
     return this.http.get<MarcaResponse[]>(LIST_MARCAS_URL);
+  }
+
+  createMarca(body: CreateMarcaRequest): Observable<MarcaResponse> {
+    return this.http.post<MarcaResponse>(CREATE_MARCA_URL, body);
   }
 }

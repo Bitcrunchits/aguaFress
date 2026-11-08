@@ -40,6 +40,44 @@
     </div>
   </ng-template>
 
+  <ng-template #nuevaMarcaForm>
+    <div class="producto-form__marca-create">
+      <label for="nueva-marca-nombre">Nombre de la marca</label>
+      <div class="producto-form__marca-create-row">
+        <input
+          id="nueva-marca-nombre"
+          type="text"
+          [formControl]="nuevaMarcaNombre"
+          [attr.aria-invalid]="showNuevaMarcaError()"
+          placeholder="Ej. Manantial"
+        />
+        <button
+          pButton
+          type="button"
+          label="Crear"
+          [loading]="creatingMarca()"
+          [disabled]="creatingMarca()"
+          (click)="crearMarca()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          label="Cancelar"
+          [disabled]="creatingMarca()"
+          (click)="cancelarMarca()"
+        ></button>
+      </div>
+      @if (showNuevaMarcaError()) {
+        <span class="producto-form__hint">Ingresa un nombre de entre 2 y 255 caracteres.</span>
+      }
+      @if (marcaCreateError()) {
+        <p class="producto-form__error producto-form__error--inline" role="alert">
+          {{ marcaCreateError() }}
+        </p>
+      }
+    </div>
+  </ng-template>
+
   @if (lookupsLoading() || productLoading()) {
     <p class="producto-form__state" role="status">Cargando formulario</p>
   } @else if (lookupsFailed()) {
@@ -165,6 +203,14 @@
             <option [value]="marca.id">{{ marca.nombre }}</option>
           }
         </select>
+        @if (marcaFormOpen()) {
+          <ng-container *ngTemplateOutlet="nuevaMarcaForm"></ng-container>
+        } @else {
+          <button pButton type="button" label="Nueva marca" (click)="abrirMarcaForm()"></button>
+        }
+        @if (marcaCreatedMessage()) {
+          <p class="producto-form__success" role="status">{{ marcaCreatedMessage() }}</p>
+        }
       </div>
 
       <label class="producto-form__checkbox">

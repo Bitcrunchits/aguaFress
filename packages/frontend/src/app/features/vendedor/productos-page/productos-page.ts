@@ -45,6 +45,12 @@ export class VendedorProductosPage implements OnInit {
   readonly categoriaCreateError = signal<string | null>(null);
   readonly categoriaCreatedMessage = signal<string | null>(null);
 
+  readonly marcaFormOpen = signal(false);
+  readonly marcaNombre = signal('');
+  readonly creatingMarca = signal(false);
+  readonly marcaCreateError = signal<string | null>(null);
+  readonly marcaCreatedMessage = signal<string | null>(null);
+
   private readonly priceFormatter = new Intl.NumberFormat('es-AR', {
     style: 'currency',
     currency: 'ARS',
@@ -154,6 +160,54 @@ export class VendedorProductosPage implements OnInit {
         this.creatingCategoria.set(false);
         this.categoriaCreateError.set(
           'No pudimos crear la categoría. Inténtalo de nuevo en unos segundos.',
+        );
+      },
+    });
+  }
+
+  abrirMarcaForm(): void {
+    this.marcaNombre.set('');
+    this.marcaCreateError.set(null);
+    this.marcaCreatedMessage.set(null);
+    this.marcaFormOpen.set(true);
+  }
+
+  cancelarMarca(): void {
+    this.marcaFormOpen.set(false);
+    this.marcaNombre.set('');
+    this.marcaCreateError.set(null);
+  }
+
+  onMarcaNombreInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.marcaNombre.set(target.value);
+  }
+
+  crearMarca(): void {
+    if (this.creatingMarca()) {
+      return;
+    }
+
+    const nombre = this.marcaNombre().trim();
+    if (nombre.length < 2 || nombre.length > 255) {
+      this.marcaCreateError.set('Ingresa un nombre de entre 2 y 255 caracteres.');
+      return;
+    }
+
+    this.creatingMarca.set(true);
+    this.marcaCreateError.set(null);
+
+    this.catalogoService.createMarca({ nombre }).subscribe({
+      next: () => {
+        this.creatingMarca.set(false);
+        this.marcaFormOpen.set(false);
+        this.marcaNombre.set('');
+        this.marcaCreatedMessage.set('Marca creada');
+      },
+      error: () => {
+        this.creatingMarca.set(false);
+        this.marcaCreateError.set(
+          'No pudimos crear la marca. Inténtalo de nuevo en unos segundos.',
         );
       },
     });

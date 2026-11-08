@@ -43,6 +43,43 @@
       @if (categoriaCreatedMessage()) {
         <p class="productos__categoria-success" role="status">{{ categoriaCreatedMessage() }}</p>
       }
+      @if (marcaFormOpen()) {
+        <div class="productos__marca-create">
+          <label for="nueva-marca-nombre">Nombre de la marca</label>
+          <div class="productos__marca-create-row">
+            <input
+              id="nueva-marca-nombre"
+              type="text"
+              [value]="marcaNombre()"
+              (input)="onMarcaNombreInput($event)"
+              placeholder="Ej. Manantial"
+            />
+            <button
+              pButton
+              type="button"
+              label="Crear"
+              [loading]="creatingMarca()"
+              [disabled]="creatingMarca()"
+              (click)="crearMarca()"
+            ></button>
+            <button
+              pButton
+              type="button"
+              label="Cancelar"
+              [disabled]="creatingMarca()"
+              (click)="cancelarMarca()"
+            ></button>
+          </div>
+          @if (marcaCreateError()) {
+            <p class="productos__marca-error" role="alert">{{ marcaCreateError() }}</p>
+          }
+        </div>
+      } @else {
+        <button pButton type="button" label="Nueva marca" (click)="abrirMarcaForm()"></button>
+      }
+      @if (marcaCreatedMessage()) {
+        <p class="productos__marca-success" role="status">{{ marcaCreatedMessage() }}</p>
+      }
     </div>
   </header>
 

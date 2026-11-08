@@ -73,7 +73,18 @@ export class VendedorProductoFormPage implements OnInit {
   readonly categoriaCreateError = signal<string | null>(null);
   readonly categoriaCreatedMessage = signal<string | null>(null);
 
+  readonly marcaFormOpen = signal(false);
+  readonly creatingMarca = signal(false);
+  readonly marcaCreateError = signal<string | null>(null);
+  readonly marcaCreatedMessage = signal<string | null>(null);
+
   readonly nuevaCategoriaNombre = this.formBuilder.nonNullable.control('', [
+    nonBlankText,
+    Validators.minLength(2),
+    Validators.maxLength(255),
+  ]);
+
+  readonly nuevaMarcaNombre = this.formBuilder.nonNullable.control('', [
     nonBlankText,
     Validators.minLength(2),
     Validators.maxLength(255),
@@ -232,6 +243,58 @@ export class VendedorProductoFormPage implements OnInit {
 
   showNuevaCategoriaError(): boolean {
     const control = this.nuevaCategoriaNombre;
+    return control.invalid && (control.touched || control.dirty);
+  }
+
+  abrirMarcaForm(): void {
+    this.nuevaMarcaNombre.reset();
+    this.marcaCreateError.set(null);
+    this.marcaCreatedMessage.set(null);
+    this.marcaFormOpen.set(true);
+  }
+
+  cancelarMarca(): void {
+    this.marcaFormOpen.set(false);
+    this.nuevaMarcaNombre.reset();
+    this.marcaCreateError.set(null);
+  }
+
+  crearMarca(): void {
+    if (this.creatingMarca()) {
+      return;
+    }
+    if (this.nuevaMarcaNombre.invalid) {
+      this.nuevaMarcaNombre.markAsTouched();
+      return;
+    }
+
+    const nombre = this.nuevaMarcaNombre.value.trim();
+    this.creatingMarca.set(true);
+    this.marcaCreateError.set(null);
+
+    this.catalogoService.createMarca({ nombre }).subscribe({
+      next: (marca) => this.onMarcaCreated(marca),
+      error: () => {
+        this.creatingMarca.set(false);
+        this.marcaCreateError.set(
+          'No pudimos crear la marca. Inténtalo de nuevo en unos segundos.',
+        );
+      },
+    });
+  }
+
+  private onMarcaCreated(marca: MarcaResponse): void {
+    this.marcas.update((items) => [...items, marca]);
+    this.form.get('marcaId')?.setValue(marca.id);
+    this.creatingMarca.set(false);
+    this.marcaCreateError.set(null);
+    this.marcaFormOpen.set(false);
+    this.nuevaMarcaNombre.reset();
+    this.marcaCreatedMessage.set('Marca creada');
+  }
+
+  showNuevaMarcaError(): boolean {
+    const control = this.nuevaMarcaNombre;
     return control.invalid && (control.touched || control.dirty);
   }
 

@@ -59,6 +59,52 @@
   font-size: 0.9rem;
 }
 
+.productos__marca-create {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label {
+    color: var(--slate-ink);
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+}
+
+.productos__marca-create-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+
+  input {
+    min-width: 200px;
+    padding: 10px 12px;
+    border: 1px solid var(--line-soft);
+    background: var(--clean-white);
+    color: var(--slate-ink);
+    font: inherit;
+
+    &:focus-visible {
+      border-color: var(--agua-flow);
+      outline: 3px solid color-mix(in srgb, var(--agua-flow) 45%, transparent);
+      outline-offset: 1px;
+    }
+  }
+}
+
+.productos__marca-error {
+  margin: 0;
+  color: var(--route-danger);
+  font-size: 0.9rem;
+}
+
+.productos__marca-success {
+  margin: 0;
+  color: var(--route-success);
+  font-size: 0.9rem;
+}
+
 .productos__state {
   margin: 24px 0 0;
   color: var(--slate-muted);
