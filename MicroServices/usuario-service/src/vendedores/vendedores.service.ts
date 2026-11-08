@@ -17,7 +17,6 @@ import { PrismaService } from '../common/prisma/prisma.service';
 import { cleanUpdateInput } from '../common/utils/prisma.utils';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { ChangeEstadoDto } from './dto/change-estado.dto';
-import { UpdateVendedorDto } from './dto/update-vendedor.dto';
 import { UpdateVendedorProfileDto } from './dto/update-vendedor-profile.dto';
 import { ListVendedoresDto } from './dto/list-vendedores.dto';
 
@@ -117,30 +116,6 @@ export class VendedoresService {
     }
 
     return this.toVendedorItem(vendedor);
-  }
-
-  async update(id: string, dto: UpdateVendedorDto) {
-    const existing = await this.prisma.vendedor.findUnique({
-      where: { id },
-      select: { id: true, auth_user_id: true },
-    });
-
-    if (!existing) {
-      throw new NotFoundException('Vendedor not found');
-    }
-
-    const data = cleanUpdateInput(dto) as Prisma.VendedorUpdateInput;
-
-    const result = await this.prisma.vendedor.update({
-      where: { id },
-      data,
-    });
-
-    await this.auditLogService.record(AuditAction.VENDEDOR_UPDATED, existing.auth_user_id, {
-      targetId: id,
-    });
-
-    return result;
   }
 
   async changeEstado(
