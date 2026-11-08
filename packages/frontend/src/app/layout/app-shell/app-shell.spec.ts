@@ -44,9 +44,14 @@ describe('AppShell', () => {
       ready.next(true);
       fixture.detectChanges();
       const links = element.querySelectorAll('a');
-      expect(links.length).toBe(role === UserRole.CLIENTE ? 4 : 1);
+      const expectedLinks = { [UserRole.CLIENTE]: 4, [UserRole.VENDEDOR]: 2, [UserRole.SUPER_ADMIN]: 1 };
+      expect(links.length).toBe(expectedLinks[role]);
       expect(links[0].getAttribute('href')).toBe(path);
       expect(links[0].textContent?.trim()).toBe('Inicio');
+      if (role === UserRole.VENDEDOR) {
+        expect(links[1].getAttribute('href')).toBe('/vendedor/catalogo/productos');
+        expect(links[1].textContent?.trim()).toBe('Productos');
+      }
       if (role === UserRole.CLIENTE) {
         expect(links[1].getAttribute('href')).toBe('/cliente/catalogo');
         expect(links[1].textContent?.trim()).toBe('Catálogo');

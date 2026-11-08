@@ -18,6 +18,8 @@ import { EMPTY, Observable, of } from 'rxjs';
 import { routes } from './app.routes';
 import { AuthService } from './core/auth/auth.service';
 import { AdminVendedoresService } from './features/admin/admin-vendedores.service';
+import { VendedorPerfilService } from './features/vendedor/vendedor-perfil.service';
+import { VendedorProductosService } from './features/vendedor/vendedor-productos.service';
 import { ClienteCarritoEdicionService } from './features/cliente/cliente-carrito-edicion.service';
 import { ClienteCarritoLecturaService } from './features/cliente/cliente-carrito-lectura.service';
 import { ClienteCarritoService } from './features/cliente/cliente-carrito.service';
@@ -136,6 +138,11 @@ describe('application routes', () => {
           },
         },
         { provide: AdminVendedoresService, useValue: { list: () => of(EMPTY_LIST) } },
+        { provide: VendedorPerfilService, useValue: { getProfile: () => EMPTY } },
+        {
+          provide: VendedorProductosService,
+          useValue: { list: () => EMPTY, listCategorias: () => of([]) },
+        },
         { provide: ClienteCatalogoService, useValue: { list: () => of(EMPTY_PRODUCTS) } },
         { provide: ClienteCarritoService, useValue: { addToCart: () => EMPTY } },
         { provide: ClienteCarritoLecturaService, useValue: lecturaStub },
@@ -171,6 +178,35 @@ describe('application routes', () => {
     expect(harness.routeNativeElement?.querySelector('.role-card h1')?.textContent?.trim()).toBe(
       'Vendedores',
     );
+  });
+
+  it('renders the vendedor home for a vendedor session', async () => {
+    authServiceStub.currentSession = sessionWithRole(UserRole.VENDEDOR);
+
+    const harness = await RouterTestingHarness.create('/vendedor');
+
+    expect(harness.routeNativeElement?.querySelector('h1')?.textContent?.trim()).toBe(
+      'Inicio de vendedor',
+    );
+  });
+
+  it('renders the vendedor products page under the vendedor guard', async () => {
+    authServiceStub.currentSession = sessionWithRole(UserRole.VENDEDOR);
+
+    const harness = await RouterTestingHarness.create('/vendedor/catalogo/productos');
+
+    expect(TestBed.inject(Router).url).toBe('/vendedor/catalogo/productos');
+    expect(harness.routeNativeElement?.querySelector('h1')?.textContent?.trim()).toBe(
+      'Mis productos',
+    );
+  });
+
+  it('redirects a cliente session away from the vendedor products page', async () => {
+    authServiceStub.currentSession = sessionWithRole(UserRole.CLIENTE);
+
+    await RouterTestingHarness.create('/vendedor/catalogo/productos');
+
+    expect(TestBed.inject(Router).url).not.toBe('/vendedor/catalogo/productos');
   });
 
   it('redirects a vendedor session away from the admin vendedores route', async () => {

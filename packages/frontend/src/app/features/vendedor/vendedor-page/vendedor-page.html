@@ -1,5 +1,45 @@
-<article class="role-card" aria-labelledby="vendor-title">
+<article class="role-card vendedor-home" aria-labelledby="vendor-title">
   <p class="role-card__eyebrow">Vendedor</p>
   <h1 id="vendor-title">Inicio de vendedor</h1>
-  <p>La gestión del catálogo todavía no está disponible en esta versión.</p>
+
+  @if (loading()) {
+    <p class="vendedor-home__state" role="status">Cargando tu información</p>
+  } @else if (error(); as message) {
+    <div class="vendedor-home__state vendedor-home__state--error" role="alert">
+      <p>{{ message }}</p>
+      <button pButton type="button" label="Reintentar" (click)="load()"></button>
+    </div>
+  } @else if (profile(); as perfil) {
+    <p class="vendedor-home__greeting">Hola, {{ nombreCompleto(perfil) }}</p>
+
+    <dl class="vendedor-home__data">
+      <div>
+        <dt>Empresa</dt>
+        <dd>{{ perfil.empresa || '—' }}</dd>
+      </div>
+      <div>
+        <dt>Estado operativo</dt>
+        <dd>
+          <span class="vendedor-home__badge" [attr.data-estado]="perfil.estado">
+            {{ estadoOperativo(perfil.estado).label }}
+          </span>
+        </dd>
+      </div>
+    </dl>
+    <p class="vendedor-home__estado-desc">{{ estadoOperativo(perfil.estado).descripcion }}</p>
+
+    <section class="vendedor-home__accesos" aria-labelledby="accesos-title">
+      <h2 id="accesos-title">Accesos</h2>
+      <a class="vendedor-home__acceso" routerLink="/vendedor/catalogo/productos">
+        <strong>Catálogo de productos</strong>
+        <span>
+          {{
+            puedeOperar(perfil.estado)
+              ? 'Crea, edita y desactiva tus productos.'
+              : 'Consulta tus productos. La edición se habilita cuando tu cuenta esté activa.'
+          }}
+        </span>
+      </a>
+    </section>
+  }
 </article>

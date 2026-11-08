@@ -1,0 +1,79 @@
+<form class="producto-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <h2>{{ editing ? 'Editar producto' : 'Nuevo producto' }}</h2>
+
+  @if (feedback(); as message) {
+    <p class="producto-form__feedback" role="alert">{{ message }}</p>
+  }
+
+  <div class="producto-form__grid">
+    <div class="producto-form__field producto-form__field--wide">
+      <label for="producto-nombre">Nombre</label>
+      <input id="producto-nombre" type="text" formControlName="nombre" maxlength="255"
+        aria-required="true" [attr.aria-invalid]="showError('nombre')" />
+      @if (showError('nombre')) {
+        <p class="producto-form__error">Ingresa un nombre de al menos 2 caracteres.</p>
+      }
+    </div>
+
+    <div class="producto-form__field producto-form__field--wide">
+      <label for="producto-descripcion">Descripción (opcional)</label>
+      <textarea id="producto-descripcion" rows="2" formControlName="descripcion"></textarea>
+    </div>
+
+    <div class="producto-form__field">
+      <label for="producto-precio">Precio sin IVA</label>
+      <input id="producto-precio" type="number" min="0.01" step="0.01" formControlName="precioSinIva"
+        aria-required="true" [attr.aria-invalid]="showError('precioSinIva')" />
+      @if (showError('precioSinIva')) {
+        <p class="producto-form__error">Ingresa un precio mayor a 0 con hasta 2 decimales.</p>
+      }
+    </div>
+
+    <div class="producto-form__field">
+      <label for="producto-iva">IVA (%)</label>
+      <input id="producto-iva" type="number" min="0" step="0.01" formControlName="porcentajeIva"
+        aria-required="true" [attr.aria-invalid]="showError('porcentajeIva')" />
+      @if (showError('porcentajeIva')) {
+        <p class="producto-form__error">Ingresa un porcentaje válido (0 o más).</p>
+      }
+    </div>
+
+    <div class="producto-form__field">
+      <label for="producto-stock">Stock</label>
+      <input id="producto-stock" type="number" min="0" step="1" formControlName="stock"
+        aria-required="true" [attr.aria-invalid]="showError('stock')" />
+      @if (showError('stock')) {
+        <p class="producto-form__error">Ingresa una cantidad entera de 0 o más.</p>
+      }
+    </div>
+
+    <div class="producto-form__field">
+      <label for="producto-categoria">Categoría</label>
+      <select id="producto-categoria" formControlName="categoriaId" aria-required="true"
+        [attr.aria-invalid]="showError('categoriaId')">
+        <option value="" disabled>Selecciona una categoría</option>
+        @for (categoria of categorias(); track categoria.id) {
+          <option [value]="categoria.id">{{ categoria.nombre }}</option>
+        }
+      </select>
+      @if (showError('categoriaId')) {
+        <p class="producto-form__error">Selecciona una categoría.</p>
+      }
+      @if (categorias().length === 0) {
+        <p class="producto-form__hint">Todavía no tienes categorías activas para asignar.</p>
+      }
+    </div>
+
+    <label class="producto-form__check producto-form__field--wide">
+      <input type="checkbox" formControlName="mostrarPrecio" />
+      Mostrar el precio a los clientes
+    </label>
+  </div>
+
+  <div class="producto-form__actions">
+    <button pButton type="button" severity="secondary" label="Cancelar" (click)="cancel()"
+      [disabled]="submitting()"></button>
+    <button pButton type="submit" [label]="submitting() ? 'Guardando…' : 'Guardar producto'"
+      [loading]="submitting()" [disabled]="submitting()"></button>
+  </div>
+</form>

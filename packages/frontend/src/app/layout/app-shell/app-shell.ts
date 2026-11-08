@@ -24,6 +24,7 @@ export class AppShell {
   readonly homePaths = ROLE_HOME_PATHS;
   readonly roleLabels = ROLE_LABELS;
   readonly clienteRole = UserRole.CLIENTE;
+  readonly vendedorRole = UserRole.VENDEDOR;
 
   constructor() {
     const destroyRef = inject(DestroyRef);

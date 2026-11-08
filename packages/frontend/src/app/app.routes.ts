@@ -43,10 +43,22 @@ export const routes: Routes = [
       {
         path: 'vendedor',
         canActivate: [roleGuard(UserRole.VENDEDOR)],
-        loadComponent: () =>
-          import('./features/vendedor/vendedor-page/vendedor-page').then(
-            (module) => module.VendedorPage,
-          ),
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./features/vendedor/vendedor-page/vendedor-page').then(
+                (module) => module.VendedorPage,
+              ),
+          },
+          {
+            path: 'catalogo/productos',
+            loadComponent: () =>
+              import(
+                './features/vendedor/vendedor-productos-page/vendedor-productos-page'
+              ).then((module) => module.VendedorProductosPage),
+          },
+        ],
       },
       {
         path: 'cliente',

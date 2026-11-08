@@ -1,0 +1,137 @@
+.productos__back {
+  display: inline-block;
+  margin-bottom: 16px;
+  color: var(--agua-primary-dark);
+  font-size: 0.9rem;
+}
+
+.productos__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.productos__state {
+  margin: 24px 0 0;
+  color: var(--slate-muted);
+}
+
+.productos__state--error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  color: var(--route-danger);
+
+  p {
+    margin: 0;
+  }
+}
+
+.productos__notice {
+  margin: 16px 0 0;
+  font-size: 0.95rem;
+}
+
+.productos__notice--ok {
+  color: var(--agua-primary-dark);
+}
+
+.productos__notice--error {
+  color: var(--route-danger);
+}
+
+.productos__confirm {
+  margin-top: 24px;
+  padding: 20px 24px;
+  border: 1px solid var(--route-danger);
+
+  h2 {
+    margin: 0 0 8px;
+    font-size: 1.05rem;
+  }
+
+  p {
+    margin: 0 0 12px;
+  }
+}
+
+.productos__confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.productos__table-wrap {
+  margin-top: 24px;
+  overflow-x: auto;
+}
+
+.productos__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+
+  th,
+  td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--line-soft);
+    white-space: nowrap;
+  }
+
+  th {
+    color: var(--slate-muted);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+}
+
+.productos__row--inactive td {
+  color: var(--slate-muted);
+}
+
+.productos__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.productos__badge {
+  display: inline-block;
+  padding: 2px 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid currentColor;
+
+  &[data-activo='true'] {
+    color: var(--agua-primary-dark);
+  }
+
+  &[data-activo='false'] {
+    color: var(--slate-muted);
+  }
+}
+
+.productos__caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.productos__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 24px;
+}

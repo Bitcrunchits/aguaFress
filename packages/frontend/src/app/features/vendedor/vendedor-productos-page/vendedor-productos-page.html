@@ -1,0 +1,116 @@
+<section class="role-card productos" aria-labelledby="productos-title">
+  <a class="productos__back" routerLink="/vendedor">← Volver al inicio</a>
+  <p class="role-card__eyebrow">Catálogo</p>
+  <div class="productos__header">
+    <h1 id="productos-title">Mis productos</h1>
+    @if (formMode() === 'closed') {
+      <button pButton type="button" label="Nuevo producto" (click)="openCreate()"></button>
+    }
+  </div>
+
+  @if (successMessage(); as message) {
+    <p class="productos__notice productos__notice--ok" role="status">{{ message }}</p>
+  }
+  @if (actionError(); as message) {
+    <p class="productos__notice productos__notice--error" role="alert">{{ message }}</p>
+  }
+
+  @if (formMode() !== 'closed') {
+    <app-vendedor-producto-form
+      [producto]="editingProducto()"
+      [categorias]="categorias()"
+      [submitting]="submitting()"
+      [feedback]="formFeedback()"
+      (save)="save($event)"
+      (cancelled)="closeForm()"
+    />
+  }
+
+  @if (confirmTarget(); as target) {
+    <div class="productos__confirm" role="alertdialog" aria-labelledby="confirm-title"
+      aria-describedby="confirm-desc">
+      <h2 id="confirm-title">¿Desactivar "{{ target.nombre }}"?</h2>
+      <p id="confirm-desc">
+        Los clientes dejarán de ver este producto en el catálogo. Podrás seguir viéndolo en tu
+        listado como inactivo.
+      </p>
+      @if (deactivateFeedback(); as message) {
+        <p class="productos__notice productos__notice--error" role="alert">{{ message }}</p>
+      }
+      <div class="productos__confirm-actions">
+        <button pButton type="button" severity="secondary" label="Cancelar"
+          (click)="cancelDeactivate()" [disabled]="deactivating()"></button>
+        <button pButton type="button" severity="danger"
+          [label]="deactivating() ? 'Desactivando…' : 'Sí, desactivar'"
+          [loading]="deactivating()" [disabled]="deactivating()"
+          (click)="confirmDeactivate()"></button>
+      </div>
+    </div>
+  }
+
+  @if (loading()) {
+    <p class="productos__state" role="status">Cargando productos</p>
+  } @else if (listError(); as message) {
+    <div class="productos__state productos__state--error" role="alert">
+      <p>{{ message }}</p>
+      <button pButton type="button" label="Reintentar" (click)="retry()"></button>
+    </div>
+  } @else if (items().length === 0) {
+    <p class="productos__state">Todavía no cargaste productos. Crea el primero con "Nuevo producto".</p>
+  } @else {
+    <div class="productos__table-wrap">
+      <table class="productos__table">
+        <caption class="productos__caption">Listado de mis productos</caption>
+        <thead>
+          <tr>
+            <th scope="col">Producto</th>
+            <th scope="col">Categoría</th>
+            <th scope="col">Precio final</th>
+            <th scope="col">Stock</th>
+            <th scope="col">Estado</th>
+            <th scope="col"><span class="productos__caption">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (producto of items(); track producto.id) {
+            <tr [class.productos__row--inactive]="!producto.activo">
+              <td>{{ producto.nombre }}</td>
+              <td>{{ producto.categoria || '—' }}</td>
+              <td>{{ formatPrice(producto.precioFinal) }}</td>
+              <td>{{ producto.stock }}</td>
+              <td>
+                <span class="productos__badge" [attr.data-activo]="producto.activo">
+                  {{ producto.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td class="productos__actions">
+                <button pButton type="button" size="small" severity="secondary" label="Editar"
+                  [attr.aria-label]="'Editar ' + producto.nombre"
+                  [disabled]="loadingProducto() || submitting()"
+                  (click)="openEdit(producto)"></button>
+                @if (producto.activo) {
+                  <button pButton type="button" size="small" severity="danger" label="Desactivar"
+                    [attr.aria-label]="'Desactivar ' + producto.nombre"
+                    [disabled]="deactivating()"
+                    (click)="askDeactivate(producto)"></button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (pagination(); as page) {
+      @if (page.totalPages > 1) {
+        <nav class="productos__pagination" aria-label="Paginación de productos">
+          <button pButton type="button" label="Anterior" (click)="previousPage()"
+            [disabled]="currentPage() <= 1"></button>
+          <span role="status">Página {{ currentPage() }} de {{ page.totalPages }}</span>
+          <button pButton type="button" label="Siguiente" (click)="nextPage()"
+            [disabled]="currentPage() >= page.totalPages"></button>
+        </nav>
+      }
+    }
+  }
+</section>
