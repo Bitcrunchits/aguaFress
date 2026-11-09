@@ -201,12 +201,12 @@ describe('application routes', () => {
     );
   });
 
-  it('redirects a cliente session away from the vendedor products page', async () => {
-    authServiceStub.currentSession = sessionWithRole(UserRole.CLIENTE);
+  it('redirects a super_admin session away from the vendedor products page', async () => {
+    authServiceStub.currentSession = sessionWithRole(UserRole.SUPER_ADMIN);
 
     await RouterTestingHarness.create('/vendedor/catalogo/productos');
 
-    expect(TestBed.inject(Router).url).not.toBe('/vendedor/catalogo/productos');
+    expect(TestBed.inject(Router).url).toBe('/admin');
   });
 
   it('redirects a vendedor session away from the admin vendedores route', async () => {
