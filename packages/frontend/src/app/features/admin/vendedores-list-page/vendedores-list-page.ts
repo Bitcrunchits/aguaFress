@@ -29,6 +29,7 @@ const ESTADO_LABELS: Record<VendedorEstado, string> = {
   templateUrl: './vendedores-list-page.html',
   styleUrl: './vendedores-list-page.scss',
 })
+
 export class VendedoresListPage implements OnInit {
   private readonly vendedoresService = inject(AdminVendedoresService);
 
@@ -38,9 +39,16 @@ export class VendedoresListPage implements OnInit {
   readonly loading = signal(false);
   readonly failed = signal(false);
 
+  // Estados reactivos para los filtros (AG-199)
+  readonly searchFilter = signal('');
+  readonly estadoFilter = signal<VendedorEstado | ''>('');
+  readonly estadosDisponibles = Object.values(VendedorEstado);
+  readonly estadoLabels = ESTADO_LABELS;
+
   ngOnInit(): void {
     this.loadPage(1);
   }
+
 
   loadPage(page: number): void {
     // Track the requested page before the response arrives, so retry()
@@ -49,7 +57,16 @@ export class VendedoresListPage implements OnInit {
     this.loading.set(true);
     this.failed.set(false);
 
-    const filters: SuperAdminVendedorListFilters = { page, limit: PAGE_SIZE };
+    const search = this.searchFilter().trim();
+    const estado = this.estadoFilter();
+
+    const filters: SuperAdminVendedorListFilters = {
+      page,
+      limit: PAGE_SIZE,
+      ...(search ? { search } : {}),
+      ...(estado ? { estado } : {}),
+    };
+
     this.vendedoresService.list(filters).subscribe({
       next: (response) => {
         this.items.set(response.data);
@@ -62,6 +79,23 @@ export class VendedoresListPage implements OnInit {
         this.loading.set(false);
       },
     });
+  }
+
+  onSearchInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.searchFilter.set(value);
+    this.loadPage(1); // Al filtrar, volvemos a la página 1
+  }
+
+  onEstadoChange(estado: VendedorEstado | ''): void {
+    this.estadoFilter.set(estado);
+    this.loadPage(1); // Al cambiar estado, volvemos a la página 1
+  }
+
+  clearFilters(): void {
+    this.searchFilter.set('');
+    this.estadoFilter.set('');
+    this.loadPage(1);
   }
 
   retry(): void {
