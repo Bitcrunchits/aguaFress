@@ -38,6 +38,10 @@ export class VendedoresListPage implements OnInit {
   readonly loading = signal(false);
   readonly failed = signal(false);
 
+  // AG-200: Control de mutación para evitar doble submit y rastrear la fila activa
+  readonly changingStateId = signal<string | null>(null);
+  readonly VendedorEstado = VendedorEstado;
+
   ngOnInit(): void {
     this.loadPage(1);
   }
@@ -80,6 +84,32 @@ export class VendedoresListPage implements OnInit {
     if (pagination !== null && this.currentPage() < pagination.totalPages) {
       this.loadPage(this.currentPage() + 1);
     }
+  }
+
+  cambiarEstado(vendedor: SuperAdminVendedorItem, nuevoEstado: VendedorEstado): void {
+    const nombre = this.nombreCompleto(vendedor);
+    const estadoText = this.estadoLabel(nuevoEstado);
+    const confirmMsg = `¿Estás seguro de cambiar el estado de "${nombre}" a "${estadoText}"?`;
+
+    if (!window.confirm(confirmMsg)) {
+      return;
+    }
+
+    this.changingStateId.set(vendedor.id);
+
+    this.vendedoresService.changeEstado(vendedor.id, nuevoEstado).subscribe({
+      next: () => {
+        // Actualización optimista o local en la tabla sin recargar la página
+        this.items.update((current) =>
+          current.map((v) => (v.id === vendedor.id ? { ...v, estado: nuevoEstado } : v))
+        );
+        this.changingStateId.set(null);
+      },
+      error: (err) => {
+        alert(err?.error?.message || 'Error al cambiar el estado del vendedor.');
+        this.changingStateId.set(null);
+      },
+    });
   }
 
   nombreCompleto(vendedor: SuperAdminVendedorItem): string {

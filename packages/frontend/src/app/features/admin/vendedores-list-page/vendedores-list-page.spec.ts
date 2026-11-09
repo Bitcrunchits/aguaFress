@@ -29,10 +29,14 @@ function pageResponse(
 describe('VendedoresListPage', () => {
   let fixture: ComponentFixture<VendedoresListPage>;
   let element: HTMLElement;
-  const serviceStub = { list: jasmine.createSpy('list') };
+  const serviceStub = { 
+    list: jasmine.createSpy('list'),
+    changeEstado: jasmine.createSpy('changeEstado').and.returnValue(of({}))
+  };
 
   beforeEach(async () => {
     serviceStub.list.calls.reset();
+    serviceStub.changeEstado.calls.reset();
     await TestBed.configureTestingModule({
       imports: [VendedoresListPage],
       providers: [{ provide: AdminVendedoresService, useValue: serviceStub }],
@@ -103,7 +107,7 @@ describe('VendedoresListPage', () => {
     fixture.detectChanges();
     expect(element.textContent).toContain('No pudimos cargar los vendedores');
 
-    const retryButton = element.querySelector<HTMLButtonElement>('button');
+    const retryButton = element.querySelector<HTMLButtonElement>('.vendedores__state--error button');
     retryButton?.click();
     fixture.detectChanges();
 
@@ -120,12 +124,14 @@ describe('VendedoresListPage', () => {
     );
 
     fixture.detectChanges();
-    const next = element.querySelectorAll<HTMLButtonElement>('button')[1];
-    next.click();
+    const paginationNav = element.querySelector('.vendedores__pagination');
+    const next = paginationNav?.querySelectorAll<HTMLButtonElement>('button')[1];
+    next?.click();
     fixture.detectChanges();
     expect(element.textContent).toContain('No pudimos cargar los vendedores');
 
-    element.querySelector<HTMLButtonElement>('button')?.click();
+    const retryButton = element.querySelector<HTMLButtonElement>('.vendedores__state--error button');
+    retryButton?.click();
     fixture.detectChanges();
 
     expect(serviceStub.list).toHaveBeenCalledTimes(3);
@@ -141,7 +147,11 @@ describe('VendedoresListPage', () => {
 
     fixture.detectChanges();
 
-    let [previous, next] = element.querySelectorAll<HTMLButtonElement>('button');
+    const paginationNav = element.querySelector('.vendedores__pagination');
+    let buttons = paginationNav?.querySelectorAll<HTMLButtonElement>('button') || [];
+    let previous = buttons[0];
+    let next = buttons[1];
+
     expect(element.textContent).toContain('Página 1 de 2');
     expect(previous.disabled).toBeTrue();
     expect(next.disabled).toBeFalse();
@@ -151,14 +161,16 @@ describe('VendedoresListPage', () => {
 
     expect(serviceStub.list.calls.mostRecent().args).toEqual([{ page: 2, limit: 10 }]);
     expect(element.textContent).toContain('Página 2 de 2');
-    [previous, next] = element.querySelectorAll<HTMLButtonElement>('button');
+
+    buttons = paginationNav?.querySelectorAll<HTMLButtonElement>('button') || [];
+    previous = buttons[0];
+    next = buttons[1];
+
     expect(previous.disabled).toBeFalse();
     expect(next.disabled).toBeTrue();
   });
 
   it('falls back to an em dash when optional contract fields are absent at runtime', () => {
-    // The usuario-service list mapping currently omits `clientesCount` and
-    // `fechaRegistro`; the page must degrade gracefully, not render blanks.
     const rawItem = { ...VENDEDOR } as unknown as Record<string, unknown>;
     delete rawItem['clientesCount'];
     delete rawItem['fechaRegistro'];

@@ -23,6 +23,7 @@
             <th scope="col">Estado</th>
             <th scope="col">Clientes</th>
             <th scope="col">Registro</th>
+            <th scope="col">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -38,6 +39,40 @@
               </td>
               <td>{{ clientesLabel(vendedor.clientesCount) }}</td>
               <td>{{ formatFechaRegistro(vendedor.fechaRegistro) }}</td>
+              <td>
+                <div class="flex gap-2 items-center flex-wrap">
+                  @if (vendedor.estado !== VendedorEstado.ACTIVO) {
+                    <button
+                      pButton
+                      type="button"
+                      label="Activar"
+                      class="p-button-sm p-button-success"
+                      [disabled]="changingStateId() === vendedor.id"
+                      (click)="cambiarEstado(vendedor, VendedorEstado.ACTIVO)"
+                    ></button>
+                  }
+                  @if (vendedor.estado !== VendedorEstado.BLOQUEADO) {
+                    <button
+                      pButton
+                      type="button"
+                      label="Bloquear"
+                      class="p-button-sm p-button-danger"
+                      [disabled]="changingStateId() === vendedor.id"
+                      (click)="cambiarEstado(vendedor, VendedorEstado.BLOQUEADO)"
+                    ></button>
+                  }
+                  @if (vendedor.estado !== VendedorEstado.INACTIVO && vendedor.estado !== VendedorEstado.PENDIENTE) {
+                    <button
+                      pButton
+                      type="button"
+                      label="Inactivar"
+                      class="p-button-sm p-button-warning"
+                      [disabled]="changingStateId() === vendedor.id"
+                      (click)="cambiarEstado(vendedor, VendedorEstado.INACTIVO)"
+                    ></button>
+                  }
+                </div>
+              </td>
             </tr>
           }
         </tbody>

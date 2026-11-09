@@ -4,20 +4,12 @@ import { Observable } from 'rxjs';
 import type {
   SuperAdminVendedorListFilters,
   SuperAdminVendedorListResponse,
+  VendedorEstado,
 } from '@agua/contracts';
 import { API_CONFIG } from '../../core/config/api.config';
 
 const VENDEDORES_LIST_URL = `${API_CONFIG.baseUrl}/api/v1/vendedores/list`;
 
-/**
- * Super-admin vendedores list against the gateway `vendedores.list` action.
- *
- * Filters travel in the JSON body and are mirrored into the query string:
- * the gateway forwards a POST body as `payload.body`, while the
- * usuario-service TCP handler validates `payload.query`
- * (usuario-domain-tcp.controller.ts `vendedores.list`), so body-only
- * filters would be silently ignored by the real backend.
- */
 @Injectable({ providedIn: 'root' })
 export class AdminVendedoresService {
   private readonly http = inject(HttpClient);
@@ -26,6 +18,10 @@ export class AdminVendedoresService {
     return this.http.post<SuperAdminVendedorListResponse>(VENDEDORES_LIST_URL, filters, {
       params: mirrorFiltersAsQueryParams(filters),
     });
+  }
+
+  changeEstado(id: string, estado: VendedorEstado): Observable<any> {
+    return this.http.patch<any>(`${API_CONFIG.baseUrl}/api/v1/vendedores/${id}/estado`, { estado });
   }
 }
 
