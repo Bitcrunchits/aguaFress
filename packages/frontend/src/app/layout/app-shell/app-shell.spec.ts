@@ -25,12 +25,28 @@ describe('AppShell', () => {
     }).compileComponents();
   });
 
-  for (const [role, path, label] of [
-    [UserRole.SUPER_ADMIN, '/admin', 'Administración'],
-    [UserRole.VENDEDOR, '/vendedor', 'Vendedor'],
-    [UserRole.CLIENTE, '/cliente', 'Cliente'],
-  ] as const) {
-    it(`shows only the ${role} home link and logout when ready`, () => {
+  const ROLE_HOME: Record<UserRole, { path: string; label: string }> = {
+    [UserRole.SUPER_ADMIN]: { path: '/admin', label: 'Administración' },
+    [UserRole.VENDEDOR]: { path: '/vendedor', label: 'Vendedor' },
+    [UserRole.CLIENTE]: { path: '/cliente', label: 'Cliente' },
+  };
+
+  const ROLE_LINKS: Record<UserRole, Array<[string, string]>> = {
+    [UserRole.SUPER_ADMIN]: [['/admin/vendedores', 'Vendedores']],
+    [UserRole.VENDEDOR]: [
+      ['/vendedor/catalogo/productos', 'Catálogo'],
+      ['/vendedor/clientes', 'Clientes'],
+      ['/vendedor/pedidos', 'Pedidos'],
+    ],
+    [UserRole.CLIENTE]: [
+      ['/cliente/catalogo', 'Catálogo'],
+      ['/cliente/carrito', 'Carrito'],
+      ['/cliente/pedidos', 'Pedidos'],
+    ],
+  };
+
+  for (const role of [UserRole.SUPER_ADMIN, UserRole.VENDEDOR, UserRole.CLIENTE]) {
+    it(`shows the ${role} nav links and logout when ready`, () => {
       auth.currentSession = {
         token: 'access', refreshToken: 'refresh',
         user: { id: 'user-1', email: 'user@example.com', role },
@@ -43,19 +59,20 @@ describe('AppShell', () => {
 
       ready.next(true);
       fixture.detectChanges();
+
       const links = element.querySelectorAll('a');
-      expect(links.length).toBe(role === UserRole.CLIENTE ? 4 : 1);
-      expect(links[0].getAttribute('href')).toBe(path);
+      const expected = ROLE_LINKS[role];
+      expect(links.length).toBe(1 + expected.length);
+      expect(links[0].getAttribute('href')).toBe(ROLE_HOME[role].path);
       expect(links[0].textContent?.trim()).toBe('Inicio');
-      if (role === UserRole.CLIENTE) {
-        expect(links[1].getAttribute('href')).toBe('/cliente/catalogo');
-        expect(links[1].textContent?.trim()).toBe('Catálogo');
-        expect(links[2].getAttribute('href')).toBe('/cliente/carrito');
-        expect(links[2].textContent?.trim()).toBe('Carrito');
-        expect(links[3].getAttribute('href')).toBe('/cliente/pedidos');
-        expect(links[3].textContent?.trim()).toBe('Pedidos');
-      }
-      expect(element.querySelector('.shell__identity')?.textContent).toContain(label);
+      expected.forEach(([href, label], index) => {
+        expect(links[index + 1].getAttribute('href')).toBe(href);
+        expect(links[index + 1].textContent?.trim()).toBe(label);
+      });
+
+      expect(element.querySelector('.shell__identity')?.textContent).toContain(
+        ROLE_HOME[role].label,
+      );
       const button = element.querySelector('button');
       expect(button?.textContent?.trim()).toBe('Cerrar sesión');
       button?.click();
