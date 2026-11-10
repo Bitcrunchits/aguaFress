@@ -191,6 +191,41 @@
   color: var(--slate-muted);
 }
 
+.vendedores__dialog-note {
+  margin: 0 0 16px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--agua-primary);
+  background: var(--ice-surface);
+  color: var(--agua-primary-dark);
+  font-size: 0.85rem;
+}
+
+.vendedores__dialog-warning {
+  margin: 16px 0 0;
+  padding: 10px 14px;
+  border: 1px solid var(--route-danger);
+  color: var(--route-danger);
+  font-size: 0.9rem;
+
+  strong {
+    color: inherit;
+  }
+}
+
+.vendedores__dialog-confirm {
+  margin-top: 16px;
+  margin-bottom: 0;
+
+  input {
+    min-width: 220px;
+    padding: 8px 12px;
+    border: 1px solid var(--line-soft);
+    background: var(--ice-surface);
+    color: var(--agua-primary-dark);
+    font-size: 0.95rem;
+  }
+}
+
 .vendedores__dialog-error {
   margin: 16px 0 0;
   color: var(--route-danger);

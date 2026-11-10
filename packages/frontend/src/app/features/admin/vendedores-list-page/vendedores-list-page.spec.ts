@@ -323,6 +323,13 @@ describe('VendedoresListPage', () => {
     return element.querySelector<HTMLButtonElement>('.confirm-dialog__button--confirm')!;
   }
 
+  function typeConfirmPhrase(): void {
+    const input = element.querySelector<HTMLInputElement>('.vendedores__dialog-confirm-input')!;
+    input.value = 'BLOQUEAR';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+  }
+
   it('opens the confirmation dialog naming the vendor', () => {
     serviceStub.list.and.returnValue(of(pageResponse([VENDEDOR])));
     fixture.detectChanges();
@@ -385,6 +392,7 @@ describe('VendedoresListPage', () => {
     select.dispatchEvent(new Event('change'));
     fixture.detectChanges();
 
+    typeConfirmPhrase();
     confirmButton().click();
     fixture.detectChanges();
 
@@ -501,6 +509,7 @@ describe('VendedoresListPage', () => {
     select.dispatchEvent(new Event('change'));
     fixture.detectChanges();
 
+    typeConfirmPhrase();
     confirmButton().click();
     fixture.detectChanges();
 
@@ -509,5 +518,64 @@ describe('VendedoresListPage', () => {
     });
     expect(element.textContent).toContain('Bloqueado');
     expect(element.querySelector('.confirm-dialog')).toBeNull();
+  });
+
+  it('shows the reactivation note only when the vendor is bloqueado', () => {
+    renderAndOpenDialog(VendedorEstado.BLOQUEADO);
+
+    expect(element.textContent).toContain(
+      'No existe el paso directo de bloqueado a activo',
+    );
+  });
+
+  it('does not show the reactivation note for a non-bloqueado vendor', () => {
+    renderAndOpenDialog(VendedorEstado.ACTIVO);
+
+    expect(element.textContent).not.toContain(
+      'No existe el paso directo de bloqueado a activo',
+    );
+  });
+
+  it('requires typing BLOQUEAR before confirming a bloqueado transition', () => {
+    serviceStub.list.and.returnValue(of(pageResponse([VENDEDOR])));
+    serviceStub.changeEstado.and.returnValue(of({ ...VENDEDOR }));
+    fixture.detectChanges();
+
+    openDialog();
+
+    const select = element.querySelector<HTMLSelectElement>(
+      '.vendedores__dialog-field select',
+    )!;
+    select.value = VendedorEstado.BLOQUEADO;
+    select.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    expect(confirmButton().disabled).toBeTrue();
+    expect(element.textContent).toContain(
+      'El vendedor perderá el acceso a la plataforma.',
+    );
+
+    typeConfirmPhrase();
+
+    expect(confirmButton().disabled).toBeFalse();
+
+    confirmButton().click();
+    fixture.detectChanges();
+
+    expect(serviceStub.changeEstado).toHaveBeenCalledWith('vendedor-1', {
+      estado: VendedorEstado.BLOQUEADO,
+    });
+  });
+
+  it('does not require the phrase for a non-bloqueado target', () => {
+    serviceStub.list.and.returnValue(of(pageResponse([VENDEDOR])));
+    fixture.detectChanges();
+
+    openDialog();
+
+    // VENDEDOR is ACTIVO, so the first valid target is INACTIVO.
+    expect(confirmButton().disabled).toBeFalse();
+    expect(element.querySelector('.vendedores__dialog-confirm-input')).toBeNull();
+    expect(element.textContent).not.toContain('perderá el acceso');
   });
 });

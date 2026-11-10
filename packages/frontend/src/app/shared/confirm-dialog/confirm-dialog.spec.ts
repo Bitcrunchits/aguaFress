@@ -92,6 +92,16 @@ describe('ConfirmDialogComponent', () => {
     expect(confirm.disabled).toBeTrue();
   });
 
+  it('disables only the confirm button when confirmDisabled is true', () => {
+    render();
+    fixture.componentRef.setInput('confirmDisabled', true);
+    fixture.detectChanges();
+
+    const [cancel, confirm] = element.querySelectorAll<HTMLButtonElement>('button');
+    expect(cancel.disabled).toBeFalse();
+    expect(confirm.disabled).toBeTrue();
+  });
+
   it('does not cancel on Escape while loading', () => {
     render();
     fixture.componentRef.setInput('loading', true);

@@ -38,6 +38,8 @@ interface EstadoOption {
 export class VendedoresListPage implements OnInit {
   private readonly vendedoresService = inject(AdminVendedoresService);
 
+  readonly VendedorEstado = VendedorEstado;
+
   readonly items = signal<SuperAdminVendedorItem[]>([]);
   readonly pagination = signal<PaginationResponse | null>(null);
   readonly currentPage = signal(1);
@@ -74,6 +76,17 @@ export class VendedoresListPage implements OnInit {
   readonly dialogEstado = signal<VendedorEstado | null>(null);
   readonly mutating = signal(false);
   readonly mutationError = signal<string | null>(null);
+
+  // Type-to-confirm state for the destructive `bloqueado` transition.
+  readonly confirmText = signal('');
+
+  readonly canConfirm = computed(() => {
+    const target = this.dialogEstado();
+    if (target === VendedorEstado.BLOQUEADO) {
+      return this.confirmText() === 'BLOQUEAR';
+    }
+    return true;
+  });
 
   readonly consequenceText = computed(() => {
     const vendor = this.dialogVendor();
@@ -166,6 +179,7 @@ export class VendedoresListPage implements OnInit {
     // Initialize to the first valid target (e.g. `activo` for `pendiente`),
     // never to the current estado, which is not a valid target.
     this.dialogEstado.set(targets[0] ?? vendedor.estado);
+    this.confirmText.set('');
     this.mutationError.set(null);
     this.dialogOpen.set(true);
   }
@@ -173,6 +187,11 @@ export class VendedoresListPage implements OnInit {
   onDialogEstadoChange(event: Event): void {
     const select = event.target as HTMLSelectElement;
     this.dialogEstado.set(select.value as VendedorEstado);
+  }
+
+  onConfirmTextInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.confirmText.set(input.value);
   }
 
   confirmChangeEstado(): void {
@@ -212,6 +231,7 @@ export class VendedoresListPage implements OnInit {
     this.dialogVendor.set(null);
     this.dialogEstado.set(null);
     this.dialogTargets.set([]);
+    this.confirmText.set('');
     this.mutationError.set(null);
   }
 

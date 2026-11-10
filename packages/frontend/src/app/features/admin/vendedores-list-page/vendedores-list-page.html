@@ -155,6 +155,7 @@
     <app-confirm-dialog
       title="Cambiar estado de vendedor"
       [loading]="mutating()"
+      [confirmDisabled]="!canConfirm()"
       (confirm)="confirmChangeEstado()"
       (cancel)="cancelChangeEstado()"
     >
@@ -174,7 +175,31 @@
         </select>
       </label>
 
+      @if (vendedor.estado === VendedorEstado.BLOQUEADO) {
+        <p class="vendedores__dialog-note">
+          Para reactivar un vendedor bloqueado, primero pásalo a inactivo y luego a activo. No
+          existe el paso directo de bloqueado a activo.
+        </p>
+      }
+
       <p class="vendedores__dialog-consequence">{{ consequenceText() }}</p>
+
+      @if (dialogEstado() === VendedorEstado.BLOQUEADO) {
+        <p class="vendedores__dialog-warning" role="alert">
+          Vas a bloquear a <strong>{{ nombreCompleto(vendedor) }}</strong
+          >. El vendedor perderá el acceso a la plataforma.
+        </p>
+
+        <label class="vendedores__dialog-field vendedores__dialog-confirm">
+          <span class="vendedores__field-label">Escribe BLOQUEAR para confirmar</span>
+          <input
+            class="vendedores__dialog-confirm-input"
+            type="text"
+            [value]="confirmText()"
+            (input)="onConfirmTextInput($event)"
+          />
+        </label>
+      }
 
       @if (mutationError()) {
         <p class="vendedores__dialog-error" role="alert">{{ mutationError() }}</p>
