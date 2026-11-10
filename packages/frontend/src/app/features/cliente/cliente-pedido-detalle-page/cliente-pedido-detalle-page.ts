@@ -11,7 +11,7 @@ import {
   ORDER_ESTADO_LABELS,
   formatIsoDate,
   isoDateOf,
-} from '../cliente-pedidos-format';
+} from '../../../shared/order-format';
 import { CLIENTE_PEDIDOS_DETAIL_GATEWAY } from '../cliente-pedidos.gateway';
 import { ClientePedidosService } from '../cliente-pedidos.service';
 import { CLIENTE_SESSION_READER } from '../cliente-session.contract';

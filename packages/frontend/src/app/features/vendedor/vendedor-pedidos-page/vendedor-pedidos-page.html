@@ -1,0 +1,74 @@
+<section class="role-card pedidos" aria-labelledby="pedidos-title">
+  <p class="role-card__eyebrow">Vendedor</p>
+  <h1 id="pedidos-title">Pedidos</h1>
+
+  <div class="pedidos__filters" role="search" aria-label="Filtros de pedidos">
+    <label class="pedidos__field">
+      <span class="pedidos__field-label">Estado</span>
+      <select id="pedidos-estado" [value]="estado() ?? ''" (change)="onEstadoChange($event)">
+        @for (option of estadoOptions; track option.value) {
+          <option [value]="option.value ?? ''">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  @if (loading()) {
+    <p class="pedidos__state" role="status">Cargando pedidos</p>
+  } @else if (failed()) {
+    <div class="pedidos__state pedidos__state--error" role="alert">
+      <p>No pudimos cargar los pedidos. Inténtalo de nuevo en unos segundos.</p>
+      <button pButton type="button" label="Reintentar" (click)="retry()"></button>
+    </div>
+  } @else if (pageOrders().length === 0) {
+    <p class="pedidos__state">No hay pedidos para mostrar.</p>
+  } @else {
+    <div class="pedidos__table-wrap">
+      <table class="pedidos__table">
+        <caption class="pedidos__caption">Listado de pedidos</caption>
+        <thead>
+          <tr>
+            <th scope="col">Número</th>
+            <th scope="col">Fecha</th>
+            <th scope="col">Total</th>
+            <th scope="col">Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (order of pageOrders(); track order.id) {
+            <tr>
+              <td>{{ order.pedidoNumero }}</td>
+              <td>{{ formatFecha(order.createdAt) }}</td>
+              <td>{{ formatTotal(order.total) }}</td>
+              <td>
+                <span class="pedidos__badge" [attr.data-estado]="order.estado">
+                  {{ estadoLabel(order.estado) }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <nav class="pedidos__pagination" aria-label="Paginación de pedidos">
+      <button
+        pButton
+        type="button"
+        label="Anterior"
+        (click)="previousPage()"
+        [disabled]="currentPage() <= 1"
+      ></button>
+      <span class="pedidos__page-indicator" role="status">
+        Página {{ currentPage() }} de {{ totalPages() }}
+      </span>
+      <button
+        pButton
+        type="button"
+        label="Siguiente"
+        (click)="nextPage()"
+        [disabled]="currentPage() >= totalPages()"
+      ></button>
+    </nav>
+  }
+</section>

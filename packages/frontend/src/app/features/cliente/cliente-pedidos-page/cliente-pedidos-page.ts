@@ -19,7 +19,7 @@ import {
   ORDER_ESTADO_LABELS,
   formatIsoDate,
   isoDateOf,
-} from '../cliente-pedidos-format';
+} from '../../../shared/order-format';
 import { CLIENTE_SESSION_READER } from '../cliente-session.contract';
 import { CLIENTE_SESSION_READINESS_READER } from '../cliente-session-readiness.contract';
 import { CLIENTE_TRACKING_READER } from '../cliente-tracking.contract';

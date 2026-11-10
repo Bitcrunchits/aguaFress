@@ -29,6 +29,7 @@ import { ClienteProviderStateService } from './features/cliente/cliente-provider
 import { CLIENTE_TRACKING_SESSION_READER } from './features/cliente/cliente-tracking.contract';
 import { VendedorProfileService } from './features/vendedor/vendedor-profile.service';
 import { VendedorClientesService } from './features/vendedor/vendedor-clientes.service';
+import { VendedorPedidosService } from './features/vendedor/vendedor-pedidos.service';
 
 const EMPTY_LIST: SuperAdminVendedorListResponse = {
   data: [],
@@ -146,6 +147,7 @@ describe('application routes', () => {
         { provide: AdminVendedoresService, useValue: { list: () => of(EMPTY_LIST) } },
         { provide: VendedorProfileService, useValue: { getProfile: () => EMPTY } },
         { provide: VendedorClientesService, useValue: { listCartera: () => of(EMPTY_CLIENTES) } },
+        { provide: VendedorPedidosService, useValue: { list: () => of([]) } },
         { provide: ClienteCatalogoService, useValue: { list: () => of(EMPTY_PRODUCTS) } },
         { provide: ClienteCarritoService, useValue: { addToCart: () => EMPTY } },
         { provide: ClienteCarritoLecturaService, useValue: lecturaStub },
@@ -201,6 +203,22 @@ describe('application routes', () => {
     );
   });
 
+  it('renders the pedidos list for a vendedor session', async () => {
+    authServiceStub.currentSession = sessionWithRole(UserRole.VENDEDOR);
+
+    const harness = await RouterTestingHarness.create('/vendedor/pedidos');
+
+    expect(harness.routeNativeElement?.querySelector('.role-card h1')?.textContent?.trim()).toBe(
+      'Pedidos',
+    );
+  });
+
+  it('redirects a super_admin session away from the vendedor pedidos route', async () => {
+    await RouterTestingHarness.create('/vendedor/pedidos');
+
+    expect(TestBed.inject(Router).url).toBe('/admin');
+  });
+
   it('redirects a super_admin session away from the vendedor clientes route', async () => {
     await RouterTestingHarness.create('/vendedor/clientes');
 
@@ -215,6 +233,16 @@ describe('application routes', () => {
     expect(vendedorRoute?.canActivate?.length).toBe(1);
     expect(typeof clientesRoute?.loadComponent).toBe('function');
     expect(clientesRoute?.canActivate).toBeUndefined();
+  });
+
+  it('declares pedidos under the vendedor parent as a lazy route', () => {
+    const shellRoute = routes.find((route) => route.children !== undefined);
+    const vendedorRoute = shellRoute?.children?.find((route) => route.path === 'vendedor');
+    const pedidosRoute = vendedorRoute?.children?.find((route) => route.path === 'pedidos');
+
+    expect(vendedorRoute?.canActivate?.length).toBe(1);
+    expect(typeof pedidosRoute?.loadComponent).toBe('function');
+    expect(pedidosRoute?.canActivate).toBeUndefined();
   });
 
   it('redirects unauthenticated navigation to the login route', async () => {

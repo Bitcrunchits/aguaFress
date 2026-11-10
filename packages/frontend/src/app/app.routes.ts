@@ -87,6 +87,13 @@ export const routes: Routes = [
                 (module) => module.VendedorClientesPage,
               ),
           },
+          {
+            path: 'pedidos',
+            loadComponent: () =>
+              import('./features/vendedor/vendedor-pedidos-page/vendedor-pedidos-page').then(
+                (module) => module.VendedorPedidosPage,
+              ),
+          },
         ],
       },
       {

@@ -58,4 +58,39 @@
       </div>
     </section>
   }
+
+  <section class="vendedor__pedidos" aria-labelledby="vendedor-pedidos-title">
+    <h2 id="vendedor-pedidos-title">Pedidos</h2>
+
+    @if (ordersLoading()) {
+      <p class="vendedor__state" role="status">Cargando pedidos</p>
+    } @else if (ordersFailed()) {
+      <div class="vendedor__pedidos-retry" role="alert">
+        <p>No pudimos cargar tus pedidos.</p>
+        <button type="button" class="vendedor__button" (click)="retryOrders()">Reintentar</button>
+      </div>
+    } @else {
+      <p class="vendedor__pedidos-count">
+        Pendientes: <strong>{{ pendientesCount() }}</strong>
+      </p>
+
+      @if (recientes().length > 0) {
+        <p class="vendedor__label">Recientes</p>
+        <ul class="vendedor__pedidos-list">
+          @for (order of recientes(); track order.id) {
+            <li>
+              <a class="vendedor__pedido-link" routerLink="/vendedor/pedidos">
+                <span class="vendedor__pedido-numero">{{ order.pedidoNumero }}</span>
+                <span class="vendedor__badge" [attr.data-estado]="order.estado">
+                  {{ orderEstadoLabel(order.estado) }}
+                </span>
+              </a>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="vendedor__state">No tienes pedidos todavía.</p>
+      }
+    }
+  </section>
 </section>

@@ -1,8 +1,8 @@
 import { MetodoPago, OrderEstado } from '@agua/contracts';
 
 /**
- * Canonical ISO 8601 shape accepted by the cliente orders screens. A date-only
- * value is valid; a date-time value must carry minutes and may carry seconds,
+ * Canonical ISO 8601 shape accepted by the orders screens. A date-only value
+ * is valid; a date-time value must carry minutes and may carry seconds,
  * fractional seconds, and an explicit UTC offset.
  */
 const ISO_DATE_PATTERN =
