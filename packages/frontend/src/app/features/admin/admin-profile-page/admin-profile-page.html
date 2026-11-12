@@ -1,0 +1,88 @@
+<section class="role-card admin-profile" aria-labelledby="admin-profile-title">
+  <p class="role-card__eyebrow">Administración</p>
+  <h1 id="admin-profile-title">Perfil</h1>
+
+  @if (loading()) {
+    <p class="admin-profile__state" role="status">Cargando tu perfil</p>
+  } @else if (failed()) {
+    <div class="admin-profile__state admin-profile__state--error" role="alert">
+      <p>No pudimos cargar tu perfil. Inténtalo de nuevo en unos segundos.</p>
+      <button type="button" class="admin-profile__button" (click)="retry()">Reintentar</button>
+    </div>
+  } @else if (profile(); as profile) {
+    <section class="admin-profile__section" aria-labelledby="admin-profile-data-title">
+      <h2 id="admin-profile-data-title">Datos</h2>
+
+      @if (!editing()) {
+        <dl class="admin-profile__details">
+          <div class="admin-profile__detail">
+            <dt>Nombre</dt>
+            <dd>{{ profile.nombre }}</dd>
+          </div>
+          <div class="admin-profile__detail">
+            <dt>Apellido</dt>
+            <dd>{{ profile.apellido }}</dd>
+          </div>
+          <div class="admin-profile__detail">
+            <dt>Email</dt>
+            <dd>{{ profile.email }}</dd>
+          </div>
+          <div class="admin-profile__detail">
+            <dt>Rol</dt>
+            <dd>{{ roleLabel(profile.role) }}</dd>
+          </div>
+        </dl>
+        <button type="button" class="admin-profile__button" (click)="startEditing()">Editar</button>
+      } @else {
+        <form class="admin-profile__form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+          <div class="admin-profile__field">
+            <label for="admin-profile-nombre">Nombre</label>
+            <input id="admin-profile-nombre" type="text" formControlName="nombre" autocomplete="given-name" />
+          </div>
+          <div class="admin-profile__field">
+            <label for="admin-profile-apellido">Apellido</label>
+            <input
+              id="admin-profile-apellido"
+              type="text"
+              formControlName="apellido"
+              autocomplete="family-name"
+            />
+          </div>
+          <dl class="admin-profile__details admin-profile__details--readonly">
+            <div class="admin-profile__detail">
+              <dt>Email</dt>
+              <dd>{{ profile.email }}</dd>
+            </div>
+            <div class="admin-profile__detail">
+              <dt>Rol</dt>
+              <dd>{{ roleLabel(profile.role) }}</dd>
+            </div>
+          </dl>
+          <div class="admin-profile__actions">
+            <button type="submit" class="admin-profile__button" [disabled]="saving()">Guardar</button>
+            <button
+              type="button"
+              class="admin-profile__button admin-profile__button--secondary"
+              (click)="cancelEditing()"
+              [disabled]="saving()"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      }
+
+      @if (saveError(); as message) {
+        <p class="admin-profile__error" role="alert">{{ message }}</p>
+      }
+      @if (saveSuccess(); as message) {
+        <p class="admin-profile__success" role="status">{{ message }}</p>
+      }
+    </section>
+
+    <section class="admin-profile__section" aria-labelledby="admin-profile-security-title">
+      <h2 id="admin-profile-security-title">Seguridad</h2>
+      <app-change-password-form />
+    </section>
+  }
+</section>

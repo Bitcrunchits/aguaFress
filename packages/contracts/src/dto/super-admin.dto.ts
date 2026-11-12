@@ -6,7 +6,7 @@
 // ⚠️ El SUPER_ADMIN solo ve métricas consolidadas, NUNCA datos sensibles
 //    de clientes individuales. Solo cantidades (#).
 
-import { VendedorEstado } from '../enums';
+import { UserRole, VendedorEstado } from '../enums';
 import type { PaginatedResponse, PaginationRequest } from './common.dto';
 
 // ════════════════════════════════════════════
@@ -91,3 +91,20 @@ export interface SuperAdminClienteItem {
 }
 
 export type SuperAdminClientesResponse = PaginatedResponse<SuperAdminClienteItem>;
+
+// ════════════════════════════════════════════
+//  PERFIL DEL SUPER ADMIN
+// ════════════════════════════════════════════
+
+export interface SuperAdminProfileResponse {
+  id: string;
+  email: string;
+  nombre: string;
+  apellido: string;
+  role: UserRole;
+}
+
+export interface UpdateSuperAdminProfileRequest {
+  nombre: string;
+  apellido: string;
+}

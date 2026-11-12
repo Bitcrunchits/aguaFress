@@ -47,10 +47,10 @@ export const routes: Routes = [
               ),
           },
           {
-            path: 'seguridad',
+            path: 'perfil',
             loadComponent: () =>
-              import('./features/admin/admin-security-page/admin-security-page').then(
-                (module) => module.AdminSecurityPage,
+              import('./features/admin/admin-profile-page/admin-profile-page').then(
+                (module) => module.AdminProfilePage,
               ),
           },
         ],

@@ -4,8 +4,8 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import type { AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { LOGIN_PATH } from '../../../core/auth/auth.models';
-import { AuthService } from '../../../core/auth/auth.service';
+import { LOGIN_PATH } from '../../core/auth/auth.models';
+import { AuthService } from '../../core/auth/auth.service';
 
 /** Cross-field check: the confirmation must equal the new password. */
 function passwordsMatch(group: AbstractControl): ValidationErrors | null {
@@ -15,18 +15,18 @@ function passwordsMatch(group: AbstractControl): ValidationErrors | null {
 }
 
 /**
- * Super-admin change-password screen. The gateway derives the acting
- * `userId` from the JWT, so no identity field is collected or sent. On
- * success the backend invalidates refresh tokens, so the only safe next
- * action is closing the session and returning to the login screen.
+ * Reusable change-password form shared by every role profile page. The
+ * gateway derives the acting `userId` from the JWT, so no identity field is
+ * collected or sent. On success the backend invalidates refresh tokens, so
+ * the only safe next action is closing the session and returning to login.
  */
 @Component({
-  selector: 'app-admin-security-page',
+  selector: 'app-change-password-form',
   imports: [ReactiveFormsModule, ButtonModule],
-  templateUrl: './admin-security-page.html',
-  styleUrl: './admin-security-page.scss',
+  templateUrl: './change-password-form.html',
+  styleUrl: './change-password-form.scss',
 })
-export class AdminSecurityPage {
+export class ChangePasswordFormComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly formBuilder = inject(FormBuilder);
