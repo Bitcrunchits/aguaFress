@@ -32,7 +32,10 @@ describe('AppShell', () => {
   };
 
   const ROLE_LINKS: Record<UserRole, Array<[string, string]>> = {
-    [UserRole.SUPER_ADMIN]: [['/admin/vendedores', 'Vendedores']],
+    [UserRole.SUPER_ADMIN]: [
+      ['/admin/vendedores', 'Vendedores'],
+      ['/admin/seguridad', 'Seguridad'],
+    ],
     [UserRole.VENDEDOR]: [
       ['/vendedor/catalogo/productos', 'Catálogo'],
       ['/vendedor/clientes', 'Clientes'],

@@ -80,4 +80,22 @@ describe('LoginPage', () => {
 
     expect(link).not.toBeNull();
   });
+
+  it('reveals the informational forgot-password message without calling any endpoint', () => {
+    const fixture = TestBed.createComponent(LoginPage);
+    fixture.detectChanges();
+
+    const toggle = fixture.nativeElement.querySelector(
+      '.login-card__forgot-link',
+    ) as HTMLButtonElement;
+    expect(toggle).not.toBeNull();
+
+    toggle.click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain(
+      'El restablecimiento de contraseña aún no está disponible. Contacta a un administrador.',
+    );
+    expect(login).not.toHaveBeenCalled();
+  });
 });

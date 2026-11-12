@@ -46,6 +46,13 @@ export const routes: Routes = [
                 (module) => module.VendedoresListPage,
               ),
           },
+          {
+            path: 'seguridad',
+            loadComponent: () =>
+              import('./features/admin/admin-security-page/admin-security-page').then(
+                (module) => module.AdminSecurityPage,
+              ),
+          },
         ],
       },
       {

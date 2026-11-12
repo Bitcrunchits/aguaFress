@@ -102,6 +102,37 @@
   }
 }
 
+.login-card__forgot {
+  margin: 12px 0 0;
+  text-align: center;
+}
+
+.login-card__forgot-link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--agua-primary-dark);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--agua-primary);
+  }
+}
+
+.login-card__forgot-message {
+  margin: 12px 0 0;
+  padding: 12px 16px;
+  border: 1px solid var(--line-soft);
+  background: var(--ice-surface);
+  color: var(--slate-muted);
+  font-size: 0.9rem;
+}
+
 .login-brand {
   display: none;
 }

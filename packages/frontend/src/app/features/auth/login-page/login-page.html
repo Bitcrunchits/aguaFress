@@ -53,6 +53,22 @@
       ¿Eres vendedor?
       <a href="/auth/register-seller">Crea tu cuenta</a>
     </p>
+
+    <p class="login-card__forgot">
+      <button
+        type="button"
+        class="login-card__forgot-link"
+        (click)="toggleForgotPassword()"
+      >
+        ¿Olvidaste tu contraseña?
+      </button>
+    </p>
+
+    @if (forgotPasswordVisible()) {
+      <p class="login-card__forgot-message" role="status">
+        El restablecimiento de contraseña aún no está disponible. Contacta a un administrador.
+      </p>
+    }
   </section>
 
   <aside class="login-brand" aria-label="Ruta de AguaFress">

@@ -4,6 +4,8 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import {
   UserRole,
+  type ChangePasswordRequest,
+  type ChangePasswordResponse,
   type LoginResponse,
   type RegisterRequest,
   type RegisterResponse,
@@ -18,6 +20,7 @@ const LOGIN_URL = `${API_V1}/auth/login`;
 const REGISTER_URL = `${API_V1}/auth/register`;
 const REFRESH_URL = `${API_V1}/auth/refresh`;
 const LOGOUT_URL = `${API_V1}/auth/logout`;
+const CHANGE_PASSWORD_URL = `${API_V1}/auth/change-password`;
 const PROFILE_URL = `${API_V1}/users/profile`;
 
 const SESSION: LoginResponse = {
@@ -174,6 +177,30 @@ describe('AuthService', () => {
     expect(result).toEqual(response);
     expect(readStoredSession()).toBeNull();
     expect(auth.currentSession).toBeNull();
+  });
+
+  it('posts the password change body with the bearer token from the session', () => {
+    seedStoredSession();
+    const auth = TestBed.inject(AuthService);
+    httpMock.expectOne(REFRESH_URL).flush({ token: 'access-token-2' });
+    httpMock.expectOne(PROFILE_URL).flush(PROFILE);
+
+    const body: ChangePasswordRequest = {
+      currentPassword: 'old-secret',
+      newPassword: 'new-secret',
+    };
+    const response: ChangePasswordResponse = { message: 'Contraseña actualizada' };
+    let result: ChangePasswordResponse | undefined;
+
+    auth.changePassword(body).subscribe((changed) => (result = changed));
+
+    const request = httpMock.expectOne(CHANGE_PASSWORD_URL);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual(body);
+    expect(request.request.headers.get('Authorization')).toBe('Bearer access-token-2');
+    request.flush(response);
+
+    expect(result).toEqual(response);
   });
 
   it('maps a rejected inactive vendor to a dedicated login error', () => {

@@ -31,6 +31,15 @@ export class LoginPage {
   readonly submitting = signal(false);
   readonly errorMessage = signal<string | null>(null);
 
+  // Public self-service reset has no backend endpoint yet. The link below
+  // only reveals an informational message; it never renders a reset form
+  // or calls an endpoint.
+  readonly forgotPasswordVisible = signal(false);
+
+  toggleForgotPassword(): void {
+    this.forgotPasswordVisible.update((visible) => !visible);
+  }
+
   get emailErrorVisible(): boolean {
     const control = this.form.controls.email;
     return control.invalid && (control.touched || control.dirty);

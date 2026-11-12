@@ -13,6 +13,8 @@ import {
   throwError,
 } from 'rxjs';
 import type {
+  ChangePasswordRequest,
+  ChangePasswordResponse,
   LoginRequest,
   LoginResponse,
   RefreshTokenRequest,
@@ -133,6 +135,23 @@ export class AuthService {
    */
   register(body: RegisterRequest): Observable<RegisterResponse> {
     return this.http.post<RegisterResponse>(`${AUTH_URL}/register`, body);
+  }
+
+  /**
+   * Authenticated password change against the gateway `auth.change-password`
+   * action. The backend derives the acting `userId` from the JWT, so only
+   * the current and new passwords travel in the body — never an identity.
+   * The endpoint lives under the auth path, which the interceptor skips
+   * when attaching the bearer token, so the header is set explicitly here
+   * (same as `logout`).
+   */
+  changePassword(body: ChangePasswordRequest): Observable<ChangePasswordResponse> {
+    const session = this.sessionStorage.session;
+    const headers: Record<string, string> =
+      session !== null ? { Authorization: `Bearer ${session.token}` } : {};
+    return this.http.post<ChangePasswordResponse>(`${AUTH_URL}/change-password`, body, {
+      headers,
+    });
   }
 
   /**
