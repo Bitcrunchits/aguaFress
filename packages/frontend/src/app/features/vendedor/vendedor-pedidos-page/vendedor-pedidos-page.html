@@ -29,6 +29,7 @@
         <thead>
           <tr>
             <th scope="col">Número</th>
+            <th scope="col">Cliente</th>
             <th scope="col">Fecha</th>
             <th scope="col">Total</th>
             <th scope="col">Estado</th>
@@ -36,8 +37,16 @@
         </thead>
         <tbody>
           @for (order of pageOrders(); track order.id) {
-            <tr>
+            <tr
+              class="pedidos__row"
+              tabindex="0"
+              role="link"
+              [attr.aria-label]="'Ver detalle del pedido ' + order.pedidoNumero"
+              (click)="openOrder(order.id)"
+              (keydown)="onRowKeydown($event, order.id)"
+            >
               <td>{{ order.pedidoNumero }}</td>
+              <td>{{ clienteNombre(order) }}</td>
               <td>{{ formatFecha(order.createdAt) }}</td>
               <td>{{ formatTotal(order.total) }}</td>
               <td>

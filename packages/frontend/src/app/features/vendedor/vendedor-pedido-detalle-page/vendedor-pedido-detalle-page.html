@@ -1,0 +1,172 @@
+<section class="role-card detalle" aria-labelledby="detalle-title">
+  <p class="role-card__eyebrow">Vendedor</p>
+  <a class="detalle__back" routerLink="/vendedor/pedidos">Volver a pedidos</a>
+  <h1 id="detalle-title">Detalle del pedido</h1>
+
+  @if (loading()) {
+    <p class="detalle__state" role="status">Cargando pedido</p>
+  } @else if (failed()) {
+    <div class="detalle__state detalle__state--error" role="alert">
+      <p>No pudimos cargar el pedido. Inténtalo de nuevo en unos segundos.</p>
+      <button pButton type="button" label="Reintentar" (click)="retry()"></button>
+    </div>
+  } @else if (order(); as order) {
+    <article class="detalle__detail" aria-labelledby="detalle-order-title">
+      <header class="detalle__head">
+        <h2 id="detalle-order-title">Pedido {{ order.pedidoNumero }}</h2>
+        <span class="detalle__badge" [attr.data-estado]="order.estado">
+          {{ estadoLabel(order.estado) }}
+        </span>
+      </header>
+
+      <dl class="detalle__meta">
+        <div class="detalle__meta-item">
+          <dt>Cliente</dt>
+          <dd>{{ clienteNombre(order) }}</dd>
+        </div>
+        <div class="detalle__meta-item">
+          <dt>Creado</dt>
+          <dd>
+            <time [attr.datetime]="isoDate(order.createdAt)">
+              {{ formatDate(order.createdAt) }}
+            </time>
+          </dd>
+        </div>
+        <div class="detalle__meta-item">
+          <dt>Actualizado</dt>
+          <dd>
+            <time [attr.datetime]="isoDate(order.updatedAt)">
+              {{ formatDate(order.updatedAt) }}
+            </time>
+          </dd>
+        </div>
+        <div class="detalle__meta-item">
+          <dt>Método de pago</dt>
+          <dd>{{ metodoPagoLabel(order.metodoPago) }}</dd>
+        </div>
+      </dl>
+
+      <section class="detalle__section" aria-labelledby="detalle-items-title">
+        <h3 id="detalle-items-title">Productos</h3>
+        <ul class="detalle__items">
+          @for (item of order.items; track item.productId) {
+            <li class="detalle__item">
+              <div class="detalle__item-main">
+                <p class="detalle__item-name">{{ item.nombre }}</p>
+                <p class="detalle__item-meta">
+                  <span>{{ item.cantidad }} × {{ formatPrice(item.precioUnitario) }}</span>
+                </p>
+              </div>
+              <p class="detalle__item-subtotal">Subtotal: {{ formatPrice(subtotal(item)) }}</p>
+            </li>
+          }
+        </ul>
+      </section>
+
+      <dl class="detalle__totals">
+        <div class="detalle__total-row">
+          <dt>Subtotal</dt>
+          <dd>{{ formatPrice(order.totalSinIva) }}</dd>
+        </div>
+        <div class="detalle__total-row">
+          <dt>IVA</dt>
+          <dd>{{ formatPrice(order.iva) }}</dd>
+        </div>
+        <div class="detalle__total-row detalle__total-row--grand">
+          <dt>Total</dt>
+          <dd>{{ formatPrice(order.total) }}</dd>
+        </div>
+      </dl>
+
+      <section class="detalle__section" aria-labelledby="detalle-address-title">
+        <h3 id="detalle-address-title">Dirección de entrega</h3>
+        <address class="detalle__address">
+          <p>{{ order.direccion.calle }} {{ order.direccion.numero }}</p>
+          @if (order.direccion.pisoDepto) {
+            <p>{{ order.direccion.pisoDepto }}</p>
+          }
+          @if (order.direccion.referencia) {
+            <p>{{ order.direccion.referencia }}</p>
+          }
+          @if (direccionDetalle(order.direccion); as detail) {
+            <p>{{ detail }}</p>
+          }
+        </address>
+      </section>
+
+      @if (order.observaciones) {
+        <section class="detalle__section" aria-labelledby="detalle-observaciones-title">
+          <h3 id="detalle-observaciones-title">Observaciones</h3>
+          <p class="detalle__observaciones">{{ order.observaciones }}</p>
+        </section>
+      }
+
+      <section class="detalle__section" aria-labelledby="detalle-timeline-title">
+        <h3 id="detalle-timeline-title">Estado del pedido</h3>
+        <ol class="timeline">
+          @for (estado of timeline; track estado; let i = $index) {
+            <li class="timeline__step-wrap">
+              <span class="timeline__step" [class]="timelineStepClass(i)" aria-hidden="true"></span>
+              <span class="timeline__label" [class.timeline__label--muted]="isTerminal(order.estado)">
+                {{ estadoLabel(estado) }}
+              </span>
+            </li>
+          }
+        </ol>
+        @if (isTerminal(order.estado)) {
+          <p class="detalle__terminal" [attr.data-estado]="order.estado">
+            Este pedido está {{ estadoLabel(order.estado).toLowerCase() }}.
+          </p>
+        }
+      </section>
+
+      <section class="detalle__section detalle__actions" aria-labelledby="detalle-actions-title">
+        <h3 id="detalle-actions-title">Acciones</h3>
+
+        @if (actionSuccess()) {
+          <p class="detalle__feedback detalle__feedback--success" role="status">
+            {{ actionSuccess() }}
+          </p>
+        }
+        @if (actionFailed()) {
+          <p class="detalle__feedback detalle__feedback--error" role="alert">
+            No pudimos actualizar el pedido. Inténtalo de nuevo en unos segundos.
+          </p>
+        }
+
+        <div class="detalle__action-buttons">
+          @if (canConfirm()) {
+            <button
+              pButton
+              type="button"
+              label="Confirmar pedido"
+              (click)="confirmarPedido()"
+              [disabled]="actionInProgress()"
+            ></button>
+          }
+          @if (canMarkEnCamino()) {
+            <button
+              pButton
+              type="button"
+              label="Marcar en camino"
+              (click)="marcarEnCamino()"
+              [disabled]="actionInProgress()"
+            ></button>
+          }
+          @if (canMarkEntregado()) {
+            <button
+              pButton
+              type="button"
+              label="Marcar entregado"
+              (click)="marcarEntregado()"
+              [disabled]="actionInProgress()"
+            ></button>
+          }
+          @if (hasNoActions()) {
+            <p class="detalle__no-actions">No hay acciones disponibles para este estado.</p>
+          }
+        </div>
+      </section>
+    </article>
+  }
+</section>

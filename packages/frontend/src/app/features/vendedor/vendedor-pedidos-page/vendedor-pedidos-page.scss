@@ -77,6 +77,19 @@
   }
 }
 
+.pedidos__row {
+  cursor: pointer;
+
+  &:hover td {
+    background: var(--ice-surface);
+  }
+
+  &:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--agua-flow) 70%, transparent);
+    outline-offset: -3px;
+  }
+}
+
 .pedidos__caption {
   position: absolute;
   width: 1px;

@@ -1,7 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { MetodoPago, OrderEstado, type OrderResponse } from '@agua/contracts';
+import { MetodoPago, OrderEstado } from '@agua/contracts';
+import type { ConfirmOrderResponse, OrderResponse } from '@agua/contracts';
 import { VendedorPedidosService } from './vendedor-pedidos.service';
 
 const BASE = 'https://api-aguafress.eadev.cloud';
@@ -62,5 +63,70 @@ describe('VendedorPedidosService', () => {
 
     request.flush([ORDER]);
     expect(response).toEqual([ORDER]);
+  });
+
+  it('gets an order by id as an encoded query param with no identity field', () => {
+    const orderId = 'order 1&2';
+    let response: OrderResponse | undefined;
+
+    service.getById(orderId).subscribe((value) => (response = value));
+
+    const request = httpMock.expectOne(
+      (candidate) =>
+        candidate.urlWithParams === `${BASE}/api/v1/orders/get-by-id?id=${encodeURIComponent(orderId)}`,
+    );
+    expect(request.request.method).toBe('GET');
+    expect(request.request.body).toBeNull();
+    expect(request.request.urlWithParams).not.toContain('/get-by-id/');
+    expect(request.request.urlWithParams).not.toContain('vendedorId');
+    expect(request.request.urlWithParams).not.toContain('userId');
+
+    request.flush(ORDER);
+    expect(response).toEqual(ORDER);
+  });
+
+  it('confirms an order with the id in the body and no identity field', () => {
+    const confirmed: ConfirmOrderResponse = {
+      orderId: 'order-1',
+      estado: OrderEstado.CONFIRMADO,
+      mensaje: 'Pedido confirmado',
+    };
+    let response: ConfirmOrderResponse | undefined;
+
+    service.confirm('order-1').subscribe((value) => (response = value));
+
+    const request = httpMock.expectOne(`${BASE}/api/v1/orders/confirm`);
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({ id: 'order-1' });
+    const body = request.request.body as Record<string, unknown>;
+    expect(body['vendedorId']).toBeUndefined();
+    expect(body['userId']).toBeUndefined();
+
+    request.flush(confirmed);
+    expect(response).toEqual(confirmed);
+  });
+
+  it('updates the status with estado only (no notas)', () => {
+    service.updateStatus('order-1', OrderEstado.EN_CAMINO).subscribe();
+
+    const request = httpMock.expectOne(`${BASE}/api/v1/orders/status/update`);
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({ id: 'order-1', estado: OrderEstado.EN_CAMINO });
+
+    request.flush({ ...ORDER, estado: OrderEstado.EN_CAMINO });
+  });
+
+  it('updates the status with notas when provided', () => {
+    service.updateStatus('order-1', OrderEstado.ENTREGADO, 'Entregado en mano').subscribe();
+
+    const request = httpMock.expectOne(`${BASE}/api/v1/orders/status/update`);
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({
+      id: 'order-1',
+      estado: OrderEstado.ENTREGADO,
+      notas: 'Entregado en mano',
+    });
+
+    request.flush({ ...ORDER, estado: OrderEstado.ENTREGADO });
   });
 });

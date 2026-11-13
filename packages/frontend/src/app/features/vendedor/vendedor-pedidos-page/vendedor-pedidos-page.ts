@@ -1,9 +1,17 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { OrderEstado } from '@agua/contracts';
 import type { OrderResponse } from '@agua/contracts';
+import { catchError, forkJoin, of } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { ORDER_ESTADO_LABELS, formatIsoDate } from '../../../shared/order-format';
+import { VendedorClientesService } from '../vendedor-clientes.service';
 import { VendedorPedidosService } from '../vendedor-pedidos.service';
+import {
+  buildClienteLookup,
+  resolveClienteNombre,
+  type ClienteLookupMap,
+} from '../vendedor-pedidos-names';
 
 const PAGE_SIZE = 10;
 
@@ -26,10 +34,11 @@ const ESTADO_OPTIONS: EstadoOption[] = [
  * Vendedor orders list. `orders.list` is unpaginated and unfiltered today, so
  * the page fetches once and paginates/filters client-side via an `estado`
  * select. State style mirrors the clientes-page (signals, loading/failed with
- * retry). Note: `OrderResponse.clienteId` is a V1-compatibility field carrying
- * `AUTH_USER.id` (the JWT `sub`, i.e. `clienteUserId`), NOT the domain
- * `CLIENTE.id` — see the `clienteUserId` note on `OrderResponse` in
- * `@agua/contracts` and the identity rule in AGENTS.md.
+ * retry). The cartera is fetched in parallel (best-effort) to resolve each
+ * order's `clienteId` — a V1-compat field carrying `AUTH_USER.id` (the JWT
+ * `sub`), NOT the domain `CLIENTE.id` — into a display name; a cartera failure
+ * or missing match degrades to "Cliente no disponible" instead of blocking the
+ * list. Rows navigate to `/vendedor/pedidos/:id`.
  */
 @Component({
   selector: 'app-vendedor-pedidos-page',
@@ -39,6 +48,8 @@ const ESTADO_OPTIONS: EstadoOption[] = [
 })
 export class VendedorPedidosPage implements OnInit {
   private readonly pedidosService = inject(VendedorPedidosService);
+  private readonly clientesService = inject(VendedorClientesService);
+  private readonly router = inject(Router);
 
   private readonly priceFormatter = new Intl.NumberFormat('es-AR', {
     style: 'currency',
@@ -55,6 +66,8 @@ export class VendedorPedidosPage implements OnInit {
   readonly currentPage = signal(1);
 
   readonly estadoOptions = ESTADO_OPTIONS;
+
+  private clienteLookup: ClienteLookupMap = new Map();
 
   readonly filteredOrders = computed(() => {
     const estado = this.estado();
@@ -79,8 +92,12 @@ export class VendedorPedidosPage implements OnInit {
     this.loading.set(true);
     this.failed.set(false);
 
-    this.pedidosService.list().subscribe({
-      next: (orders) => {
+    forkJoin({
+      orders: this.pedidosService.list(),
+      cartera: this.clientesService.listCarteraForLookup().pipe(catchError(() => of([]))),
+    }).subscribe({
+      next: ({ orders, cartera }) => {
+        this.clienteLookup = buildClienteLookup(cartera);
         this.orders.set(orders);
         this.loading.set(false);
       },
@@ -113,8 +130,23 @@ export class VendedorPedidosPage implements OnInit {
     }
   }
 
+  openOrder(orderId: string): void {
+    void this.router.navigate(['/vendedor/pedidos', orderId]);
+  }
+
+  onRowKeydown(event: KeyboardEvent, orderId: string): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.openOrder(orderId);
+    }
+  }
+
   estadoLabel(estado: OrderEstado): string {
     return ORDER_ESTADO_LABELS[estado];
+  }
+
+  clienteNombre(order: OrderResponse): string {
+    return resolveClienteNombre(order, this.clienteLookup);
   }
 
   formatFecha(createdAt: string): string {

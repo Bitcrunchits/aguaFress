@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { MetodoPago, OrderEstado, type OrderResponse } from '@agua/contracts';
+import { Router } from '@angular/router';
+import { MetodoPago, OrderEstado, type OrderResponse, type VendedorClienteItemV2 } from '@agua/contracts';
 import { Observable, of, throwError } from 'rxjs';
+import { VendedorClientesService } from '../vendedor-clientes.service';
 import { VendedorPedidosService } from '../vendedor-pedidos.service';
 import { VendedorPedidosPage } from './vendedor-pedidos-page';
 
@@ -29,16 +31,30 @@ function order(id: string, estado: OrderEstado, createdAt: string): OrderRespons
   };
 }
 
+function carteraItem(clienteUserId: string, nombre: string, apellido?: string): VendedorClienteItemV2 {
+  return { id: `cliente-${clienteUserId}`, nombre, apellido, telefono: '3515550000', clienteUserId };
+}
+
 describe('VendedorPedidosPage', () => {
   let fixture: ComponentFixture<VendedorPedidosPage>;
   let element: HTMLElement;
-  const serviceStub = { list: jasmine.createSpy('list') };
+  const pedidosStub = { list: jasmine.createSpy('list') };
+  const clientesStub = { listCarteraForLookup: jasmine.createSpy('listCarteraForLookup') };
+  const routerStub = { navigate: jasmine.createSpy('navigate').and.returnValue(Promise.resolve(true)) };
 
   beforeEach(async () => {
-    serviceStub.list.calls.reset();
+    pedidosStub.list.calls.reset();
+    clientesStub.listCarteraForLookup.calls.reset();
+    clientesStub.listCarteraForLookup.and.returnValue(of([]));
+    routerStub.navigate.calls.reset();
+
     await TestBed.configureTestingModule({
       imports: [VendedorPedidosPage],
-      providers: [{ provide: VendedorPedidosService, useValue: serviceStub }],
+      providers: [
+        { provide: VendedorPedidosService, useValue: pedidosStub },
+        { provide: VendedorClientesService, useValue: clientesStub },
+        { provide: Router, useValue: routerStub },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(VendedorPedidosPage);
@@ -50,16 +66,16 @@ describe('VendedorPedidosPage', () => {
   }
 
   it('shows the loading state while the orders request is in flight', () => {
-    serviceStub.list.and.returnValue(pendingList());
+    pedidosStub.list.and.returnValue(pendingList());
 
     fixture.detectChanges();
 
-    expect(serviceStub.list).toHaveBeenCalledTimes(1);
+    expect(pedidosStub.list).toHaveBeenCalledTimes(1);
     expect(element.textContent).toContain('Cargando pedidos');
   });
 
   it('renders rows with número, fecha, total and Spanish estado label', () => {
-    serviceStub.list.and.returnValue(
+    pedidosStub.list.and.returnValue(
       of([
         order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z'),
         order('2', OrderEstado.ENTREGADO, '2026-10-23T00:00:00.000Z'),
@@ -75,8 +91,90 @@ describe('VendedorPedidosPage', () => {
     expect(element.textContent).toContain('Entregado');
   });
 
+  it('resolves the cliente name from the cartera lookup via clienteUserId', () => {
+    pedidosStub.list.and.returnValue(
+      of([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')]),
+    );
+    clientesStub.listCarteraForLookup.and.returnValue(
+      of([carteraItem('cliente-user-1', 'María', 'López')]),
+    );
+
+    fixture.detectChanges();
+
+    expect(clientesStub.listCarteraForLookup).toHaveBeenCalledTimes(1);
+    expect(element.textContent).toContain('María López');
+    expect(element.textContent).not.toContain('Cliente no disponible');
+  });
+
+  it('falls back to "Cliente no disponible" when the cartera has no matching clienteUserId', () => {
+    pedidosStub.list.and.returnValue(
+      of([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')]),
+    );
+    clientesStub.listCarteraForLookup.and.returnValue(
+      of([carteraItem('otro-user', 'Juan', 'Pérez')]),
+    );
+
+    fixture.detectChanges();
+
+    expect(element.textContent).toContain('Cliente no disponible');
+  });
+
+  it('still renders the list when the cartera request fails', () => {
+    pedidosStub.list.and.returnValue(
+      of([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')]),
+    );
+    clientesStub.listCarteraForLookup.and.returnValue(
+      throwError(() => new Error('cartera boom')),
+    );
+
+    fixture.detectChanges();
+
+    expect(element.textContent).toContain('P-1');
+    expect(element.textContent).toContain('Cliente no disponible');
+    expect(element.textContent).not.toContain('No pudimos cargar los pedidos');
+  });
+
+  it('navigates to the order detail when a row is clicked', () => {
+    pedidosStub.list.and.returnValue(
+      of([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')]),
+    );
+
+    fixture.detectChanges();
+
+    const row = element.querySelector<HTMLElement>('tbody tr.pedidos__row');
+    row?.click();
+
+    expect(routerStub.navigate).toHaveBeenCalledOnceWith(['/vendedor/pedidos', '1']);
+  });
+
+  it('navigates to the order detail on Enter keydown (keyboard accessibility)', () => {
+    pedidosStub.list.and.returnValue(
+      of([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')]),
+    );
+
+    fixture.detectChanges();
+
+    const row = element.querySelector<HTMLElement>('tbody tr.pedidos__row');
+    row?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+
+    expect(routerStub.navigate).toHaveBeenCalledOnceWith(['/vendedor/pedidos', '1']);
+  });
+
+  it('does not navigate on unrelated keys', () => {
+    pedidosStub.list.and.returnValue(
+      of([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')]),
+    );
+
+    fixture.detectChanges();
+
+    const row = element.querySelector<HTMLElement>('tbody tr.pedidos__row');
+    row?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }));
+
+    expect(routerStub.navigate).not.toHaveBeenCalled();
+  });
+
   it('shows the empty state when there are no orders', () => {
-    serviceStub.list.and.returnValue(of([]));
+    pedidosStub.list.and.returnValue(of([]));
 
     fixture.detectChanges();
 
@@ -85,7 +183,7 @@ describe('VendedorPedidosPage', () => {
   });
 
   it('shows the error state and reloads on retry', () => {
-    serviceStub.list.and.returnValues(
+    pedidosStub.list.and.returnValues(
       throwError(() => new Error('boom')),
       of([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')]),
     );
@@ -96,7 +194,7 @@ describe('VendedorPedidosPage', () => {
     element.querySelector<HTMLButtonElement>('.pedidos__state--error button')?.click();
     fixture.detectChanges();
 
-    expect(serviceStub.list).toHaveBeenCalledTimes(2);
+    expect(pedidosStub.list).toHaveBeenCalledTimes(2);
     expect(element.textContent).toContain('P-1');
   });
 
@@ -104,11 +202,11 @@ describe('VendedorPedidosPage', () => {
     const orders = Array.from({ length: 12 }, (_, i) =>
       order(String(i + 1), OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z'),
     );
-    serviceStub.list.and.returnValue(of(orders));
+    pedidosStub.list.and.returnValue(of(orders));
 
     fixture.detectChanges();
 
-    expect(serviceStub.list).toHaveBeenCalledTimes(1);
+    expect(pedidosStub.list).toHaveBeenCalledTimes(1);
     expect(element.textContent).toContain('Página 1 de 2');
     expect(element.querySelectorAll('tbody tr').length).toBe(10);
 
@@ -120,7 +218,7 @@ describe('VendedorPedidosPage', () => {
   });
 
   it('filters by estado client-side and resets to page 1', () => {
-    serviceStub.list.and.returnValue(
+    pedidosStub.list.and.returnValue(
       of([
         order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z'),
         order('2', OrderEstado.ENTREGADO, '2026-10-23T00:00:00.000Z'),
@@ -136,11 +234,11 @@ describe('VendedorPedidosPage', () => {
 
     expect(element.textContent).toContain('P-2');
     expect(element.textContent).not.toContain('P-1');
-    expect(serviceStub.list).toHaveBeenCalledTimes(1);
+    expect(pedidosStub.list).toHaveBeenCalledTimes(1);
   });
 
   it('shows the empty state when the estado filter matches nothing', () => {
-    serviceStub.list.and.returnValue(
+    pedidosStub.list.and.returnValue(
       of([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')]),
     );
 
@@ -156,7 +254,7 @@ describe('VendedorPedidosPage', () => {
   });
 
   it('disables Anterior and Siguiente at the pagination bounds', () => {
-    serviceStub.list.and.returnValue(of([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')]));
+    pedidosStub.list.and.returnValue(of([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')]));
 
     fixture.detectChanges();
 

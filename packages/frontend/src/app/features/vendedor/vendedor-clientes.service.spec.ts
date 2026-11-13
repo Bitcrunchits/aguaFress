@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import type { PaginatedResponse, VendedorClienteItem } from '@agua/contracts';
+import type { PaginatedResponse, VendedorClienteItem, VendedorClienteItemV2 } from '@agua/contracts';
 import { VendedorClientesService, VendedorClientesFilters } from './vendedor-clientes.service';
 
 const CARTERA_URL = 'https://api-aguafress.eadev.cloud/api/v1/clientes/cartera';
@@ -12,6 +12,14 @@ const CARTERA_RESPONSE: PaginatedResponse<VendedorClienteItem> = {
     { id: 'cliente-2', nombre: 'Juan' },
   ],
   pagination: { page: 1, limit: 10, total: 2, totalPages: 1 },
+};
+
+const CARTERA_LOOKUP_RAW = {
+  data: [
+    { id: 'cliente-1', auth_user_id: 'auth-1', nombre: 'María', apellido: 'López', telefono: '3515551234' },
+    { id: 'cliente-2', auth_user_id: 'auth-2', nombre: 'Juan', apellido: '', telefono: '' },
+  ],
+  pagination: { page: 1, limit: 500, total: 2, totalPages: 1 },
 };
 
 describe('VendedorClientesService', () => {
@@ -62,5 +70,21 @@ describe('VendedorClientesService', () => {
     expect(request.request.params.keys().length).toBe(0);
 
     request.flush(CARTERA_RESPONSE);
+  });
+
+  it('maps the raw cartera row into VendedorClienteItemV2 with a high limit', () => {
+    let response: VendedorClienteItemV2[] | undefined;
+
+    service.listCarteraForLookup().subscribe((value) => (response = value));
+
+    const request = httpMock.expectOne(`${CARTERA_URL}?limit=500`);
+    expect(request.request.method).toBe('GET');
+    expect(request.request.body).toBeNull();
+
+    request.flush(CARTERA_LOOKUP_RAW);
+    expect(response).toEqual([
+      { id: 'cliente-1', nombre: 'María', apellido: 'López', telefono: '3515551234', clienteUserId: 'auth-1' },
+      { id: 'cliente-2', nombre: 'Juan', apellido: undefined, telefono: undefined, clienteUserId: 'auth-2' },
+    ]);
   });
 });

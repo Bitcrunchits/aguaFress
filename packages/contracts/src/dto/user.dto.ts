@@ -201,6 +201,16 @@ export interface VendedorClienteItem {
   telefono?: string;
 }
 
+/**
+ * Extends `VendedorClienteItem` (OCP) with the owning AUTH_USER identity that
+ * the raw `clientes.cartera` row exposes but the base read model discards.
+ * `VendedorClienteItem` stays closed to modification.
+ */
+export interface VendedorClienteItemV2 extends VendedorClienteItem {
+  /** V1 compatibility: auth-user id (`clienteUserId` / AUTH_USER.id, JWT sub), not CLIENTE.id — used to join order.clienteId. */
+  clienteUserId: string;
+}
+
 export interface VendedorResponse {
   id: string;
   nombre: string;

@@ -146,8 +146,11 @@ describe('application routes', () => {
         },
         { provide: AdminVendedoresService, useValue: { list: () => of(EMPTY_LIST) } },
         { provide: VendedorProfileService, useValue: { getProfile: () => EMPTY } },
-        { provide: VendedorClientesService, useValue: { listCartera: () => of(EMPTY_CLIENTES) } },
-        { provide: VendedorPedidosService, useValue: { list: () => of([]) } },
+        {
+          provide: VendedorClientesService,
+          useValue: { listCartera: () => of(EMPTY_CLIENTES), listCarteraForLookup: () => of([]) },
+        },
+        { provide: VendedorPedidosService, useValue: { list: () => of([]), getById: () => of(ORDER) } },
         { provide: ClienteCatalogoService, useValue: { list: () => of(EMPTY_PRODUCTS) } },
         { provide: ClienteCarritoService, useValue: { addToCart: () => EMPTY } },
         { provide: ClienteCarritoLecturaService, useValue: lecturaStub },
@@ -213,6 +216,18 @@ describe('application routes', () => {
     );
   });
 
+  it('renders the pedido detail for a vendedor session', async () => {
+    authServiceStub.currentSession = sessionWithRole(UserRole.VENDEDOR);
+
+    const harness = await RouterTestingHarness.create('/vendedor/pedidos/order-1');
+
+    expect(TestBed.inject(Router).url).toBe('/vendedor/pedidos/order-1');
+    expect(harness.routeNativeElement?.querySelector('h1')?.textContent?.trim()).toBe(
+      'Detalle del pedido',
+    );
+    expect(harness.routeNativeElement?.textContent).toContain('P-0001');
+  });
+
   it('redirects a super_admin session away from the vendedor pedidos route', async () => {
     await RouterTestingHarness.create('/vendedor/pedidos');
 
@@ -243,6 +258,15 @@ describe('application routes', () => {
     expect(vendedorRoute?.canActivate?.length).toBe(1);
     expect(typeof pedidosRoute?.loadComponent).toBe('function');
     expect(pedidosRoute?.canActivate).toBeUndefined();
+  });
+
+  it('declares pedidos/:id under the vendedor parent as a lazy route', () => {
+    const shellRoute = routes.find((route) => route.children !== undefined);
+    const vendedorRoute = shellRoute?.children?.find((route) => route.path === 'vendedor');
+    const detalleRoute = vendedorRoute?.children?.find((route) => route.path === 'pedidos/:id');
+
+    expect(typeof detalleRoute?.loadComponent).toBe('function');
+    expect(detalleRoute?.canActivate).toBeUndefined();
   });
 
   it('redirects unauthenticated navigation to the login route', async () => {
