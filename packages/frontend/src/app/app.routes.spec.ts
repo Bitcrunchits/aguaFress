@@ -390,6 +390,7 @@ describe('application routes', () => {
       'carrito',
       'pedidos',
       'pedidos/:id',
+      'perfil',
     ]);
     expect(typeof catalogoRoute?.loadComponent).toBe('function');
     expect(catalogoRoute?.canActivate).toBeUndefined();

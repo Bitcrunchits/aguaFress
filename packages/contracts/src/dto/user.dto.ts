@@ -144,6 +144,14 @@ export interface UpdateProfileRequest {
   };
 }
 
+/**
+ * Extends `UpdateProfileRequest` (OCP) to add the invoicing type without
+ * modifying the existing DTO. `UpdateProfileRequest` stays closed.
+ */
+export interface UpdateProfileV2Request extends UpdateProfileRequest {
+  tipoFactura?: TipoFactura;
+}
+
 // ─── Cartera de clientes (asignación admin → vendedor) ───
 
 export interface AsignarVendedorRequest {

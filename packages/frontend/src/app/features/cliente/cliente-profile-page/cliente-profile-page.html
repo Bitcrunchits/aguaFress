@@ -1,0 +1,196 @@
+<section class="role-card cliente-profile" aria-labelledby="cliente-profile-title">
+  <p class="role-card__eyebrow">Cliente</p>
+  <h1 id="cliente-profile-title">Perfil</h1>
+
+  @if (loading()) {
+    <p class="cliente-profile__state" role="status">Cargando tu perfil</p>
+  } @else if (failed()) {
+    <div class="cliente-profile__state cliente-profile__state--error" role="alert">
+      <p>No pudimos cargar tu perfil. Inténtalo de nuevo en unos segundos.</p>
+      <button type="button" class="cliente-profile__button" (click)="retry()">Reintentar</button>
+    </div>
+  } @else if (profile()) {
+    @if (editing()) {
+      <form class="cliente-profile__form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+        <section class="cliente-profile__section" aria-labelledby="cliente-profile-data-title">
+          <h2 id="cliente-profile-data-title">Datos</h2>
+          <div class="cliente-profile__field">
+            <label for="cliente-profile-nombre">Nombre</label>
+            <input id="cliente-profile-nombre" type="text" formControlName="nombre" autocomplete="given-name" />
+          </div>
+          <div class="cliente-profile__field">
+            <label for="cliente-profile-apellido">Apellido</label>
+            <input
+              id="cliente-profile-apellido"
+              type="text"
+              formControlName="apellido"
+              autocomplete="family-name"
+            />
+          </div>
+          <div class="cliente-profile__field">
+            <label for="cliente-profile-telefono">Teléfono</label>
+            <input
+              id="cliente-profile-telefono"
+              type="tel"
+              formControlName="telefono"
+              autocomplete="tel"
+            />
+          </div>
+          <div class="cliente-profile__field">
+            <label for="cliente-profile-tipo-factura">Tipo de factura</label>
+            <select id="cliente-profile-tipo-factura" formControlName="tipoFactura">
+              @for (option of tipoFacturaOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          </div>
+        </section>
+
+        <section
+          class="cliente-profile__section"
+          aria-labelledby="cliente-profile-direccion-title"
+          formGroupName="address"
+        >
+          <h2 id="cliente-profile-direccion-title">Dirección</h2>
+          <div class="cliente-profile__field">
+            <label for="cliente-profile-calle">Calle</label>
+            <input id="cliente-profile-calle" type="text" formControlName="calle" />
+          </div>
+          <div class="cliente-profile__field">
+            <label for="cliente-profile-numero">Número</label>
+            <input id="cliente-profile-numero" type="text" formControlName="numero" />
+          </div>
+          <div class="cliente-profile__field">
+            <label for="cliente-profile-piso-depto">Piso / Depto</label>
+            <input id="cliente-profile-piso-depto" type="text" formControlName="pisoDepto" />
+          </div>
+          <div class="cliente-profile__field">
+            <label for="cliente-profile-referencia">Referencia</label>
+            <input id="cliente-profile-referencia" type="text" formControlName="referencia" />
+          </div>
+          <div class="cliente-profile__field">
+            <label for="cliente-profile-barrio">Barrio</label>
+            <input id="cliente-profile-barrio" type="text" formControlName="barrio" />
+          </div>
+          <div class="cliente-profile__field">
+            <label for="cliente-profile-ciudad">Ciudad</label>
+            <input id="cliente-profile-ciudad" type="text" formControlName="ciudad" />
+          </div>
+          <div class="cliente-profile__field">
+            <label for="cliente-profile-provincia">Provincia</label>
+            <input id="cliente-profile-provincia" type="text" formControlName="provincia" />
+          </div>
+          <div class="cliente-profile__field">
+            <label for="cliente-profile-codigo-postal">Código postal</label>
+            <input
+              id="cliente-profile-codigo-postal"
+              type="text"
+              formControlName="codigoPostal"
+            />
+          </div>
+        </section>
+
+        @if (saveError(); as message) {
+          <p class="cliente-profile__error" role="alert">{{ message }}</p>
+        }
+        @if (saveSuccess(); as message) {
+          <p class="cliente-profile__success" role="status">{{ message }}</p>
+        }
+
+        <div class="cliente-profile__actions">
+          <button type="submit" class="cliente-profile__button" [disabled]="saving()">Guardar</button>
+          <button
+            type="button"
+            class="cliente-profile__button cliente-profile__button--secondary"
+            (click)="cancelEditing()"
+            [disabled]="saving()"
+          >
+            Cancelar
+          </button>
+        </div>
+      </form>
+    } @else {
+      @if (datos(); as datos) {
+        <section class="cliente-profile__section" aria-labelledby="cliente-profile-data-title">
+          <h2 id="cliente-profile-data-title">Datos</h2>
+          <dl class="cliente-profile__details">
+            <div class="cliente-profile__detail">
+              <dt>Nombre</dt>
+              <dd>{{ datos.nombre || '—' }}</dd>
+            </div>
+            <div class="cliente-profile__detail">
+              <dt>Apellido</dt>
+              <dd>{{ datos.apellido || '—' }}</dd>
+            </div>
+            <div class="cliente-profile__detail">
+              <dt>Teléfono</dt>
+              <dd>{{ datos.telefono || '—' }}</dd>
+            </div>
+            <div class="cliente-profile__detail">
+              <dt>Tipo de factura</dt>
+              <dd>{{ tipoFacturaLabel(datos.tipoFactura) }}</dd>
+            </div>
+          </dl>
+        </section>
+      }
+
+      <section class="cliente-profile__section" aria-labelledby="cliente-profile-direccion-title">
+        <h2 id="cliente-profile-direccion-title">Dirección</h2>
+        @if (direccion(); as direccion) {
+          <dl class="cliente-profile__details">
+            <div class="cliente-profile__detail">
+              <dt>Calle</dt>
+              <dd>{{ direccion.calle || '—' }}</dd>
+            </div>
+            <div class="cliente-profile__detail">
+              <dt>Número</dt>
+              <dd>{{ direccion.numero || '—' }}</dd>
+            </div>
+            <div class="cliente-profile__detail">
+              <dt>Piso / Depto</dt>
+              <dd>{{ direccion.pisoDepto || '—' }}</dd>
+            </div>
+            <div class="cliente-profile__detail">
+              <dt>Referencia</dt>
+              <dd>{{ direccion.referencia || '—' }}</dd>
+            </div>
+            <div class="cliente-profile__detail">
+              <dt>Barrio</dt>
+              <dd>{{ direccion.barrio || '—' }}</dd>
+            </div>
+            <div class="cliente-profile__detail">
+              <dt>Ciudad</dt>
+              <dd>{{ direccion.ciudad || '—' }}</dd>
+            </div>
+            <div class="cliente-profile__detail">
+              <dt>Provincia</dt>
+              <dd>{{ direccion.provincia || '—' }}</dd>
+            </div>
+            <div class="cliente-profile__detail">
+              <dt>Código postal</dt>
+              <dd>{{ direccion.codigoPostal || '—' }}</dd>
+            </div>
+          </dl>
+        } @else {
+          <p class="cliente-profile__state">Todavía no has cargado una dirección.</p>
+        }
+
+        @if (saveError(); as message) {
+          <p class="cliente-profile__error" role="alert">{{ message }}</p>
+        }
+        @if (saveSuccess(); as message) {
+          <p class="cliente-profile__success" role="status">{{ message }}</p>
+        }
+
+        <button type="button" class="cliente-profile__button" (click)="startEditing()">
+          Editar
+        </button>
+      </section>
+    }
+
+    <section class="cliente-profile__section" aria-labelledby="cliente-profile-security-title">
+      <h2 id="cliente-profile-security-title">Seguridad</h2>
+      <app-change-password-form />
+    </section>
+  }
+</section>

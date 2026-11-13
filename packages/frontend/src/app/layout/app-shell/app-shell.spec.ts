@@ -45,6 +45,7 @@ describe('AppShell', () => {
       ['/cliente/catalogo', 'Catálogo'],
       ['/cliente/carrito', 'Carrito'],
       ['/cliente/pedidos', 'Pedidos'],
+      ['/cliente/perfil', 'Perfil'],
     ],
   };
 

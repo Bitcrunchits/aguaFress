@@ -142,6 +142,13 @@ export const routes: Routes = [
                 './features/cliente/cliente-pedido-detalle-page/cliente-pedido-detalle-page'
               ).then((module) => module.ClientePedidoDetallePage),
           },
+          {
+            path: 'perfil',
+            loadComponent: () =>
+              import(
+                './features/cliente/cliente-profile-page/cliente-profile-page'
+              ).then((module) => module.ClienteProfilePage),
+          },
         ],
       },
     ],
