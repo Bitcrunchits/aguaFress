@@ -46,5 +46,7 @@ COPY --from=build /app/MicroServices/usuario-service/prisma ./MicroServices/usua
 
 EXPOSE 3011
 
-# db push auto + seed test + arranque
-CMD cd MicroServices/usuario-service && npx prisma generate && npx prisma db push && node prisma/seed.cjs && node dist/main.js
+# db push auto + arranque. El seed NO se ejecuta en el arranque de producción:
+# tocaría datos persistentes en cada recreo del contenedor. Para poblar datos
+# de prueba ejecutarlo manualmente dentro del contenedor: node prisma/seed.cjs
+CMD cd MicroServices/usuario-service && npx prisma generate && npx prisma db push && node dist/main.js
