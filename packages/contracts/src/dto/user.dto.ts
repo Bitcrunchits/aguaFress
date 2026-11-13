@@ -262,6 +262,21 @@ export interface GenerarLinkResponse {
   expiresAt: string;
 }
 
+/**
+ * Read model for a row of `link-invitacion/vendor/list`. The backend exposes
+ * a raw Prisma snake_case row (`expires_at`, `created_at`) with no typed
+ * contract yet, so this keeps only the camelCase fields the UI consumes.
+ */
+export interface LinkInvitacionItem {
+  id: string;
+  token: string;
+  activo: boolean;
+  /** ISO 8601 */
+  expiresAt: string;
+  /** ISO 8601 */
+  createdAt: string;
+}
+
 // ─── Perfil público para el catálogo del vendedor ───
 
 export interface PerfilPublicoResponse {
