@@ -113,6 +113,18 @@ export interface VendedorProfile {
   zonaEntrega?: string;
 }
 
+/**
+ * Extends `VendedorProfile` (OCP) with the identity/contact fields that the
+ * deployed `vendedores.profile` raw row exposes but the base read model does
+ * not. `VendedorProfile` stays closed to modification.
+ */
+export interface VendedorProfileV2DTO extends VendedorProfile {
+  dni?: string;
+  cuil?: string;
+  cuit?: string;
+  telefono?: string;
+}
+
 export interface ClienteProfile {
   nombre?: string;
   apellido?: string;

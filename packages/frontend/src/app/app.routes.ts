@@ -101,6 +101,13 @@ export const routes: Routes = [
                 (module) => module.VendedorPedidosPage,
               ),
           },
+          {
+            path: 'perfil',
+            loadComponent: () =>
+              import('./features/vendedor/vendedor-profile-page/vendedor-profile-page').then(
+                (module) => module.VendedorProfilePage,
+              ),
+          },
         ],
       },
       {

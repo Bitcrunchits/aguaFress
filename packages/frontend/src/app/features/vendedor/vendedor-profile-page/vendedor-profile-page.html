@@ -1,0 +1,202 @@
+<section class="role-card vendedor-profile" aria-labelledby="vendedor-profile-title">
+  <p class="role-card__eyebrow">Vendedor</p>
+  <h1 id="vendedor-profile-title">Perfil</h1>
+
+  @if (loading()) {
+    <p class="vendedor-profile__state" role="status">Cargando tu perfil</p>
+  } @else if (failed()) {
+    <div class="vendedor-profile__state vendedor-profile__state--error" role="alert">
+      <p>No pudimos cargar tu perfil. Inténtalo de nuevo en unos segundos.</p>
+      <button type="button" class="vendedor-profile__button" (click)="retry()">Reintentar</button>
+    </div>
+  } @else if (profile(); as profile) {
+    @if (editing()) {
+      <form class="vendedor-profile__form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+        <section class="vendedor-profile__section" aria-labelledby="vendedor-profile-datos-title">
+          <h2 id="vendedor-profile-datos-title">Datos</h2>
+          <div class="vendedor-profile__field">
+            <label for="vendedor-profile-nombre">Nombre</label>
+            <input
+              id="vendedor-profile-nombre"
+              type="text"
+              formControlName="nombre"
+              autocomplete="given-name"
+            />
+          </div>
+          <div class="vendedor-profile__field">
+            <label for="vendedor-profile-apellido">Apellido</label>
+            <input
+              id="vendedor-profile-apellido"
+              type="text"
+              formControlName="apellido"
+              autocomplete="family-name"
+            />
+          </div>
+          <div class="vendedor-profile__field">
+            <label for="vendedor-profile-dni">DNI</label>
+            <input id="vendedor-profile-dni" type="text" formControlName="dni" />
+          </div>
+          <div class="vendedor-profile__field">
+            <label for="vendedor-profile-cuil">CUIL</label>
+            <input id="vendedor-profile-cuil" type="text" formControlName="cuil" />
+          </div>
+          <div class="vendedor-profile__field">
+            <label for="vendedor-profile-cuit">CUIT</label>
+            <input id="vendedor-profile-cuit" type="text" formControlName="cuit" />
+          </div>
+          <div class="vendedor-profile__field">
+            <label for="vendedor-profile-telefono">Teléfono</label>
+            <input
+              id="vendedor-profile-telefono"
+              type="tel"
+              formControlName="telefono"
+              autocomplete="tel"
+            />
+          </div>
+        </section>
+
+        <section class="vendedor-profile__section" aria-labelledby="vendedor-profile-negocio-title">
+          <h2 id="vendedor-profile-negocio-title">Negocio</h2>
+          <div class="vendedor-profile__field">
+            <label for="vendedor-profile-empresa">Empresa</label>
+            <input id="vendedor-profile-empresa" type="text" formControlName="empresa" />
+          </div>
+          <div class="vendedor-profile__field">
+            <label for="vendedor-profile-ciudad">Ciudad</label>
+            <input
+              id="vendedor-profile-ciudad"
+              type="text"
+              formControlName="ciudadDefault"
+            />
+          </div>
+          <div class="vendedor-profile__field">
+            <label for="vendedor-profile-zona">Zona de entrega</label>
+            <input id="vendedor-profile-zona" type="text" formControlName="zonaEntrega" />
+          </div>
+        </section>
+
+        <section class="vendedor-profile__section" aria-labelledby="vendedor-profile-logo-title">
+          <h2 id="vendedor-profile-logo-title">Logo</h2>
+          @if (logoUrl()) {
+            <img
+              class="vendedor-profile__logo-preview"
+              [src]="logoUrl()"
+              alt="Logo de la empresa"
+            />
+          }
+          <div class="vendedor-profile__field">
+            <label for="vendedor-profile-logo-file">Imagen del logo</label>
+            <input
+              id="vendedor-profile-logo-file"
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/avif"
+              (change)="onLogoSelected($event)"
+            />
+          </div>
+          @if (uploading()) {
+            <p class="vendedor-profile__state" role="status">Subiendo logo</p>
+          }
+          @if (uploadError(); as message) {
+            <p class="vendedor-profile__error" role="alert">{{ message }}</p>
+          }
+        </section>
+
+        @if (saveError(); as message) {
+          <p class="vendedor-profile__error" role="alert">{{ message }}</p>
+        }
+        @if (saveSuccess(); as message) {
+          <p class="vendedor-profile__success" role="status">{{ message }}</p>
+        }
+
+        <div class="vendedor-profile__actions">
+          <button type="submit" class="vendedor-profile__button" [disabled]="saving()">Guardar</button>
+          <button
+            type="button"
+            class="vendedor-profile__button vendedor-profile__button--secondary"
+            (click)="cancelEditing()"
+            [disabled]="saving()"
+          >
+            Cancelar
+          </button>
+        </div>
+      </form>
+    } @else {
+      <section class="vendedor-profile__section" aria-labelledby="vendedor-profile-datos-title">
+        <h2 id="vendedor-profile-datos-title">Datos</h2>
+        <dl class="vendedor-profile__details">
+          <div class="vendedor-profile__detail">
+            <dt>Nombre</dt>
+            <dd>{{ profile.nombre || '—' }}</dd>
+          </div>
+          <div class="vendedor-profile__detail">
+            <dt>Apellido</dt>
+            <dd>{{ profile.apellido || '—' }}</dd>
+          </div>
+          <div class="vendedor-profile__detail">
+            <dt>DNI</dt>
+            <dd>{{ profile.dni || '—' }}</dd>
+          </div>
+          <div class="vendedor-profile__detail">
+            <dt>CUIL</dt>
+            <dd>{{ profile.cuil || '—' }}</dd>
+          </div>
+          <div class="vendedor-profile__detail">
+            <dt>CUIT</dt>
+            <dd>{{ profile.cuit || '—' }}</dd>
+          </div>
+          <div class="vendedor-profile__detail">
+            <dt>Teléfono</dt>
+            <dd>{{ profile.telefono || '—' }}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="vendedor-profile__section" aria-labelledby="vendedor-profile-negocio-title">
+        <h2 id="vendedor-profile-negocio-title">Negocio</h2>
+        <dl class="vendedor-profile__details">
+          <div class="vendedor-profile__detail">
+            <dt>Empresa</dt>
+            <dd>{{ profile.empresa || '—' }}</dd>
+          </div>
+          <div class="vendedor-profile__detail">
+            <dt>Ciudad</dt>
+            <dd>{{ profile.ciudadDefault || '—' }}</dd>
+          </div>
+          <div class="vendedor-profile__detail">
+            <dt>Zona de entrega</dt>
+            <dd>{{ profile.zonaEntrega || '—' }}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="vendedor-profile__section" aria-labelledby="vendedor-profile-logo-title">
+        <h2 id="vendedor-profile-logo-title">Logo</h2>
+        @if (logoUrl()) {
+          <img
+            class="vendedor-profile__logo-preview"
+            [src]="logoUrl()"
+            alt="Logo de la empresa"
+          />
+        } @else {
+          <p class="vendedor-profile__state">Todavía no has cargado un logo.</p>
+        }
+      </section>
+
+      @if (saveError(); as message) {
+        <p class="vendedor-profile__error" role="alert">{{ message }}</p>
+      }
+      @if (saveSuccess(); as message) {
+        <p class="vendedor-profile__success" role="status">{{ message }}</p>
+      }
+
+      <button type="button" class="vendedor-profile__button" (click)="startEditing()">
+        Editar
+      </button>
+    }
+
+    <section class="vendedor-profile__section" aria-labelledby="vendedor-profile-security-title">
+      <h2 id="vendedor-profile-security-title">Seguridad</h2>
+      <app-change-password-form />
+    </section>
+  }
+</section>

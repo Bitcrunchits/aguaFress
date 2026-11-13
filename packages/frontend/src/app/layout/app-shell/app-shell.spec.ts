@@ -40,6 +40,7 @@ describe('AppShell', () => {
       ['/vendedor/catalogo/productos', 'Catálogo'],
       ['/vendedor/clientes', 'Clientes'],
       ['/vendedor/pedidos', 'Pedidos'],
+      ['/vendedor/perfil', 'Perfil'],
     ],
     [UserRole.CLIENTE]: [
       ['/cliente/catalogo', 'Catálogo'],
