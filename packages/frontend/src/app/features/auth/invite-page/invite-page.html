@@ -1,0 +1,221 @@
+<main class="invite-layout">
+  <section class="invite-card" aria-labelledby="invite-title">
+    <p class="invite-card__eyebrow">AguaFress</p>
+    <h1 id="invite-title">Crear cuenta de cliente</h1>
+
+    @if (tokenError(); as message) {
+      <div class="invite-card__terminal" role="alert">
+        <p class="invite-card__terminal-message">{{ message }}</p>
+        <a class="invite-card__link" href="/auth/login">Volver al inicio de sesión</a>
+      </div>
+    } @else {
+      <p class="invite-card__help">Completa tus datos para unirte a tu proveedor de agua.</p>
+
+      <form
+        class="invite-form"
+        [formGroup]="form"
+        (ngSubmit)="submit()"
+        novalidate
+      >
+        @if (errorMessage(); as message) {
+          <p class="invite-form__error" role="alert">{{ message }}</p>
+        }
+
+        <div class="invite-field">
+          <label for="invite-nombre">Nombre</label>
+          <input
+            id="invite-nombre"
+            type="text"
+            formControlName="nombre"
+            autocomplete="given-name"
+            [attr.aria-invalid]="nombreHintVisible"
+          />
+          @if (nombreHintVisible) {
+            <span class="invite-field__hint">Ingresa tu nombre.</span>
+          }
+        </div>
+
+        <div class="invite-field">
+          <label for="invite-apellido">Apellido (opcional)</label>
+          <input
+            id="invite-apellido"
+            type="text"
+            formControlName="apellido"
+            autocomplete="family-name"
+            [attr.aria-invalid]="apellidoHintVisible"
+          />
+          @if (apellidoHintVisible) {
+            <span class="invite-field__hint">El apellido debe tener entre 2 y 100 caracteres.</span>
+          }
+        </div>
+
+        <div class="invite-field">
+          <label for="invite-email">Correo electrónico</label>
+          <input
+            id="invite-email"
+            type="email"
+            formControlName="email"
+            autocomplete="email"
+            placeholder="nombre@ejemplo.com"
+            [attr.aria-invalid]="emailHintVisible"
+          />
+          @if (emailHintVisible) {
+            <span class="invite-field__hint">Ingresa un correo electrónico válido.</span>
+          }
+        </div>
+
+        <div class="invite-field">
+          <label for="invite-email-confirmation">Confirma tu correo electrónico</label>
+          <input
+            id="invite-email-confirmation"
+            type="email"
+            formControlName="emailConfirmation"
+            autocomplete="email"
+            placeholder="nombre@ejemplo.com"
+            [attr.aria-invalid]="emailConfirmationHintVisible"
+          />
+          @if (emailConfirmationHintVisible) {
+            <span class="invite-field__hint">{{ emailConfirmationHint }}</span>
+          }
+        </div>
+
+        <div class="invite-field">
+          <label for="invite-password">Contraseña</label>
+          <input
+            id="invite-password"
+            type="password"
+            formControlName="password"
+            autocomplete="new-password"
+            [attr.aria-invalid]="passwordHintVisible"
+          />
+          @if (passwordHintVisible) {
+            <span class="invite-field__hint"
+              >La contraseña debe tener al menos 8 caracteres.</span
+            >
+          }
+        </div>
+
+        <div class="invite-field">
+          <label for="invite-telefono">Teléfono</label>
+          <input
+            id="invite-telefono"
+            type="tel"
+            formControlName="telefono"
+            autocomplete="tel"
+            [attr.aria-invalid]="telefonoHintVisible"
+          />
+          @if (telefonoHintVisible) {
+            <span class="invite-field__hint">Ingresa tu teléfono.</span>
+          }
+        </div>
+
+        <div class="invite-field">
+          <label for="invite-dni">DNI</label>
+          <input
+            id="invite-dni"
+            type="text"
+            inputmode="numeric"
+            maxlength="8"
+            formControlName="dni"
+            autocomplete="off"
+            [attr.aria-invalid]="dniHintVisible"
+          />
+          @if (dniHintVisible) {
+            <span class="invite-field__hint">El DNI debe tener 8 dígitos.</span>
+          }
+        </div>
+
+        <fieldset class="invite-fieldset" formGroupName="direccionEntrega">
+          <legend>Dirección de entrega</legend>
+
+          <div class="invite-field">
+            <label for="invite-calle">Calle</label>
+            <input
+              id="invite-calle"
+              type="text"
+              formControlName="calle"
+              autocomplete="address-line1"
+              [attr.aria-invalid]="direccionCalleHintVisible"
+            />
+            @if (direccionCalleHintVisible) {
+              <span class="invite-field__hint">Ingresa la calle.</span>
+            }
+          </div>
+
+          <div class="invite-field">
+            <label for="invite-numero">Número</label>
+            <input
+              id="invite-numero"
+              type="text"
+              formControlName="numero"
+              autocomplete="address-line2"
+              [attr.aria-invalid]="direccionNumeroHintVisible"
+            />
+            @if (direccionNumeroHintVisible) {
+              <span class="invite-field__hint">Ingresa el número.</span>
+            }
+          </div>
+
+          <div class="invite-field">
+            <label for="invite-piso">Piso / Depto (opcional)</label>
+            <input id="invite-piso" type="text" formControlName="pisoDepto" />
+          </div>
+
+          <div class="invite-field">
+            <label for="invite-referencia">Referencia (opcional)</label>
+            <input id="invite-referencia" type="text" formControlName="referencia" />
+          </div>
+
+          <div class="invite-field">
+            <label for="invite-barrio">Barrio (opcional)</label>
+            <input id="invite-barrio" type="text" formControlName="barrio" />
+          </div>
+
+          <div class="invite-field">
+            <label for="invite-ciudad">Ciudad</label>
+            <input
+              id="invite-ciudad"
+              type="text"
+              formControlName="ciudad"
+              autocomplete="address-level2"
+              [attr.aria-invalid]="direccionCiudadHintVisible"
+            />
+            @if (direccionCiudadHintVisible) {
+              <span class="invite-field__hint">Ingresa la ciudad.</span>
+            }
+          </div>
+
+          <div class="invite-field">
+            <label for="invite-provincia">Provincia (opcional)</label>
+            <input
+              id="invite-provincia"
+              type="text"
+              formControlName="provincia"
+              autocomplete="address-level1"
+            />
+          </div>
+
+          <div class="invite-field">
+            <label for="invite-codigo-postal">Código postal (opcional)</label>
+            <input
+              id="invite-codigo-postal"
+              type="text"
+              formControlName="codigoPostal"
+              autocomplete="postal-code"
+            />
+          </div>
+        </fieldset>
+
+        <button
+          pButton
+          type="submit"
+          class="invite-form__submit"
+          label="Crear cuenta"
+          icon="pi pi-user-plus"
+          [loading]="submitting()"
+          [disabled]="submitting()"
+        ></button>
+      </form>
+    }
+  </section>
+</main>

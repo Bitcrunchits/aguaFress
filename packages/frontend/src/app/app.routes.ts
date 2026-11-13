@@ -23,6 +23,12 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'invite/:token',
+    canActivate: [guestGuard],
+    loadComponent: () =>
+      import('./features/auth/invite-page/invite-page').then((module) => module.InvitePage),
+  },
+  {
     path: '',
     canActivate: [authGuard],
     loadComponent: () =>
@@ -92,6 +98,13 @@ export const routes: Routes = [
             loadComponent: () =>
               import('./features/vendedor/clientes-page/clientes-page').then(
                 (module) => module.VendedorClientesPage,
+              ),
+          },
+          {
+            path: 'invitaciones',
+            loadComponent: () =>
+              import('./features/vendedor/vendedor-invitaciones-page/vendedor-invitaciones-page').then(
+                (module) => module.VendedorInvitacionesPage,
               ),
           },
           {
