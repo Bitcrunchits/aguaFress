@@ -31,9 +31,9 @@ export class LoginPage {
   readonly submitting = signal(false);
   readonly errorMessage = signal<string | null>(null);
 
-  // Public self-service reset has no backend endpoint yet. The link below
-  // only reveals an informational message; it never renders a reset form
-  // or calls an endpoint.
+  // There is no self-service reset flow: the link only toggles an
+  // informational message telling the user to call their provider. No reset
+  // form is rendered and no backend endpoint is called.
   readonly forgotPasswordVisible = signal(false);
 
   toggleForgotPassword(): void {

@@ -94,7 +94,7 @@ describe('LoginPage', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain(
-      'El restablecimiento de contraseña aún no está disponible. Contacta a un administrador.',
+      'Para restablecer tu contraseña, comunícate por teléfono con tu proveedor.',
     );
     expect(login).not.toHaveBeenCalled();
   });
