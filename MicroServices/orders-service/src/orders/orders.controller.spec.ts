@@ -88,6 +88,21 @@ describe('OrdersController', () => {
     expect(service.confirm).toHaveBeenCalledWith(expect.objectContaining({ userId: 'jwt-user' }), 'order-1');
   });
 
+  it('passes clienteUserId query filter to list for vendedor order history', async () => {
+    await controller.list(authenticatedPayload({ query: { clienteUserId: 'cliente-user-1' } }));
+
+    expect(service.list).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'jwt-user' }),
+      'cliente-user-1',
+    );
+  });
+
+  it('lists orders with a single argument when clienteUserId filter is absent', async () => {
+    await controller.list(authenticatedPayload());
+
+    expect(service.list).toHaveBeenCalledWith(expect.objectContaining({ userId: 'jwt-user' }));
+  });
+
   it('throws a controlled request exception when get by id receives no id', async () => {
     expect(() => controller.getById(authenticatedPayload({ query: {} }))).toThrow(BadRequestException);
   });

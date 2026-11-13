@@ -19,6 +19,7 @@ describe('OrdersService', () => {
     | 'findMany'
     | 'findManyForCliente'
     | 'findManyForVendedor'
+    | 'findManyForVendedorCliente'
     | 'updateStatus'
   >>;
   let productCatalog: jest.Mocked<ScopedProductCatalogPort>;
@@ -32,6 +33,7 @@ describe('OrdersService', () => {
       findMany: jest.fn(),
       findManyForCliente: jest.fn(),
       findManyForVendedor: jest.fn(),
+      findManyForVendedorCliente: jest.fn(),
       updateStatus: jest.fn(),
     };
     productCatalog = {
@@ -148,6 +150,26 @@ describe('OrdersService', () => {
     expect(ordersRepository.findManyForVendedor).toHaveBeenCalledWith(vendedorId);
     expect(vendedorProfileResolver.resolveVendedorIdByAuthUserId).toHaveBeenCalledWith(vendedorId);
     expect(ordersRepository.findMany).toHaveBeenCalledWith();
+  });
+
+  it('narrows vendedor order list to a single cliente when clienteUserId is provided', async () => {
+    ordersRepository.findManyForVendedorCliente.mockResolvedValue([orderRecord({ id: 'cliente-scoped-order' })]);
+
+    await expect(service.list(vendedorUser(), 'cliente-user-1')).resolves.toEqual([
+      expect.objectContaining({ id: 'cliente-scoped-order', vendedorId }),
+    ]);
+
+    expect(ordersRepository.findManyForVendedorCliente).toHaveBeenCalledWith(vendedorId, 'cliente-user-1');
+  });
+
+  it('lists all vendedor orders without a cliente filter when clienteUserId is absent', async () => {
+    ordersRepository.findManyForVendedor.mockResolvedValue([orderRecord({ id: 'vendedor-order' })]);
+
+    await expect(service.list(vendedorUser())).resolves.toEqual([
+      expect.objectContaining({ id: 'vendedor-order', vendedorId }),
+    ]);
+
+    expect(ordersRepository.findManyForVendedor).toHaveBeenCalledWith(vendedorId);
   });
 
   it('resolves vendedor AUTH_USER.id to domain vendedorId before vendedor reads when identities differ', async () => {

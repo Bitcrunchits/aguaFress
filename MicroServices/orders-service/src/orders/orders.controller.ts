@@ -23,7 +23,15 @@ export class OrdersController {
 
   @MessagePattern('orders.list')
   list(@Payload() payload: TcpPayload): Promise<readonly OrderResponse[]> {
-    return this.ordersService.list(this.payloadAdapter.requireUser(payload));
+    const user = this.payloadAdapter.requireUser(payload);
+    // clienteUserId is the AUTH_USER.id of the target cliente (JWT `sub`), NOT
+    // CLIENTE.id — same V1-compat identity as OrderResponse.clienteId.
+    const clienteUserId = readOptionalQueryString(payload.query?.clienteUserId);
+    if (clienteUserId === undefined) {
+      return this.ordersService.list(user);
+    }
+
+    return this.ordersService.list(user, clienteUserId);
   }
 
   @MessagePattern('orders.get_by_id')
@@ -78,6 +86,14 @@ function readQueryId(payload: TcpPayload): string {
   }
 
   return id;
+}
+
+function readOptionalQueryString(value: string | undefined): string | undefined {
+  if (value === undefined || value.trim() === '') {
+    return undefined;
+  }
+
+  return value;
 }
 
 function canReadJobStatus(user: TcpAuthenticatedUser, status: OrderJobStatusResponse): boolean {

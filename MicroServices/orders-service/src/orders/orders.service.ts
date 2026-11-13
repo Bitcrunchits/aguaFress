@@ -17,6 +17,7 @@ type OrdersServiceRepository = Pick<OrdersRepository,
   | 'findMany'
   | 'findManyForCliente'
   | 'findManyForVendedor'
+  | 'findManyForVendedorCliente'
   | 'updateStatus'
 >;
 
@@ -53,20 +54,24 @@ export class OrdersService {
     return toOrderResponse(order);
   }
 
-  async list(user: TcpAuthenticatedUser): Promise<readonly OrderResponse[]> {
+  async list(user: TcpAuthenticatedUser, clienteUserId?: string): Promise<readonly OrderResponse[]> {
     if (user.role === UserRole.CLIENTE) {
-      const clienteUserId = user.userId;
-      const orders = await this.ordersRepository.findManyForCliente(clienteUserId);
+      // clienteUserId filter is vendedor-only: a cliente always lists their own orders.
+      const authenticatedUserId = user.userId;
+      const orders = await this.ordersRepository.findManyForCliente(authenticatedUserId);
       return orders.map(toOrderResponse);
     }
 
     if (user.role === UserRole.VENDEDOR) {
       const vendedorId = await this.resolveDomainVendedorId(user);
-      const orders = await this.ordersRepository.findManyForVendedor(vendedorId);
+      const orders = clienteUserId === undefined
+        ? await this.ordersRepository.findManyForVendedor(vendedorId)
+        : await this.ordersRepository.findManyForVendedorCliente(vendedorId, clienteUserId);
       return orders.map(toOrderResponse);
     }
 
     if (user.role === UserRole.SUPER_ADMIN) {
+      // clienteUserId filter is vendedor-only: super-admin always lists all orders.
       const orders = await this.ordersRepository.findMany();
       return orders.map(toOrderResponse);
     }

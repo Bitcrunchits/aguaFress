@@ -123,6 +123,28 @@ describe('PrismaOrdersRepository', () => {
     expect(orders).toEqual([expect.objectContaining({ id: 'order-1' })]);
   });
 
+  it('filters vendedor orders by cliente usuario_id when provided', async () => {
+    const findMany = jest.fn().mockResolvedValue([prismaOrder({})]);
+    const repository = new PrismaOrdersRepository({ order: { findMany } } as unknown as PrismaService);
+
+    await repository.findManyForVendedorCliente(vendedorId, clienteId);
+
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { vendedor_id: vendedorId, usuario_id: clienteId },
+    }));
+  });
+
+  it('omits usuario_id from vendedor order filter when clienteUserId is absent', async () => {
+    const findMany = jest.fn().mockResolvedValue([prismaOrder({})]);
+    const repository = new PrismaOrdersRepository({ order: { findMany } } as unknown as PrismaService);
+
+    await repository.findManyForVendedor(vendedorId);
+
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { vendedor_id: vendedorId },
+    }));
+  });
+
   it('throws controlled request exception when updated order disappears after guarded update', async () => {
     const tx = transactionClient(1);
     tx.order.findUnique.mockResolvedValue(null);

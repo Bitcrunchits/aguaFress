@@ -98,6 +98,8 @@ export interface OrdersRepository {
   findMany(): Promise<readonly OrderRecord[]>;
   findManyForCliente(clienteUserId: string): Promise<readonly OrderRecord[]>;
   findManyForVendedor(vendedorId: string): Promise<readonly OrderRecord[]>;
+  /** Vendedor orders scoped to a single cliente (AUTH_USER.id), for the purchase-history view. */
+  findManyForVendedorCliente(vendedorId: string, clienteUserId: string): Promise<readonly OrderRecord[]>;
   updateStatus(orderId: string, previous: OrderEstado, next: OrderEstado, notes?: string): Promise<OrderRecord>;
 }
 
@@ -263,8 +265,19 @@ export class PrismaOrdersRepository implements OrdersRepository {
   }
 
   async findManyForVendedor(vendedorId: string): Promise<readonly OrderRecord[]> {
+    return this.findManyForVendedorScoped(vendedorId, undefined);
+  }
+
+  async findManyForVendedorCliente(vendedorId: string, clienteUserId: string): Promise<readonly OrderRecord[]> {
+    return this.findManyForVendedorScoped(vendedorId, clienteUserId);
+  }
+
+  private async findManyForVendedorScoped(vendedorId: string, clienteUserId: string | undefined): Promise<readonly OrderRecord[]> {
     const orders = await this.prisma.order.findMany({
-      where: { vendedor_id: vendedorId },
+      where: {
+        vendedor_id: vendedorId,
+        ...(clienteUserId ? { usuario_id: clienteUserId } : {}),
+      },
       include: ORDER_WITH_ITEMS,
       orderBy: { created_at: 'desc' },
     });
