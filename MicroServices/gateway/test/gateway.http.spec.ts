@@ -905,4 +905,40 @@ describe('Gateway HTTP routing', () => {
       .send(oversizedBody)
       .expect(413);
   });
+
+  it('routes POST /v1/upload/vendor-logo to the upload controller, not the catch-all', async () => {
+    mockDispatch.mockResolvedValue({ imageId: 'logos/abc.webp' });
+
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/upload/vendor-logo')
+      .set('Authorization', `Bearer ${vendedorToken}`)
+      .attach('file', Buffer.from('fake-png-bytes'), { filename: 'logo.png', contentType: 'image/png' })
+      .expect(201);
+
+    // The upload controller returns the dispatcher result directly (no wrapper).
+    expect(response.body).toEqual({ imageId: 'logos/abc.webp' });
+    expect(mockDispatch).toHaveBeenCalledWith(
+      'users',
+      expect.objectContaining({
+        body: expect.objectContaining({ mimetype: 'image/png' }),
+      }),
+      expect.objectContaining({ tcpPattern: 'users.upload_logo' }),
+    );
+  });
+
+  it('routes POST /v1/upload/product-image to the upload controller', async () => {
+    mockDispatch.mockResolvedValue({ imageId: 'productos/img.webp' });
+
+    await request(app.getHttpServer())
+      .post('/api/v1/upload/product-image')
+      .set('Authorization', `Bearer ${vendedorToken}`)
+      .attach('file', Buffer.from('fake-png-bytes'), { filename: 'p.png', contentType: 'image/png' })
+      .expect(201);
+
+    expect(mockDispatch).toHaveBeenCalledWith(
+      'products',
+      expect.objectContaining({ body: expect.objectContaining({ mimetype: 'image/png' }) }),
+      expect.objectContaining({ tcpPattern: 'products.upload_image' }),
+    );
+  });
 });

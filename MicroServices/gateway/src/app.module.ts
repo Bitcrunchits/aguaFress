@@ -16,6 +16,7 @@ import { TcpModule } from './tcp/tcp.module';
 import { OrdersQueueModule } from './queues/orders-queue.module';
 import { DeliveriesQueueModule } from './queues/deliveries-queue.module';
 import { UploadProxyModule } from './upload-proxy/upload-proxy.module';
+import { UploadProxyController } from './upload-proxy/upload-proxy.controller';
 
 @Module({
   imports: [
@@ -33,7 +34,7 @@ import { UploadProxyModule } from './upload-proxy/upload-proxy.module';
     RateLimitModule,
     UploadProxyModule,
   ],
-  controllers: [GatewayController],
+  controllers: [UploadProxyController, GatewayController],
   providers: [
     {
       provide: APP_GUARD,
