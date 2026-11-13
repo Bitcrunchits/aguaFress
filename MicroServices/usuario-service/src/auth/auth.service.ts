@@ -10,6 +10,7 @@ import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { AdminGenerateResetTokenDto } from './dto/admin-generate-reset-token.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { RequestResetDto } from './dto/request-reset.dto';
 import { AuditLogService } from '../audit-log/audit-log.service';
 
 @Injectable()
@@ -406,6 +407,33 @@ export class AuthService {
     return {
       resetToken: rawToken,
       expiresAt: expiresAt.toISOString(),
+    };
+  }
+
+  /**
+   * Self-service "forgot password" request (public — no authenticated user).
+   * Stub for AG-100: no messaging service exists yet, so we only audit the
+   * request. The response is IDENTICAL whether the email exists or not to
+   * prevent email enumeration (AG-195). When the email is not found we skip
+   * the audit write entirely (simplest option; the public response stays
+   * constant, and the write would only leak through privileged audit access).
+   */
+  async requestPasswordReset(dto: RequestResetDto) {
+    const user = await this.prisma.authUser.findUnique({
+      where: { email: dto.email },
+      select: { id: true },
+    });
+
+    if (user) {
+      await this.auditLogService.record(AuditAction.PASSWORD_RESET_REQUESTED, null, {
+        targetId: user.id,
+        detail: { email: dto.email },
+      });
+    }
+
+    return {
+      message:
+        'Si el correo está registrado, te contactaremos para restablecer tu contraseña.',
     };
   }
 

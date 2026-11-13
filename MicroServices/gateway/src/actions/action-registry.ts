@@ -45,6 +45,7 @@ export const ACTION_REGISTRY: Readonly<Record<string, ServiceFamily>> = {
       'change-password': { tcpPattern: 'auth.change_password', transport: 'send', authRequired: true },
       'admin-generate-reset-token': { tcpPattern: 'auth.admin_generate_reset_token', transport: 'send', authRequired: true, roles: ['super_admin'] },
       'reset-password': { tcpPattern: 'auth.reset_password', transport: 'send', authRequired: false },
+      'request-reset': { tcpPattern: 'auth.request_reset', transport: 'send', authRequired: false },
       'register-client': { tcpPattern: 'auth.register_client', transport: 'send', authRequired: false },
       'register-client/by-vendor': { tcpPattern: 'auth.register_client_by_vendor', transport: 'send', authRequired: true, roles: ['vendedor'] },
     },

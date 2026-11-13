@@ -50,7 +50,7 @@ export class AuditLogService {
 
   async record(
     action: AuditAction,
-    actorUserId: string,
+    actorUserId: string | null,
     opts?: RecordOptions,
   ): Promise<AuditLog> {
     if (!Object.values(AuditAction).includes(action)) {

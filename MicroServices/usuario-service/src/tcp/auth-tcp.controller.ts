@@ -11,6 +11,7 @@ import { ValidateTokenDto } from '../auth/dto/validate-token.dto';
 import { ChangePasswordDto } from '../auth/dto/change-password.dto';
 import { AdminGenerateResetTokenDto } from '../auth/dto/admin-generate-reset-token.dto';
 import { ResetPasswordDto } from '../auth/dto/reset-password.dto';
+import { RequestResetDto } from '../auth/dto/request-reset.dto';
 import { UserRole } from '@agua/contracts';
 import { TcpPayloadAdapter } from './tcp-payload-adapter.service';
 import type { TcpPayload } from './tcp-payload';
@@ -58,6 +59,12 @@ export class AuthTcpController {
   async resetPassword(@Payload() payload: TcpPayload) {
     const dto = await this.payloadAdapter.body(payload, ResetPasswordDto);
     return this.authService.resetPassword(dto);
+  }
+
+  @MessagePattern('auth.request_reset')
+  async requestReset(@Payload() payload: TcpPayload) {
+    const dto = await this.payloadAdapter.body(payload, RequestResetDto);
+    return this.authService.requestPasswordReset(dto);
   }
 
   @MessagePattern('auth.register_client')

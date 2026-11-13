@@ -1,7 +1,7 @@
 import * as crypto from 'crypto';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
-import { UserRole } from '@agua/contracts';
+import { AuditAction, UserRole } from '@agua/contracts';
 import { TokenService } from './token.service';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../common/prisma/prisma.service';
@@ -341,6 +341,50 @@ describe('AuthService', () => {
       const result = await authService.validate('valid-token');
 
       expect(result).toEqual({ valid: false, user: null });
+    });
+  });
+
+  describe('requestPasswordReset', () => {
+    const requestResetDto = { email: 'user@test.com' };
+    const genericMessage = {
+      message:
+        'Si el correo está registrado, te contactaremos para restablecer tu contraseña.',
+    };
+
+    it('registra auditoría con actor nulo y devuelve mensaje genérico si el email existe', async () => {
+      mockPrisma.authUser.findUnique.mockResolvedValue({ id: 'user-1' });
+
+      const result = await authService.requestPasswordReset(requestResetDto);
+
+      expect(mockPrisma.authUser.findUnique).toHaveBeenCalledWith({
+        where: { email: 'user@test.com' },
+        select: { id: true },
+      });
+      expect(mockAuditLogService.record).toHaveBeenCalledWith(
+        AuditAction.PASSWORD_RESET_REQUESTED,
+        null,
+        { targetId: 'user-1', detail: { email: 'user@test.com' } },
+      );
+      expect(result).toEqual(genericMessage);
+    });
+
+    it('no registra auditoría y devuelve el MISMO mensaje si el email no existe', async () => {
+      mockPrisma.authUser.findUnique.mockResolvedValue(null);
+
+      const result = await authService.requestPasswordReset(requestResetDto);
+
+      expect(mockAuditLogService.record).not.toHaveBeenCalled();
+      expect(result).toEqual(genericMessage);
+    });
+
+    it('devuelve una respuesta idéntica exista o no el email (anti-enumeración)', async () => {
+      mockPrisma.authUser.findUnique.mockResolvedValueOnce({ id: 'user-1' });
+      const existing = await authService.requestPasswordReset(requestResetDto);
+
+      mockPrisma.authUser.findUnique.mockResolvedValueOnce(null);
+      const missing = await authService.requestPasswordReset(requestResetDto);
+
+      expect(existing).toEqual(missing);
     });
   });
 

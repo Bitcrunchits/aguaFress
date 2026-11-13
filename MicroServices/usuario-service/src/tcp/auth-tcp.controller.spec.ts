@@ -2,6 +2,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { AuthService } from '../auth/auth.service';
 import type { LoginDto } from '../auth/dto/login.dto';
+import type { RequestResetDto } from '../auth/dto/request-reset.dto';
 import { AuthTcpController } from './auth-tcp.controller';
 import { TcpPayloadAdapter } from './tcp-payload-adapter.service';
 import type { TcpPayload } from './tcp-payload';
@@ -12,6 +13,7 @@ type AuthServiceMock = {
   refresh: jest.Mock;
   validate: jest.Mock;
   logout: jest.Mock;
+  requestPasswordReset: jest.Mock;
 };
 
 const mockAuthService: AuthServiceMock = {
@@ -20,6 +22,7 @@ const mockAuthService: AuthServiceMock = {
   refresh: jest.fn(),
   validate: jest.fn(),
   logout: jest.fn(),
+  requestPasswordReset: jest.fn(),
 };
 
 describe('AuthTcpController', () => {
@@ -69,6 +72,24 @@ describe('AuthTcpController', () => {
 
     await expect(controller.login(payload)).rejects.toBeInstanceOf(BadRequestException);
     expect(mockAuthService.login).not.toHaveBeenCalled();
+  });
+
+  it('handles auth.request_reset with payload.body and delegates to AuthService', async () => {
+    const dto: RequestResetDto = { email: 'user@test.com' };
+    const payload: TcpPayload = {
+      body: dto,
+      requestId: 'request-1',
+    };
+    const expected = {
+      message:
+        'Si el correo está registrado, te contactaremos para restablecer tu contraseña.',
+    };
+    mockAuthService.requestPasswordReset.mockResolvedValue(expected);
+
+    const result = await controller.requestReset(payload);
+
+    expect(mockAuthService.requestPasswordReset).toHaveBeenCalledWith(dto);
+    expect(result).toEqual(expected);
   });
 
 });
