@@ -1,0 +1,96 @@
+<section class="role-card invitaciones" aria-labelledby="invitaciones-title">
+  <p class="role-card__eyebrow">Vendedor</p>
+  <h1 id="invitaciones-title">Invitaciones</h1>
+
+  <div class="invitaciones__toolbar">
+    <p class="invitaciones__help">Genera un link de invitación y compartilo como QR o URL.</p>
+    <button
+      pButton
+      type="button"
+      label="Nueva invitación"
+      icon="pi pi-link"
+      [loading]="creating()"
+      [disabled]="creating()"
+      (click)="createInvitation()"
+    ></button>
+  </div>
+
+  @if (createError(); as message) {
+    <p class="invitaciones__error" role="alert">{{ message }}</p>
+  }
+
+  @if (actionError(); as message) {
+    <p class="invitaciones__error" role="alert">{{ message }}</p>
+  }
+
+  @if (createdInvite(); as invite) {
+    <div class="invitaciones__share" aria-labelledby="share-title">
+      <h2 id="share-title">Invitación generada</h2>
+      @if (invite.qrDataUrl) {
+        <img class="invitaciones__qr" [src]="invite.qrDataUrl" alt="Código QR de la invitación" />
+      }
+      <div class="invitaciones__share-body">
+        <code class="invitaciones__url">{{ invite.url }}</code>
+        <p class="invitaciones__expiry">Expira: {{ formatFecha(invite.expiresAt) }}</p>
+        <button pButton type="button" label="Copiar enlace" icon="pi pi-copy" (click)="copyLink(invite.url)"></button>
+        @if (copied()) {
+          <span class="invitaciones__copied" role="status">Enlace copiado</span>
+        }
+      </div>
+    </div>
+  }
+
+  @if (loading()) {
+    <p class="invitaciones__state" role="status">Cargando invitaciones</p>
+  } @else if (failed()) {
+    <div class="invitaciones__state invitaciones__state--error" role="alert">
+      <p>No pudimos cargar las invitaciones. Inténtalo de nuevo en unos segundos.</p>
+      <button pButton type="button" label="Reintentar" (click)="retry()"></button>
+    </div>
+  } @else if (items().length === 0) {
+    <p class="invitaciones__state">No hay invitaciones para mostrar.</p>
+  } @else {
+    <div class="invitaciones__table-wrap">
+      <table class="invitaciones__table">
+        <caption class="invitaciones__caption">Listado de invitaciones</caption>
+        <thead>
+          <tr>
+            <th scope="col">Fecha de creación</th>
+            <th scope="col">Token</th>
+            <th scope="col">Expira</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of items(); track item.id) {
+            <tr>
+              <td>{{ formatFecha(item.createdAt) }}</td>
+              <td><code>{{ item.token }}</code></td>
+              <td>{{ formatFecha(item.expiresAt) }}</td>
+              <td>
+                <span class="invitaciones__badge" [class]="'invitaciones__badge ' + estadoClass(item)">
+                  {{ estadoLabel(item) }}
+                </span>
+              </td>
+              <td>
+                @if (canDeactivate(item)) {
+                  <button
+                    pButton
+                    type="button"
+                    label="Desactivar"
+                    severity="danger"
+                    text
+                    [loading]="deactivatingId() === item.id"
+                    [disabled]="deactivatingId() !== null"
+                    (click)="deactivate(item)"
+                  ></button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

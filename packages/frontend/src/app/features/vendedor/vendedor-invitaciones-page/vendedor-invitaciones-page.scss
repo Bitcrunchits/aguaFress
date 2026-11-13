@@ -1,0 +1,167 @@
+.invitaciones__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.invitaciones__help {
+  margin: 0;
+  color: var(--slate-muted);
+}
+
+.invitaciones__error {
+  margin: 16px 0 0;
+  padding: 12px 16px;
+  border: 1px solid color-mix(in srgb, var(--route-danger) 35%, transparent);
+  background: color-mix(in srgb, var(--route-danger) 8%, var(--clean-white));
+  color: var(--route-danger);
+  font-size: 0.9rem;
+}
+
+.invitaciones__share {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
+  margin-top: 24px;
+  padding: 20px;
+  border: 1px solid var(--line-soft);
+  background: var(--clean-white);
+  box-shadow: var(--shadow-agua-card);
+
+  h2 {
+    flex-basis: 100%;
+    margin: 0;
+    color: var(--slate-ink);
+    font-family: var(--font-agua-display);
+    font-size: 1.2rem;
+  }
+}
+
+.invitaciones__qr {
+  width: 180px;
+  height: 180px;
+  border: 1px solid var(--line-soft);
+}
+
+.invitaciones__share-body {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+
+.invitaciones__url {
+  padding: 8px 12px;
+  border: 1px solid var(--line-soft);
+  background: var(--ice-surface);
+  color: var(--agua-primary-dark);
+  font-size: 0.85rem;
+  word-break: break-all;
+}
+
+.invitaciones__expiry {
+  margin: 0;
+  color: var(--slate-muted);
+  font-size: 0.9rem;
+}
+
+.invitaciones__copied {
+  color: var(--route-success);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.invitaciones__state {
+  margin: 24px 0 0;
+  color: var(--slate-muted);
+}
+
+.invitaciones__state--error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  color: var(--route-danger);
+
+  p {
+    margin: 0;
+  }
+}
+
+.invitaciones__table-wrap {
+  margin-top: 24px;
+  overflow-x: auto;
+}
+
+.invitaciones__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+
+  th,
+  td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--line-soft);
+    white-space: nowrap;
+  }
+
+  th {
+    color: var(--slate-muted);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  code {
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: var(--ice-surface);
+    color: var(--agua-primary-dark);
+    font-size: 0.85rem;
+  }
+}
+
+.invitaciones__caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.invitaciones__badge {
+  display: inline-block;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: var(--ice-surface);
+  color: var(--agua-primary-dark);
+
+  &--activo {
+    background: color-mix(in srgb, var(--route-success) 14%, transparent);
+    color: var(--route-success);
+  }
+
+  &--expirado {
+    background: color-mix(in srgb, var(--route-warning) 16%, transparent);
+    color: var(--route-warning);
+  }
+
+  &--desactivado {
+    background: color-mix(in srgb, var(--slate-muted) 14%, transparent);
+    color: var(--slate-muted);
+  }
+}

@@ -19,6 +19,8 @@ import type {
   LoginResponse,
   RefreshTokenRequest,
   RefreshTokenResponse,
+  RegisterClientRequest,
+  RegisterClientResponse,
   RegisterRequest,
   RegisterResponse,
   UserProfile,
@@ -135,6 +137,17 @@ export class AuthService {
    */
   register(body: RegisterRequest): Observable<RegisterResponse> {
     return this.http.post<RegisterResponse>(`${AUTH_URL}/register`, body);
+  }
+
+  /**
+   * Public client registration against the gateway `auth.register-client`
+   * action. The response carries the fresh client's access/refresh tokens
+   * (`RegisterClientResponse`) but no `user` object, so callers that need a
+   * session must follow up with `login({ email, password })` — they cannot
+   * build a `Session` from this response alone.
+   */
+  registerClient(body: RegisterClientRequest): Observable<RegisterClientResponse> {
+    return this.http.post<RegisterClientResponse>(`${AUTH_URL}/register-client`, body);
   }
 
   /**
