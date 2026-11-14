@@ -1,6 +1,13 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { json, static as serveStatic, urlencoded } from 'express';
+import {
+  json,
+  static as serveStatic,
+  urlencoded,
+  type NextFunction,
+  type Request,
+  type Response,
+} from 'express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { createGatewayEnv } from './config/env.config';
@@ -30,6 +37,13 @@ async function bootstrap(): Promise<void> {
   });
   app.use(json({ limit: gatewayEnv.PAYLOAD_LIMIT }));
   app.use(urlencoded({ extended: true, limit: gatewayEnv.PAYLOAD_LIMIT }));
+  // Uploaded images are public and must load cross-origin (e.g. an <img> on
+  // the frontend dev server). Helmet defaults CORP to same-origin, which the
+  // browser enforces and blocks cross-origin <img> requests to /uploads.
+  app.use('/uploads', (req: Request, res: Response, next: NextFunction) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    next();
+  });
   app.use('/uploads', serveStatic(gatewayEnv.UPLOAD_DIR, { fallthrough: false, index: false }));
   app.useGlobalPipes(
     new ValidationPipe({
