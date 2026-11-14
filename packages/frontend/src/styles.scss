@@ -5,108 +5,125 @@
   --font-display: "Manrope", "Inter", system-ui, sans-serif;
   --font-mono: "Roboto Mono", ui-monospace, monospace;
 
-  --color-agua-primary: #0e7490;
-  --color-agua-primary-dark: #155e75;
-  --color-agua-flow: #22d3ee;
+  --color-agua-primary: #008ba3;
+  --color-agua-primary-dark: #006f83;
+  --color-agua-flow: #71e0e8;
   --color-fresh-mint: #a7f3d0;
-  --color-ice-surface: #f0fdfa;
+  --color-ice-surface: #f0fcfd;
   --color-clean-white: #ffffff;
-  --color-slate-ink: #0f172a;
-  --color-slate-muted: #64748b;
-  --color-line-soft: #d9eef2;
-  --color-route-warning: #f59e0b;
-  --color-route-success: #16a34a;
-  --color-route-danger: #dc2626;
+  --color-slate-ink: #103d4a;
+  --color-slate-muted: #466773;
+  --color-line-soft: #c5e2e7;
+  --color-route-warning: #805514;
+  --color-route-success: #096e66;
+  --color-route-danger: #a7433e;
 
-  --shadow-agua-card: 0 8px 24px rgb(14 116 144 / 0.08);
-  --shadow-agua-floating: 0 18px 48px rgb(15 23 42 / 0.16);
+  --shadow-agua-card: 0 4px 12px rgb(0 143 163 / 0.10);
+  --shadow-agua-floating: 0 12px 28px rgb(16 61 74 / 0.14);
 }
 
 :root {
   color-scheme: light;
-  --agua-primary: #0e7490;
-  --agua-primary-dark: #155e75;
-  --agua-flow: #22d3ee;
+  --agua-primary: #008ba3;
+  --agua-primary-dark: #006f83;
+  --agua-flow: #71e0e8;
   --fresh-mint: #a7f3d0;
-  --ice-surface: #f0fdfa;
+  --ice-surface: #f0fcfd;
   --clean-white: #ffffff;
-  --slate-ink: #0f172a;
-  --slate-muted: #64748b;
-  --line-soft: #d9eef2;
-  --route-warning: #f59e0b;
-  --route-success: #16a34a;
-  --route-danger: #dc2626;
-  --shadow-agua-card: 0 8px 24px rgb(14 116 144 / 0.08);
-  --shadow-agua-floating: 0 18px 48px rgb(15 23 42 / 0.16);
+  --slate-ink: #103d4a;
+  --slate-muted: #466773;
+  --line-soft: #c5e2e7;
+  --route-warning: #805514;
+  --route-success: #096e66;
+  --route-danger: #a7433e;
+  --shadow-agua-card: 0 4px 12px rgb(0 143 163 / 0.10);
+  --shadow-agua-floating: 0 12px 28px rgb(16 61 74 / 0.14);
   --font-agua-sans: "Inter", system-ui, sans-serif;
   --font-agua-display: "Manrope", "Inter", system-ui, sans-serif;
   --font-agua-mono: "Roboto Mono", ui-monospace, monospace;
 
-  // ─── Tokens semánticos (Agua fluida) ───
-  // Fondo de página + degradados suaves
-  --agua-bg: #f0fdfa;
+  // Agua Fluida semantic tokens
+  --agua-bg: #f0fcfd;
   --agua-bg-gradient: radial-gradient(
       1200px 600px at 100% -10%,
-      rgb(34 211 238 / 0.16),
+      rgb(113 224 232 / 0.28),
       transparent 60%
     ),
-    radial-gradient(900px 500px at -10% 110%, rgb(167 243 208 / 0.22), transparent 55%);
-  // Superficies
+    radial-gradient(900px 500px at -10% 110%, rgb(0 139 163 / 0.12), transparent 55%);
+  // Surfaces
   --agua-surface: #ffffff;
-  --agua-surface-muted: #f0fdfa;
-  // Vidrio (navegación)
-  --agua-glass: rgb(255 255 255 / 0.72);
-  --agua-glass-border: rgb(217 238 242 / 0.8);
-  // Texto
-  --agua-text: #0f172a;
-  --agua-text-secondary: #64748b;
-  // Bordes
-  --agua-border: #d9eef2;
-  // Acciones
-  --agua-action-primary-bg: #0e7490;
+  --agua-surface-muted: #e1f5f7;
+  // Frosted navigation
+  --agua-glass: rgb(255 255 255 / 0.66);
+  --agua-glass-border: rgb(197 226 231 / 0.7);
+  // Text
+  --agua-text: #103d4a;
+  --agua-text-secondary: #466773;
+  // Borders
+  --agua-border: #c5e2e7;
+  // Actions: use the darker palette step for readable white button text.
+  --agua-action-primary-bg: #006f83;
   --agua-action-primary-text: #ffffff;
-  --agua-action-secondary-bg: #e0f2f5;
-  --agua-action-secondary-text: #155e75;
-  // Radios
+  --agua-action-primary-hover: #00586a;
+  --agua-action-secondary-bg: #e1f5f7;
+  --agua-action-secondary-text: #006f83;
+  // Accent
+  --agua-accent: #71e0e8;
+  // Keyboard focus
+  --agua-focus: #006f83;
+  // Radii
   --radius-header: 18px;
   --radius-card: 22px;
   --radius-control: 24px;
-  // Sombras
-  --shadow-surface: 0 8px 24px rgb(14 116 144 / 0.08);
-  --shadow-glass: 0 8px 32px rgb(15 23 42 / 0.08);
+  // Layered elevation
+  --elevation-1: 0 1px 3px rgb(16 61 74 / 0.10);
+  --elevation-2: 0 4px 12px rgb(16 61 74 / 0.12);
+  --elevation-3: 0 12px 28px rgb(16 61 74 / 0.16);
+  --shadow-surface: var(--elevation-2);
+  --shadow-glass: var(--elevation-3);
+  --agua-photo-wash: rgb(240 252 253 / 0.46);
 }
 
 .agua-dark {
   color-scheme: dark;
-  --ice-surface: #082f3a;
-  --clean-white: #0f2f3a;
-  --slate-ink: #e2f8fb;
-  --slate-muted: #9cc9d2;
-  --line-soft: #1f4c58;
-  --agua-primary: #22d3ee;
-  --agua-primary-dark: #67e8f9;
+  --ice-surface: #071f26;
+  --clean-white: #10323d;
+  --slate-ink: #f0fcfd;
+  --slate-muted: #b1cbd2;
+  --line-soft: #315763;
+  --agua-primary: #71e0e8;
+  --agua-primary-dark: #a0eef2;
+  --route-warning: #e0b45c;
+  --route-success: #5cd0bd;
+  --route-danger: #e08a82;
 
-  // ─── Tokens semánticos (oscuro) ───
-  --agua-bg: #082f3a;
+  // Dark semantic tokens
+  --agua-bg: #071f26;
   --agua-bg-gradient: radial-gradient(
       1200px 600px at 100% -10%,
-      rgb(34 211 238 / 0.12),
+      rgb(38 189 204 / 0.18),
       transparent 60%
     ),
-    radial-gradient(900px 500px at -10% 110%, rgb(167 243 208 / 0.08), transparent 55%);
-  --agua-surface: #0f2f3a;
-  --agua-surface-muted: #082f3a;
-  --agua-glass: rgb(8 47 58 / 0.72);
-  --agua-glass-border: rgb(31 76 88 / 0.8);
-  --agua-text: #f0fdfa;
-  --agua-text-secondary: #9cc9d2;
-  --agua-border: #1f4c58;
-  --agua-action-primary-bg: #22d3ee;
-  --agua-action-primary-text: #082f3a;
-  --agua-action-secondary-bg: #0f2f3a;
-  --agua-action-secondary-text: #67e8f9;
-  --shadow-surface: 0 8px 24px rgb(0 0 0 / 0.3);
-  --shadow-glass: 0 8px 32px rgb(0 0 0 / 0.35);
+    radial-gradient(900px 500px at -10% 110%, rgb(113 224 232 / 0.08), transparent 55%);
+  --agua-surface: #10323d;
+  --agua-surface-muted: #174350;
+  --agua-glass: rgb(7 31 38 / 0.66);
+  --agua-glass-border: rgb(49 87 99 / 0.7);
+  --agua-text: #f0fcfd;
+  --agua-text-secondary: #b1cbd2;
+  --agua-border: #315763;
+  --agua-action-primary-bg: #71e0e8;
+  --agua-action-primary-text: #071f26;
+  --agua-action-primary-hover: #a0eef2;
+  --agua-action-secondary-bg: #174350;
+  --agua-action-secondary-text: #71e0e8;
+  --agua-accent: #26bdcc;
+  --agua-focus: #71e0e8;
+  --elevation-1: 0 1px 3px rgb(0 0 0 / 0.4);
+  --elevation-2: 0 4px 12px rgb(0 0 0 / 0.45);
+  --elevation-3: 0 12px 28px rgb(0 0 0 / 0.55);
+  --shadow-surface: var(--elevation-2);
+  --shadow-glass: var(--elevation-3);
 }
 
 @layer base {
@@ -121,13 +138,71 @@
     text-rendering: optimizeLegibility;
   }
 
+  // Fixed backdrop layers stay below app content; the body gradient is the
+  // fallback if the photo fails to load. Only the photo itself is blurred.
+  body::before {
+    content: '';
+    position: fixed;
+    inset: -16px;
+    z-index: 0;
+    pointer-events: none;
+    background-image: url('/images/background-main.jpg');
+    background-size: cover;
+    background-position: center;
+    filter: blur(10px);
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: linear-gradient(var(--agua-photo-wash), var(--agua-photo-wash)),
+      var(--agua-bg-gradient);
+  }
+
+  app-root {
+    position: relative;
+    z-index: 1;
+  }
+
+  .agua-dark body::before,
+  .agua-dark body::after {
+    display: none;
+  }
+
   a {
     color: var(--agua-primary);
   }
 
+  button {
+    border-radius: var(--radius-control);
+  }
+
+  input,
+  select,
+  textarea {
+    border-radius: var(--radius-control);
+  }
+
   :focus-visible {
-    outline: 3px solid color-mix(in srgb, var(--agua-flow) 70%, transparent);
+    outline: 3px solid color-mix(in srgb, var(--agua-focus) 70%, transparent);
     outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell__nav a,
+  .shell__logout,
+  .theme-toggle {
+    transition: none;
+  }
+
+  .shell__nav a:hover,
+  .shell__logout:hover,
+  .theme-toggle:hover {
+    transform: none;
   }
 }
 
@@ -152,6 +227,18 @@
   .role-card h1 {
     margin: 0 0 12px;
     font-family: var(--font-agua-display);
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -0.8px;
+    color: var(--agua-text);
+    line-height: 1.1;
+  }
+
+  @media (max-width: 640px) {
+    .role-card h1 {
+      font-size: 26px;
+      letter-spacing: -0.4px;
+    }
   }
 
   .role-card p:last-child {

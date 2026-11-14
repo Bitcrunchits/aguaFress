@@ -141,16 +141,17 @@
 .cliente__button {
   min-height: 44px;
   padding: 10px 16px;
-  border: 1px solid var(--agua-primary);
-  background: var(--agua-primary);
-  color: var(--clean-white);
+  border: 1px solid var(--agua-action-primary-bg);
+  border-radius: var(--radius-control);
+  background: var(--agua-action-primary-bg);
+  color: var(--agua-action-primary-text);
   cursor: pointer;
   font: inherit;
   font-weight: 700;
 
   &:hover:not(:disabled) {
-    border-color: var(--agua-primary-dark);
-    background: var(--agua-primary-dark);
+    border-color: var(--agua-action-primary-hover);
+    background: var(--agua-action-primary-hover);
   }
 
   &:disabled {

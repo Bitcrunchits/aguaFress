@@ -1,0 +1,9 @@
+<button
+  type="button"
+  class="theme-toggle"
+  (click)="toggle()"
+  [attr.aria-pressed]="theme.mode() === ThemeMode.Dark"
+  [attr.aria-label]="theme.mode() === ThemeMode.Dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+>
+  {{ theme.mode() === ThemeMode.Dark ? 'Claro' : 'Oscuro' }}
+</button>

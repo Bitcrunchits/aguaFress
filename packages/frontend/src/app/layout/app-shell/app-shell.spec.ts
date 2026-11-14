@@ -86,6 +86,20 @@ describe('AppShell', () => {
     });
   }
 
+  it('leaves the shared light backdrop exposed behind authenticated content', () => {
+    auth.currentSession = {
+      token: 'access', refreshToken: 'refresh',
+      user: { id: 'user-1', email: 'user@example.com', role: UserRole.CLIENTE },
+    };
+    ready.next(true);
+    const fixture = TestBed.createComponent(AppShell);
+    fixture.detectChanges();
+    const shell = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('.shell')!;
+
+    expect(getComputedStyle(shell).backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    expect(shell.querySelector('.shell__header')).not.toBeNull();
+  });
+
   it('shows the full name in the identity when the profile provides it, else the email', () => {
     const vendedor = TestBed.createComponent(AppShell);
     auth.currentSession = {

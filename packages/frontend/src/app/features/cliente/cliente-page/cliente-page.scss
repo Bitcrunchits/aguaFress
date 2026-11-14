@@ -133,16 +133,16 @@
 
 .cliente__button {
   padding: 10px 20px;
-  border: 1px solid var(--agua-primary);
-  background: var(--agua-primary);
-  color: var(--clean-white);
+  border: 1px solid var(--agua-action-primary-bg);
+  background: var(--agua-action-primary-bg);
+  color: var(--agua-action-primary-text);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    background: var(--agua-primary-dark);
-    border-color: var(--agua-primary-dark);
+    background: var(--agua-action-primary-hover);
+    border-color: var(--agua-action-primary-hover);
   }
 
   &:disabled {
@@ -178,8 +178,8 @@
   }
 
   &:hover {
-    background: var(--agua-primary-dark);
-    border-color: var(--agua-primary-dark);
-    color: var(--clean-white);
+    background: var(--agua-action-primary-hover);
+    border-color: var(--agua-action-primary-hover);
+    color: var(--agua-action-primary-text);
   }
 }

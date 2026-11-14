@@ -13,7 +13,7 @@
 }
 
 .clientes__field-label {
-  color: var(--slate-muted);
+  color: var(--agua-text-secondary);
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -23,8 +23,9 @@
 .clientes__field input {
   min-width: 180px;
   padding: 8px 12px;
-  border: 1px solid var(--line-soft);
-  background: var(--ice-surface);
+  border: 1px solid var(--agua-border);
+  border-radius: var(--radius-control);
+  background: var(--agua-surface-muted);
   color: var(--agua-primary-dark);
   font-size: 0.95rem;
 }
@@ -47,7 +48,7 @@
   align-items: center;
   gap: 8px;
   padding: 4px 12px;
-  background: var(--ice-surface);
+  background: var(--agua-surface-muted);
   color: var(--agua-primary-dark);
   font-size: 0.85rem;
 }
@@ -64,7 +65,7 @@
 
 .clientes__state {
   margin: 24px 0 0;
-  color: var(--slate-muted);
+  color: var(--agua-text-secondary);
 }
 
 .clientes__state--error {
@@ -93,12 +94,12 @@
   td {
     padding: 12px 16px;
     text-align: left;
-    border-bottom: 1px solid var(--line-soft);
+    border-bottom: 1px solid var(--agua-border);
     white-space: nowrap;
   }
 
   th {
-    color: var(--slate-muted);
+    color: var(--agua-text-secondary);
     font-size: 0.8rem;
     font-weight: 700;
     letter-spacing: 0.06em;
@@ -132,6 +133,6 @@
 }
 
 .clientes__page-indicator {
-  color: var(--slate-muted);
+  color: var(--agua-text-secondary);
   font-size: 0.9rem;
 }

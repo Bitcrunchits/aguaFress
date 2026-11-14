@@ -5,8 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { UserRole } from '@agua/contracts';
 import { ROLE_HOME_PATHS } from '../../core/auth/auth.models';
 import { AuthService } from '../../core/auth/auth.service';
-import { ThemeService } from '../../core/theme/theme.service';
-import { ThemeMode } from '../../core/theme/theme.models';
+import { ThemeToggle } from '../../shared/theme-toggle/theme-toggle';
 
 const ROLE_LABELS: Record<UserRole, string> = {
   [UserRole.SUPER_ADMIN]: 'Administración',
@@ -16,20 +15,18 @@ const ROLE_LABELS: Record<UserRole, string> = {
 
 @Component({
   selector: 'app-shell',
-  imports: [AsyncPipe, RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [AsyncPipe, RouterLink, RouterLinkActive, RouterOutlet, ThemeToggle],
   templateUrl: './app-shell.html',
   styleUrl: './app-shell.scss',
 })
 export class AppShell {
   readonly auth = inject(AuthService);
   readonly router = inject(Router);
-  readonly theme = inject(ThemeService);
   readonly homePaths = ROLE_HOME_PATHS;
   readonly roleLabels = ROLE_LABELS;
   readonly clienteRole = UserRole.CLIENTE;
   readonly vendedorRole = UserRole.VENDEDOR;
   readonly superAdminRole = UserRole.SUPER_ADMIN;
-  readonly ThemeMode = ThemeMode;
 
   constructor() {
     const destroyRef = inject(DestroyRef);
@@ -56,10 +53,6 @@ export class AppShell {
 
   logout(): void {
     this.auth.logout();
-  }
-
-  toggleTheme(): void {
-    this.theme.setMode(this.theme.mode() === ThemeMode.Dark ? ThemeMode.Light : ThemeMode.Dark);
   }
 
   /**

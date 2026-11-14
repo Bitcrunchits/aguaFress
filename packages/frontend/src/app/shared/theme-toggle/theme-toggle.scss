@@ -1,0 +1,35 @@
+.theme-toggle {
+  flex-shrink: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  padding: 8px 14px;
+  background: var(--agua-surface);
+  color: var(--agua-text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  box-shadow: var(--elevation-1);
+  transition: box-shadow 160ms ease, transform 160ms ease, color 160ms ease;
+
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    background: var(--agua-glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+}
+
+.theme-toggle:hover {
+  color: var(--agua-primary-dark);
+  box-shadow: var(--elevation-2);
+  transform: translateY(-1px);
+}
+
+.theme-toggle[aria-pressed='true'] {
+  background: var(--agua-action-secondary-bg);
+  color: var(--agua-action-secondary-text);
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--agua-primary);
+  outline-offset: 3px;
+}

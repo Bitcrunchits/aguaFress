@@ -13,6 +13,7 @@ import { UserRole } from '@agua/contracts';
 import type { DireccionEntrega, RegisterClientRequest } from '@agua/contracts';
 import { ROLE_HOME_PATHS } from '../../../core/auth/auth.models';
 import { AuthService } from '../../../core/auth/auth.service';
+import { ThemeToggle } from '../../../shared/theme-toggle/theme-toggle';
 
 const NETWORK_ERROR =
   'No pudimos conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.';
@@ -76,7 +77,7 @@ interface DireccionFormValue {
  */
 @Component({
   selector: 'app-invite-page',
-  imports: [ReactiveFormsModule, ButtonModule],
+  imports: [ReactiveFormsModule, ButtonModule, ThemeToggle],
   templateUrl: './invite-page.html',
   styleUrl: './invite-page.scss',
 })

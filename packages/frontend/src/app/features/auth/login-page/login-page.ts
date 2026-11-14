@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { ROLE_HOME_PATHS } from '../../../core/auth/auth.models';
 import { AuthError, AuthService, type AuthErrorCode } from '../../../core/auth/auth.service';
+import { ThemeToggle } from '../../../shared/theme-toggle/theme-toggle';
 
 const AUTH_MESSAGES: Record<AuthErrorCode, string> = {
   'invalid-credentials': 'El correo o la contraseña no coinciden. Revisa los datos e inténtalo de nuevo.',
@@ -14,7 +15,7 @@ const AUTH_MESSAGES: Record<AuthErrorCode, string> = {
 
 @Component({
   selector: 'app-login-page',
-  imports: [ReactiveFormsModule, ButtonModule],
+  imports: [ReactiveFormsModule, ButtonModule, ThemeToggle],
   templateUrl: './login-page.html',
   styleUrl: './login-page.scss',
 })

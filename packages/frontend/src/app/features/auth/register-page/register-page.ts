@@ -10,6 +10,7 @@ import {
 import { ButtonModule } from 'primeng/button';
 import type { RegisterRequest } from '@agua/contracts';
 import { AuthService } from '../../../core/auth/auth.service';
+import { ThemeToggle } from '../../../shared/theme-toggle/theme-toggle';
 
 const NETWORK_ERROR =
   'No pudimos conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.';
@@ -31,7 +32,7 @@ function nonWhitespace(control: AbstractControl): ValidationErrors | null {
 
 @Component({
   selector: 'app-register-page',
-  imports: [ReactiveFormsModule, ButtonModule],
+  imports: [ReactiveFormsModule, ButtonModule, ThemeToggle],
   templateUrl: './register-page.html',
   styleUrl: './register-page.scss',
 })
