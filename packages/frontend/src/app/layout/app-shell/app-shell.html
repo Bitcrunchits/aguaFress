@@ -30,6 +30,15 @@
         </nav>
         <div class="shell__account">
           <span class="shell__identity">{{ roleLabels[session.user.role] }} · {{ displayName(session) }}</span>
+          <button
+            type="button"
+            class="shell__theme-toggle"
+            (click)="toggleTheme()"
+            [attr.aria-pressed]="theme.mode() === ThemeMode.Dark"
+            [attr.aria-label]="theme.mode() === ThemeMode.Dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+          >
+            {{ theme.mode() === ThemeMode.Dark ? 'Claro' : 'Oscuro' }}
+          </button>
           <button type="button" class="shell__logout" (click)="logout()">Cerrar sesión</button>
         </div>
       }

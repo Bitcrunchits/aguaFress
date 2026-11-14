@@ -10,6 +10,15 @@
   gap: 16px;
   max-width: 1120px;
   margin: 0 auto 24px;
+  padding: 12px 18px;
+  border: 1px solid var(--agua-glass-border);
+  border-radius: var(--radius-header);
+  // Fallback opaco: si el navegador no soporta backdrop-filter, el fondo
+  // translúcido por token mantiene legibilidad (el RQ pide alternativa opaca).
+  background: var(--agua-glass);
+  box-shadow: var(--shadow-glass);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
 .shell__brand,
@@ -84,7 +93,30 @@
   border-color: var(--agua-primary);
 }
 
+.shell__theme-toggle {
+  flex-shrink: 0;
+  border: 1px solid var(--agua-border);
+  border-radius: var(--radius-control);
+  padding: 8px 14px;
+  background: var(--agua-surface);
+  color: var(--agua-text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.shell__theme-toggle:hover {
+  border-color: var(--agua-primary);
+  color: var(--agua-primary-dark);
+}
+
+.shell__theme-toggle[aria-pressed='true'] {
+  background: var(--agua-action-secondary-bg);
+  color: var(--agua-action-secondary-text);
+}
+
 .shell__logout:focus-visible,
+.shell__theme-toggle:focus-visible,
 .shell__nav a:focus-visible {
   outline: 2px solid var(--agua-primary);
   outline-offset: 3px;

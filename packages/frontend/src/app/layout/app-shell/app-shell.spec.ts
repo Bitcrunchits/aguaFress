@@ -79,7 +79,7 @@ describe('AppShell', () => {
       expect(element.querySelector('.shell__identity')?.textContent).toContain(
         ROLE_HOME[role].label,
       );
-      const button = element.querySelector('button');
+      const button = element.querySelector<HTMLButtonElement>('.shell__logout');
       expect(button?.textContent?.trim()).toBe('Cerrar sesión');
       button?.click();
       expect(auth.logout).toHaveBeenCalledTimes(1);
