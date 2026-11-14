@@ -43,13 +43,14 @@
   --font-agua-mono: "Roboto Mono", ui-monospace, monospace;
 
   // Agua Fluida semantic tokens
-  --agua-bg: #f0fcfd;
+  --agua-bg: #cdebee;
   --agua-bg-gradient: radial-gradient(
-      1200px 600px at 100% -10%,
-      rgb(113 224 232 / 0.28),
-      transparent 60%
+      1200px 700px at 90% -12%,
+      rgb(64 186 200 / 0.32),
+      transparent 62%
     ),
-    radial-gradient(900px 500px at -10% 110%, rgb(0 139 163 / 0.12), transparent 55%);
+    radial-gradient(900px 600px at -10% 108%, rgb(0 139 163 / 0.14), transparent 58%),
+    linear-gradient(160deg, rgb(113 224 232 / 0.2), rgb(0 139 163 / 0.1));
   // Surfaces
   --agua-surface: #ffffff;
   --agua-surface-muted: #e1f5f7;
@@ -81,7 +82,6 @@
   --elevation-3: 0 12px 28px rgb(16 61 74 / 0.16);
   --shadow-surface: var(--elevation-2);
   --shadow-glass: var(--elevation-3);
-  --agua-photo-wash: rgb(240 252 253 / 0.46);
 }
 
 .agua-dark {
@@ -138,38 +138,9 @@
     text-rendering: optimizeLegibility;
   }
 
-  // Fixed backdrop layers stay below app content; the body gradient is the
-  // fallback if the photo fails to load. Only the photo itself is blurred.
-  body::before {
-    content: '';
-    position: fixed;
-    inset: -16px;
-    z-index: 0;
-    pointer-events: none;
-    background-image: url('/images/background-main.jpg');
-    background-size: cover;
-    background-position: center;
-    filter: blur(10px);
-  }
-
-  body::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background: linear-gradient(var(--agua-photo-wash), var(--agua-photo-wash)),
-      var(--agua-bg-gradient);
-  }
-
   app-root {
     position: relative;
     z-index: 1;
-  }
-
-  .agua-dark body::before,
-  .agua-dark body::after {
-    display: none;
   }
 
   a {

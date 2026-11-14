@@ -33,7 +33,7 @@ describe('public route backdrop', () => {
   ];
 
   for (const [page, layoutSelector, cardSelector] of publicPages) {
-    it(`shows the light photo behind ${layoutSelector} and removes it in dark mode`, () => {
+    it(`renders a water-toned backdrop behind ${layoutSelector} and switches it in dark mode`, () => {
       const fixture = TestBed.createComponent(page);
       fixture.detectChanges();
       const layout = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(layoutSelector)!;
@@ -42,9 +42,8 @@ describe('public route backdrop', () => {
 
       expect(getComputedStyle(layout).backgroundColor).toBe('rgba(0, 0, 0, 0)');
       expect(getComputedStyle(card).backgroundColor).toBe('rgb(255, 255, 255)');
-      expect(getComputedStyle(document.body, '::before').backgroundImage).toContain('background-main.jpg');
-      expect(getComputedStyle(document.body, '::before').filter).toContain('blur(10px)');
-      expect(getComputedStyle(document.body, '::after').backgroundImage).not.toBe('none');
+      expect(getComputedStyle(document.body).backgroundColor).toBe('rgb(205, 235, 238)');
+      expect(getComputedStyle(document.body).backgroundImage).not.toBe('none');
       expect(toggle.getAttribute('aria-label')).toBe('Cambiar a modo oscuro');
       expect(toggle.getAttribute('aria-pressed')).toBe('false');
 
@@ -52,22 +51,11 @@ describe('public route backdrop', () => {
       fixture.detectChanges();
 
       expect(document.documentElement.classList.contains('agua-dark')).toBeTrue();
-      expect(getComputedStyle(document.body, '::before').display).toBe('none');
-      expect(getComputedStyle(document.body, '::after').display).toBe('none');
+      expect(getComputedStyle(document.body).backgroundColor).toBe('rgb(7, 31, 38)');
       expect(getComputedStyle(card).backgroundColor).toBe('rgb(16, 50, 61)');
       expect(toggle.getAttribute('aria-label')).toBe('Cambiar a modo claro');
       expect(toggle.getAttribute('aria-pressed')).toBe('true');
       expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe(ThemeMode.Dark);
     });
   }
-
-  it('serves the supplied background photo as a decodable image', async () => {
-    const image = new Image();
-    image.src = '/images/background-main.jpg';
-
-    await image.decode();
-
-    expect(image.naturalWidth).toBe(6000);
-    expect(image.naturalHeight).toBe(4000);
-  });
 });
