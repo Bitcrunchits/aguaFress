@@ -26,9 +26,9 @@ Restore the vendor-logo upload forwarded by the gateway to `users.upload_logo`. 
 
 ## Tasks and evidence
 
-- [ ] **LOGO-001 — Restore logo RPC behavior and prevent guard regression.** Confirm the security boundary, add the focused Nest TCP regression, verify the staged guard removal and checks, and commit locally. Route: delegated direct (4+ files in path; test preparation and nontrivial test write). Commit identity, checks, authored changed-line count, and review outcome: pending.
+- [x] **LOGO-001 — Restore logo RPC behavior and prevent guard regression.** Behavioral TCP regression `src/tcp/upload-tcp.integration.spec.ts` drives the real Nest RPC pipeline with `AuthModule`, proving vendor success, missing-user rejection, and wrong-role rejection while mocking Prisma/resolver/upload I/O. Commit `80ed589` (fix(usuario): remove HTTP JwtAuthGuard global guard from TCP-only service). Focused 2 suites/5 tests, full 33 suites/307 tests, usuario build exit 0, gateway focused 2 suites/61 tests, gateway build exit 0, `git diff --check` and staged check clean; GGA pre-commit PASSED. Authored diff 169 additions / 3 deletions (172 changed lines), under budget. RDD off, no native review. Route: delegated direct.
 
 ## Current state and next step
 
-- The auth-module deletion is staged; no commit or new regression test yet. The previous build and 304 tests must be rerun. Other untracked paths are unrelated and must remain untouched.
-- Next: implement/test LOGO-001 and record the local work-unit commit. GitHub/Jira issue, merge to main, push, VPS deployment and live retest require separate authorization; the prior shutdown note listed them as future steps, not current permission.
+- LOGO-001 is complete and committed locally as `80ed589` on `fix/vendor-logo-upload`. Only unrelated untracked paths remain (`.agents/`, `packages/frontend/`, two other `odd/tasks` docs), untouched.
+- Next (separate authorization required): create the GitHub/Jira bug for the logo failure, merge `fix/vendor-logo-upload` to `main` (fast-forward), push, rebuild only `usuario-service` on VPS, and run an authenticated vendor-logo retest. Before any deploy, resolve the open TCP trust boundary (handlers trust `payload.user`; Compose publishes the TCP port) or confirm network isolation.
