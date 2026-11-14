@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import { nanoid } from 'nanoid';
-import sharp from 'sharp';
+import sharp = require('sharp');
 
 const ALLOWED_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif']);
 
