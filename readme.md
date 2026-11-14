@@ -36,7 +36,7 @@ Credenciales locales de prueba:
 
 | Rol | Email | Password |
 | --- | --- | --- |
-| Super admin | `admin@aguafress.com` | `admin123` |
+| Super admin | `admin@aguafress.com` | `**********` |
 | Vendedor | `carlos@aguafress.com` | `admin123` |
 | Vendedor | `ana@aguafress.com` | `admin123` |
 | Vendedor | `luis@aguafress.com` | `admin123` |
