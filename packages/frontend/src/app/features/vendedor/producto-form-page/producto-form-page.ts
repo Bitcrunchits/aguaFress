@@ -13,6 +13,7 @@ import type {
 import { ButtonModule } from 'primeng/button';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { API_CONFIG } from '../../../core/config/api.config';
 import { VendedorCatalogoService } from '../vendedor-catalogo.service';
 import { VendedorProductosService } from '../vendedor-productos.service';
 
@@ -34,6 +35,16 @@ function maxTwoDecimals(control: AbstractControl): ValidationErrors | null {
   }
   const scaled = value * 100;
   return Math.abs(scaled - Math.round(scaled)) < 1e-6 ? null : { maxDecimals: true };
+}
+
+/**
+ * Builds the absolute preview URL for a storage-relative upload id
+ * (`products/<id>.webp`). The gateway serves uploads at `/uploads/<imageId>`
+ * on the API origin, so a relative `src` would resolve against the frontend
+ * origin and break the preview.
+ */
+function toUploadUrl(imageId: string): string {
+  return `${API_CONFIG.baseUrl}/uploads/${imageId}`;
 }
 
 /**
@@ -180,7 +191,7 @@ export class VendedorProductoFormPage implements OnInit {
       mostrarPrecio: product.mostrarPrecio ?? true,
       imagen: product.imagen ?? '',
     });
-    this.imageUrl.set(product.imagen ?? null);
+    this.imageUrl.set(product.imagen ? toUploadUrl(product.imagen) : null);
   }
 
   private resolveCategoriaId(nombre: string | undefined): string {
@@ -320,9 +331,9 @@ export class VendedorProductoFormPage implements OnInit {
     this.uploadError.set(null);
 
     this.productosService.uploadImage(file).subscribe({
-      next: (url) => {
-        this.form.controls.imagen.setValue(url);
-        this.imageUrl.set(url);
+      next: (imageId) => {
+        this.form.controls.imagen.setValue(imageId);
+        this.imageUrl.set(toUploadUrl(imageId));
         this.uploading.set(false);
       },
       error: () => {

@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import type { VendedorProfileV2DTO } from '@agua/contracts';
+import { API_CONFIG } from '../../../core/config/api.config';
 import { ChangePasswordFormComponent } from '../../../shared/change-password-form/change-password-form';
 import {
   VendedorProfileService,
@@ -14,11 +15,23 @@ function trimmedOrUndefined(value: string): string | undefined {
 }
 
 /**
+ * Builds the absolute preview URL for a storage-relative upload id
+ * (`logos/<id>.webp`). The gateway serves uploads at `/uploads/<imageId>` on
+ * the API origin, so a relative `src` would resolve against the frontend
+ * origin and break the logo preview.
+ */
+function toUploadUrl(imageId: string): string {
+  return `${API_CONFIG.baseUrl}/uploads/${imageId}`;
+}
+
+/**
  * Vendedor profile: read-only summary (datos + negocio + logo) with an edit
  * toggle, plus the shared change-password form. The logo is uploaded through
- * its own multipart action and only its returned `/uploads/...` URL is stored
- * on the form; `estado`, `qrCode` and `qr_token` are backend-controlled and
- * are never sent in the update payload.
+ * its own multipart action and only its returned storage-relative `imageId`
+ * (e.g. `logos/<id>.webp`) is stored on the form; the preview renders from
+ * the absolute `API_CONFIG.baseUrl` + `/uploads/<imageId>` URL. `estado`,
+ * `qrCode` and `qr_token` are backend-controlled and are never sent in the
+ * update payload.
  */
 @Component({
   selector: 'app-vendedor-profile-page',
@@ -71,7 +84,7 @@ export class VendedorProfilePage implements OnInit {
           return;
         }
         this.profile.set(profile);
-        this.logoUrl.set(profile.logo ?? null);
+        this.logoUrl.set(profile.logo ? toUploadUrl(profile.logo) : null);
         this.loading.set(false);
       },
       error: () => {
@@ -111,7 +124,7 @@ export class VendedorProfilePage implements OnInit {
       zonaEntrega: profile.zonaEntrega ?? '',
       logo: profile.logo ?? '',
     });
-    this.logoUrl.set(profile.logo ?? null);
+    this.logoUrl.set(profile.logo ? toUploadUrl(profile.logo) : null);
     this.editing.set(true);
   }
 
@@ -120,7 +133,8 @@ export class VendedorProfilePage implements OnInit {
     this.saveError.set(null);
     this.saveSuccess.set(null);
     this.uploadError.set(null);
-    this.logoUrl.set(this.profile()?.logo ?? null);
+    const logo = this.profile()?.logo;
+    this.logoUrl.set(logo ? toUploadUrl(logo) : null);
   }
 
   onLogoSelected(event: Event): void {
@@ -136,9 +150,9 @@ export class VendedorProfilePage implements OnInit {
     this.uploadError.set(null);
 
     this.profileService.uploadLogo(file).subscribe({
-      next: (url) => {
-        this.form.controls.logo.setValue(url);
-        this.logoUrl.set(url);
+      next: (imageId) => {
+        this.form.controls.logo.setValue(imageId);
+        this.logoUrl.set(toUploadUrl(imageId));
         this.uploading.set(false);
       },
       error: () => {
@@ -158,7 +172,7 @@ export class VendedorProfilePage implements OnInit {
     this.profileService.updateProfile(this.buildUpdatePayload()).subscribe({
       next: (profile) => {
         this.profile.set(profile);
-        this.logoUrl.set(profile.logo ?? null);
+        this.logoUrl.set(profile.logo ? toUploadUrl(profile.logo) : null);
         this.saving.set(false);
         this.editing.set(false);
         this.saveSuccess.set('Perfil actualizado correctamente.');

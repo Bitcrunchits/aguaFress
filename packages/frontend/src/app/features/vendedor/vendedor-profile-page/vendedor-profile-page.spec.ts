@@ -182,7 +182,7 @@ describe('VendedorProfilePage', () => {
 
   it('uploads the selected logo and shows the returned preview URL', () => {
     serviceStub.getProfile.and.returnValue(of(PROFILE));
-    serviceStub.uploadLogo.and.returnValue(of('/uploads/logos/abc.webp'));
+    serviceStub.uploadLogo.and.returnValue(of('logos/abc.webp'));
     fixture.detectChanges();
     (element.querySelector('button') as HTMLButtonElement).click();
     fixture.detectChanges();
@@ -192,8 +192,8 @@ describe('VendedorProfilePage', () => {
     fixture.detectChanges();
 
     expect(serviceStub.uploadLogo).toHaveBeenCalledWith(file);
-    expect(page.form.controls.logo.value).toBe('/uploads/logos/abc.webp');
-    expect(page.logoUrl()).toBe('/uploads/logos/abc.webp');
+    expect(page.form.controls.logo.value).toBe('logos/abc.webp');
+    expect(page.logoUrl()).toBe('https://api-aguafress.eadev.cloud/uploads/logos/abc.webp');
   });
 
   it('shows an inline error when the logo upload fails', () => {

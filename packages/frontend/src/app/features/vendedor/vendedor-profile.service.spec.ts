@@ -149,7 +149,7 @@ describe('VendedorProfileService', () => {
     expect(response?.telefono).toBe('351000000');
   });
 
-  it('uploads a logo as multipart with a `file` field and returns the built URL', () => {
+  it('uploads a logo as multipart with a `file` field and returns the raw imageId', () => {
     const file = new File(['logo-bytes'], 'logo.png', { type: 'image/png' });
     let response: string | undefined;
 
@@ -162,6 +162,6 @@ describe('VendedorProfileService', () => {
     expect(body.get('file')).toBe(file);
 
     request.flush({ imageId: 'logos/abc123.webp' });
-    expect(response).toBe('/uploads/logos/abc123.webp');
+    expect(response).toBe('logos/abc123.webp');
   });
 });

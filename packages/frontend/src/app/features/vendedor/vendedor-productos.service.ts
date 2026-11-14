@@ -62,6 +62,6 @@ export class VendedorProductosService {
     formData.append('file', file);
     return this.http
       .post<{ imageId: string }>(UPLOAD_IMAGE_URL, formData)
-      .pipe(map((response) => `/uploads/${response.imageId}`));
+      .pipe(map((response) => response.imageId));
   }
 }

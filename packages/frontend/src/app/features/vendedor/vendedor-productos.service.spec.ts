@@ -135,7 +135,7 @@ describe('VendedorProductosService', () => {
     expect(response).toEqual({ deleted: true });
   });
 
-  it('uploads a product image as multipart and maps the response to /uploads', () => {
+  it('uploads a product image as multipart and returns the raw imageId', () => {
     const file = new File(['contenido'], 'producto.webp', { type: 'image/webp' });
     let url: string | undefined;
 
@@ -149,6 +149,6 @@ describe('VendedorProductosService', () => {
     expect(body.get('file')).toBe(file);
 
     request.flush({ imageId: 'products/producto.webp' });
-    expect(url).toBe('/uploads/products/producto.webp');
+    expect(url).toBe('products/producto.webp');
   });
 });

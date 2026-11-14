@@ -377,7 +377,7 @@ describe('VendedorProductoFormPage', () => {
 
   it('uploads the selected image and shows the returned preview URL', async () => {
     await configure(null);
-    productosServiceStub.uploadImage.and.returnValue(of('/uploads/products/abc.webp'));
+    productosServiceStub.uploadImage.and.returnValue(of('products/abc.webp'));
     renderWithLookups();
 
     const file = new File(['imagen'], 'producto.webp', { type: 'image/webp' });
@@ -385,12 +385,14 @@ describe('VendedorProductoFormPage', () => {
     fixture.detectChanges();
 
     expect(productosServiceStub.uploadImage).toHaveBeenCalledWith(file);
-    expect(component.form.controls.imagen.value).toBe('/uploads/products/abc.webp');
-    expect(component.imageUrl()).toBe('/uploads/products/abc.webp');
+    expect(component.form.controls.imagen.value).toBe('products/abc.webp');
+    expect(component.imageUrl()).toBe('https://api-aguafress.eadev.cloud/uploads/products/abc.webp');
 
     const preview = element.querySelector<HTMLImageElement>('.producto-form__image-preview');
     expect(preview).not.toBeNull();
-    expect(preview?.getAttribute('src')).toBe('/uploads/products/abc.webp');
+    expect(preview?.getAttribute('src')).toBe(
+      'https://api-aguafress.eadev.cloud/uploads/products/abc.webp',
+    );
   });
 
   it('shows an inline error when the image upload fails', async () => {
