@@ -1,0 +1,35 @@
+.status-label {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--agua-primary-dark);
+  transition:
+    color 0.15s ease,
+    opacity 0.15s ease;
+
+  &[data-tone='positive'] {
+    color: var(--route-success);
+  }
+
+  &[data-tone='negative'] {
+    color: var(--route-danger);
+  }
+
+  &[data-tone='warning'] {
+    color: var(--route-warning);
+  }
+
+  &:hover {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    opacity: 0.85;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-label {
+    transition: none;
+  }
+}

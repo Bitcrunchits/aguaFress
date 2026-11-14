@@ -1,4 +1,5 @@
 import { MetodoPago, OrderEstado } from '@agua/contracts';
+import type { StatusLabelTone } from './status-label/status-label';
 
 /**
  * Canonical ISO 8601 shape accepted by the orders screens. A date-only value
@@ -15,6 +16,21 @@ export const ORDER_ESTADO_LABELS: Record<OrderEstado, string> = {
   [OrderEstado.ENTREGADO]: 'Entregado',
   [OrderEstado.CANCELADO]: 'Cancelado',
   [OrderEstado.VENCIDO]: 'Vencido',
+};
+
+/**
+ * Semantic tone per order estado for the shared plain-text status label.
+ * Reflects the previous badge text colors: pending = warning, in-progress
+ * (confirmed / en camino) = neutral, delivered = positive, canceled =
+ * negative, expired = neutral (previously the muted gray).
+ */
+export const ORDER_ESTADO_TONES: Record<OrderEstado, StatusLabelTone> = {
+  [OrderEstado.PENDIENTE]: 'warning',
+  [OrderEstado.CONFIRMADO]: 'neutral',
+  [OrderEstado.EN_CAMINO]: 'neutral',
+  [OrderEstado.ENTREGADO]: 'positive',
+  [OrderEstado.CANCELADO]: 'negative',
+  [OrderEstado.VENCIDO]: 'neutral',
 };
 
 export const METODO_PAGO_LABELS: Record<MetodoPago, string> = {
