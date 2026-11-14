@@ -2,6 +2,10 @@
   <p class="role-card__eyebrow">Cliente</p>
   <h1 id="cliente-title">Inicio de cliente</h1>
 
+  @if (vm.clientName(); as name) {
+    <p class="cliente__greeting">Hola, {{ name }}</p>
+  }
+
   @if (vm.loading()) {
     <p class="cliente__state" role="status">Cargando proveedores</p>
   } @else if (vm.failed()) {

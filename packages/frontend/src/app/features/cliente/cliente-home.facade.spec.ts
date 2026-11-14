@@ -6,11 +6,13 @@ import {
   type ClienteProvidersResponse,
   type LoginResponse,
   type SelectClienteProviderResponse,
+  type UserProfile,
 } from '@agua/contracts';
 import { Subject, of, throwError } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { SessionStorageService } from '../../core/auth/session-storage.service';
 import { ClienteHomeFacade, ClienteSelectionError } from './cliente-home.facade';
+import { ClienteProfileService } from './cliente-profile.service';
 import { ClienteProviderSelectionService } from './cliente-provider-selection.service';
 import { ClienteProviderStateService } from './cliente-provider-state.service';
 import { ClienteProvidersService } from './cliente-providers.service';
@@ -45,6 +47,15 @@ const PROVIDER_B: ClienteProviderResponse = {
   isDefault: true,
 };
 
+const USER_PROFILE: UserProfile = {
+  id: USER_ID,
+  email: 'cliente@example.com',
+  nombre: 'María',
+  apellido: 'López',
+  role: UserRole.CLIENTE,
+  isActive: true,
+};
+
 function providersResponse(
   providers: ClienteProviderResponse[],
   defaultVendedorId?: string,
@@ -57,12 +68,15 @@ describe('ClienteHomeFacade', () => {
     listProviders: jasmine.createSpy('listProviders'),
     selectProvider: jasmine.createSpy('selectProvider'),
   };
+  const profileStub = { getProfile: jasmine.createSpy('getProfile') };
   const authStub: { currentSession: LoginResponse | null } = { currentSession: SESSION };
   const sessionSubject = new Subject<LoginResponse | null>();
 
   beforeEach(() => {
     providersStub.listProviders.calls.reset();
     providersStub.selectProvider.calls.reset();
+    profileStub.getProfile.calls.reset();
+    profileStub.getProfile.and.returnValue(of(USER_PROFILE));
     authStub.currentSession = SESSION;
     window.localStorage.clear();
 
@@ -70,6 +84,7 @@ describe('ClienteHomeFacade', () => {
       providers: [
         ClienteHomeFacade,
         { provide: ClienteProvidersService, useValue: providersStub },
+        { provide: ClienteProfileService, useValue: profileStub },
         { provide: AuthService, useValue: authStub },
         { provide: SessionStorageService, useValue: { session$: sessionSubject.asObservable() } },
         ClienteProviderSelectionService,
@@ -99,6 +114,24 @@ describe('ClienteHomeFacade', () => {
     expect(facade.loading()).toBeFalse();
     expect(facade.providers()).toEqual([PROVIDER_A]);
     expect(facade.selectedProvider()?.id).toBe(PROVIDER_A.id);
+  });
+
+  it('resolves the cliente name from the profile', () => {
+    providersStub.listProviders.and.returnValue(of(providersResponse([PROVIDER_A])));
+
+    const facade = create();
+
+    expect(profileStub.getProfile).toHaveBeenCalled();
+    expect(facade.clientName()).toBe('María López');
+  });
+
+  it('keeps the cliente name hidden when the profile fails', () => {
+    providersStub.listProviders.and.returnValue(of(providersResponse([PROVIDER_A])));
+    profileStub.getProfile.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+
+    const facade = create();
+
+    expect(facade.clientName()).toBeNull();
   });
 
   it('sets failed and re-requests on retry', () => {

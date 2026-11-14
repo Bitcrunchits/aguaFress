@@ -30,6 +30,7 @@ describe('ClientePage', () => {
 
   const providers = signal<ClienteProviderResponse[]>([]);
   const selectedProvider = signal<ClienteProviderResponse | null>(null);
+  const clientName = signal<string | null>(null);
   const loading = signal(false);
   const failed = signal(false);
   const retry = jasmine.createSpy('retry');
@@ -42,6 +43,7 @@ describe('ClientePage', () => {
   beforeEach(async () => {
     providers.set([]);
     selectedProvider.set(null);
+    clientName.set(null);
     loading.set(false);
     failed.set(false);
     selectingId.set(null);
@@ -60,6 +62,7 @@ describe('ClientePage', () => {
               useValue: {
                 providers,
                 selectedProvider,
+                clientName,
                 loading,
                 failed,
                 retry,
@@ -104,6 +107,20 @@ describe('ClientePage', () => {
     fixture.detectChanges();
 
     expect(element.textContent).toContain('Todavía no tienes proveedores asociados');
+  });
+
+  it('greets the cliente by name when the profile name is resolved', () => {
+    clientName.set('María López');
+    fixture.detectChanges();
+
+    expect(element.textContent).toContain('Hola, María López');
+  });
+
+  it('omits the greeting when the client name is unavailable', () => {
+    clientName.set(null);
+    fixture.detectChanges();
+
+    expect(element.textContent).not.toContain('Hola,');
   });
 
   it('renders the active provider', () => {

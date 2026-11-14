@@ -1,11 +1,39 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import type { ClienteProviderResponse } from '@agua/contracts';
+import type {
+  ClienteProfile,
+  ClienteProviderResponse,
+  UserProfile,
+  VendedorProfile,
+} from '@agua/contracts';
 import { AuthService } from '../../core/auth/auth.service';
 import { SessionStorageService } from '../../core/auth/session-storage.service';
+import { ClienteProfileService } from './cliente-profile.service';
 import { ClienteProviderSelectionService } from './cliente-provider-selection.service';
 import { ClienteProvidersService } from './cliente-providers.service';
+
+/** VendedorProfile has a required `estado`; ClienteProfile does not. */
+function isClienteProfile(profile: VendedorProfile | ClienteProfile): profile is ClienteProfile {
+  return !('estado' in profile);
+}
+
+/**
+ * Resolves the authenticated cliente's display name from the profile read
+ * model, preferring the nested `profile.nombre`/`profile.apellido` and falling
+ * back to the top-level `nombre`/`apellido`. Returns null when no name exists.
+ */
+function clienteNameOf(profile: UserProfile | null | undefined): string | null {
+  if (profile === null || profile === undefined) {
+    return null;
+  }
+  const nested = profile.profile;
+  const clienteProfile = nested !== undefined && isClienteProfile(nested) ? nested : null;
+  const nombre = clienteProfile?.nombre ?? profile.nombre ?? '';
+  const apellido = clienteProfile?.apellido ?? profile.apellido ?? '';
+  const name = [nombre, apellido].filter(Boolean).join(' ');
+  return name.length > 0 ? name : null;
+}
 
 export enum ClienteSelectionError {
   FORBIDDEN = 'forbidden',
@@ -23,12 +51,14 @@ export enum ClienteSelectionError {
 export class ClienteHomeFacade {
   private readonly providersService = inject(ClienteProvidersService);
   private readonly providerSelection = inject(ClienteProviderSelectionService);
+  private readonly profileService = inject(ClienteProfileService);
   private readonly auth = inject(AuthService);
   private readonly sessionStorage = inject(SessionStorageService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly providers = signal<ClienteProviderResponse[]>([]);
   readonly selectedProvider = signal<ClienteProviderResponse | null>(null);
+  readonly clientName = signal<string | null>(null);
   readonly loading = signal(false);
   readonly failed = signal(false);
   readonly selectingId = signal<string | null>(null);
@@ -62,8 +92,11 @@ export class ClienteHomeFacade {
     this.selectingId.set(null);
     this.selectionError.set(null);
     this.showSelector.set(false);
+
     const requestId = ++this.requestId;
     const requestUserId = this.authUserId;
+
+    this.loadClientName(requestId, requestUserId);
 
     this.providersService
       .listProviders()
@@ -147,9 +180,31 @@ export class ClienteHomeFacade {
     this.showSelector.set(true);
   }
 
+  private loadClientName(requestId: number, requestUserId: string | null): void {
+    this.profileService
+      .getProfile()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (profile) => {
+          if (requestId !== this.requestId || this.authUserId !== requestUserId) {
+            return;
+          }
+          this.clientName.set(clienteNameOf(profile));
+        },
+        error: () => {
+          if (requestId !== this.requestId || this.authUserId !== requestUserId) {
+            return;
+          }
+          // The greeting is non-critical: keep it hidden on failure.
+          this.clientName.set(null);
+        },
+      });
+  }
+
   private resetState(): void {
     this.providers.set([]);
     this.selectedProvider.set(null);
+    this.clientName.set(null);
     this.loading.set(false);
     this.failed.set(false);
     this.selectingId.set(null);
