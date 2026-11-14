@@ -3,6 +3,10 @@ import { Router } from '@angular/router';
 import type { PaginationResponse, ProductResponse } from '@agua/contracts';
 import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog';
+import {
+  StatusLabelComponent,
+  type StatusLabelTone,
+} from '../../../shared/status-label/status-label';
 import { VendedorCatalogoService } from '../vendedor-catalogo.service';
 import { VendedorProductosService } from '../vendedor-productos.service';
 
@@ -17,7 +21,7 @@ const PRODUCTOS_BASE_PATH = '/vendedor/catalogo/productos';
  */
 @Component({
   selector: 'app-productos-page',
-  imports: [ButtonModule, ConfirmDialogComponent],
+  imports: [ButtonModule, ConfirmDialogComponent, StatusLabelComponent],
   templateUrl: './productos-page.html',
   styleUrl: './productos-page.scss',
 })
@@ -38,6 +42,9 @@ export class VendedorProductosPage implements OnInit {
   readonly dialogProduct = signal<ProductResponse | null>(null);
   readonly mutating = signal(false);
   readonly mutationError = signal<string | null>(null);
+
+  readonly reactivatingId = signal<string | null>(null);
+  readonly reactivationError = signal<string | null>(null);
 
   readonly categoriaFormOpen = signal(false);
   readonly categoriaNombre = signal('');
@@ -223,6 +230,28 @@ export class VendedorProductosPage implements OnInit {
     this.dialogOpen.set(true);
   }
 
+  reactivar(product: ProductResponse): void {
+    if (this.reactivatingId() !== null) {
+      return;
+    }
+
+    this.reactivatingId.set(product.id);
+    this.reactivationError.set(null);
+
+    this.productosService.update(product.id, { activo: true }).subscribe({
+      next: () => {
+        this.updateItemActivo(product.id, true);
+        this.reactivatingId.set(null);
+      },
+      error: () => {
+        this.reactivatingId.set(null);
+        this.reactivationError.set(
+          'No pudimos reactivar el producto. Inténtalo de nuevo en unos segundos.',
+        );
+      },
+    });
+  }
+
   confirmarDesactivacion(): void {
     const product = this.dialogProduct();
     if (product === null || this.mutating()) {
@@ -234,7 +263,7 @@ export class VendedorProductosPage implements OnInit {
 
     this.productosService.delete(product.id).subscribe({
       next: () => {
-        this.updateItemActivo(product.id);
+        this.updateItemActivo(product.id, false);
         this.mutating.set(false);
         this.closeDialog();
       },
@@ -257,9 +286,9 @@ export class VendedorProductosPage implements OnInit {
     this.mutationError.set(null);
   }
 
-  private updateItemActivo(id: string): void {
+  private updateItemActivo(id: string, activo: boolean): void {
     this.items.update((items) =>
-      items.map((item) => (item.id === id ? { ...item, activo: false } : item)),
+      items.map((item) => (item.id === id ? { ...item, activo } : item)),
     );
   }
 
@@ -269,6 +298,10 @@ export class VendedorProductosPage implements OnInit {
 
   estadoLabel(activo: boolean): string {
     return activo ? 'Activo' : 'Inactivo';
+  }
+
+  estadoTone(activo: boolean): StatusLabelTone {
+    return activo ? 'positive' : 'negative';
   }
 
   formatPrice(value: number): string {

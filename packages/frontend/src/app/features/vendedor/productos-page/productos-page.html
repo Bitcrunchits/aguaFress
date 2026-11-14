@@ -93,6 +93,9 @@
   } @else if (items().length === 0) {
     <p class="productos__state">No hay productos cargados todavía.</p>
   } @else {
+    @if (reactivationError(); as message) {
+      <p class="productos__categoria-error" role="alert">{{ message }}</p>
+    }
     <div class="productos__table-wrap">
       <table class="productos__table">
         <caption class="productos__caption">Listado de productos</caption>
@@ -114,9 +117,10 @@
               <td>{{ formatPrice(product.precioFinal) }}</td>
               <td>{{ product.stock }}</td>
               <td>
-                <span class="productos__badge" [attr.data-estado]="product.activo ? 'activo' : 'inactivo'">
-                  {{ estadoLabel(product.activo) }}
-                </span>
+                <app-status-label
+                  [label]="estadoLabel(product.activo)"
+                  [tone]="estadoTone(product.activo)"
+                />
               </td>
               <td class="productos__actions">
                 <button pButton type="button" label="Editar" (click)="editar(product)"></button>
@@ -126,6 +130,15 @@
                     type="button"
                     label="Desactivar"
                     (click)="desactivar(product)"
+                  ></button>
+                } @else {
+                  <button
+                    pButton
+                    type="button"
+                    label="Reactivar"
+                    [loading]="reactivatingId() === product.id"
+                    [disabled]="reactivatingId() !== null"
+                    (click)="reactivar(product)"
                   ></button>
                 }
               </td>

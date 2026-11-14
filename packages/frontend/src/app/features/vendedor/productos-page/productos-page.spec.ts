@@ -62,6 +62,7 @@ describe('VendedorProductosPage', () => {
   const serviceStub = {
     list: jasmine.createSpy('list'),
     delete: jasmine.createSpy('delete'),
+    update: jasmine.createSpy('update'),
   };
   const catalogoServiceStub = {
     createCategoria: jasmine.createSpy('createCategoria'),
@@ -71,6 +72,7 @@ describe('VendedorProductosPage', () => {
   beforeEach(async () => {
     serviceStub.list.calls.reset();
     serviceStub.delete.calls.reset();
+    serviceStub.update.calls.reset();
     catalogoServiceStub.createCategoria.calls.reset();
     catalogoServiceStub.createMarca.calls.reset();
 
@@ -298,6 +300,45 @@ describe('VendedorProductosPage', () => {
         (candidate) => candidate.textContent?.trim() === 'Desactivar',
       ),
     ).toBeUndefined();
+  });
+
+  it('reactivates an inactive product via update with activo true', () => {
+    serviceStub.list.and.returnValue(of(pageResponse([{ ...PRODUCT, activo: false }])));
+    serviceStub.update.and.returnValue(of({ id: PRODUCT.id, updated: true }));
+
+    fixture.detectChanges();
+
+    const reactivateButton = Array.from(element.querySelectorAll('button')).find(
+      (candidate) => candidate.textContent?.trim() === 'Reactivar',
+    );
+    expect(reactivateButton).toBeDefined();
+    reactivateButton?.click();
+    fixture.detectChanges();
+
+    expect(serviceStub.update).toHaveBeenCalledWith('producto-1', { activo: true });
+    expect(element.textContent).toContain('Activo');
+    expect(
+      Array.from(element.querySelectorAll('button')).find(
+        (candidate) => candidate.textContent?.trim() === 'Reactivar',
+      ),
+    ).toBeUndefined();
+  });
+
+  it('keeps the product inactive and shows an error when reactivation fails', () => {
+    serviceStub.list.and.returnValue(of(pageResponse([{ ...PRODUCT, activo: false }])));
+    serviceStub.update.and.returnValue(throwError(() => new Error('boom')));
+
+    fixture.detectChanges();
+
+    const reactivateButton = Array.from(element.querySelectorAll('button')).find(
+      (candidate) => candidate.textContent?.trim() === 'Reactivar',
+    );
+    reactivateButton?.click();
+    fixture.detectChanges();
+
+    expect(serviceStub.update).toHaveBeenCalledWith('producto-1', { activo: true });
+    expect(element.textContent).toContain('No pudimos reactivar el producto');
+    expect(element.textContent).toContain('Inactivo');
   });
 
   it('creates a categoria from the inline form and shows a success message', () => {
