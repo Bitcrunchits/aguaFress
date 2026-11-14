@@ -41,6 +41,39 @@
   --font-agua-sans: "Inter", system-ui, sans-serif;
   --font-agua-display: "Manrope", "Inter", system-ui, sans-serif;
   --font-agua-mono: "Roboto Mono", ui-monospace, monospace;
+
+  // ─── Tokens semánticos (Agua fluida) ───
+  // Fondo de página + degradados suaves
+  --agua-bg: #f0fdfa;
+  --agua-bg-gradient: radial-gradient(
+      1200px 600px at 100% -10%,
+      rgb(34 211 238 / 0.16),
+      transparent 60%
+    ),
+    radial-gradient(900px 500px at -10% 110%, rgb(167 243 208 / 0.22), transparent 55%);
+  // Superficies
+  --agua-surface: #ffffff;
+  --agua-surface-muted: #f0fdfa;
+  // Vidrio (navegación)
+  --agua-glass: rgb(255 255 255 / 0.72);
+  --agua-glass-border: rgb(217 238 242 / 0.8);
+  // Texto
+  --agua-text: #0f172a;
+  --agua-text-secondary: #64748b;
+  // Bordes
+  --agua-border: #d9eef2;
+  // Acciones
+  --agua-action-primary-bg: #0e7490;
+  --agua-action-primary-text: #ffffff;
+  --agua-action-secondary-bg: #e0f2f5;
+  --agua-action-secondary-text: #155e75;
+  // Radios
+  --radius-header: 18px;
+  --radius-card: 22px;
+  --radius-control: 24px;
+  // Sombras
+  --shadow-surface: 0 8px 24px rgb(14 116 144 / 0.08);
+  --shadow-glass: 0 8px 32px rgb(15 23 42 / 0.08);
 }
 
 .agua-dark {
@@ -52,20 +85,38 @@
   --line-soft: #1f4c58;
   --agua-primary: #22d3ee;
   --agua-primary-dark: #67e8f9;
-}
 
-*,
-*::before,
-*::after {
-  border-radius: 0 !important;
+  // ─── Tokens semánticos (oscuro) ───
+  --agua-bg: #082f3a;
+  --agua-bg-gradient: radial-gradient(
+      1200px 600px at 100% -10%,
+      rgb(34 211 238 / 0.12),
+      transparent 60%
+    ),
+    radial-gradient(900px 500px at -10% 110%, rgb(167 243 208 / 0.08), transparent 55%);
+  --agua-surface: #0f2f3a;
+  --agua-surface-muted: #082f3a;
+  --agua-glass: rgb(8 47 58 / 0.72);
+  --agua-glass-border: rgb(31 76 88 / 0.8);
+  --agua-text: #f0fdfa;
+  --agua-text-secondary: #9cc9d2;
+  --agua-border: #1f4c58;
+  --agua-action-primary-bg: #22d3ee;
+  --agua-action-primary-text: #082f3a;
+  --agua-action-secondary-bg: #0f2f3a;
+  --agua-action-secondary-text: #67e8f9;
+  --shadow-surface: 0 8px 24px rgb(0 0 0 / 0.3);
+  --shadow-glass: 0 8px 32px rgb(0 0 0 / 0.35);
 }
 
 @layer base {
   body {
     min-height: 100vh;
     margin: 0;
-    background: var(--ice-surface);
-    color: var(--slate-ink);
+    background-color: var(--agua-bg);
+    background-image: var(--agua-bg-gradient);
+    background-attachment: fixed;
+    color: var(--agua-text);
     font-family: var(--font-agua-sans);
     text-rendering: optimizeLegibility;
   }
@@ -82,10 +133,11 @@
 
 @layer components {
   .role-card {
-    border: 1px solid var(--line-soft);
+    border: 1px solid var(--agua-border);
+    border-radius: var(--radius-card);
     padding: 32px;
-    background: var(--clean-white);
-    box-shadow: var(--shadow-agua-card);
+    background: var(--agua-surface);
+    box-shadow: var(--shadow-surface);
   }
 
   .role-card__eyebrow {
@@ -104,6 +156,6 @@
 
   .role-card p:last-child {
     margin: 0;
-    color: var(--slate-muted);
+    color: var(--agua-text-secondary);
   }
 }
