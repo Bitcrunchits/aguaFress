@@ -196,6 +196,17 @@ describe('VendedorProfilePage', () => {
     expect(page.logoUrl()).toBe('https://api-aguafress.eadev.cloud/uploads/logos/abc.webp');
   });
 
+  it('keeps an existing absolute logo URL as-is in the preview', () => {
+    serviceStub.getProfile.and.returnValue(
+      of({ ...PROFILE, logo: 'https://picsum.photos/seed/ferrofix/200/200' }),
+    );
+    fixture.detectChanges();
+    (element.querySelector('button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(page.logoUrl()).toBe('https://picsum.photos/seed/ferrofix/200/200');
+  });
+
   it('shows an inline error when the logo upload fails', () => {
     serviceStub.getProfile.and.returnValue(of(PROFILE));
     serviceStub.uploadLogo.and.returnValue(throwError(() => new Error('boom')));

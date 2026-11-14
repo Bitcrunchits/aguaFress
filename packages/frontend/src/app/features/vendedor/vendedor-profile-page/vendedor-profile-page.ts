@@ -21,6 +21,9 @@ function trimmedOrUndefined(value: string): string | undefined {
  * origin and break the logo preview.
  */
 function toUploadUrl(imageId: string): string {
+  if (imageId.startsWith('http://') || imageId.startsWith('https://')) {
+    return imageId;
+  }
   return `${API_CONFIG.baseUrl}/uploads/${imageId}`;
 }
 

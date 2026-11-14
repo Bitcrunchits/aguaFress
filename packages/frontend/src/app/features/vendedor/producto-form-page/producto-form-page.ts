@@ -44,6 +44,9 @@ function maxTwoDecimals(control: AbstractControl): ValidationErrors | null {
  * origin and break the preview.
  */
 function toUploadUrl(imageId: string): string {
+  if (imageId.startsWith('http://') || imageId.startsWith('https://')) {
+    return imageId;
+  }
   return `${API_CONFIG.baseUrl}/uploads/${imageId}`;
 }
 
