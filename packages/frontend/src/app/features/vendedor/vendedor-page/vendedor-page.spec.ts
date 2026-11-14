@@ -89,6 +89,24 @@ describe('VendedorPage', () => {
     expect(element.textContent).toContain('Córdoba');
   });
 
+  it('renders the vendor logo beside the title when present', () => {
+    serviceStub.getProfile.and.returnValue(of({ ...PROFILE, logo: 'logos/abc.webp' }));
+
+    fixture.detectChanges();
+
+    const img = element.querySelector<HTMLImageElement>('.vendedor__logo');
+    expect(img?.getAttribute('alt')).toBe('Logo de la empresa');
+    expect(img?.getAttribute('src')).toContain('/uploads/logos/abc.webp');
+  });
+
+  it('hides the logo when the profile has no logo', () => {
+    serviceStub.getProfile.and.returnValue(of({ ...PROFILE, logo: undefined }));
+
+    fixture.detectChanges();
+
+    expect(element.querySelector('.vendedor__logo')).toBeNull();
+  });
+
   it('falls back to the full name when empresa is missing', () => {
     serviceStub.getProfile.and.returnValue(of({ ...PROFILE, empresa: undefined }));
 

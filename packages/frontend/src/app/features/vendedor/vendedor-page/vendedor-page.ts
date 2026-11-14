@@ -2,7 +2,12 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { OrderEstado, VendedorEstado } from '@agua/contracts';
 import type { OrderResponse, VendedorProfile } from '@agua/contracts';
-import { ORDER_ESTADO_LABELS } from '../../../shared/order-format';
+import { ORDER_ESTADO_LABELS, ORDER_ESTADO_TONES } from '../../../shared/order-format';
+import {
+  StatusLabelComponent,
+  type StatusLabelTone,
+} from '../../../shared/status-label/status-label';
+import { toUploadUrl } from '../../../shared/upload-url';
 import { VendedorPedidosService } from '../vendedor-pedidos.service';
 import { VendedorProfileService } from '../vendedor-profile.service';
 
@@ -11,6 +16,13 @@ const ESTADO_LABELS: Record<VendedorEstado, string> = {
   [VendedorEstado.ACTIVO]: 'Activo',
   [VendedorEstado.INACTIVO]: 'Inactivo',
   [VendedorEstado.BLOQUEADO]: 'Bloqueado',
+};
+
+const ESTADO_TONES: Record<VendedorEstado, StatusLabelTone> = {
+  [VendedorEstado.PENDIENTE]: 'warning',
+  [VendedorEstado.ACTIVO]: 'positive',
+  [VendedorEstado.INACTIVO]: 'neutral',
+  [VendedorEstado.BLOQUEADO]: 'negative',
 };
 
 const RECENT_ORDERS_LIMIT = 3;
@@ -24,7 +36,7 @@ const RECENT_ORDERS_LIMIT = 3;
  */
 @Component({
   selector: 'app-vendedor-page',
-  imports: [RouterLink],
+  imports: [RouterLink, StatusLabelComponent],
   templateUrl: './vendedor-page.html',
   styleUrl: './vendedor-page.scss',
 })
@@ -115,11 +127,23 @@ export class VendedorPage implements OnInit {
     return [profile.nombre, profile.apellido].filter(Boolean).join(' ');
   }
 
+  logoUrl(profile: VendedorProfile): string | null {
+    return profile.logo ? toUploadUrl(profile.logo) : null;
+  }
+
   estadoLabel(estado: VendedorEstado): string {
     return ESTADO_LABELS[estado];
   }
 
+  vendedorEstadoTone(estado: VendedorEstado): StatusLabelTone {
+    return ESTADO_TONES[estado];
+  }
+
   orderEstadoLabel(estado: OrderEstado): string {
     return ORDER_ESTADO_LABELS[estado];
+  }
+
+  orderEstadoTone(estado: OrderEstado): StatusLabelTone {
+    return ORDER_ESTADO_TONES[estado];
   }
 }

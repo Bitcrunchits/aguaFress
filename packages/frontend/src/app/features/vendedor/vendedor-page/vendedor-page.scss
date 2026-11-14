@@ -27,6 +27,21 @@
   }
 }
 
+.vendedor__profile-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vendedor__logo {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  border: 1px solid var(--line-soft);
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 .vendedor__label {
   margin: 24px 0 4px;
   color: var(--agua-primary-dark);
@@ -59,30 +74,6 @@
 
   dd {
     margin: 4px 0 0;
-  }
-}
-
-.vendedor__badge {
-  display: inline-block;
-  padding: 4px 12px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  background: var(--ice-surface);
-  color: var(--agua-primary-dark);
-
-  &[data-estado='activo'] {
-    background: color-mix(in srgb, var(--route-success) 14%, transparent);
-    color: var(--route-success);
-  }
-
-  &[data-estado='pendiente'] {
-    background: color-mix(in srgb, var(--route-warning) 16%, transparent);
-    color: var(--route-warning);
-  }
-
-  &[data-estado='bloqueado'] {
-    background: color-mix(in srgb, var(--route-danger) 14%, transparent);
-    color: var(--route-danger);
   }
 }
 
@@ -211,28 +202,4 @@
 
 .vendedor__pedido-numero {
   font-weight: 700;
-}
-
-// Order estado badge colors (shared base with the vendedor estado badge).
-.vendedor__pedidos .vendedor__badge {
-  &[data-estado='confirmado'],
-  &[data-estado='en_camino'] {
-    background: color-mix(in srgb, var(--agua-primary) 14%, transparent);
-    color: var(--agua-primary-dark);
-  }
-
-  &[data-estado='entregado'] {
-    background: color-mix(in srgb, var(--route-success) 14%, transparent);
-    color: var(--route-success);
-  }
-
-  &[data-estado='cancelado'] {
-    background: color-mix(in srgb, var(--route-danger) 14%, transparent);
-    color: var(--route-danger);
-  }
-
-  &[data-estado='vencido'] {
-    background: color-mix(in srgb, var(--slate-muted) 14%, transparent);
-    color: var(--slate-muted);
-  }
 }

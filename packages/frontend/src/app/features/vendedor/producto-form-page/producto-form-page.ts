@@ -13,7 +13,7 @@ import type {
 import { ButtonModule } from 'primeng/button';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { API_CONFIG } from '../../../core/config/api.config';
+import { toUploadUrl } from '../../../shared/upload-url';
 import { VendedorCatalogoService } from '../vendedor-catalogo.service';
 import { VendedorProductosService } from '../vendedor-productos.service';
 
@@ -35,19 +35,6 @@ function maxTwoDecimals(control: AbstractControl): ValidationErrors | null {
   }
   const scaled = value * 100;
   return Math.abs(scaled - Math.round(scaled)) < 1e-6 ? null : { maxDecimals: true };
-}
-
-/**
- * Builds the absolute preview URL for a storage-relative upload id
- * (`products/<id>.webp`). The gateway serves uploads at `/uploads/<imageId>`
- * on the API origin, so a relative `src` would resolve against the frontend
- * origin and break the preview.
- */
-function toUploadUrl(imageId: string): string {
-  if (imageId.startsWith('http://') || imageId.startsWith('https://')) {
-    return imageId;
-  }
-  return `${API_CONFIG.baseUrl}/uploads/${imageId}`;
 }
 
 /**

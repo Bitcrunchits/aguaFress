@@ -12,7 +12,12 @@
   } @else if (profile(); as profile) {
     <article class="vendedor__profile" aria-labelledby="vendedor-profile-title">
       <p class="vendedor__label">Tu perfil</p>
-      <h2 id="vendedor-profile-title">{{ empresaLabel(profile) }}</h2>
+      <div class="vendedor__profile-head">
+        @if (logoUrl(profile); as logo) {
+          <img class="vendedor__logo" [src]="logo" alt="Logo de la empresa" />
+        }
+        <h2 id="vendedor-profile-title">{{ empresaLabel(profile) }}</h2>
+      </div>
 
       @if (nombreCompleto(profile)) {
         <p class="vendedor__name">{{ nombreCompleto(profile) }}</p>
@@ -22,9 +27,10 @@
         <div class="vendedor__detail">
           <dt>Estado</dt>
           <dd>
-            <span class="vendedor__badge" [attr.data-estado]="profile.estado">
-              {{ estadoLabel(profile.estado) }}
-            </span>
+            <app-status-label
+              [label]="estadoLabel(profile.estado)"
+              [tone]="vendedorEstadoTone(profile.estado)"
+            />
           </dd>
         </div>
         @if (profile.zonaEntrega) {
@@ -81,9 +87,10 @@
             <li>
               <a class="vendedor__pedido-link" routerLink="/vendedor/pedidos">
                 <span class="vendedor__pedido-numero">{{ order.pedidoNumero }}</span>
-                <span class="vendedor__badge" [attr.data-estado]="order.estado">
-                  {{ orderEstadoLabel(order.estado) }}
-                </span>
+                <app-status-label
+                  [label]="orderEstadoLabel(order.estado)"
+                  [tone]="orderEstadoTone(order.estado)"
+                />
               </a>
             </li>
           }

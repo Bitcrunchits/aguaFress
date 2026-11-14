@@ -1,8 +1,8 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import type { VendedorProfileV2DTO } from '@agua/contracts';
-import { API_CONFIG } from '../../../core/config/api.config';
 import { ChangePasswordFormComponent } from '../../../shared/change-password-form/change-password-form';
+import { toUploadUrl } from '../../../shared/upload-url';
 import {
   VendedorProfileService,
   type UpdateVendedorProfileRequest,
@@ -12,19 +12,6 @@ import {
 function trimmedOrUndefined(value: string): string | undefined {
   const trimmed = value.trim();
   return trimmed === '' ? undefined : trimmed;
-}
-
-/**
- * Builds the absolute preview URL for a storage-relative upload id
- * (`logos/<id>.webp`). The gateway serves uploads at `/uploads/<imageId>` on
- * the API origin, so a relative `src` would resolve against the frontend
- * origin and break the logo preview.
- */
-function toUploadUrl(imageId: string): string {
-  if (imageId.startsWith('http://') || imageId.startsWith('https://')) {
-    return imageId;
-  }
-  return `${API_CONFIG.baseUrl}/uploads/${imageId}`;
 }
 
 /**
