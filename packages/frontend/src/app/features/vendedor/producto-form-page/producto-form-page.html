@@ -213,6 +213,31 @@
         }
       </div>
 
+      <div class="producto-form__field">
+        <label for="producto-imagen">Imagen del producto</label>
+        @if (imageUrl()) {
+          <img
+            class="producto-form__image-preview"
+            [src]="imageUrl()"
+            alt="Vista previa de la imagen del producto"
+          />
+        }
+        <input
+          id="producto-imagen"
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/avif"
+          (change)="onImageSelected($event)"
+        />
+        @if (uploading()) {
+          <span class="producto-form__state" role="status">Subiendo imagen</span>
+        }
+        @if (uploadError(); as message) {
+          <p class="producto-form__error producto-form__error--inline" role="alert">
+            {{ message }}
+          </p>
+        }
+      </div>
+
       <label class="producto-form__checkbox">
         <input type="checkbox" formControlName="mostrarPrecio" />
         Mostrar precio a los clientes

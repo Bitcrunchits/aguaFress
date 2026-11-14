@@ -68,6 +68,10 @@ export class VendedorProductoFormPage implements OnInit {
   readonly submitting = signal(false);
   readonly submitError = signal<string | null>(null);
 
+  readonly uploading = signal(false);
+  readonly uploadError = signal<string | null>(null);
+  readonly imageUrl = signal<string | null>(null);
+
   readonly categoriaFormOpen = signal(false);
   readonly creatingCategoria = signal(false);
   readonly categoriaCreateError = signal<string | null>(null);
@@ -106,6 +110,7 @@ export class VendedorProductoFormPage implements OnInit {
     categoriaId: ['', [Validators.required]],
     marcaId: [''],
     mostrarPrecio: [true],
+    imagen: [''],
   });
 
   ngOnInit(): void {
@@ -117,6 +122,8 @@ export class VendedorProductoFormPage implements OnInit {
 
   private bootstrap(): void {
     this.form.reset();
+    this.imageUrl.set(null);
+    this.uploadError.set(null);
     this.lookupsLoading.set(true);
     this.lookupsFailed.set(false);
 
@@ -171,7 +178,9 @@ export class VendedorProductoFormPage implements OnInit {
       categoriaId: this.resolveCategoriaId(product.categoria),
       marcaId: this.resolveMarcaId(product.marca),
       mostrarPrecio: product.mostrarPrecio ?? true,
+      imagen: product.imagen ?? '',
     });
+    this.imageUrl.set(product.imagen ?? null);
   }
 
   private resolveCategoriaId(nombre: string | undefined): string {
@@ -298,6 +307,33 @@ export class VendedorProductoFormPage implements OnInit {
     return control.invalid && (control.touched || control.dirty);
   }
 
+  onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file === undefined) {
+      return;
+    }
+    // Allow re-selecting the same file after a successful upload.
+    input.value = '';
+
+    this.uploading.set(true);
+    this.uploadError.set(null);
+
+    this.productosService.uploadImage(file).subscribe({
+      next: (url) => {
+        this.form.controls.imagen.setValue(url);
+        this.imageUrl.set(url);
+        this.uploading.set(false);
+      },
+      error: () => {
+        this.uploading.set(false);
+        this.uploadError.set(
+          'No pudimos subir la imagen. Inténtalo de nuevo en unos segundos.',
+        );
+      },
+    });
+  }
+
   submit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -359,6 +395,10 @@ export class VendedorProductoFormPage implements OnInit {
     }
     if (raw.marcaId !== '') {
       body.marcaId = raw.marcaId;
+    }
+    const imagen = raw.imagen.trim();
+    if (imagen !== '') {
+      body.imagen = imagen;
     }
     return body;
   }

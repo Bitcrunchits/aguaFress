@@ -82,6 +82,14 @@
   font-size: 0.8rem;
 }
 
+.producto-form__image-preview {
+  display: block;
+  max-width: 240px;
+  max-height: 240px;
+  border: 1px solid var(--line-soft);
+  object-fit: contain;
+}
+
 .producto-form__checkbox {
   display: flex;
   align-items: center;

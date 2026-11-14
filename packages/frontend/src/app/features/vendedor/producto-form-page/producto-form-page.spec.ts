@@ -77,6 +77,7 @@ describe('VendedorProductoFormPage', () => {
     get: jasmine.createSpy('get'),
     create: jasmine.createSpy('create'),
     update: jasmine.createSpy('update'),
+    uploadImage: jasmine.createSpy('uploadImage'),
   };
 
   async function configure(routeId: string | null): Promise<void> {
@@ -87,6 +88,7 @@ describe('VendedorProductoFormPage', () => {
     productosServiceStub.get.calls.reset();
     productosServiceStub.create.calls.reset();
     productosServiceStub.update.calls.reset();
+    productosServiceStub.uploadImage.calls.reset();
 
     await TestBed.configureTestingModule({
       imports: [VendedorProductoFormPage],
@@ -129,6 +131,7 @@ describe('VendedorProductoFormPage', () => {
       categoriaId: 'categoria-1',
       marcaId: '',
       mostrarPrecio: true,
+      imagen: '',
     });
   }
 
@@ -369,6 +372,40 @@ describe('VendedorProductoFormPage', () => {
     });
     expect(element.textContent).toContain(
       'No pudimos crear la marca. Inténtalo de nuevo en unos segundos.',
+    );
+  });
+
+  it('uploads the selected image and shows the returned preview URL', async () => {
+    await configure(null);
+    productosServiceStub.uploadImage.and.returnValue(of('/uploads/products/abc.webp'));
+    renderWithLookups();
+
+    const file = new File(['imagen'], 'producto.webp', { type: 'image/webp' });
+    component.onImageSelected({ target: { files: [file], value: '' } } as unknown as Event);
+    fixture.detectChanges();
+
+    expect(productosServiceStub.uploadImage).toHaveBeenCalledWith(file);
+    expect(component.form.controls.imagen.value).toBe('/uploads/products/abc.webp');
+    expect(component.imageUrl()).toBe('/uploads/products/abc.webp');
+
+    const preview = element.querySelector<HTMLImageElement>('.producto-form__image-preview');
+    expect(preview).not.toBeNull();
+    expect(preview?.getAttribute('src')).toBe('/uploads/products/abc.webp');
+  });
+
+  it('shows an inline error when the image upload fails', async () => {
+    await configure(null);
+    productosServiceStub.uploadImage.and.returnValue(throwError(() => new Error('boom')));
+    renderWithLookups();
+
+    const file = new File(['imagen'], 'producto.webp', { type: 'image/webp' });
+    component.onImageSelected({ target: { files: [file], value: '' } } as unknown as Event);
+    fixture.detectChanges();
+
+    expect(component.uploading()).toBeFalse();
+    expect(component.form.controls.imagen.value).toBe('');
+    expect(element.textContent).toContain(
+      'No pudimos subir la imagen. Inténtalo de nuevo en unos segundos.',
     );
   });
 });

@@ -1,5 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
+import { map } from 'rxjs';
 import type { Observable } from 'rxjs';
 import type {
   CreateProductRequest,
@@ -14,6 +15,7 @@ const GET_PRODUCT_URL = `${API_CONFIG.baseUrl}/api/v1/products/get`;
 const CREATE_PRODUCT_URL = `${API_CONFIG.baseUrl}/api/v1/products/create`;
 const UPDATE_PRODUCT_URL = `${API_CONFIG.baseUrl}/api/v1/products/update`;
 const DELETE_PRODUCT_URL = `${API_CONFIG.baseUrl}/api/v1/products/delete`;
+const UPLOAD_IMAGE_URL = `${API_CONFIG.baseUrl}/api/v1/upload/product-image`;
 
 /**
  * Vendedor product catalog HTTP access against the gateway `products.*`
@@ -53,5 +55,13 @@ export class VendedorProductosService {
   delete(id: string): Observable<{ deleted: boolean }> {
     const params = new HttpParams().set('id', id);
     return this.http.delete<{ deleted: boolean }>(DELETE_PRODUCT_URL, { params });
+  }
+
+  uploadImage(file: File): Observable<string> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http
+      .post<{ imageId: string }>(UPLOAD_IMAGE_URL, formData)
+      .pipe(map((response) => `/uploads/${response.imageId}`));
   }
 }

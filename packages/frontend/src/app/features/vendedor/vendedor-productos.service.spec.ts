@@ -134,4 +134,21 @@ describe('VendedorProductosService', () => {
     request.flush({ deleted: true });
     expect(response).toEqual({ deleted: true });
   });
+
+  it('uploads a product image as multipart and maps the response to /uploads', () => {
+    const file = new File(['contenido'], 'producto.webp', { type: 'image/webp' });
+    let url: string | undefined;
+
+    service.uploadImage(file).subscribe((value) => (url = value));
+
+    const request = httpMock.expectOne(`${BASE}/api/v1/upload/product-image`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toBeInstanceOf(FormData);
+
+    const body = request.request.body as FormData;
+    expect(body.get('file')).toBe(file);
+
+    request.flush({ imageId: 'products/producto.webp' });
+    expect(url).toBe('/uploads/products/producto.webp');
+  });
 });
