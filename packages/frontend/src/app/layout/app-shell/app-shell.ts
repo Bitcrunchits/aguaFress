@@ -53,4 +53,22 @@ export class AppShell {
   logout(): void {
     this.auth.logout();
   }
+
+  /**
+   * Header identity for the signed-in user: full name when the profile
+   * provides one (vendedor/cliente), falling back to the email otherwise
+   * (super-admin has no nombre/apellido). Kept presentation-only — no role
+   * or identity is derived from it.
+   */
+  displayName(session: { user: { nombre?: string; apellido?: string; email: string } }): string {
+    const nombre = session.user.nombre?.trim();
+    const apellido = session.user.apellido?.trim();
+    if (nombre && apellido) {
+      return `${nombre} ${apellido}`;
+    }
+    if (nombre) {
+      return nombre;
+    }
+    return session.user.email;
+  }
 }

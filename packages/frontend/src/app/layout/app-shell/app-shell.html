@@ -29,7 +29,7 @@
           }
         </nav>
         <div class="shell__account">
-          <span class="shell__identity">{{ roleLabels[session.user.role] }} · {{ session.user.email }}</span>
+          <span class="shell__identity">{{ roleLabels[session.user.role] }} · {{ displayName(session) }}</span>
           <button type="button" class="shell__logout" (click)="logout()">Cerrar sesión</button>
         </div>
       }

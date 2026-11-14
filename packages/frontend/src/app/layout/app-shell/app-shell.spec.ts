@@ -86,6 +86,30 @@ describe('AppShell', () => {
     });
   }
 
+  it('shows the full name in the identity when the profile provides it, else the email', () => {
+    const vendedor = TestBed.createComponent(AppShell);
+    auth.currentSession = {
+      token: 'access', refreshToken: 'refresh',
+      user: { id: 'v-1', email: 'carlos@aguafress.com', role: UserRole.VENDEDOR, nombre: 'Carlos', apellido: 'Pérez' },
+    };
+    ready.next(true);
+    vendedor.detectChanges();
+    const element = vendedor.nativeElement as HTMLElement;
+    expect(element.querySelector('.shell__identity')?.textContent).toContain('Carlos Pérez');
+    expect(element.querySelector('.shell__identity')?.textContent).not.toContain('carlos@aguafress.com');
+
+    // Fallback to email when no nombre/apellido (super-admin).
+    const admin = TestBed.createComponent(AppShell);
+    auth.currentSession = {
+      token: 'access', refreshToken: 'refresh',
+      user: { id: 'a-1', email: 'admin@aguafress.com', role: UserRole.SUPER_ADMIN },
+    };
+    ready.next(true);
+    admin.detectChanges();
+    const adminElement = admin.nativeElement as HTMLElement;
+    expect(adminElement.querySelector('.shell__identity')?.textContent).toContain('admin@aguafress.com');
+  });
+
   it('removes navigation on session revalidation or logout', () => {
     auth.currentSession = {
       token: 'access', refreshToken: 'refresh',
