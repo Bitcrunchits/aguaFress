@@ -58,6 +58,15 @@
             carrito.feedback()?.productId === product.id ? 'cliente-catalogo-feedback' : null
           "
         >
+          @if (product.imagen; as image) {
+            <img
+              class="cliente__image"
+              [src]="productImageUrl(image)"
+              [alt]="'Foto de ' + product.nombre"
+              loading="lazy"
+            />
+          }
+
           <h2>{{ product.nombre }}</h2>
 
           @if (product.descripcion) {

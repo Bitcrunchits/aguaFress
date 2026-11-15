@@ -2,6 +2,7 @@ import { Component, effect, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import type { ProductResponse } from '@agua/contracts';
 import { AuthService } from '../../../core/auth/auth.service';
+import { toUploadUrl } from '../../../shared/upload-url';
 import {
   ClienteCarritoFacade,
   ClienteCarritoFeedbackKind,
@@ -91,5 +92,9 @@ export class ClienteCatalogoPage implements OnInit {
 
   formatPrice(value: number): string {
     return this.priceFormatter.format(value);
+  }
+
+  productImageUrl(imageId: string): string {
+    return toUploadUrl(imageId);
   }
 }

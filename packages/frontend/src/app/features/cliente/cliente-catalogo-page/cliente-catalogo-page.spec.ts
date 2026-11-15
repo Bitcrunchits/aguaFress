@@ -176,6 +176,25 @@ describe('ClienteCatalogoPage', () => {
     expect(element.textContent).not.toContain('No disponible');
   });
 
+  it('renders the product image when present and omits it otherwise', () => {
+    products.set([
+      { ...PRODUCT, imagen: 'products/agua-500.webp' },
+      { ...PRODUCT, id: 'producto-sin-imagen', nombre: 'Agua sin imagen' },
+    ]);
+    fixture.detectChanges();
+
+    const items = Array.from(
+      element.querySelectorAll<HTMLElement>('.cliente__product'),
+    );
+    expect(items.length).toBe(2);
+
+    const image = items[0].querySelector<HTMLImageElement>('img.cliente__image');
+    expect(image).not.toBeNull();
+    expect(image?.getAttribute('src')).toContain('/uploads/products/');
+
+    expect(items[1].querySelector('img.cliente__image')).toBeNull();
+  });
+
   it('renders the availability label for an unavailable product', () => {
     products.set([{ ...PRODUCT, stock: 0 }]);
     fixture.detectChanges();
