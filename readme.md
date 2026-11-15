@@ -1,14 +1,14 @@
-# AguaFress Backend
+# Backend de AguaFress
 
-AguaFress es un backend de microservicios para pedidos, gestion de vendedores/clientes y operacion logistica de distribuidores de agua y soda. El backend esta construido con NestJS, TypeScript, pnpm workspaces, PostgreSQL, MongoDB, Redis, Prisma y Docker Compose.
+AguaFress es un backend de microservicios para gestionar pedidos, vendedores, clientes y operaciones logísticas de distribuidores de agua y soda. Está construido con NestJS, TypeScript, pnpm workspaces, PostgreSQL, MongoDB, Redis, Prisma y Docker Compose.
 
-> Estado actual de `main`: backend-first. El frontend React fue excluido de esta rama; el frontend futuro sera Angular.
+> Estado de la rama `main`: centrada en el backend. El frontend de React fue excluido de esa rama; está previsto utilizar Angular para el frontend.
 
-## Ejecutar estas lineas para datos de prueba
+## Datos de prueba
 
-Al levantar el backend, `usuario-service` deja disponible el `SUPER_ADMIN` local. Ese dato queda como seed minimo para acceso inicial.
+Al iniciar el backend, `usuario-service` deja disponible el `SUPER_ADMIN` local como conjunto mínimo de datos para el acceso inicial.
 
-Para completar datos de prueba con vendedores, clientes, cartera y productos, levantar primero todo el stack y ejecutar estos seeds manuales una vez que los servicios hayan aplicado sus schemas Prisma:
+Inicie todos los servicios con el primer comando. Cuando `usuario-service` haya aplicado su esquema de Prisma, ejecute el SQL de usuarios para agregar vendedores, clientes y relaciones de cartera de prueba. Docker Compose ejecuta `products-seed` automáticamente; el último comando permite volver a ejecutar el SQL de productos si es necesario:
 
 ```bash
 docker compose --env-file .env up -d
@@ -20,7 +20,7 @@ docker compose exec postgres psql -U postgres -d agua_products \
   -f /docker-entrypoint-initdb.d/seed-products-mock.sql
 ```
 
-Verificacion rapida:
+Verificación rápida:
 
 ```bash
 docker compose exec postgres psql -U postgres -d agua \
@@ -30,13 +30,13 @@ docker compose exec postgres psql -U postgres -d agua_products \
   -c 'SELECT nombre, precio_final, stock FROM "PRODUCTO" LIMIT 10;'
 ```
 
-Estos seeds son solo para desarrollo local. No dependen de reiniciar volumenes y deben ejecutarse despues de levantar el stack para evitar choques con el orden de inicializacion de PostgreSQL y Prisma.
+Estos datos de prueba son solo para desarrollo local. No es necesario reiniciar los volúmenes. Ejecute los comandos manuales después de iniciar los servicios para evitar conflictos con la inicialización de PostgreSQL y Prisma.
 
 Credenciales locales de prueba:
 
-| Rol | Email | Password |
+| Rol | Correo electrónico | Contraseña |
 | --- | --- | --- |
-| Super admin | `admin@aguafress.com` | `admin123` |
+| Superadministrador | `admin@aguafress.com` | `admin123` |
 | Vendedor | `carlos@aguafress.com` | `admin123` |
 | Vendedor | `ana@aguafress.com` | `admin123` |
 | Vendedor | `luis@aguafress.com` | `admin123` |
@@ -44,41 +44,41 @@ Credenciales locales de prueba:
 | Vendedor | `roberto@aguafress.com` | `admin123` |
 | Cliente | `cliente1@aguafress.com` hasta `cliente25@aguafress.com` | `admin123` |
 
-## Indice
+## Índice
 
-- [Datos de prueba](#ejecutar-estas-lineas-para-datos-de-prueba)
-- [Vision general](#vision-general)
+- [Datos de prueba](#datos-de-prueba)
+- [Visión general](#visión-general)
 - [Arquitectura](#arquitectura)
 - [Servicios y puertos](#servicios-y-puertos)
-- [Prerequisitos](#prerequisitos)
+- [Requisitos previos](#requisitos-previos)
 - [Variables de entorno](#variables-de-entorno)
 - [Docker desde cero](#docker-desde-cero)
 - [Desarrollo local](#desarrollo-local)
 - [Base de datos y Prisma](#base-de-datos-y-prisma)
-- [API docs: Scalar y OpenAPI](#api-docs-scalar-y-openapi)
-- [Tests y build](#tests-y-build)
-- [Estructura del workspace](#estructura-del-workspace)
-- [Troubleshooting operativo](#troubleshooting-operativo)
+- [Documentación de la API: Scalar y OpenAPI](#documentación-de-la-api-scalar-y-openapi)
+- [Pruebas y compilación](#pruebas-y-compilación)
+- [Estructura del espacio de trabajo](#estructura-del-espacio-de-trabajo)
+- [Solución de problemas operativos](#solución-de-problemas-operativos)
 - [Seguridad e identidad](#seguridad-e-identidad)
-- [Flujo de contribucion](#flujo-de-contribucion)
+- [Flujo de contribución](#flujo-de-contribución)
 
-## Vision general
+## Visión general
 
-El sistema reemplaza visitas fijas e improductivas por pedidos digitales, confirmacion de visita y operaciones trazables. El gateway es la unica entrada HTTP publica; los microservicios de dominio se comunican por TCP interno y jobs asincronicos cuando corresponde.
+El sistema reemplaza las visitas fijas e improductivas por pedidos digitales, confirmaciones de visita y operaciones trazables. El gateway es el único punto de entrada HTTP público; los microservicios de dominio se comunican mediante TCP interno y tareas asíncronas cuando corresponde.
 
-Stack principal:
+Tecnologías principales:
 
-| Area | Tecnologia |
+| Área | Tecnología |
 | --- | --- |
-| Runtime | Node.js 22 |
-| Framework | NestJS 10 |
+| Entorno de ejecución | Node.js 22 |
+| Marco de trabajo | NestJS 10 |
 | Lenguaje | TypeScript 5 |
-| Monorepo | pnpm workspaces |
+| Monorepositorio | pnpm workspaces |
 | Base transaccional | PostgreSQL 15 |
-| Base documental | MongoDB 7 para notifications-service |
-| Cache/colas | Redis 7 + BullMQ |
+| Base de datos documental | MongoDB 7 para notifications-service |
+| Caché y colas | Redis 7 + BullMQ |
 | ORM | Prisma 5 por microservicio |
-| API docs | Scalar UI + OpenAPI 3.0 generado por gateway |
+| Documentación de la API | Scalar UI + OpenAPI 3.0 generado por el gateway |
 
 ## Arquitectura
 
@@ -97,35 +97,35 @@ Infraestructura local:
   MongoDB    :27017 -> agua_notifications
 ```
 
-Decisiones vigentes:
+Decisiones arquitectónicas vigentes:
 
-- `gateway` es la unica frontera HTTP publica.
-- Los microservicios de dominio no exponen HTTP publico al frontend.
-- TCP sincronico se usa para login, perfil, validaciones, lecturas simples y respuestas inmediatas.
-- Redis + BullMQ se usa para comandos criticos asincronicos que pueden esperar y no deben perderse, empezando por `orders.create`.
+- `gateway` es el único punto de entrada HTTP público.
+- Los microservicios de dominio no exponen HTTP público al frontend.
+- La comunicación TCP síncrona se usa para el inicio de sesión, los perfiles, las validaciones, las lecturas simples y las respuestas inmediatas.
+- Redis y BullMQ se usan para comandos críticos asíncronos que pueden esperar y no deben perderse, comenzando por `orders.create`.
 - Kafka no se usa para la resiliencia actual.
-- Cada microservicio es dueno de su propia DB/schema Prisma cuando aplica.
-- Las referencias cross-service son UUID escalares logicos; no hay relaciones Prisma ni foreign keys entre bases de datos de distintos microservicios.
+- Cada microservicio tiene su propia base de datos y su propio esquema de Prisma cuando corresponde.
+- Las referencias entre servicios son UUID escalares lógicos; no hay relaciones de Prisma ni claves foráneas entre las bases de datos de distintos microservicios.
 
 ## Servicios y puertos
 
 | Servicio | Paquete | Protocolo | Puerto local | Persistencia |
 | --- | --- | --- | --- | --- |
-| API Gateway | `@agua/gateway` | HTTP | `3000:3000` | No posee DB |
-| usuario-service | `@agua/usuario-service` | TCP interno | `3011` no publicado | PostgreSQL DB `agua` |
-| products-service | `@agua/products-service` | TCP interno | `3013` no publicado | PostgreSQL DB `agua_products` |
-| orders-service | `@agua/orders-service` | TCP interno + BullMQ | `3014` no publicado | PostgreSQL DB `agua_orders`, Redis |
-| entregas-service | `@agua/entregas-service` | TCP interno | `3015` no publicado | PostgreSQL DB `agua_entregas`, Redis |
-| notifications-service | `@agua/notifications-service` | TCP interno | `3016` no publicado | MongoDB DB `agua_notifications` |
+| API Gateway | `@agua/gateway` | HTTP | `3000:3000` | Sin base de datos |
+| usuario-service | `@agua/usuario-service` | TCP interno | `3011` no publicado | Base PostgreSQL `agua` |
+| products-service | `@agua/products-service` | TCP interno | `3013` no publicado | Base PostgreSQL `agua_products` |
+| orders-service | `@agua/orders-service` | TCP interno + BullMQ | `3014` no publicado | Base PostgreSQL `agua_orders`, Redis |
+| entregas-service | `@agua/entregas-service` | TCP interno | `3015` no publicado | Base PostgreSQL `agua_entregas`, Redis |
+| notifications-service | `@agua/notifications-service` | TCP interno | `3016` no publicado | Base MongoDB `agua_notifications` |
 | PostgreSQL | `postgres:15-alpine` | TCP | `5433:5432` | Volumen `agua-postgres-data` |
-| Redis | `redis:7-alpine` | TCP | `6379:6379` | Sin volumen montado en el servicio actual |
+| Redis | `redis:7-alpine` | TCP | `6379:6379` | Sin volumen montado en la configuración actual |
 | MongoDB | `mongo:7` | TCP | `27017:27017` | Volumen `agua-mongo-data` |
 
-## Prerequisitos
+## Requisitos previos
 
 - Docker con Docker Compose v2.
 - Node.js 22 para desarrollo local fuera de contenedores.
-- pnpm via Corepack. Usar pnpm 12.3.4 para evitar diferencias entre entornos.
+- pnpm mediante Corepack. Utilice pnpm 12.3.4 para evitar diferencias entre entornos.
 
 ```bash
 corepack enable
@@ -135,9 +135,9 @@ pnpm install --frozen-lockfile
 
 ## Variables de entorno
 
-El compose local usa `.env` para inyectar configuracion explicita por servicio. No commitear secretos reales.
+La configuración local de Docker Compose utiliza `.env` para proporcionar variables específicas a cada servicio. No incluya secretos reales en los commits.
 
-Minimo requerido para levantar el backend desde Compose:
+Variables mínimas para iniciar el backend con Docker Compose:
 
 ```env
 POSTGRES_PASSWORD="postgres"
@@ -149,34 +149,34 @@ JWT_SECRET="local-jwt-secret-minimo-32-caracteres-123"
 JWT_REFRESH_SECRET="local-refresh-secret-minimo-32-caracteres-123"
 ```
 
-Variables relevantes documentadas por `docker-compose.yml`:
+Variables relevantes en `docker-compose.yml`:
 
 | Variable | Uso |
 | --- | --- |
-| `POSTGRES_PASSWORD` | Password local de PostgreSQL usado por Compose y jobs init/seed. |
+| `POSTGRES_PASSWORD` | Contraseña local de PostgreSQL utilizada por Docker Compose y las tareas de inicialización y carga de datos de prueba. |
 | `DATABASE_URL` | Prisma en `usuario-service`. |
 | `PRODUCTS_DATABASE_URL` | Prisma en `products-service`. |
 | `ORDERS_DATABASE_URL` | Requerida por `orders-service` en Compose. |
 | `ENTREGAS_DATABASE_URL` | Prisma en `entregas-service`. |
-| `JWT_SECRET`, `JWT_REFRESH_SECRET` | Firma y refresh de JWT en desarrollo local. |
-| `JWT_EXPIRES_IN`, `JWT_REFRESH_EXPIRES_IN` | Expiracion de tokens. |
-| `PORT` | Puerto HTTP del gateway. Default Compose: `3000`. |
+| `JWT_SECRET`, `JWT_REFRESH_SECRET` | Firma y renovación de JWT en desarrollo local. |
+| `JWT_EXPIRES_IN`, `JWT_REFRESH_EXPIRES_IN` | Expiración de los tokens. |
+| `PORT` | Puerto HTTP del gateway. Valor predeterminado en Docker Compose: `3000`. |
 | `TCP_PORT` | Puerto TCP interno de cada microservicio. |
-| `REDIS_URL` | Redis para BullMQ/cache. En Compose: `redis://redis:6379`. |
-| `MONGODB_URI` | MongoDB para notifications-service. En Compose: `mongodb://mongo:27017/agua_notifications`. |
-| `UPLOAD_DIR` | Directorio compartido de uploads dentro del contenedor. |
+| `REDIS_URL` | Redis para BullMQ y la caché. En Docker Compose: `redis://redis:6379`. |
+| `MONGODB_URI` | MongoDB para notifications-service. En Docker Compose: `mongodb://mongo:27017/agua_notifications`. |
+| `UPLOAD_DIR` | Directorio compartido para archivos cargados dentro del contenedor. |
 
-Para desarrollo local fuera de Docker, usar hosts locales, por ejemplo PostgreSQL en `localhost:5433` y Redis en `localhost:6379`.
+Para desarrollar fuera de Docker, utilice direcciones locales, por ejemplo, PostgreSQL en `localhost:5433` y Redis en `localhost:6379`.
 
 ## Docker desde cero
 
-1. Preparar `.env`.
+1. Prepare `.env`.
 
 ```bash
 cp .env.example .env
 ```
 
-2. Reemplazar todos los placeholders `<...>` antes de levantar servicios.
+2. Reemplace todos los valores de ejemplo `<...>` antes de iniciar los servicios.
 
 ```env
 POSTGRES_PASSWORD="postgres"
@@ -186,28 +186,28 @@ ORDERS_DATABASE_URL="postgresql://postgres:postgres@postgres:5432/agua_orders"
 ENTREGAS_DATABASE_URL="postgresql://postgres:postgres@postgres:5432/agua_entregas"
 ```
 
-3. Construir imagenes backend.
+3. Construya las imágenes del backend.
 
-El build usa pnpm 12.3.4 via Corepack. En clones nuevos, o cuando Docker/npm registry este lento, se recomienda construir primero con un solo servicio en paralelo:
+La compilación utiliza pnpm 12.3.4 mediante Corepack. En repositorios recién clonados o si el registro de Docker o npm responde con lentitud, se recomienda limitar inicialmente la construcción paralela a un servicio:
 
 ```bash
 COMPOSE_PARALLEL_LIMIT=1 docker compose --env-file .env build
 ```
 
-4. Levantar infraestructura y servicios backend.
+4. Inicie la infraestructura y los servicios del backend.
 
 ```bash
 docker compose --env-file .env up -d
 ```
 
-5. Verificar estado.
+5. Compruebe el estado de los servicios.
 
 ```bash
 docker compose ps
 docker compose logs -f gateway
 ```
 
-6. Acceder al gateway.
+6. Acceda al gateway.
 
 ```txt
 http://localhost:3000/api/health
@@ -215,7 +215,7 @@ http://localhost:3000/api/docs
 http://localhost:3000/api/openapi.json
 ```
 
-Para destruir contenedores y volumenes locales:
+Para eliminar los contenedores y volúmenes locales (se perderán los datos almacenados):
 
 ```bash
 docker compose down -v
@@ -223,20 +223,20 @@ docker compose down -v
 
 ## Desarrollo local
 
-Instalar dependencias y compilar contratos:
+Instale las dependencias y compile los contratos:
 
 ```bash
 pnpm install --frozen-lockfile
 pnpm build:contracts
 ```
 
-Levantar solo infraestructura:
+Inicie solo la infraestructura:
 
 ```bash
 docker compose up -d postgres redis mongo
 ```
 
-Ejecutar servicios en watch mode, cada uno en una terminal:
+Ejecute los servicios en modo de vigilancia, cada uno en una terminal:
 
 ```bash
 pnpm --filter @agua/usuario-service dev
@@ -247,7 +247,7 @@ pnpm --filter @agua/notifications-service dev
 pnpm --filter @agua/gateway dev
 ```
 
-Scripts raiz disponibles:
+Comandos disponibles desde la raíz del repositorio:
 
 ```bash
 pnpm build:contracts
@@ -257,17 +257,17 @@ pnpm seed:test
 
 ## Base de datos y Prisma
 
-Schemas Prisma activos:
+Esquemas de Prisma activos:
 
-| Servicio | Schema | Tablas principales |
+| Servicio | Esquema | Tablas principales |
 | --- | --- | --- |
 | usuario-service | `MicroServices/usuario-service/prisma/schema.prisma` | `AUTH_USER`, `VENDEDOR`, `CLIENTE`, `SUPER_ADMIN`, `RELACION_CARTERA`, `QR_CODE`, `LINK_INVITACION`, `AUDIT_LOG` |
 | products-service | `MicroServices/products-service/prisma/schema.prisma` | `CATEGORIA`, `MARCA`, `PRODUCTO` |
 | orders-service | `MicroServices/orders-service/prisma/schema.prisma` | `CART`, `CART_ITEM`, `ORDER`, `ORDER_ITEM`, `ORDER_HISTORY`, `PEDIDO_COUNTER`, `ORDER_COMMAND_JOB` |
 | entregas-service | `MicroServices/entregas-service/prisma/schema.prisma` | `DELIVERY`, `DELIVERY_COMMAND_JOB` |
-| notifications-service | No usa Prisma | MongoDB con Mongoose |
+| notifications-service | No utiliza Prisma | MongoDB con Mongoose |
 
-Comandos Prisma por servicio:
+Comandos de Prisma por servicio:
 
 ```bash
 pnpm --filter @agua/usuario-service prisma:generate
@@ -287,34 +287,34 @@ pnpm --filter @agua/entregas-service prisma:validate
 pnpm --filter @agua/entregas-service prisma:push
 ```
 
-Inicializacion local de PostgreSQL:
+Inicialización local de PostgreSQL:
 
 - `docker/init-db/create-service-databases.sql` crea `agua_orders`, `agua_entregas` y `agua_products` si no existen.
-- `products-seed` carga `docker/init-db/seed-products-mock.sql` en `agua_products`.
-- Varios Dockerfiles ejecutan `prisma generate` y `prisma db push` al iniciar para desarrollo local.
+- `products-seed` carga automáticamente `docker/init-db/seed-products-mock.sql` en `agua_products`.
+- Varios Dockerfiles ejecutan `prisma generate` y `prisma db push` al iniciar en el entorno de desarrollo local.
 
-## API docs: Scalar y OpenAPI
+## Documentación de la API: Scalar y OpenAPI
 
-El gateway sirve documentacion viva generada desde su registry de acciones.
+El gateway ofrece documentación actualizada generada a partir de su registro de acciones.
 
 | Recurso | URL |
 | --- | --- |
 | Scalar UI | `http://localhost:3000/api/docs` |
 | OpenAPI JSON | `http://localhost:3000/api/openapi.json` |
-| Redirect docs | `http://localhost:3000/api/` -> `/api/docs` |
+| Redirección a la documentación | `http://localhost:3000/api/` -> `/api/docs` |
 
-Convencion publica del gateway:
+Convención pública del gateway:
 
 ```txt
 {METHOD} /api/v1/{service}/{action}
 Authorization: Bearer <jwt>
 ```
 
-Scalar esta configurado con `persistAuth` y security scheme preferido `bearerAuth`.
+Scalar está configurado con `persistAuth` y el esquema de seguridad preferido `bearerAuth`.
 
-## Tests y build
+## Pruebas y compilación
 
-Builds disponibles:
+Comandos de compilación disponibles:
 
 ```bash
 pnpm build:contracts
@@ -326,7 +326,7 @@ pnpm --filter @agua/entregas-service build
 pnpm --filter @agua/notifications-service build
 ```
 
-Tests disponibles:
+Pruebas disponibles:
 
 ```bash
 pnpm --filter @agua/gateway test
@@ -337,13 +337,13 @@ pnpm --filter @agua/entregas-service test
 pnpm --filter @agua/notifications-service test
 ```
 
-Coverage configurado explicitamente en products-service:
+Cobertura de pruebas configurada explícitamente en products-service:
 
 ```bash
 pnpm --filter @agua/products-service test:cov
 ```
 
-## Estructura del workspace
+## Estructura del espacio de trabajo
 
 ```txt
 aguaFress/
@@ -357,7 +357,7 @@ aguaFress/
 ├── packages/
 │   └── contracts/              # @agua/contracts: DTOs, enums, eventos compartidos
 ├── docker/
-│   └── init-db/                # SQL de inicializacion/seed local
+│   └── init-db/                # SQL para inicialización y datos de prueba locales
 ├── contratosDTOs/
 ├── docker-compose.yml
 ├── pnpm-workspace.yaml
@@ -367,7 +367,7 @@ aguaFress/
 └── readme.md
 ```
 
-Workspaces registrados:
+Espacios de trabajo registrados:
 
 ```yaml
 packages:
@@ -375,16 +375,16 @@ packages:
   - "MicroServices/*"
 ```
 
-## Troubleshooting operativo
+## Solución de problemas operativos
 
-| Sintoma | Causa probable | Accion |
+| Síntoma | Causa probable | Acción |
 | --- | --- | --- |
-| `POSTGRES_PASSWORD must be set in .env` o `*_DATABASE_URL must be set in .env` | Compose exige variables explicitas para evitar secretos hardcodeados. | Copiar `.env.example` a `.env` y reemplazar todos los placeholders `<...>`. |
-| Prisma falla en Alpine por OpenSSL | Prisma necesita librerias OpenSSL. | Los Dockerfiles PostgreSQL ya instalan `openssl`; revisar imagen si se cambia la base. |
-| Gateway levanta pero no responde un dominio | Servicio TCP downstream no inicio o host/puerto mal configurado. | Revisar `docker compose ps` y `docker compose logs -f <servicio>`. |
-| Cambios de schema no aparecen | Prisma Client desactualizado o DB sin push/migrate. | Ejecutar `prisma:generate` y `prisma:push`/`prisma:migrate` segun servicio. |
+| `POSTGRES_PASSWORD must be set in .env` o `*_DATABASE_URL must be set in .env` | Docker Compose exige variables explícitas para evitar secretos incorporados en la configuración. | Copie `.env.example` a `.env` y reemplace todos los valores de ejemplo `<...>`. |
+| Prisma falla en Alpine por OpenSSL | Prisma necesita las bibliotecas de OpenSSL. | Los Dockerfiles de los servicios con PostgreSQL ya instalan `openssl`; revise la imagen si cambia la base. |
+| El gateway inicia, pero un servicio de dominio no responde | El servicio TCP interno no inició o su dirección o puerto están mal configurados. | Revise `docker compose ps` y `docker compose logs -f <servicio>`. |
+| Los cambios en el esquema no aparecen | El cliente de Prisma está desactualizado o los cambios no se aplicaron a la base de datos. | Ejecute `prisma:generate` y `prisma:push` o `prisma:migrate`, según el servicio. |
 
-Comandos utiles:
+Comandos útiles:
 
 ```bash
 docker compose ps
@@ -402,30 +402,30 @@ docker compose down -v
 
 Reglas obligatorias del proyecto:
 
-- No enviar `userId` en body; se extrae del JWT.
-- `userId` representa `AUTH_USER.id` desde el JWT `sub`.
-- `role` representa `AUTH_USER.role` desde el JWT.
-- `clienteId` y `vendedorId` son IDs de perfil de dominio, no identidad JWT.
-- `actorUserId` es el `AUTH_USER.id` del actor para auditoria.
-- Usar enums tipados para estados; no string literals sueltos.
-- Fechas en ISO 8601.
-- Eventos con `type` discriminante y base compatible con `BaseEvent`.
-- Validacion NestJS con `ValidationPipe`, `whitelist: true` y `forbidNonWhitelisted: true`.
-- Guards para autenticacion y roles; no validar JWT en controllers.
-- No usar `console.log` en produccion; usar `Logger` de NestJS.
-- No modelar relaciones Prisma/FK cross-DB entre microservicios.
+- No envíe `userId` en el cuerpo de la solicitud; se obtiene del JWT.
+- `userId` representa `AUTH_USER.id`, obtenido del campo `sub` del JWT.
+- `role` representa `AUTH_USER.role`, obtenido del JWT.
+- `clienteId` y `vendedorId` son identificadores de perfiles de dominio, no identificadores de autenticación del JWT.
+- `actorUserId` es el `AUTH_USER.id` del actor para fines de auditoría.
+- Use enumeraciones tipadas para los estados; evite cadenas de texto literales.
+- Utilice fechas en formato ISO 8601.
+- Los eventos deben incluir un campo discriminante `type` y una base compatible con `BaseEvent`.
+- Use `ValidationPipe` de NestJS con `whitelist: true` y `forbidNonWhitelisted: true`.
+- Use guards para la autenticación y los roles; no valide el JWT en los controladores.
+- No use `console.log` en producción; utilice `Logger` de NestJS.
+- No modele relaciones de Prisma ni claves foráneas entre bases de datos de distintos microservicios.
 
-## Flujo de contribucion
+## Flujo de contribución
 
-- Trabajar en ramas feature/fix; no mergear a `develop` ni `main` sin orden explicita.
-- Mantener cambios pequenos y revisables.
-- Usar conventional commits solo cuando se solicite commit: `feat(scope): mensaje`, `fix(scope): mensaje`, `refactor(scope): mensaje`.
-- Tests unitarios para logica de negocio e integration tests para endpoints cuando aplique.
-- Antes de abrir PR, verificar build/test del paquete tocado y contratos si se modifican DTOs/eventos.
-- Mantener el README alineado con archivos reales; no documentar servicios, comandos ni paths que no existan.
+- Trabaje en ramas de funcionalidad o corrección; no integre cambios en `develop` ni en `main` sin una orden explícita.
+- Mantenga los cambios pequeños y fáciles de revisar.
+- Utilice commits convencionales solo cuando se solicite realizar un commit: `feat(scope): mensaje`, `fix(scope): mensaje`, `refactor(scope): mensaje`.
+- Incluya pruebas unitarias para la lógica de negocio y pruebas de integración para los endpoints cuando corresponda.
+- Antes de abrir una solicitud de cambios, compruebe la compilación y las pruebas del paquete modificado, así como los contratos si cambia DTO o eventos.
+- Mantenga este README alineado con los archivos reales; no documente servicios, comandos ni rutas que no existan.
 
 ## Limpieza documental aplicada
 
-- `README.MD` fue reemplazado por `readme.md` en minusculas.
-- `api-reference.html` fue eliminado porque la referencia viva del backend sale del gateway en Scalar/OpenAPI.
-- `frontend.me` no existe en esta rama, por lo tanto no habia archivo para borrar.
+- `README.MD` fue reemplazado por `readme.md` en minúsculas.
+- `api-reference.html` fue eliminado porque la documentación actualizada del backend se publica desde el gateway mediante Scalar y OpenAPI.
+- `frontend.me` no existe en esta rama; por lo tanto, no había ningún archivo con ese nombre para eliminar.
