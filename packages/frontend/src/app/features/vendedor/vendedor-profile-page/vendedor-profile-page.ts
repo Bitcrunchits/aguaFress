@@ -17,12 +17,14 @@ function trimmedOrUndefined(value: string): string | undefined {
 
 /**
  * Vendedor profile: read-only summary (datos + negocio + logo) with an edit
- * toggle, plus the shared change-password form. The logo is uploaded through
- * its own multipart action and only its returned storage-relative `imageId`
- * (e.g. `logos/<id>.webp`) is stored on the form; the preview renders from
- * the absolute `API_CONFIG.baseUrl` + `/uploads/<imageId>` URL. `estado`,
- * `qrCode` and `qr_token` are backend-controlled and are never sent in the
- * update payload.
+ * toggle, plus the shared change-password form. The `logo` field holds one of
+ * two representations, both rendered through `toUploadUrl`:
+ * - an uploaded image, stored as its storage-relative `imageId` (e.g.
+ *   `logos/<id>.webp`) and served at `API_CONFIG.baseUrl` + `/uploads/<id>`;
+ * - a preset avatar, stored as an absolute http(s) URL (DiceBear) and passed
+ *   through unchanged.
+ * `estado`, `qrCode` and `qr_token` are backend-controlled and are never sent
+ * in the update payload.
  */
 @Component({
   selector: 'app-vendedor-profile-page',
