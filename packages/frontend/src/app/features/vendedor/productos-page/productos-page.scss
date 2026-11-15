@@ -170,6 +170,21 @@
   gap: 8px;
 }
 
+.productos__producto {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.productos__thumb {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border: 1px solid var(--line-soft);
+  background: var(--ice-surface);
+}
+
 .productos__pagination {
   display: flex;
   flex-wrap: wrap;

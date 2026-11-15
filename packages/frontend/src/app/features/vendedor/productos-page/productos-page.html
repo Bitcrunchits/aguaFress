@@ -112,7 +112,12 @@
         <tbody>
           @for (product of items(); track product.id) {
             <tr>
-              <td>{{ product.nombre }}</td>
+              <td class="productos__producto">
+                @if (product.imagen; as image) {
+                  <img class="productos__thumb" [src]="productImageUrl(image)" alt="" loading="lazy" />
+                }
+                <span>{{ product.nombre }}</span>
+              </td>
               <td>{{ categoriaLabel(product) }}</td>
               <td>{{ formatPrice(product.precioFinal) }}</td>
               <td>{{ product.stock }}</td>

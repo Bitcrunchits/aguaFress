@@ -148,6 +148,30 @@ describe('VendedorProductosPage', () => {
     expect(element.textContent).toContain(component.formatPrice(1210));
   });
 
+  it('renders a product thumbnail when the row has an image and omits it otherwise', () => {
+    serviceStub.list.and.returnValue(
+      of(
+        pageResponse([
+          { ...PRODUCT, imagen: 'products/agua-500.webp' },
+          { ...PRODUCT, id: 'producto-sin-imagen', nombre: 'Agua sin imagen' },
+        ]),
+      ),
+    );
+
+    fixture.detectChanges();
+
+    const rows = Array.from(
+      element.querySelectorAll<HTMLTableRowElement>('tbody tr'),
+    );
+    expect(rows.length).toBe(2);
+
+    const thumb = rows[0].querySelector<HTMLImageElement>('img.productos__thumb');
+    expect(thumb).not.toBeNull();
+    expect(thumb?.getAttribute('src')).toContain('/uploads/products/');
+
+    expect(rows[1].querySelector('img.productos__thumb')).toBeNull();
+  });
+
   it('renders an inactive badge for a soft-deleted product', () => {
     serviceStub.list.and.returnValue(of(pageResponse([{ ...PRODUCT, activo: false }])));
 

@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import type { PaginationResponse, ProductResponse } from '@agua/contracts';
 import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog';
+import { toUploadUrl } from '../../../shared/upload-url';
 import {
   StatusLabelComponent,
   type StatusLabelTone,
@@ -294,6 +295,10 @@ export class VendedorProductosPage implements OnInit {
 
   categoriaLabel(product: ProductResponse): string {
     return product.categoria ?? '—';
+  }
+
+  productImageUrl(imageId: string): string {
+    return toUploadUrl(imageId);
   }
 
   estadoLabel(activo: boolean): string {
