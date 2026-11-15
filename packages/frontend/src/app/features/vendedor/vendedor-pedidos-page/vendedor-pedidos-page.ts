@@ -4,7 +4,11 @@ import { OrderEstado } from '@agua/contracts';
 import type { OrderResponse } from '@agua/contracts';
 import { catchError, forkJoin, of } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
-import { ORDER_ESTADO_LABELS, formatIsoDate } from '../../../shared/order-format';
+import { ORDER_ESTADO_LABELS, ORDER_ESTADO_TONES, formatIsoDate } from '../../../shared/order-format';
+import {
+  StatusLabelComponent,
+  type StatusLabelTone,
+} from '../../../shared/status-label/status-label';
 import { VendedorClientesService } from '../vendedor-clientes.service';
 import { VendedorPedidosService } from '../vendedor-pedidos.service';
 import {
@@ -42,7 +46,7 @@ const ESTADO_OPTIONS: EstadoOption[] = [
  */
 @Component({
   selector: 'app-vendedor-pedidos-page',
-  imports: [ButtonModule],
+  imports: [ButtonModule, StatusLabelComponent],
   templateUrl: './vendedor-pedidos-page.html',
   styleUrl: './vendedor-pedidos-page.scss',
 })
@@ -143,6 +147,10 @@ export class VendedorPedidosPage implements OnInit {
 
   estadoLabel(estado: OrderEstado): string {
     return ORDER_ESTADO_LABELS[estado];
+  }
+
+  orderEstadoTone(estado: OrderEstado): StatusLabelTone {
+    return ORDER_ESTADO_TONES[estado];
   }
 
   clienteNombre(order: OrderResponse): string {

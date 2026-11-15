@@ -52,7 +52,10 @@
         <li class="cliente__order">
           <div class="cliente__order-head">
             <h2>Pedido {{ order.pedidoNumero }}</h2>
-            <span class="cliente__order-estado">{{ estadoLabel(order.estado) }}</span>
+            <app-status-label
+              [label]="estadoLabel(order.estado)"
+              [tone]="orderEstadoTone(order.estado)"
+            />
           </div>
           <p class="cliente__meta">
             <time class="cliente__order-date" [attr.datetime]="isoDate(order.createdAt)">

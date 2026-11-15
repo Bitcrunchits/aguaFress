@@ -19,7 +19,10 @@
     <article class="cliente__detail" aria-labelledby="cliente-pedido-title">
       <header class="cliente__detail-head">
         <h2 id="cliente-pedido-title">Pedido {{ order.pedidoNumero }}</h2>
-        <span class="cliente__order-estado">{{ estadoLabel(order.estado) }}</span>
+        <app-status-label
+          [label]="estadoLabel(order.estado)"
+          [tone]="orderEstadoTone(order.estado)"
+        />
       </header>
 
       <dl class="cliente__meta">

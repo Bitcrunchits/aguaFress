@@ -7,6 +7,10 @@ import type {
 } from '@agua/contracts';
 import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog';
+import {
+  StatusLabelComponent,
+  type StatusLabelTone,
+} from '../../../shared/status-label/status-label';
 import { AdminVendedoresService } from '../admin-vendedores.service';
 
 const PAGE_SIZE = 10;
@@ -16,6 +20,13 @@ const ESTADO_LABELS: Record<VendedorEstado, string> = {
   [VendedorEstado.ACTIVO]: 'Activo',
   [VendedorEstado.INACTIVO]: 'Inactivo',
   [VendedorEstado.BLOQUEADO]: 'Bloqueado',
+};
+
+const ESTADO_TONES: Record<VendedorEstado, StatusLabelTone> = {
+  [VendedorEstado.PENDIENTE]: 'warning',
+  [VendedorEstado.ACTIVO]: 'positive',
+  [VendedorEstado.INACTIVO]: 'neutral',
+  [VendedorEstado.BLOQUEADO]: 'negative',
 };
 
 interface EstadoOption {
@@ -31,7 +42,7 @@ interface EstadoOption {
  */
 @Component({
   selector: 'app-vendedores-list-page',
-  imports: [ButtonModule, ConfirmDialogComponent],
+  imports: [ButtonModule, ConfirmDialogComponent, StatusLabelComponent],
   templateUrl: './vendedores-list-page.html',
   styleUrl: './vendedores-list-page.scss',
 })
@@ -261,6 +272,10 @@ export class VendedoresListPage implements OnInit {
 
   estadoLabel(estado: VendedorEstado): string {
     return ESTADO_LABELS[estado];
+  }
+
+  vendedorEstadoTone(estado: VendedorEstado): StatusLabelTone {
+    return ESTADO_TONES[estado];
   }
 
   clientesLabel(clientesCount: number | undefined): string {

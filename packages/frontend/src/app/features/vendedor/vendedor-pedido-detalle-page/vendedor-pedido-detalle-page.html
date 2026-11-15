@@ -14,9 +14,10 @@
     <article class="detalle__detail" aria-labelledby="detalle-order-title">
       <header class="detalle__head">
         <h2 id="detalle-order-title">Pedido {{ order.pedidoNumero }}</h2>
-        <span class="detalle__badge" [attr.data-estado]="order.estado">
-          {{ estadoLabel(order.estado) }}
-        </span>
+        <app-status-label
+          [label]="estadoLabel(order.estado)"
+          [tone]="orderEstadoTone(order.estado)"
+        />
       </header>
 
       <dl class="detalle__meta">

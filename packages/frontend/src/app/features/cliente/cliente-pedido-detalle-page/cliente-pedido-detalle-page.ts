@@ -9,9 +9,14 @@ import { ClientePedidoDetalleError } from '../cliente-pedido-detalle-error';
 import {
   METODO_PAGO_LABELS,
   ORDER_ESTADO_LABELS,
+  ORDER_ESTADO_TONES,
   formatIsoDate,
   isoDateOf,
 } from '../../../shared/order-format';
+import {
+  StatusLabelComponent,
+  type StatusLabelTone,
+} from '../../../shared/status-label/status-label';
 import { CLIENTE_PEDIDOS_DETAIL_GATEWAY } from '../cliente-pedidos.gateway';
 import { ClientePedidosService } from '../cliente-pedidos.service';
 import { CLIENTE_SESSION_READER } from '../cliente-session.contract';
@@ -26,7 +31,7 @@ type OrderItem = OrderResponse['items'][number];
  */
 @Component({
   selector: 'app-cliente-pedido-detalle-page',
-  imports: [RouterLink],
+  imports: [RouterLink, StatusLabelComponent],
   templateUrl: './cliente-pedido-detalle-page.html',
   styleUrl: './cliente-pedido-detalle-page.scss',
   providers: [
@@ -68,6 +73,10 @@ export class ClientePedidoDetallePage implements OnInit {
 
   estadoLabel(estado: OrderEstado): string {
     return ORDER_ESTADO_LABELS[estado];
+  }
+
+  orderEstadoTone(estado: OrderEstado): StatusLabelTone {
+    return ORDER_ESTADO_TONES[estado];
   }
 
   metodoPagoLabel(metodoPago: MetodoPago): string {

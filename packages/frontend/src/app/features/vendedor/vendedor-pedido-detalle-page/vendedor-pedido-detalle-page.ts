@@ -9,9 +9,14 @@ import { ButtonModule } from 'primeng/button';
 import {
   METODO_PAGO_LABELS,
   ORDER_ESTADO_LABELS,
+  ORDER_ESTADO_TONES,
   formatIsoDate,
   isoDateOf,
 } from '../../../shared/order-format';
+import {
+  StatusLabelComponent,
+  type StatusLabelTone,
+} from '../../../shared/status-label/status-label';
 import { VendedorClientesService } from '../vendedor-clientes.service';
 import { VendedorPedidosService } from '../vendedor-pedidos.service';
 import {
@@ -40,7 +45,7 @@ const TIMELINE_ESTADOS: readonly OrderEstado[] = [
  */
 @Component({
   selector: 'app-vendedor-pedido-detalle-page',
-  imports: [ButtonModule, RouterLink],
+  imports: [ButtonModule, RouterLink, StatusLabelComponent],
   templateUrl: './vendedor-pedido-detalle-page.html',
   styleUrl: './vendedor-pedido-detalle-page.scss',
 })
@@ -206,6 +211,10 @@ export class VendedorPedidoDetallePage implements OnInit {
 
   estadoLabel(estado: OrderEstado): string {
     return ORDER_ESTADO_LABELS[estado];
+  }
+
+  orderEstadoTone(estado: OrderEstado): StatusLabelTone {
+    return ORDER_ESTADO_TONES[estado];
   }
 
   metodoPagoLabel(metodoPago: MetodoPago): string {

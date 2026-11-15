@@ -141,27 +141,3 @@
   white-space: nowrap;
   border: 0;
 }
-
-.invitaciones__badge {
-  display: inline-block;
-  padding: 4px 12px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  background: var(--ice-surface);
-  color: var(--agua-primary-dark);
-
-  &--activo {
-    background: color-mix(in srgb, var(--route-success) 14%, transparent);
-    color: var(--route-success);
-  }
-
-  &--expirado {
-    background: color-mix(in srgb, var(--route-warning) 16%, transparent);
-    color: var(--route-warning);
-  }
-
-  &--desactivado {
-    background: color-mix(in srgb, var(--slate-muted) 14%, transparent);
-    color: var(--slate-muted);
-  }
-}

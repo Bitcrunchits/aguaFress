@@ -17,9 +17,14 @@ import { ClientePedidosService } from '../cliente-pedidos.service';
 import { ClientePedidosListError } from '../cliente-pedidos-error';
 import {
   ORDER_ESTADO_LABELS,
+  ORDER_ESTADO_TONES,
   formatIsoDate,
   isoDateOf,
 } from '../../../shared/order-format';
+import {
+  StatusLabelComponent,
+  type StatusLabelTone,
+} from '../../../shared/status-label/status-label';
 import { CLIENTE_SESSION_READER } from '../cliente-session.contract';
 import { CLIENTE_SESSION_READINESS_READER } from '../cliente-session-readiness.contract';
 import { CLIENTE_TRACKING_READER } from '../cliente-tracking.contract';
@@ -51,7 +56,7 @@ const TRACKING_STATUS_LABELS: Record<OrderJobStatus, string> = {
  */
 @Component({
   selector: 'app-cliente-pedidos-page',
-  imports: [RouterLink],
+  imports: [RouterLink, StatusLabelComponent],
   templateUrl: './cliente-pedidos-page.html',
   styleUrl: './cliente-pedidos-page.scss',
   providers: [
@@ -88,6 +93,10 @@ export class ClientePedidosPage implements OnInit {
 
   estadoLabel(estado: OrderEstado): string {
     return ORDER_ESTADO_LABELS[estado];
+  }
+
+  orderEstadoTone(estado: OrderEstado): StatusLabelTone {
+    return ORDER_ESTADO_TONES[estado];
   }
 
   trackingStatusLabel(status: OrderJobStatus): string {

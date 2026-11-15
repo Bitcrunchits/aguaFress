@@ -69,9 +69,7 @@
               <td><code>{{ item.token }}</code></td>
               <td>{{ formatFecha(item.expiresAt) }}</td>
               <td>
-                <span class="invitaciones__badge" [class]="'invitaciones__badge ' + estadoClass(item)">
-                  {{ estadoLabel(item) }}
-                </span>
+                <app-status-label [label]="estadoLabel(item)" [tone]="estadoTone(item)" />
               </td>
               <td>
                 @if (canDeactivate(item)) {

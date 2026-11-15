@@ -108,9 +108,10 @@
               <td>{{ vendedor.email }}</td>
               <td>{{ vendedor.empresa || '—' }}</td>
               <td>
-                <span class="vendedores__badge" [attr.data-estado]="vendedor.estado">
-                  {{ estadoLabel(vendedor.estado) }}
-                </span>
+                <app-status-label
+                  [label]="estadoLabel(vendedor.estado)"
+                  [tone]="vendedorEstadoTone(vendedor.estado)"
+                />
               </td>
               <td>{{ clientesLabel(vendedor.clientesCount) }}</td>
               <td>{{ formatFechaRegistro(vendedor.fechaRegistro) }}</td>

@@ -50,9 +50,10 @@
               <td>{{ formatFecha(order.createdAt) }}</td>
               <td>{{ formatTotal(order.total) }}</td>
               <td>
-                <span class="pedidos__badge" [attr.data-estado]="order.estado">
-                  {{ estadoLabel(order.estado) }}
-                </span>
+                <app-status-label
+                  [label]="estadoLabel(order.estado)"
+                  [tone]="orderEstadoTone(order.estado)"
+                />
               </td>
             </tr>
           }

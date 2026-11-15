@@ -123,30 +123,6 @@
   border: 0;
 }
 
-.vendedores__badge {
-  display: inline-block;
-  padding: 4px 12px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  background: var(--ice-surface);
-  color: var(--agua-primary-dark);
-
-  &[data-estado='activo'] {
-    background: color-mix(in srgb, var(--route-success) 14%, transparent);
-    color: var(--route-success);
-  }
-
-  &[data-estado='pendiente'] {
-    background: color-mix(in srgb, var(--route-warning) 16%, transparent);
-    color: var(--route-warning);
-  }
-
-  &[data-estado='bloqueado'] {
-    background: color-mix(in srgb, var(--route-danger) 14%, transparent);
-    color: var(--route-danger);
-  }
-}
-
 .vendedores__pagination {
   display: flex;
   flex-wrap: wrap;

@@ -3,6 +3,10 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import type { LinkInvitacionItem } from '@agua/contracts';
 import { ButtonModule } from 'primeng/button';
 import { formatIsoDate } from '../../../shared/order-format';
+import {
+  StatusLabelComponent,
+  type StatusLabelTone,
+} from '../../../shared/status-label/status-label';
 import { buildInviteUrl } from '../invite-link';
 import { QrCodeService } from '../qr-code.service';
 import { VendedorInvitacionesService } from '../vendedor-invitaciones.service';
@@ -40,7 +44,7 @@ const GENERIC_ERROR = 'No pudimos completar la operación. Inténtalo de nuevo e
  */
 @Component({
   selector: 'app-vendedor-invitaciones-page',
-  imports: [ButtonModule],
+  imports: [ButtonModule, StatusLabelComponent],
   templateUrl: './vendedor-invitaciones-page.html',
   styleUrl: './vendedor-invitaciones-page.scss',
 })
@@ -169,9 +173,16 @@ export class VendedorInvitacionesPage implements OnInit {
     return this.isExpired(item) ? InvitacionEstado.EXPIRADO : InvitacionEstado.ACTIVO;
   }
 
-  /** CSS class suffix for the badge, derived from the enum value. */
-  estadoClass(item: LinkInvitacionItem): string {
-    return `invitaciones__badge--${this.estadoDe(item)}`;
+  /** Semantic tone for the plain-text status label, derived from the enum value. */
+  estadoTone(item: LinkInvitacionItem): StatusLabelTone {
+    switch (this.estadoDe(item)) {
+      case InvitacionEstado.ACTIVO:
+        return 'positive';
+      case InvitacionEstado.EXPIRADO:
+        return 'warning';
+      case InvitacionEstado.DESACTIVADO:
+        return 'neutral';
+    }
   }
 
   estadoLabel(item: LinkInvitacionItem): string {
