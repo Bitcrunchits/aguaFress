@@ -26,6 +26,7 @@ import { ClienteCatalogoService } from './features/cliente/cliente-catalogo.serv
 import { ClientePedidoService } from './features/cliente/cliente-pedido.service';
 import { ClientePedidosService } from './features/cliente/cliente-pedidos.service';
 import { ClienteProviderStateService } from './features/cliente/cliente-provider-state.service';
+import { ClienteProvidersService } from './features/cliente/cliente-providers.service';
 import { CLIENTE_TRACKING_SESSION_READER } from './features/cliente/cliente-tracking.contract';
 import { VendedorProfileService } from './features/vendedor/vendedor-profile.service';
 import { VendedorClientesService } from './features/vendedor/vendedor-clientes.service';
@@ -166,6 +167,13 @@ describe('application routes', () => {
             read: () => 'provider-1',
             save: () => {},
             clear: () => {},
+          },
+        },
+        {
+          provide: ClienteProvidersService,
+          useValue: {
+            listProviders: () => of({ providers: [], requiresSelection: false }),
+            selectProvider: () => EMPTY,
           },
         },
       ],
