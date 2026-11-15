@@ -1,6 +1,6 @@
 import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import type { PaginationResponse, ProductResponse } from '@agua/contracts';
+import type { ClienteProviderResponse, PaginationResponse, ProductResponse } from '@agua/contracts';
 import { Subject, debounceTime } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import {
@@ -8,11 +8,23 @@ import {
   CLIENTE_CATALOGO_SEARCH_GATEWAY,
 } from './cliente-catalogo.gateway';
 import { isStaleProviderError } from './cliente-provider-error';
+import { CLIENTE_PROVIDERS_GATEWAY } from './cliente-providers.gateway';
 import { CLIENTE_PROVIDER_STORE } from './cliente-provider.store';
 
 const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 300;
 const MAX_SEARCH_QUERY_LENGTH = 200;
+
+/**
+ * Provider display name for the catalog heading: prefer the business name
+ * (`empresa`), otherwise the personal `nombre` + `apellido`.
+ */
+function providerDisplayName(provider: ClienteProviderResponse): string {
+  if (provider.empresa) {
+    return provider.empresa;
+  }
+  return [provider.nombre, provider.apellido].filter(Boolean).join(' ');
+}
 
 /**
  * Coordinates the cliente catalog browse state: resolves the stored
@@ -29,6 +41,7 @@ export class ClienteCatalogoFacade {
   private readonly catalogoGateway = inject(CLIENTE_CATALOGO_GATEWAY);
   private readonly catalogoSearchGateway = inject(CLIENTE_CATALOGO_SEARCH_GATEWAY);
   private readonly providerStore = inject(CLIENTE_PROVIDER_STORE);
+  private readonly providersGateway = inject(CLIENTE_PROVIDERS_GATEWAY);
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -40,6 +53,7 @@ export class ClienteCatalogoFacade {
   readonly loading = signal(false);
   readonly failed = signal(false);
   readonly redirectToHome = signal(false);
+  readonly providerName = signal<string | null>(null);
 
   private readonly queryChanges = new Subject<{ value: string; epoch: number }>();
   private queryEpoch = 0;
@@ -64,6 +78,7 @@ export class ClienteCatalogoFacade {
         this.pagination.set(null);
         this.page.set(1);
         this.query.set('');
+        this.providerName.set(null);
         this.loading.set(false);
         this.load();
       });
@@ -71,6 +86,43 @@ export class ClienteCatalogoFacade {
 
   load(): void {
     this.loadPage(1);
+    this.loadProviderName();
+  }
+
+  /**
+   * Resolves the selected provider's display name for the heading, fetched
+   * from the existing providers endpoint. A failure or a stale id degrades
+   * to the static heading.
+   */
+  private loadProviderName(): void {
+    const userId = this.auth.currentSession?.user.id ?? null;
+    const vendedorId = userId === null ? null : this.providerStore.read(userId);
+
+    if (userId === null || vendedorId === null || vendedorId.length === 0) {
+      this.providerName.set(null);
+      return;
+    }
+
+    const requestId = this.requestId;
+
+    this.providersGateway
+      .listProviders()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => {
+          if (requestId !== this.requestId || !this.isCurrentUser(userId)) {
+            return;
+          }
+          const provider = response.providers.find((candidate) => candidate.id === vendedorId);
+          this.providerName.set(provider ? providerDisplayName(provider) : null);
+        },
+        error: () => {
+          if (requestId !== this.requestId || !this.isCurrentUser(userId)) {
+            return;
+          }
+          this.providerName.set(null);
+        },
+      });
   }
 
   setQuery(value: string): void {

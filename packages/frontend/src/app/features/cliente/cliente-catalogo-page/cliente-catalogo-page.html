@@ -1,6 +1,12 @@
 <section class="role-card cliente" aria-labelledby="cliente-catalogo-title">
   <p class="role-card__eyebrow">Cliente</p>
-  <h1 id="cliente-catalogo-title">Catálogo del proveedor</h1>
+  <h1 id="cliente-catalogo-title">
+    @if (vm.providerName(); as name) {
+      Catálogo de {{ name }}
+    } @else {
+      Catálogo del proveedor
+    }
+  </h1>
   <p class="cliente__intro">
     Explora los productos de tu proveedor y agrega lo que necesites al carrito.
   </p>

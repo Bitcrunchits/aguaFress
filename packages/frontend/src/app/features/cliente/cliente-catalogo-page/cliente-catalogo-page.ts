@@ -16,6 +16,8 @@ import {
 } from '../cliente-catalogo.gateway';
 import { ClienteCatalogoService } from '../cliente-catalogo.service';
 import { ClienteProviderStateService } from '../cliente-provider-state.service';
+import { CLIENTE_PROVIDERS_GATEWAY } from '../cliente-providers.gateway';
+import { ClienteProvidersService } from '../cliente-providers.service';
 import { CLIENTE_PROVIDER_READER, CLIENTE_PROVIDER_STORE } from '../cliente-provider.store';
 import { CLIENTE_SESSION_READER } from '../cliente-session.contract';
 
@@ -44,6 +46,7 @@ const CARRITO_FEEDBACK_MESSAGES: Record<ClienteCarritoFeedbackKind, string> = {
     { provide: CLIENTE_CATALOGO_GATEWAY, useExisting: ClienteCatalogoService },
     { provide: CLIENTE_CATALOGO_SEARCH_GATEWAY, useExisting: ClienteCatalogoService },
     { provide: CLIENTE_CARRITO_GATEWAY, useExisting: ClienteCarritoService },
+    { provide: CLIENTE_PROVIDERS_GATEWAY, useExisting: ClienteProvidersService },
     { provide: CLIENTE_PROVIDER_STORE, useExisting: ClienteProviderStateService },
     { provide: CLIENTE_PROVIDER_READER, useExisting: ClienteProviderStateService },
     { provide: CLIENTE_SESSION_READER, useExisting: AuthService },

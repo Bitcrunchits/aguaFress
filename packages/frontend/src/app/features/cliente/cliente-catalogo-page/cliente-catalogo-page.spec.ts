@@ -38,6 +38,7 @@ describe('ClienteCatalogoPage', () => {
   const loading = signal(false);
   const failed = signal(false);
   const redirectToHome = signal(false);
+  const providerName = signal<string | null>(null);
   const cartRedirectToHome = signal(false);
   const addingProductId = signal<string | null>(null);
   const feedback = signal<ClienteCarritoFeedback | null>(null);
@@ -56,6 +57,7 @@ describe('ClienteCatalogoPage', () => {
     loading.set(false);
     failed.set(false);
     redirectToHome.set(false);
+    providerName.set(null);
     cartRedirectToHome.set(false);
     addingProductId.set(null);
     feedback.set(null);
@@ -84,6 +86,7 @@ describe('ClienteCatalogoPage', () => {
                 loading,
                 failed,
                 redirectToHome,
+                providerName,
                 load,
                 retry,
                 setQuery,
@@ -142,6 +145,22 @@ describe('ClienteCatalogoPage', () => {
     fixture.detectChanges();
 
     expect(element.textContent).toContain('No hay productos disponibles');
+  });
+
+  it('shows the provider name in the heading when it is resolved', () => {
+    providerName.set('Aguas del Sur');
+    fixture.detectChanges();
+
+    const heading = element.querySelector<HTMLElement>('#cliente-catalogo-title');
+    expect(heading?.textContent?.trim()).toBe('Catálogo de Aguas del Sur');
+  });
+
+  it('falls back to the static heading when the provider name is unavailable', () => {
+    providerName.set(null);
+    fixture.detectChanges();
+
+    const heading = element.querySelector<HTMLElement>('#cliente-catalogo-title');
+    expect(heading?.textContent?.trim()).toBe('Catálogo del proveedor');
   });
 
   it('renders products with name, price, stock, and metadata', () => {

@@ -2,6 +2,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import {
   UserRole,
+  type ClienteProviderResponse,
+  type ClienteProvidersResponse,
   type LoginResponse,
   type PaginatedResponse,
   type ProductResponse,
@@ -14,6 +16,7 @@ import {
   CLIENTE_CATALOGO_SEARCH_GATEWAY,
 } from './cliente-catalogo.gateway';
 import { ClienteProviderServerMessage } from './cliente-provider-contract';
+import { CLIENTE_PROVIDERS_GATEWAY } from './cliente-providers.gateway';
 import { CLIENTE_PROVIDER_STORE } from './cliente-provider.store';
 
 const USER_ID = 'user-1';
@@ -75,6 +78,26 @@ const PAGE_2_OF_2: PaginatedResponse<ProductResponse> = {
   pagination: { page: 2, limit: 20, total: 2, totalPages: 2 },
 };
 
+const EMPTY_PROVIDERS: ClienteProvidersResponse = {
+  providers: [],
+  requiresSelection: false,
+};
+
+const PROVIDER_WITH_EMPRESA: ClienteProviderResponse = {
+  id: PROVIDER_ID,
+  nombre: 'Juan',
+  apellido: 'Pérez',
+  empresa: 'Agua del Sur',
+  isDefault: true,
+};
+
+const PROVIDER_WITHOUT_EMPRESA: ClienteProviderResponse = {
+  id: PROVIDER_ID,
+  nombre: 'Juan',
+  apellido: 'Pérez',
+  isDefault: true,
+};
+
 describe('ClienteCatalogoFacade', () => {
   const catalogoStub = {
     list: jasmine.createSpy('list'),
@@ -83,6 +106,9 @@ describe('ClienteCatalogoFacade', () => {
   const providerStateStub = {
     read: jasmine.createSpy('read'),
     clear: jasmine.createSpy('clear'),
+  };
+  const providersGatewayStub = {
+    listProviders: jasmine.createSpy('listProviders'),
   };
   const authStub: {
     currentSession: LoginResponse | null;
@@ -96,6 +122,8 @@ describe('ClienteCatalogoFacade', () => {
     catalogoStub.search.calls.reset();
     providerStateStub.read.calls.reset();
     providerStateStub.clear.calls.reset();
+    providersGatewayStub.listProviders.calls.reset();
+    providersGatewayStub.listProviders.and.returnValue(of(EMPTY_PROVIDERS));
     authStub.currentSession = SESSION;
     authStub.sessionReplacement$ = sessionReplacement.asObservable();
     providerStateStub.read.and.returnValue(PROVIDER_ID);
@@ -108,6 +136,7 @@ describe('ClienteCatalogoFacade', () => {
         { provide: CLIENTE_CATALOGO_GATEWAY, useValue: catalogoStub },
         { provide: CLIENTE_CATALOGO_SEARCH_GATEWAY, useValue: catalogoStub },
         { provide: CLIENTE_PROVIDER_STORE, useValue: providerStateStub },
+        { provide: CLIENTE_PROVIDERS_GATEWAY, useValue: providersGatewayStub },
         { provide: AuthService, useValue: authStub },
       ],
     });
@@ -464,4 +493,39 @@ describe('ClienteCatalogoFacade', () => {
     expect(facade.redirectToHome()).toBeTrue();
     expect(facade.failed()).toBeFalse();
   }));
+
+  it('resolves the provider name preferring the business name', () => {
+    providersGatewayStub.listProviders.and.returnValue(
+      of({ providers: [PROVIDER_WITH_EMPRESA], requiresSelection: false }),
+    );
+    const facade = create();
+
+    facade.load();
+
+    expect(facade.providerName()).toBe('Agua del Sur');
+  });
+
+  it('resolves the provider name from personal name when no business name exists', () => {
+    providersGatewayStub.listProviders.and.returnValue(
+      of({ providers: [PROVIDER_WITHOUT_EMPRESA], requiresSelection: false }),
+    );
+    const facade = create();
+
+    facade.load();
+
+    expect(facade.providerName()).toBe('Juan Pérez');
+  });
+
+  it('drops a stale provider-name response from a previous session', () => {
+    const response = new Subject<ClienteProvidersResponse>();
+    providersGatewayStub.listProviders.and.returnValue(response.asObservable());
+    const facade = create();
+    facade.load();
+
+    authStub.currentSession = OTHER_SESSION;
+    response.next({ providers: [PROVIDER_WITH_EMPRESA], requiresSelection: false });
+    response.complete();
+
+    expect(facade.providerName()).toBeNull();
+  });
 });
