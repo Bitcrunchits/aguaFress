@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import type { VendedorProfileV2DTO } from '@agua/contracts';
 import { ChangePasswordFormComponent } from '../../../shared/change-password-form/change-password-form';
 import { toUploadUrl } from '../../../shared/upload-url';
+import { VENDEDOR_AVATARS } from '../vendedor-avatars';
 import {
   VendedorProfileService,
   type UpdateVendedorProfileRequest,
@@ -44,6 +45,7 @@ export class VendedorProfilePage implements OnInit {
   readonly uploading = signal(false);
   readonly uploadError = signal<string | null>(null);
   readonly logoUrl = signal<string | null>(null);
+  readonly avatars = VENDEDOR_AVATARS;
 
   readonly form = this.formBuilder.nonNullable.group({
     nombre: [''],
@@ -152,6 +154,12 @@ export class VendedorProfilePage implements OnInit {
         );
       },
     });
+  }
+
+  selectAvatar(url: string): void {
+    this.form.controls.logo.setValue(url);
+    this.logoUrl.set(url);
+    this.uploadError.set(null);
   }
 
   save(): void {

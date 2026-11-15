@@ -151,3 +151,39 @@
   color: var(--route-success);
   font-size: 0.9rem;
 }
+
+.vendedor-profile__avatars {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 10px;
+  margin: 12px 0 16px;
+}
+
+.vendedor-profile__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: 2px solid transparent;
+  background: var(--clean-white);
+  cursor: pointer;
+
+  img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  &:hover {
+    border-color: var(--agua-primary-dark);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--agua-flow);
+    outline-offset: 2px;
+  }
+}
+
+.vendedor-profile__avatar--selected {
+  border-color: var(--agua-primary-dark);
+}

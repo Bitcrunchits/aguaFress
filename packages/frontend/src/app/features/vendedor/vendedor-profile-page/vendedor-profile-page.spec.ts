@@ -4,6 +4,7 @@ import { VendedorEstado } from '@agua/contracts';
 import type { VendedorProfileV2DTO } from '@agua/contracts';
 import { Observable, of, throwError } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
+import { VENDEDOR_AVATARS } from '../vendedor-avatars';
 import { VendedorProfileService } from '../vendedor-profile.service';
 import { VendedorProfilePage } from './vendedor-profile-page';
 
@@ -205,6 +206,29 @@ describe('VendedorProfilePage', () => {
     fixture.detectChanges();
 
     expect(page.logoUrl()).toBe('https://picsum.photos/seed/ferrofix/200/200');
+  });
+
+  it('renders 10 preset avatars in the edit form and selects one on click', () => {
+    serviceStub.getProfile.and.returnValue(of(PROFILE));
+    fixture.detectChanges();
+    (element.querySelector('button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    const avatarButtons = element.querySelectorAll<HTMLButtonElement>(
+      'button.vendedor-profile__avatar',
+    );
+
+    expect(avatarButtons.length).toBe(VENDEDOR_AVATARS.length);
+    avatarButtons.forEach((button) => {
+      expect(button.querySelector('img')).not.toBeNull();
+    });
+
+    avatarButtons[0].click();
+    fixture.detectChanges();
+
+    expect(page.form.controls.logo.value).toBe(VENDEDOR_AVATARS[0]);
+    expect(page.logoUrl()).toBe(VENDEDOR_AVATARS[0]);
+    expect(avatarButtons[0].classList).toContain('vendedor-profile__avatar--selected');
   });
 
   it('shows an inline error when the logo upload fails', () => {

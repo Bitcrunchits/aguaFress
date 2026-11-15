@@ -93,6 +93,19 @@
               (change)="onLogoSelected($event)"
             />
           </div>
+          <div class="vendedor-profile__avatars" role="group" aria-label="Elegir un avatar predefinido">
+            @for (avatar of avatars; track avatar) {
+              <button
+                type="button"
+                class="vendedor-profile__avatar"
+                [class.vendedor-profile__avatar--selected]="form.controls.logo.value === avatar"
+                [attr.aria-label]="'Usar avatar predefinido ' + ($index + 1)"
+                (click)="selectAvatar(avatar)"
+              >
+                <img [src]="avatar" alt="" loading="lazy" />
+              </button>
+            }
+          </div>
           @if (uploading()) {
             <p class="vendedor-profile__state" role="status">Subiendo logo</p>
           }
