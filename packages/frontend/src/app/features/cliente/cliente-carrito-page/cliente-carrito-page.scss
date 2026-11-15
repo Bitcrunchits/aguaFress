@@ -131,6 +131,7 @@
 }
 
 .cliente__button {
+  display: inline-block;
   min-height: 44px;
   padding: 10px 16px;
   border: 1px solid var(--agua-action-primary-bg);
