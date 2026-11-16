@@ -108,8 +108,10 @@ describe('AdminProfilePage', () => {
 
   it('updates the profile sending only nombre and apellido', () => {
     serviceStub.getProfile.and.returnValue(of(PROFILE));
+    // The update endpoint returns a narrow object (id/nombre/apellido), not
+    // the full profile, so the page must merge it into the loaded profile.
     serviceStub.updateProfile.and.returnValue(
-      of({ ...PROFILE, nombre: 'María', apellido: 'Pérez' }),
+      of({ id: 'super-admin-1', nombre: 'María', apellido: 'Pérez' }),
     );
     fixture.detectChanges();
     (element.querySelector('button') as HTMLButtonElement).click();
@@ -123,6 +125,27 @@ describe('AdminProfilePage', () => {
     expect(page.editing()).toBeFalse();
     expect(element.textContent).toContain('María');
     expect(element.textContent).toContain('Perfil actualizado correctamente.');
+  });
+
+  it('preserves email and role when the backend returns a partial update response', () => {
+    serviceStub.getProfile.and.returnValue(of(PROFILE));
+    // The real backend returns `{ id, nombre, apellido }` (no email/role).
+    // The page must merge, not replace, so Email/Rol stay populated on screen.
+    serviceStub.updateProfile.and.returnValue(
+      of({ id: 'super-admin-1', nombre: 'María', apellido: 'Pérez' }),
+    );
+    fixture.detectChanges();
+    (element.querySelector('button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    page.form.setValue({ nombre: 'María', apellido: 'Pérez' });
+    page.save();
+    fixture.detectChanges();
+
+    expect(element.textContent).toContain('María');
+    expect(element.textContent).toContain('admin@example.com');
+    expect(element.textContent).toContain('Super administrador');
+    expect(serviceStub.getProfile).toHaveBeenCalledTimes(1);
   });
 
   it('keeps the form open and shows an inline error when the update fails', () => {

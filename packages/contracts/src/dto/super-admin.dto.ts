@@ -109,6 +109,18 @@ export interface UpdateSuperAdminProfileRequest {
   apellido: string;
 }
 
+/**
+ * Narrow response of `super-admin/profile/update`. The backend returns either
+ * the raw SUPER_ADMIN row (no email/role) or a `select` projection
+ * (`id`/`nombre`/`apellido`/timestamps) — never the full profile. This is a
+ * NEW type (OCP): the existing `SuperAdminProfileResponse` keeps its full shape.
+ */
+export interface SuperAdminProfileUpdateResponse {
+  id: string;
+  nombre: string;
+  apellido: string;
+}
+
 // ════════════════════════════════════════════
 //  LISTADO DE CLIENTES (v2 — matches the real clientes.list row)
 // ════════════════════════════════════════════

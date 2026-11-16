@@ -104,8 +104,15 @@ export class AdminProfilePage implements OnInit {
     this.saveSuccess.set(null);
 
     this.profileService.updateProfile(this.form.getRawValue()).subscribe({
-      next: (profile) => {
-        this.profile.set(profile);
+      next: (updated) => {
+        // The update endpoint returns only `id`/`nombre`/`apellido` (no
+        // `email`/`role`), so MERGE into the loaded profile instead of
+        // replacing it, to preserve the identity fields on screen.
+        this.profile.update((current) =>
+          current === null
+            ? null
+            : { ...current, nombre: updated.nombre, apellido: updated.apellido },
+        );
         this.saving.set(false);
         this.editing.set(false);
         this.saveSuccess.set('Perfil actualizado correctamente.');

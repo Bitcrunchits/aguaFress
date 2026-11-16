@@ -1,7 +1,11 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import type { Observable } from 'rxjs';
-import type { SuperAdminProfileResponse, UpdateSuperAdminProfileRequest } from '@agua/contracts';
+import type {
+  SuperAdminProfileResponse,
+  SuperAdminProfileUpdateResponse,
+  UpdateSuperAdminProfileRequest,
+} from '@agua/contracts';
 import { API_CONFIG } from '../../core/config/api.config';
 
 const PROFILE_URL = `${API_CONFIG.baseUrl}/api/v1/super-admin/profile`;
@@ -20,7 +24,11 @@ export class AdminProfileService {
     return this.http.get<SuperAdminProfileResponse>(PROFILE_URL);
   }
 
-  updateProfile(body: UpdateSuperAdminProfileRequest): Observable<SuperAdminProfileResponse> {
-    return this.http.post<SuperAdminProfileResponse>(UPDATE_PROFILE_URL, body);
+  /**
+   * The update endpoint returns a narrow object (`id`/`nombre`/`apellido`),
+   * never the full profile (no `email`/`role`), so this is typed accordingly.
+   */
+  updateProfile(body: UpdateSuperAdminProfileRequest): Observable<SuperAdminProfileUpdateResponse> {
+    return this.http.post<SuperAdminProfileUpdateResponse>(UPDATE_PROFILE_URL, body);
   }
 }
