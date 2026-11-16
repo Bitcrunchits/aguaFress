@@ -175,6 +175,12 @@ export interface OrderResponse {
   updatedAt: string;
 }
 
+/** OCP: adds server-resolved cliente name fields without modifying `OrderResponse`. */
+export interface OrderResponseV2 extends OrderResponse {
+  clienteNombre?: string;
+  clienteApellido?: string;
+}
+
 export interface OrderListFilters extends PaginationRequest {
   /** Filtra pedidos de un cliente específico (usado por VENDEDOR/ADMIN) */
   clienteId?: string;
