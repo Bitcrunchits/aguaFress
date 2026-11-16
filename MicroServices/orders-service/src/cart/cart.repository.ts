@@ -30,7 +30,11 @@ export interface CartRepository {
 }
 
 const CART_WITH_ITEMS = {
-  items: true,
+  // Stable item order: CartItem.id is a random UUID, so without an explicit
+  // orderBy the items can come back in a different order after each mutation,
+  // which makes the "+" button on the cart appear to target a different
+  // product. Order by creation keeps the list stable across reads.
+  items: { orderBy: { created_at: 'asc' } },
 } satisfies Prisma.CartInclude;
 
 type PrismaCartWithItems = Prisma.CartGetPayload<{ include: typeof CART_WITH_ITEMS }>;

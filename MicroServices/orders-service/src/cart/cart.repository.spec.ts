@@ -32,7 +32,7 @@ describe('PrismaCartRepository', () => {
         expires_at: expiresAt,
         active_cart_key: `${clienteId}:${vendedorId}`,
       },
-      include: { items: true },
+      include: { items: { orderBy: { created_at: 'asc' } } },
     });
   });
 
@@ -62,7 +62,7 @@ describe('PrismaCartRepository', () => {
         active_cart_key: `${clienteId}:${vendedorId}`,
         expires_at: { gt: now },
       },
-      include: { items: true },
+      include: { items: { orderBy: { created_at: 'asc' } } },
       orderBy: { updated_at: 'desc' },
     });
   });
