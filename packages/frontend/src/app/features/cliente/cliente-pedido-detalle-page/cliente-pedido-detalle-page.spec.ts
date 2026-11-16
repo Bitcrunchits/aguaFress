@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import type { ParamMap } from '@angular/router';
 import { MetodoPago, OrderEstado } from '@agua/contracts';
 import type { OrderResponse } from '@agua/contracts';
@@ -8,6 +8,11 @@ import { BehaviorSubject } from 'rxjs';
 import { ClientePedidoDetalleFacade } from '../cliente-pedido-detalle.facade';
 import { ClientePedidoDetalleError } from '../cliente-pedido-detalle-error';
 import { ClientePedidoCancelError } from '../cliente-pedido-cancel-error';
+import {
+  ClientePedidoRepeatFacade,
+  ClientePedidoRepeatOutcome,
+} from '../cliente-pedido-repeat.facade';
+import type { ClientePedidoRepeatItemResult } from '../cliente-pedido-repeat.facade';
 import { ClientePedidoDetallePage } from './cliente-pedido-detalle-page';
 
 const ORDER: OrderResponse = {
@@ -54,6 +59,13 @@ describe('ClientePedidoDetallePage', () => {
   const loadOrder = jasmine.createSpy('loadOrder');
   const cancelOrder = jasmine.createSpy('cancelOrder');
   const clearCancelError = jasmine.createSpy('clearCancelError');
+  const repeating = signal(false);
+  const completed = signal(false);
+  const results = signal<ClientePedidoRepeatItemResult[]>([]);
+  const failedResults = signal<ClientePedidoRepeatItemResult[]>([]);
+  const navigateToCart = signal(false);
+  const repeatOrder = jasmine.createSpy('repeatOrder');
+  let router: Router;
   let paramMap: BehaviorSubject<ParamMap>;
 
   beforeEach(async () => {
@@ -63,9 +75,15 @@ describe('ClientePedidoDetallePage', () => {
     error.set(null);
     cancelling.set(false);
     cancelError.set(null);
+    repeating.set(false);
+    completed.set(false);
+    results.set([]);
+    failedResults.set([]);
+    navigateToCart.set(false);
     loadOrder.calls.reset();
     cancelOrder.calls.reset();
     clearCancelError.calls.reset();
+    repeatOrder.calls.reset();
     paramMap = new BehaviorSubject(convertToParamMap({ id: 'order-1' }));
 
     await TestBed.configureTestingModule({
@@ -92,6 +110,17 @@ describe('ClientePedidoDetallePage', () => {
                 clearCancelError,
               },
             },
+            {
+              provide: ClientePedidoRepeatFacade,
+              useValue: {
+                repeating,
+                completed,
+                results,
+                failedResults,
+                navigateToCart,
+                repeatOrder,
+              },
+            },
           ],
         },
       })
@@ -99,6 +128,8 @@ describe('ClientePedidoDetallePage', () => {
 
     fixture = TestBed.createComponent(ClientePedidoDetallePage);
     element = fixture.nativeElement as HTMLElement;
+    router = TestBed.inject(Router);
+    spyOn(router, 'navigate');
   });
 
   function findButton(label: string): HTMLButtonElement | undefined {
@@ -316,5 +347,89 @@ describe('ClientePedidoDetallePage', () => {
 
     expect(element.querySelector('.confirm-dialog')).toBeNull();
     expect(findButton('Cancelar pedido')).toBeUndefined();
+  });
+
+  function repeatButton(): HTMLButtonElement {
+    return element.querySelector<HTMLButtonElement>('.cliente__button--secondary')!;
+  }
+
+  it('offers the repeat action for any order, including non-PENDIENTE', () => {
+    order.set({ ...ORDER, estado: OrderEstado.ENTREGADO });
+    fixture.detectChanges();
+
+    expect(repeatButton()).toBeDefined();
+    expect(findButton('Cancelar pedido')).toBeUndefined();
+  });
+
+  it('repeats the order on click', () => {
+    order.set(ORDER);
+    fixture.detectChanges();
+
+    repeatButton().click();
+    fixture.detectChanges();
+
+    expect(repeatOrder).toHaveBeenCalledOnceWith(ORDER);
+  });
+
+  it('disables the repeat action and shows progress while repeating', () => {
+    order.set(ORDER);
+    repeating.set(true);
+    fixture.detectChanges();
+
+    const button = repeatButton();
+    expect(button.disabled).toBeTrue();
+    expect(button.textContent?.trim()).toBe('Agregando productos…');
+  });
+
+  it('shows per-item feedback when some items could not be re-added', () => {
+    order.set(ORDER);
+    results.set([
+      {
+        productoId: 'producto-1',
+        nombre: 'Agua mineral 500 ml',
+        cantidad: 2,
+        outcome: ClientePedidoRepeatOutcome.Added,
+      },
+      {
+        productoId: 'producto-2',
+        nombre: 'Soda 1.5 L',
+        cantidad: 1,
+        outcome: ClientePedidoRepeatOutcome.OutOfStock,
+      },
+    ]);
+    failedResults.set([
+      {
+        productoId: 'producto-2',
+        nombre: 'Soda 1.5 L',
+        cantidad: 1,
+        outcome: ClientePedidoRepeatOutcome.OutOfStock,
+      },
+    ]);
+    completed.set(true);
+    fixture.detectChanges();
+
+    const feedback = element.querySelector('.cliente__repeat-feedback');
+    expect(feedback?.textContent).toContain('No pudimos agregar todos los productos');
+    expect(feedback?.textContent).toContain('Soda 1.5 L — sin stock');
+    expect(feedback?.querySelector('a')?.getAttribute('href')).toBe('/cliente/carrito');
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('navigates to the cart once every item was re-added', () => {
+    order.set(ORDER);
+    results.set([
+      {
+        productoId: 'producto-1',
+        nombre: 'Agua mineral 500 ml',
+        cantidad: 2,
+        outcome: ClientePedidoRepeatOutcome.Added,
+      },
+    ]);
+    failedResults.set([]);
+    completed.set(true);
+    navigateToCart.set(true);
+    fixture.detectChanges();
+
+    expect(router.navigate).toHaveBeenCalledOnceWith(['/cliente/carrito']);
   });
 });

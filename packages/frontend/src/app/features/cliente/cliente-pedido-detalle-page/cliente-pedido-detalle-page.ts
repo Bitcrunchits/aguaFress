@@ -1,6 +1,6 @@
 import { Component, DestroyRef, OnInit, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MetodoPago, OrderEstado } from '@agua/contracts';
 import type { DireccionEntrega, OrderResponse } from '@agua/contracts';
 import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog';
@@ -8,6 +8,12 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { ClientePedidoDetalleFacade } from '../cliente-pedido-detalle.facade';
 import { ClientePedidoDetalleError } from '../cliente-pedido-detalle-error';
 import { ClientePedidoCancelError } from '../cliente-pedido-cancel-error';
+import {
+  ClientePedidoRepeatFacade,
+  ClientePedidoRepeatOutcome,
+} from '../cliente-pedido-repeat.facade';
+import { CLIENTE_PEDIDO_REPEAT_GATEWAY } from '../cliente-pedido-repeat.gateway';
+import { ClientePedidoRepeatService } from '../cliente-pedido-repeat.service';
 import {
   METODO_PAGO_LABELS,
   ORDER_ESTADO_LABELS,
@@ -38,15 +44,19 @@ type OrderItem = OrderResponse['items'][number];
   styleUrl: './cliente-pedido-detalle-page.scss',
   providers: [
     ClientePedidoDetalleFacade,
+    ClientePedidoRepeatFacade,
     { provide: CLIENTE_PEDIDOS_DETAIL_GATEWAY, useExisting: ClientePedidosService },
     { provide: CLIENTE_PEDIDO_CANCEL_GATEWAY, useExisting: ClientePedidosService },
+    { provide: CLIENTE_PEDIDO_REPEAT_GATEWAY, useExisting: ClientePedidoRepeatService },
     { provide: CLIENTE_SESSION_READER, useExisting: AuthService },
     { provide: CLIENTE_SESSION_READINESS_READER, useExisting: AuthService },
   ],
 })
 export class ClientePedidoDetallePage implements OnInit {
   protected readonly vm = inject(ClientePedidoDetalleFacade);
+  protected readonly repeat = inject(ClientePedidoRepeatFacade);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private orderId: string | null = null;
 
@@ -64,6 +74,14 @@ export class ClientePedidoDetallePage implements OnInit {
       const order = this.vm.order();
       if (order !== null && order.estado !== OrderEstado.PENDIENTE) {
         this.cancelDialogOpen.set(false);
+      }
+    });
+
+    // Once every item was re-added, leave for the cart so the client sees the
+    // resulting cart instead of a stale detail view.
+    effect(() => {
+      if (this.repeat.navigateToCart()) {
+        void this.router.navigate(['/cliente/carrito']);
       }
     });
   }
@@ -115,6 +133,30 @@ export class ClientePedidoDetallePage implements OnInit {
       default:
         return 'No pudimos cancelar el pedido. Inténtalo de nuevo en unos segundos.';
     }
+  }
+
+  repeatOrder(): void {
+    const order = this.vm.order();
+    if (order !== null) {
+      this.repeat.repeatOrder(order);
+    }
+  }
+
+  repeatOutcomeLabel(outcome: ClientePedidoRepeatOutcome): string {
+    switch (outcome) {
+      case ClientePedidoRepeatOutcome.OutOfStock:
+        return 'sin stock';
+      case ClientePedidoRepeatOutcome.Forbidden:
+        return 'no disponible';
+      case ClientePedidoRepeatOutcome.Network:
+        return 'sin conexión';
+      default:
+        return 'no se pudo agregar';
+    }
+  }
+
+  hasAddedItems(): boolean {
+    return this.repeat.results().length > this.repeat.failedResults().length;
   }
 
   estadoLabel(estado: OrderEstado): string {

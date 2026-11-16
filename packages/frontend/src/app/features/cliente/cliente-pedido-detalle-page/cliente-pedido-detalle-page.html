@@ -104,10 +104,18 @@
         </section>
       }
 
-      @if (order.estado === OrderEstado.PENDIENTE) {
-        <section class="cliente__section cliente__actions" aria-labelledby="cliente-pedido-actions-title">
-          <h3 id="cliente-pedido-actions-title">Acciones</h3>
-          <div class="cliente__actions-row">
+      <section class="cliente__section cliente__actions" aria-labelledby="cliente-pedido-actions-title">
+        <h3 id="cliente-pedido-actions-title">Acciones</h3>
+        <div class="cliente__actions-row">
+          <button
+            type="button"
+            class="cliente__button cliente__button--secondary"
+            [disabled]="repeat.repeating()"
+            (click)="repeatOrder()"
+          >
+            {{ repeat.repeating() ? 'Agregando productos…' : 'Repetir pedido' }}
+          </button>
+          @if (order.estado === OrderEstado.PENDIENTE) {
             <button
               type="button"
               class="cliente__button cliente__button--danger"
@@ -115,9 +123,25 @@
             >
               Cancelar pedido
             </button>
+          }
+        </div>
+
+        @if (repeat.completed() && repeat.failedResults().length > 0) {
+          <div class="cliente__repeat-feedback" role="alert">
+            <p>No pudimos agregar todos los productos al carrito.</p>
+            <ul class="cliente__repeat-failures">
+              @for (item of repeat.failedResults(); track item.productoId) {
+                <li>{{ item.nombre }} — {{ repeatOutcomeLabel(item.outcome) }}</li>
+              }
+            </ul>
+            @if (hasAddedItems()) {
+              <a class="cliente__button cliente__repeat-link" routerLink="/cliente/carrito">
+                Ir al carrito
+              </a>
+            }
           </div>
-        </section>
-      }
+        }
+      </section>
     </article>
   }
 

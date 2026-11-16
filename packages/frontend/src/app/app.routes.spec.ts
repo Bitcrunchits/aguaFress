@@ -25,6 +25,7 @@ import { ClienteCarritoLecturaService } from './features/cliente/cliente-carrito
 import { ClienteCarritoService } from './features/cliente/cliente-carrito.service';
 import { ClienteCatalogoService } from './features/cliente/cliente-catalogo.service';
 import { ClientePedidoService } from './features/cliente/cliente-pedido.service';
+import { ClientePedidoRepeatService } from './features/cliente/cliente-pedido-repeat.service';
 import { ClientePedidosService } from './features/cliente/cliente-pedidos.service';
 import { ClienteProviderStateService } from './features/cliente/cliente-provider-state.service';
 import { ClienteProvidersService } from './features/cliente/cliente-providers.service';
@@ -166,6 +167,7 @@ describe('application routes', () => {
           useValue: { updateItem: () => EMPTY, deleteItem: () => EMPTY },
         },
         { provide: ClientePedidoService, useValue: pedidoStub },
+        { provide: ClientePedidoRepeatService, useValue: { addItem: () => EMPTY } },
         { provide: ClientePedidosService, useValue: pedidosStub },
         {
           provide: ClienteProviderStateService,
