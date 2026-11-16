@@ -1,5 +1,5 @@
 import { BadRequestException, Controller, NotFoundException } from '@nestjs/common';
-import { UserRole, type OrderJobStatusResponse, type OrderListResponse, type PaginatedResponse } from '@agua/contracts';
+import { UserRole, type OrderJobStatusResponse, type OrderListResponseV2, type PaginatedResponse } from '@agua/contracts';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { TcpPayloadAdapter } from '../tcp/tcp-payload-adapter.service';
 import type { TcpAuthenticatedUser, TcpPayload } from '../tcp/tcp-payload';
@@ -24,7 +24,7 @@ export class OrdersController {
   ) {}
 
   @MessagePattern('orders.list')
-  list(@Payload() payload: TcpPayload): Promise<PaginatedResponse<OrderListResponse>> {
+  list(@Payload() payload: TcpPayload): Promise<PaginatedResponse<OrderListResponseV2>> {
     const user = this.payloadAdapter.requireUser(payload);
     // clienteUserId is the AUTH_USER.id of the target cliente (JWT `sub`), NOT
     // CLIENTE.id — same V1-compat identity as OrderResponse.clienteId.

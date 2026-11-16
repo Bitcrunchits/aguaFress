@@ -11,6 +11,8 @@ import { UsuarioClienteProfileResolverAdapter } from './usuario-cliente-profile-
 import { SCOPED_CLIENTE_PROFILE_RESOLVER_PORT } from './cliente-profile-resolver.port';
 import { UsuarioVendedorProfileResolverAdapter } from './usuario-vendedor-profile-resolver.adapter';
 import { VENDEDOR_PROFILE_RESOLVER_PORT } from './vendedor-profile-resolver.port';
+import { UsuarioVendedorProfileNamesResolverAdapter } from './usuario-vendedor-profile-names-resolver.adapter';
+import { VENDEDOR_PROFILE_NAMES_RESOLVER_PORT } from './vendedor-profile-names-resolver.port';
 
 @Module({
   imports: [CommonModule, TcpModule],
@@ -25,6 +27,8 @@ import { VENDEDOR_PROFILE_RESOLVER_PORT } from './vendedor-profile-resolver.port
     { provide: VENDEDOR_PROFILE_RESOLVER_PORT, useExisting: UsuarioVendedorProfileResolverAdapter },
     UsuarioClienteProfileResolverAdapter,
     { provide: SCOPED_CLIENTE_PROFILE_RESOLVER_PORT, useExisting: UsuarioClienteProfileResolverAdapter },
+    UsuarioVendedorProfileNamesResolverAdapter,
+    { provide: VENDEDOR_PROFILE_NAMES_RESOLVER_PORT, useExisting: UsuarioVendedorProfileNamesResolverAdapter },
   ],
 })
 export class OrdersModule {}

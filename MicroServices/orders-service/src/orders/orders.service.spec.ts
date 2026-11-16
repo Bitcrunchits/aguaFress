@@ -6,6 +6,7 @@ import type { OrderRecord, OrdersRepository } from './orders.repository';
 import { OrdersService } from './orders.service';
 import type { ScopedClienteProfileResolverPort } from './cliente-profile-resolver.port';
 import type { VendedorProfileResolverPort } from './vendedor-profile-resolver.port';
+import type { VendedorProfileNamesResolverPort } from './vendedor-profile-names-resolver.port';
 
 describe('OrdersService', () => {
   const createdAt = new Date('2026-07-16T10:00:00.000Z');
@@ -26,6 +27,7 @@ describe('OrdersService', () => {
   let productCatalog: jest.Mocked<ScopedProductCatalogPort>;
   let vendedorProfileResolver: jest.Mocked<VendedorProfileResolverPort>;
   let clienteProfileResolver: jest.Mocked<ScopedClienteProfileResolverPort>;
+  let vendedorProfileNamesResolver: jest.Mocked<VendedorProfileNamesResolverPort>;
   let service: OrdersService;
 
   beforeEach(() => {
@@ -49,7 +51,17 @@ describe('OrdersService', () => {
       resolveNamesByAuthUserIds: jest.fn().mockResolvedValue(new Map()),
       resolveScopedNamesByAuthUserIds: jest.fn().mockResolvedValue(new Map()),
     };
-    service = new OrdersService(ordersRepository, productCatalog, () => createdAt, vendedorProfileResolver, clienteProfileResolver);
+    vendedorProfileNamesResolver = {
+      resolveNamesByIds: jest.fn().mockResolvedValue(new Map()),
+    };
+    service = new OrdersService(
+      ordersRepository,
+      productCatalog,
+      () => createdAt,
+      vendedorProfileResolver,
+      clienteProfileResolver,
+      vendedorProfileNamesResolver,
+    );
   });
 
   it('creates an order from persisted cart item snapshots while product lookup only validates availability', async () => {
@@ -232,6 +244,43 @@ describe('OrdersService', () => {
     expect(result.data[0].clienteNombre).toBeUndefined();
     expect(result.data[0].clienteApellido).toBeUndefined();
     expect(clienteProfileResolver.resolveScopedNamesByAuthUserIds).not.toHaveBeenCalled();
+  });
+
+  it('restores vendedorId and enriches list items with resolved vendedor names for a cliente read', async () => {
+    ordersRepository.findManyForCliente.mockResolvedValue({ orders: [orderRecord({ id: 'order-1' })], total: 1 });
+    vendedorProfileNamesResolver.resolveNamesByIds.mockResolvedValue(
+      new Map([[vendedorId, { nombre: 'Juan', empresa: 'Acme SA' }]]),
+    );
+
+    const result = await service.list(clienteUser());
+
+    expect(result.data[0]).toMatchObject({
+      id: 'order-1',
+      vendedorId,
+      vendedorNombre: 'Juan',
+      vendedorEmpresa: 'Acme SA',
+    });
+    expect(vendedorProfileNamesResolver.resolveNamesByIds).toHaveBeenCalledWith([vendedorId], UserRole.CLIENTE);
+  });
+
+  it('deduplicates vendedorIds before resolving vendor names in a single batch', async () => {
+    ordersRepository.findManyForVendedor.mockResolvedValue({
+      orders: [orderRecord({ id: 'order-1' }), orderRecord({ id: 'order-2' })],
+      total: 2,
+    });
+    vendedorProfileNamesResolver.resolveNamesByIds.mockResolvedValue(new Map());
+
+    await service.list(vendedorUser());
+
+    expect(vendedorProfileNamesResolver.resolveNamesByIds).toHaveBeenCalledWith([vendedorId], UserRole.VENDEDOR);
+  });
+
+  it('skips vendor name resolution for an empty page without a resolver call', async () => {
+    ordersRepository.findManyForCliente.mockResolvedValue({ orders: [], total: 0 });
+
+    await service.list(clienteUser());
+
+    expect(vendedorProfileNamesResolver.resolveNamesByIds).not.toHaveBeenCalled();
   });
 
   it('enriches getById with cliente names for super-admin reads', async () => {

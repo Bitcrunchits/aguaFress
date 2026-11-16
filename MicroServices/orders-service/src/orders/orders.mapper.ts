@@ -1,4 +1,4 @@
-import type { DireccionEntrega, OrderListResponse } from '@agua/contracts';
+import type { DireccionEntrega, OrderListResponse, OrderListResponseV2 } from '@agua/contracts';
 import type { OrderResponse } from './orders.dto';
 import type { OrderRecord } from './orders.repository';
 
@@ -35,6 +35,21 @@ export function toOrderListResponse(order: OrderRecord, clienteNombre?: string, 
     clienteNombre,
     clienteApellido,
     createdAt: order.createdAt.toISOString(),
+  };
+}
+
+export function toOrderListResponseV2(
+  order: OrderRecord,
+  clienteNombre?: string,
+  clienteApellido?: string,
+  vendedorNombre?: string,
+  vendedorEmpresa?: string,
+): OrderListResponseV2 {
+  return {
+    ...toOrderListResponse(order, clienteNombre, clienteApellido),
+    vendedorId: order.vendedorId,
+    vendedorNombre,
+    vendedorEmpresa,
   };
 }
 

@@ -1,5 +1,5 @@
 import { ForbiddenException, Inject, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
-import { OrderEstado, UserRole, type OrderListResponse, type PaginatedResponse } from '@agua/contracts';
+import { OrderEstado, UserRole, type OrderListResponseV2, type PaginatedResponse } from '@agua/contracts';
 import type { CartRecord } from '../cart/cart.repository';
 import { CLOCK, type Clock } from '../common/clock.provider';
 import { PRODUCT_CATALOG_TIMEOUT_MS, SCOPED_PRODUCT_CATALOG_PORT, type ProductSnapshot, type ScopedProductCatalogPort } from '../products/product-catalog.port';
@@ -8,8 +8,9 @@ import { assertOrderTransition } from './order-state';
 import { SCOPED_CLIENTE_PROFILE_RESOLVER_PORT, type ScopedClienteProfileResolverPort } from './cliente-profile-resolver.port';
 import { DEFAULT_LIMIT, MAX_LIMIT, PrismaOrdersRepository, type OrderRecord, type OrdersRepository } from './orders.repository';
 import type { CreateOrderRequest, OrderResponse, OrderResponseV2 } from './orders.dto';
-import { toOrderListResponse, toOrderResponse } from './orders.mapper';
+import { toOrderListResponseV2, toOrderResponse } from './orders.mapper';
 import { VENDEDOR_PROFILE_RESOLVER_PORT, type VendedorProfileResolverPort } from './vendedor-profile-resolver.port';
+import { VENDEDOR_PROFILE_NAMES_RESOLVER_PORT, type VendedorProfileNamesResolverPort } from './vendedor-profile-names-resolver.port';
 
 type OrdersServiceRepository = Pick<OrdersRepository,
   | 'createFromCart'
@@ -29,6 +30,7 @@ export class OrdersService {
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(VENDEDOR_PROFILE_RESOLVER_PORT) private readonly vendedorProfileResolver: VendedorProfileResolverPort,
     @Inject(SCOPED_CLIENTE_PROFILE_RESOLVER_PORT) private readonly clienteProfileResolver: ScopedClienteProfileResolverPort,
+    @Inject(VENDEDOR_PROFILE_NAMES_RESOLVER_PORT) private readonly vendedorProfileNamesResolver: VendedorProfileNamesResolverPort,
   ) {}
 
   async create(user: TcpAuthenticatedUser, request: CreateOrderRequest): Promise<OrderResponse> {
@@ -60,7 +62,7 @@ export class OrdersService {
     page = 1,
     limit = DEFAULT_LIMIT,
     clienteUserId?: string,
-  ): Promise<PaginatedResponse<OrderListResponse>> {
+  ): Promise<PaginatedResponse<OrderListResponseV2>> {
     const safePage = normalizePage(page);
     const safeLimit = clampLimit(limit);
 
@@ -89,9 +91,16 @@ export class OrdersService {
     }
 
     const names = await this.resolveClienteNames(orders, user);
+    const vendedorNames = await this.resolveVendedorNames(orders, user);
 
     return {
-      data: orders.map((order) => toOrderListResponse(order, names.get(order.usuarioId)?.nombre, names.get(order.usuarioId)?.apellido)),
+      data: orders.map((order) => toOrderListResponseV2(
+        order,
+        names.get(order.usuarioId)?.nombre,
+        names.get(order.usuarioId)?.apellido,
+        vendedorNames.get(order.vendedorId)?.nombre,
+        vendedorNames.get(order.vendedorId)?.empresa,
+      )),
       pagination: {
         page: safePage,
         limit: safeLimit,
@@ -160,6 +169,23 @@ export class OrdersService {
 
     const distinctUserIds = [...new Set(orders.map((order) => order.usuarioId))];
     return this.resolveNamesForUser(distinctUserIds, user);
+  }
+
+  /**
+   * Resolves vendor display names by DOMAIN VENDEDOR.id for every role
+   * (cliente included): nombre/empresa is public info already visible in the
+   * provider selector, so it is not cartera-scoped.
+   */
+  private resolveVendedorNames(
+    orders: readonly OrderRecord[],
+    user: TcpAuthenticatedUser,
+  ): Promise<ReadonlyMap<string, { nombre: string; empresa?: string }>> {
+    if (orders.length === 0) {
+      return Promise.resolve(new Map());
+    }
+
+    const distinctVendedorIds = [...new Set(orders.map((order) => order.vendedorId))];
+    return this.vendedorProfileNamesResolver.resolveNamesByIds(distinctVendedorIds, user.role);
   }
 
   /**
