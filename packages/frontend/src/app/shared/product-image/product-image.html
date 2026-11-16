@@ -1,0 +1,31 @@
+<button
+  type="button"
+  class="product-image__btn product-image__btn--{{ size() }}"
+  [attr.aria-label]="ariaLabel()"
+  (click)="open()"
+>
+  <img class="product-image__img" [src]="src()" [alt]="alt()" loading="lazy" />
+</button>
+
+@if (isOpen()) {
+  <div
+    class="product-image__lightbox"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Vista previa"
+    (click)="close()"
+  >
+    <div class="product-image__lightbox__inner" (click)="$event.stopPropagation()">
+      <img class="product-image__lightbox__image" [src]="src()" [alt]="alt()" />
+      <button
+        #closePreviewButton
+        type="button"
+        class="product-image__lightbox__close"
+        aria-label="Cerrar vista previa"
+        (click)="close()"
+      >
+        ×
+      </button>
+    </div>
+  </div>
+}
