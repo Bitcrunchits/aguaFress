@@ -4,6 +4,7 @@ import type { ProductSnapshot, ScopedProductCatalogPort } from '../products/prod
 import type { CartRecord } from '../cart/cart.repository';
 import type { OrderRecord, OrdersRepository } from './orders.repository';
 import { OrdersService } from './orders.service';
+import type { ClienteProfileResolverPort } from './cliente-profile-resolver.port';
 import type { VendedorProfileResolverPort } from './vendedor-profile-resolver.port';
 
 describe('OrdersService', () => {
@@ -24,6 +25,7 @@ describe('OrdersService', () => {
   >>;
   let productCatalog: jest.Mocked<ScopedProductCatalogPort>;
   let vendedorProfileResolver: jest.Mocked<VendedorProfileResolverPort>;
+  let clienteProfileResolver: jest.Mocked<ClienteProfileResolverPort>;
   let service: OrdersService;
 
   beforeEach(() => {
@@ -43,7 +45,10 @@ describe('OrdersService', () => {
     vendedorProfileResolver = {
       resolveVendedorIdByAuthUserId: jest.fn().mockResolvedValue(vendedorId),
     };
-    service = new OrdersService(ordersRepository, productCatalog, () => createdAt, vendedorProfileResolver);
+    clienteProfileResolver = {
+      resolveNamesByAuthUserIds: jest.fn().mockResolvedValue(new Map()),
+    };
+    service = new OrdersService(ordersRepository, productCatalog, () => createdAt, vendedorProfileResolver, clienteProfileResolver);
   });
 
   it('creates an order from persisted cart item snapshots while product lookup only validates availability', async () => {
@@ -132,61 +137,122 @@ describe('OrdersService', () => {
   });
 
   it('scopes order lists by caller role', async () => {
-    ordersRepository.findManyForCliente.mockResolvedValue([orderRecord({ id: 'cliente-order' })]);
-    ordersRepository.findManyForVendedor.mockResolvedValue([orderRecord({ id: 'vendedor-order' })]);
-    ordersRepository.findMany.mockResolvedValue([orderRecord({ id: 'admin-visible-order' })]);
+    ordersRepository.findManyForCliente.mockResolvedValue({ orders: [orderRecord({ id: 'cliente-order' })], total: 1 });
+    ordersRepository.findManyForVendedor.mockResolvedValue({ orders: [orderRecord({ id: 'vendedor-order' })], total: 1 });
+    ordersRepository.findMany.mockResolvedValue({ orders: [orderRecord({ id: 'admin-visible-order' })], total: 1 });
 
-    await expect(service.list(clienteUser())).resolves.toEqual([
-      expect.objectContaining({ id: 'cliente-order', clienteId }),
-    ]);
-    await expect(service.list(vendedorUser())).resolves.toEqual([
-      expect.objectContaining({ id: 'vendedor-order', vendedorId }),
-    ]);
-    await expect(service.list(superAdminUser())).resolves.toEqual([
-      expect.objectContaining({ id: 'admin-visible-order' }),
-    ]);
+    await expect(service.list(clienteUser())).resolves.toEqual({
+      data: [expect.objectContaining({ id: 'cliente-order' })],
+      pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+    });
+    await expect(service.list(vendedorUser())).resolves.toEqual({
+      data: [expect.objectContaining({ id: 'vendedor-order' })],
+      pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+    });
+    await expect(service.list(superAdminUser())).resolves.toEqual({
+      data: [expect.objectContaining({ id: 'admin-visible-order' })],
+      pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+    });
 
-    expect(ordersRepository.findManyForCliente).toHaveBeenCalledWith(clienteId);
-    expect(ordersRepository.findManyForVendedor).toHaveBeenCalledWith(vendedorId);
+    expect(ordersRepository.findManyForCliente).toHaveBeenCalledWith(clienteId, 1, 20);
+    expect(ordersRepository.findManyForVendedor).toHaveBeenCalledWith(vendedorId, 1, 20);
     expect(vendedorProfileResolver.resolveVendedorIdByAuthUserId).toHaveBeenCalledWith(vendedorId);
-    expect(ordersRepository.findMany).toHaveBeenCalledWith();
+    expect(ordersRepository.findMany).toHaveBeenCalledWith(1, 20);
   });
 
   it('narrows vendedor order list to a single cliente when clienteUserId is provided', async () => {
-    ordersRepository.findManyForVendedorCliente.mockResolvedValue([orderRecord({ id: 'cliente-scoped-order' })]);
+    ordersRepository.findManyForVendedorCliente.mockResolvedValue({ orders: [orderRecord({ id: 'cliente-scoped-order' })], total: 1 });
 
-    await expect(service.list(vendedorUser(), 'cliente-user-1')).resolves.toEqual([
-      expect.objectContaining({ id: 'cliente-scoped-order', vendedorId }),
-    ]);
+    await expect(service.list(vendedorUser(), 1, 20, 'cliente-user-1')).resolves.toEqual({
+      data: [expect.objectContaining({ id: 'cliente-scoped-order' })],
+      pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+    });
 
-    expect(ordersRepository.findManyForVendedorCliente).toHaveBeenCalledWith(vendedorId, 'cliente-user-1');
+    expect(ordersRepository.findManyForVendedorCliente).toHaveBeenCalledWith(vendedorId, 'cliente-user-1', 1, 20);
   });
 
   it('lists all vendedor orders without a cliente filter when clienteUserId is absent', async () => {
-    ordersRepository.findManyForVendedor.mockResolvedValue([orderRecord({ id: 'vendedor-order' })]);
+    ordersRepository.findManyForVendedor.mockResolvedValue({ orders: [orderRecord({ id: 'vendedor-order' })], total: 1 });
 
-    await expect(service.list(vendedorUser())).resolves.toEqual([
-      expect.objectContaining({ id: 'vendedor-order', vendedorId }),
-    ]);
+    await expect(service.list(vendedorUser())).resolves.toEqual({
+      data: [expect.objectContaining({ id: 'vendedor-order' })],
+      pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+    });
 
-    expect(ordersRepository.findManyForVendedor).toHaveBeenCalledWith(vendedorId);
+    expect(ordersRepository.findManyForVendedor).toHaveBeenCalledWith(vendedorId, 1, 20);
   });
 
   it('resolves vendedor AUTH_USER.id to domain vendedorId before vendedor reads when identities differ', async () => {
     vendedorProfileResolver.resolveVendedorIdByAuthUserId.mockResolvedValue('domain-vendedor-1');
-    ordersRepository.findManyForVendedor.mockResolvedValue([orderRecord({ id: 'domain-scoped-order', vendedorId: 'domain-vendedor-1' })]);
+    ordersRepository.findManyForVendedor.mockResolvedValue({ orders: [orderRecord({ id: 'domain-scoped-order', vendedorId: 'domain-vendedor-1' })], total: 1 });
     ordersRepository.findById.mockResolvedValue(orderRecord({ id: 'domain-scoped-order', vendedorId: 'domain-vendedor-1' }));
 
-    await expect(service.list(vendedorUser({ userId: 'auth-user-1' }))).resolves.toEqual([
-      expect.objectContaining({ id: 'domain-scoped-order', vendedorId: 'domain-vendedor-1' }),
-    ]);
+    await expect(service.list(vendedorUser({ userId: 'auth-user-1' }))).resolves.toEqual({
+      data: [expect.objectContaining({ id: 'domain-scoped-order' })],
+      pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+    });
     await expect(service.getById(vendedorUser({ userId: 'auth-user-1' }), 'domain-scoped-order')).resolves.toMatchObject({
       id: 'domain-scoped-order',
       vendedorId: 'domain-vendedor-1',
     });
 
     expect(vendedorProfileResolver.resolveVendedorIdByAuthUserId).toHaveBeenCalledWith('auth-user-1');
-    expect(ordersRepository.findManyForVendedor).toHaveBeenCalledWith('domain-vendedor-1');
+    expect(ordersRepository.findManyForVendedor).toHaveBeenCalledWith('domain-vendedor-1', 1, 20);
+  });
+
+  it('enriches vendedor order lists with server-resolved cliente names in one batch', async () => {
+    ordersRepository.findManyForVendedor.mockResolvedValue({ orders: [orderRecord({ id: 'order-1', usuarioId: clienteId })], total: 1 });
+    clienteProfileResolver.resolveNamesByAuthUserIds.mockResolvedValue(new Map([[clienteId, { nombre: 'Juan', apellido: 'Pérez' }]]));
+
+    const result = await service.list(vendedorUser());
+
+    expect(result.data[0]).toMatchObject({ id: 'order-1', clienteNombre: 'Juan', clienteApellido: 'Pérez' });
+    expect(clienteProfileResolver.resolveNamesByAuthUserIds).toHaveBeenCalledWith([clienteId], UserRole.VENDEDOR);
+  });
+
+  it('deduplicates usuarioIds before resolving names in a single batch', async () => {
+    ordersRepository.findManyForVendedor.mockResolvedValue({
+      orders: [orderRecord({ id: 'order-1', usuarioId: clienteId }), orderRecord({ id: 'order-2', usuarioId: clienteId })],
+      total: 2,
+    });
+    clienteProfileResolver.resolveNamesByAuthUserIds.mockResolvedValue(new Map([[clienteId, { nombre: 'Juan', apellido: '' }]]));
+
+    await service.list(vendedorUser());
+
+    expect(clienteProfileResolver.resolveNamesByAuthUserIds).toHaveBeenCalledWith([clienteId], UserRole.VENDEDOR);
+  });
+
+  it('leaves cliente name fields undefined for a cliente listing their own orders without a resolver call', async () => {
+    ordersRepository.findManyForCliente.mockResolvedValue({ orders: [orderRecord({ id: 'order-1' })], total: 1 });
+
+    const result = await service.list(clienteUser());
+
+    expect(result.data[0]).toMatchObject({ id: 'order-1' });
+    expect(result.data[0].clienteNombre).toBeUndefined();
+    expect(result.data[0].clienteApellido).toBeUndefined();
+    expect(clienteProfileResolver.resolveNamesByAuthUserIds).not.toHaveBeenCalled();
+  });
+
+  it('enriches getById with cliente names for super-admin reads', async () => {
+    ordersRepository.findById.mockResolvedValue(orderRecord({ usuarioId: clienteId, vendedorId: 'vendedor-2' }));
+    clienteProfileResolver.resolveNamesByAuthUserIds.mockResolvedValue(new Map([[clienteId, { nombre: 'Juan', apellido: 'Pérez' }]]));
+
+    await expect(service.getById(superAdminUser(), 'order-1')).resolves.toMatchObject({
+      id: 'order-1',
+      clienteNombre: 'Juan',
+      clienteApellido: 'Pérez',
+    });
+    expect(clienteProfileResolver.resolveNamesByAuthUserIds).toHaveBeenCalledWith([clienteId], UserRole.SUPER_ADMIN);
+  });
+
+  it('leaves cliente name fields undefined for cliente-owned reads', async () => {
+    ordersRepository.findById.mockResolvedValue(orderRecord({ usuarioId: clienteId }));
+
+    const order = await service.getById(clienteUser(), 'order-1');
+
+    expect(order.clienteNombre).toBeUndefined();
+    expect(order.clienteApellido).toBeUndefined();
+    expect(clienteProfileResolver.resolveNamesByAuthUserIds).not.toHaveBeenCalled();
   });
 
   it('allows super-admin to read any order without lifecycle write access', async () => {

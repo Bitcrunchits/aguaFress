@@ -1,7 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PATTERN_METADATA } from '@nestjs/microservices/constants';
-import { MetodoPago, OrderEstado, OrderJobStatus, UserRole } from '@agua/contracts';
+import { MetodoPago, OrderEstado, OrderJobStatus, UserRole, type OrderListResponse } from '@agua/contracts';
 import { OrdersController } from './orders.controller';
 import { OrdersService } from './orders.service';
 import { TcpPayloadAdapter } from '../tcp/tcp-payload-adapter.service';
@@ -26,6 +26,14 @@ describe('OrdersController', () => {
     updatedAt: '2026-07-16T10:00:00.000Z',
   };
 
+  const orderListResponse: OrderListResponse = {
+    id: 'order-1',
+    pedidoNumero: '000001',
+    estado: OrderEstado.PENDIENTE,
+    total: 0,
+    createdAt: '2026-07-16T10:00:00.000Z',
+  };
+
   let service: jest.Mocked<Pick<OrdersService, 'create' | 'getById' | 'list' | 'updateStatus' | 'cancel' | 'confirm'>>;
   let trackingService: jest.Mocked<Pick<OrderCommandTrackingService, 'findByTrackingId'>>;
   let controller: OrdersController;
@@ -34,7 +42,7 @@ describe('OrdersController', () => {
     service = {
       create: jest.fn().mockResolvedValue(orderResponse),
       getById: jest.fn().mockResolvedValue(orderResponse),
-      list: jest.fn().mockResolvedValue([orderResponse]),
+      list: jest.fn().mockResolvedValue({ data: [orderListResponse], pagination: { page: 1, limit: 20, total: 1, totalPages: 1 } }),
       updateStatus: jest.fn().mockResolvedValue(orderResponse),
       cancel: jest.fn().mockResolvedValue(orderResponse),
       confirm: jest.fn().mockResolvedValue(orderResponse),
@@ -81,7 +89,7 @@ describe('OrdersController', () => {
     await controller.cancel(authenticatedPayload({ body: { id: 'order-1', motivo: 'customer requested' } }));
     await controller.confirm(authenticatedPayload({ body: { id: 'order-1' } }));
 
-    expect(service.list).toHaveBeenCalledWith(expect.objectContaining({ userId: 'jwt-user' }));
+    expect(service.list).toHaveBeenCalledWith(expect.objectContaining({ userId: 'jwt-user' }), 1, 20, undefined);
     expect(service.getById).toHaveBeenCalledWith(expect.objectContaining({ userId: 'jwt-user' }), 'order-1');
     expect(service.updateStatus).toHaveBeenCalledWith(expect.objectContaining({ userId: 'jwt-user' }), 'order-1', OrderEstado.EN_CAMINO, 'on route');
     expect(service.cancel).toHaveBeenCalledWith(expect.objectContaining({ userId: 'jwt-user' }), 'order-1', 'customer requested');
@@ -93,14 +101,26 @@ describe('OrdersController', () => {
 
     expect(service.list).toHaveBeenCalledWith(
       expect.objectContaining({ userId: 'jwt-user' }),
+      1,
+      20,
       'cliente-user-1',
     );
   });
 
-  it('lists orders with a single argument when clienteUserId filter is absent', async () => {
+  it('lists orders with default pagination when page/limit/clienteUserId are absent', async () => {
     await controller.list(authenticatedPayload());
 
-    expect(service.list).toHaveBeenCalledWith(expect.objectContaining({ userId: 'jwt-user' }));
+    expect(service.list).toHaveBeenCalledWith(expect.objectContaining({ userId: 'jwt-user' }), 1, 20, undefined);
+  });
+
+  it('passes page and limit query values to list', async () => {
+    await controller.list(authenticatedPayload({ query: { page: '3', limit: '50' } }));
+
+    expect(service.list).toHaveBeenCalledWith(expect.objectContaining({ userId: 'jwt-user' }), 3, 50, undefined);
+  });
+
+  it('rejects a non-numeric page query value', async () => {
+    expect(() => controller.list(authenticatedPayload({ query: { page: 'abc' } }))).toThrow(BadRequestException);
   });
 
   it('throws a controlled request exception when get by id receives no id', async () => {

@@ -25,6 +25,12 @@ export interface OrderResponse {
   readonly updatedAt: string;
 }
 
+/** OCP: adds server-resolved cliente name fields without modifying `OrderResponse`. */
+export interface OrderResponseV2 extends OrderResponse {
+  readonly clienteNombre?: string;
+  readonly clienteApellido?: string;
+}
+
 export interface CreateOrderRequest extends Record<string, unknown> {
   readonly vendedorId: string;
   readonly metodoPago: MetodoPago.CONTRA_ENTREGA;
@@ -106,6 +112,19 @@ function readOptionalString(record: Record<string, unknown>, key: string): strin
   }
 
   return value;
+}
+
+export function readPositiveIntQuery(value: string | undefined, fallback: number): number {
+  if (value === undefined || value.trim() === '') {
+    return fallback;
+  }
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new BadRequestException('Query parameter must be a positive integer');
+  }
+
+  return parsed;
 }
 
 function readMetodoPago(record: Record<string, unknown>, key: string): MetodoPago.CONTRA_ENTREGA {

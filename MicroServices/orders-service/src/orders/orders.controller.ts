@@ -1,5 +1,5 @@
 import { BadRequestException, Controller, NotFoundException } from '@nestjs/common';
-import { UserRole, type OrderJobStatusResponse } from '@agua/contracts';
+import { UserRole, type OrderJobStatusResponse, type OrderListResponse, type PaginatedResponse } from '@agua/contracts';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { TcpPayloadAdapter } from '../tcp/tcp-payload-adapter.service';
 import type { TcpAuthenticatedUser, TcpPayload } from '../tcp/tcp-payload';
@@ -8,7 +8,9 @@ import {
   parseConfirmOrderRequest,
   parseCreateOrderRequest,
   parseUpdateOrderStatusRequest,
+  readPositiveIntQuery,
   type OrderResponse,
+  type OrderResponseV2,
 } from './orders.dto';
 import { OrdersService } from './orders.service';
 import { OrderCommandTrackingService } from './jobs/order-command-tracking.service';
@@ -22,20 +24,18 @@ export class OrdersController {
   ) {}
 
   @MessagePattern('orders.list')
-  list(@Payload() payload: TcpPayload): Promise<readonly OrderResponse[]> {
+  list(@Payload() payload: TcpPayload): Promise<PaginatedResponse<OrderListResponse>> {
     const user = this.payloadAdapter.requireUser(payload);
     // clienteUserId is the AUTH_USER.id of the target cliente (JWT `sub`), NOT
     // CLIENTE.id — same V1-compat identity as OrderResponse.clienteId.
     const clienteUserId = readOptionalQueryString(payload.query?.clienteUserId);
-    if (clienteUserId === undefined) {
-      return this.ordersService.list(user);
-    }
-
-    return this.ordersService.list(user, clienteUserId);
+    const page = readPositiveIntQuery(payload.query?.page, 1);
+    const limit = readPositiveIntQuery(payload.query?.limit, 20);
+    return this.ordersService.list(user, page, limit, clienteUserId);
   }
 
   @MessagePattern('orders.get_by_id')
-  getById(@Payload() payload: TcpPayload): Promise<OrderResponse> {
+  getById(@Payload() payload: TcpPayload): Promise<OrderResponseV2> {
     const user = this.payloadAdapter.requireUser(payload);
     return this.ordersService.getById(user, readQueryId(payload));
   }

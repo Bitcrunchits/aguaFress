@@ -118,31 +118,42 @@ describe('PrismaOrdersRepository', () => {
   it('lists all orders for explicit super-admin scope', async () => {
     const repository = new PrismaOrdersRepository(prismaListService());
 
-    const orders = await repository.findMany();
+    const result = await repository.findMany(1, 20);
 
-    expect(orders).toEqual([expect.objectContaining({ id: 'order-1' })]);
+    expect(result.orders).toEqual([expect.objectContaining({ id: 'order-1' })]);
+    expect(result.total).toBe(1);
   });
 
   it('filters vendedor orders by cliente usuario_id when provided', async () => {
     const findMany = jest.fn().mockResolvedValue([prismaOrder({})]);
-    const repository = new PrismaOrdersRepository({ order: { findMany } } as unknown as PrismaService);
+    const count = jest.fn().mockResolvedValue(1);
+    const repository = new PrismaOrdersRepository({ order: { findMany, count } } as unknown as PrismaService);
 
-    await repository.findManyForVendedorCliente(vendedorId, clienteId);
+    const result = await repository.findManyForVendedorCliente(vendedorId, clienteId, 1, 20);
 
     expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: { vendedor_id: vendedorId, usuario_id: clienteId },
+      skip: 0,
+      take: 20,
     }));
+    expect(count).toHaveBeenCalledWith({ where: { vendedor_id: vendedorId, usuario_id: clienteId } });
+    expect(result.total).toBe(1);
   });
 
   it('omits usuario_id from vendedor order filter when clienteUserId is absent', async () => {
     const findMany = jest.fn().mockResolvedValue([prismaOrder({})]);
-    const repository = new PrismaOrdersRepository({ order: { findMany } } as unknown as PrismaService);
+    const count = jest.fn().mockResolvedValue(1);
+    const repository = new PrismaOrdersRepository({ order: { findMany, count } } as unknown as PrismaService);
 
-    await repository.findManyForVendedor(vendedorId);
+    const result = await repository.findManyForVendedor(vendedorId, 2, 10);
 
     expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: { vendedor_id: vendedorId },
+      skip: 10,
+      take: 10,
     }));
+    expect(count).toHaveBeenCalledWith({ where: { vendedor_id: vendedorId } });
+    expect(result.total).toBe(1);
   });
 
   it('throws controlled request exception when updated order disappears after guarded update', async () => {
@@ -177,6 +188,7 @@ describe('PrismaOrdersRepository', () => {
     return {
       order: {
         findMany: jest.fn().mockResolvedValue([prismaOrder({})]),
+        count: jest.fn().mockResolvedValue(1),
       },
     } as unknown as PrismaService;
   }

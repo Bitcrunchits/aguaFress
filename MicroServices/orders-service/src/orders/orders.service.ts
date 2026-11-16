@@ -1,14 +1,14 @@
 import { ForbiddenException, Inject, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
-import { OrderEstado, UserRole } from '@agua/contracts';
+import { OrderEstado, UserRole, type OrderListResponse, type PaginatedResponse } from '@agua/contracts';
 import type { CartRecord } from '../cart/cart.repository';
 import { CLOCK, type Clock } from '../common/clock.provider';
 import { PRODUCT_CATALOG_TIMEOUT_MS, SCOPED_PRODUCT_CATALOG_PORT, type ProductSnapshot, type ScopedProductCatalogPort } from '../products/product-catalog.port';
 import type { TcpAuthenticatedUser } from '../tcp/tcp-payload';
 import { assertOrderTransition } from './order-state';
-import type { OrderRecord, OrdersRepository } from './orders.repository';
-import { PrismaOrdersRepository } from './orders.repository';
-import type { CreateOrderRequest, OrderResponse } from './orders.dto';
-import { toOrderResponse } from './orders.mapper';
+import { CLIENTE_PROFILE_RESOLVER_PORT, type ClienteProfileResolverPort } from './cliente-profile-resolver.port';
+import { DEFAULT_LIMIT, MAX_LIMIT, PrismaOrdersRepository, type OrderRecord, type OrdersRepository } from './orders.repository';
+import type { CreateOrderRequest, OrderResponse, OrderResponseV2 } from './orders.dto';
+import { toOrderListResponse, toOrderResponse } from './orders.mapper';
 import { VENDEDOR_PROFILE_RESOLVER_PORT, type VendedorProfileResolverPort } from './vendedor-profile-resolver.port';
 
 type OrdersServiceRepository = Pick<OrdersRepository,
@@ -28,6 +28,7 @@ export class OrdersService {
     @Inject(SCOPED_PRODUCT_CATALOG_PORT) private readonly productCatalog: ScopedProductCatalogPort,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(VENDEDOR_PROFILE_RESOLVER_PORT) private readonly vendedorProfileResolver: VendedorProfileResolverPort,
+    @Inject(CLIENTE_PROFILE_RESOLVER_PORT) private readonly clienteProfileResolver: ClienteProfileResolverPort,
   ) {}
 
   async create(user: TcpAuthenticatedUser, request: CreateOrderRequest): Promise<OrderResponse> {
@@ -48,35 +49,56 @@ export class OrdersService {
     return toOrderResponse(order);
   }
 
-  async getById(user: TcpAuthenticatedUser, orderId: string): Promise<OrderResponse> {
+  async getById(user: TcpAuthenticatedUser, orderId: string): Promise<OrderResponseV2> {
     const order = await this.requireOrder(orderId);
     await this.assertCanRead(user, order);
-    return toOrderResponse(order);
+    return this.toOrderResponseWithName(order, user.role);
   }
 
-  async list(user: TcpAuthenticatedUser, clienteUserId?: string): Promise<readonly OrderResponse[]> {
+  async list(
+    user: TcpAuthenticatedUser,
+    page = 1,
+    limit = DEFAULT_LIMIT,
+    clienteUserId?: string,
+  ): Promise<PaginatedResponse<OrderListResponse>> {
+    const safePage = normalizePage(page);
+    const safeLimit = clampLimit(limit);
+
+    let orders: readonly OrderRecord[];
+    let total: number;
+
     if (user.role === UserRole.CLIENTE) {
       // clienteUserId filter is vendedor-only: a cliente always lists their own orders.
-      const authenticatedUserId = user.userId;
-      const orders = await this.ordersRepository.findManyForCliente(authenticatedUserId);
-      return orders.map(toOrderResponse);
-    }
-
-    if (user.role === UserRole.VENDEDOR) {
+      const result = await this.ordersRepository.findManyForCliente(user.userId, safePage, safeLimit);
+      orders = result.orders;
+      total = result.total;
+    } else if (user.role === UserRole.VENDEDOR) {
       const vendedorId = await this.resolveDomainVendedorId(user);
-      const orders = clienteUserId === undefined
-        ? await this.ordersRepository.findManyForVendedor(vendedorId)
-        : await this.ordersRepository.findManyForVendedorCliente(vendedorId, clienteUserId);
-      return orders.map(toOrderResponse);
-    }
-
-    if (user.role === UserRole.SUPER_ADMIN) {
+      const result = clienteUserId === undefined
+        ? await this.ordersRepository.findManyForVendedor(vendedorId, safePage, safeLimit)
+        : await this.ordersRepository.findManyForVendedorCliente(vendedorId, clienteUserId, safePage, safeLimit);
+      orders = result.orders;
+      total = result.total;
+    } else if (user.role === UserRole.SUPER_ADMIN) {
       // clienteUserId filter is vendedor-only: super-admin always lists all orders.
-      const orders = await this.ordersRepository.findMany();
-      return orders.map(toOrderResponse);
+      const result = await this.ordersRepository.findMany(safePage, safeLimit);
+      orders = result.orders;
+      total = result.total;
+    } else {
+      throw new ForbiddenException('Role cannot list orders');
     }
 
-    throw new ForbiddenException('Role cannot list orders');
+    const names = await this.resolveClienteNames(orders, user.role);
+
+    return {
+      data: orders.map((order) => toOrderListResponse(order, names.get(order.usuarioId)?.nombre, names.get(order.usuarioId)?.apellido)),
+      pagination: {
+        page: safePage,
+        limit: safeLimit,
+        total,
+        totalPages: Math.ceil(total / safeLimit) || 0,
+      },
+    };
   }
 
   async updateStatus(user: TcpAuthenticatedUser, orderId: string, next: OrderEstado, notes?: string): Promise<OrderResponse> {
@@ -112,6 +134,32 @@ export class OrdersService {
     }
 
     return order;
+  }
+
+  private async toOrderResponseWithName(order: OrderRecord, role: UserRole): Promise<OrderResponseV2> {
+    if (role === UserRole.CLIENTE) {
+      return toOrderResponse(order);
+    }
+
+    const names = await this.clienteProfileResolver.resolveNamesByAuthUserIds([order.usuarioId], role);
+    const name = names.get(order.usuarioId);
+    return {
+      ...toOrderResponse(order),
+      clienteNombre: name?.nombre,
+      clienteApellido: name?.apellido,
+    };
+  }
+
+  private resolveClienteNames(
+    orders: readonly OrderRecord[],
+    role: UserRole,
+  ): Promise<ReadonlyMap<string, { nombre: string; apellido?: string }>> {
+    if (orders.length === 0 || role === UserRole.CLIENTE) {
+      return Promise.resolve(new Map());
+    }
+
+    const distinctUserIds = [...new Set(orders.map((order) => order.usuarioId))];
+    return this.clienteProfileResolver.resolveNamesByAuthUserIds(distinctUserIds, role);
   }
 
   private async assertCanRead(user: TcpAuthenticatedUser, order: OrderRecord): Promise<void> {
@@ -182,4 +230,20 @@ export class OrdersService {
       throw new ServiceUnavailableException('Product is unavailable');
     }
   }
+}
+
+function normalizePage(page: number): number {
+  if (!Number.isInteger(page) || page < 1) {
+    return 1;
+  }
+
+  return page;
+}
+
+function clampLimit(limit: number): number {
+  if (!Number.isInteger(limit) || limit < 1) {
+    return DEFAULT_LIMIT;
+  }
+
+  return Math.min(limit, MAX_LIMIT);
 }

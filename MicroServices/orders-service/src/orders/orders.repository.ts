@@ -88,6 +88,14 @@ export interface OrderCommandJobRecord {
   readonly updatedAt: Date;
 }
 
+export interface PaginatedOrders {
+  readonly orders: readonly OrderRecord[];
+  readonly total: number;
+}
+
+export const DEFAULT_LIMIT = 20;
+export const MAX_LIMIT = 100;
+
 export interface OrdersRepository {
   createFromCart(input: CreateOrderFromCartInput): Promise<OrderRecord>;
   createOrderCommandJob(input: CreateOrderCommandJobInput): Promise<OrderCommandJobRecord>;
@@ -95,11 +103,11 @@ export interface OrdersRepository {
   findOrderCommandByTrackingId(trackingId: string): Promise<OrderCommandJobRecord | null>;
   updateOrderCommandJobStatus(input: UpdateOrderCommandJobStatusInput): Promise<OrderCommandJobRecord | null>;
   findById(orderId: string): Promise<OrderRecord | null>;
-  findMany(): Promise<readonly OrderRecord[]>;
-  findManyForCliente(clienteUserId: string): Promise<readonly OrderRecord[]>;
-  findManyForVendedor(vendedorId: string): Promise<readonly OrderRecord[]>;
+  findMany(page: number, limit: number): Promise<PaginatedOrders>;
+  findManyForCliente(clienteUserId: string, page: number, limit: number): Promise<PaginatedOrders>;
+  findManyForVendedor(vendedorId: string, page: number, limit: number): Promise<PaginatedOrders>;
   /** Vendedor orders scoped to a single cliente (AUTH_USER.id), for the purchase-history view. */
-  findManyForVendedorCliente(vendedorId: string, clienteUserId: string): Promise<readonly OrderRecord[]>;
+  findManyForVendedorCliente(vendedorId: string, clienteUserId: string, page: number, limit: number): Promise<PaginatedOrders>;
   updateStatus(orderId: string, previous: OrderEstado, next: OrderEstado, notes?: string): Promise<OrderRecord>;
 }
 
@@ -245,44 +253,63 @@ export class PrismaOrdersRepository implements OrdersRepository {
     return order === null ? null : mapOrder(order);
   }
 
-  async findMany(): Promise<readonly OrderRecord[]> {
-    const orders = await this.prisma.order.findMany({
-      include: ORDER_WITH_ITEMS,
-      orderBy: { created_at: 'desc' },
-    });
+  async findMany(page: number, limit: number): Promise<PaginatedOrders> {
+    const [orders, total] = await Promise.all([
+      this.prisma.order.findMany({
+        include: ORDER_WITH_ITEMS,
+        orderBy: { created_at: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.order.count(),
+    ]);
 
-    return orders.map(mapOrder);
+    return { orders: orders.map(mapOrder), total };
   }
 
-  async findManyForCliente(clienteUserId: string): Promise<readonly OrderRecord[]> {
-    const orders = await this.prisma.order.findMany({
-      where: { usuario_id: clienteUserId },
-      include: ORDER_WITH_ITEMS,
-      orderBy: { created_at: 'desc' },
-    });
+  async findManyForCliente(clienteUserId: string, page: number, limit: number): Promise<PaginatedOrders> {
+    const where: Prisma.OrderWhereInput = { usuario_id: clienteUserId };
 
-    return orders.map(mapOrder);
+    const [orders, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        include: ORDER_WITH_ITEMS,
+        orderBy: { created_at: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    return { orders: orders.map(mapOrder), total };
   }
 
-  async findManyForVendedor(vendedorId: string): Promise<readonly OrderRecord[]> {
-    return this.findManyForVendedorScoped(vendedorId, undefined);
+  async findManyForVendedor(vendedorId: string, page: number, limit: number): Promise<PaginatedOrders> {
+    return this.findManyForVendedorScoped(vendedorId, undefined, page, limit);
   }
 
-  async findManyForVendedorCliente(vendedorId: string, clienteUserId: string): Promise<readonly OrderRecord[]> {
-    return this.findManyForVendedorScoped(vendedorId, clienteUserId);
+  async findManyForVendedorCliente(vendedorId: string, clienteUserId: string, page: number, limit: number): Promise<PaginatedOrders> {
+    return this.findManyForVendedorScoped(vendedorId, clienteUserId, page, limit);
   }
 
-  private async findManyForVendedorScoped(vendedorId: string, clienteUserId: string | undefined): Promise<readonly OrderRecord[]> {
-    const orders = await this.prisma.order.findMany({
-      where: {
-        vendedor_id: vendedorId,
-        ...(clienteUserId ? { usuario_id: clienteUserId } : {}),
-      },
-      include: ORDER_WITH_ITEMS,
-      orderBy: { created_at: 'desc' },
-    });
+  private async findManyForVendedorScoped(vendedorId: string, clienteUserId: string | undefined, page: number, limit: number): Promise<PaginatedOrders> {
+    const where: Prisma.OrderWhereInput = {
+      vendedor_id: vendedorId,
+      ...(clienteUserId ? { usuario_id: clienteUserId } : {}),
+    };
 
-    return orders.map(mapOrder);
+    const [orders, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        include: ORDER_WITH_ITEMS,
+        orderBy: { created_at: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+
+    return { orders: orders.map(mapOrder), total };
   }
 
   async updateStatus(orderId: string, previous: OrderEstado, next: OrderEstado, notes?: string): Promise<OrderRecord> {
