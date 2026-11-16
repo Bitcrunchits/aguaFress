@@ -108,3 +108,36 @@ export interface UpdateSuperAdminProfileRequest {
   nombre: string;
   apellido: string;
 }
+
+// ════════════════════════════════════════════
+//  LISTADO DE CLIENTES (v2 — matches the real clientes.list row)
+// ════════════════════════════════════════════
+//
+// The gateway `clientes.list` action returns raw CLIENTE rows with the vendor
+// included (`vendedor { id, nombre, apellido, empresa }`) and `_count.cartera`.
+// Raw rows carry NO `email` (it lives on AUTH_USER) and NO `fechaAsignacion`.
+// These V2 types describe that real shape (OCP: the legacy
+// `SuperAdminClienteItem` above is left untouched).
+
+export interface SuperAdminClienteListFilters extends PaginationRequest {
+  vendedorId?: string;
+  search?: string;
+}
+
+export interface SuperAdminClienteVendedor {
+  nombre: string;
+  apellido: string;
+  empresa: string | null;
+}
+
+export interface SuperAdminClienteItemV2 {
+  id: string;
+  nombre: string;
+  apellido: string;
+  telefono: string;
+  dni: string;
+  vendedor: SuperAdminClienteVendedor;
+  createdAt: string;
+}
+
+export type SuperAdminClientesResponseV2 = PaginatedResponse<SuperAdminClienteItemV2>;

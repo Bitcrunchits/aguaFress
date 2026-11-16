@@ -1,0 +1,122 @@
+<section class="role-card clientes" aria-labelledby="clientes-title">
+  <p class="role-card__eyebrow">Administración</p>
+  <h1 id="clientes-title">Clientes</h1>
+
+  <div class="clientes__filters" role="search" aria-label="Filtros de clientes">
+    <label class="clientes__field">
+      <span class="clientes__field-label">Buscar</span>
+      <input
+        id="clientes-search"
+        type="search"
+        [value]="searchInput()"
+        (input)="onSearchInput($event)"
+        placeholder="Nombre, apellido o DNI"
+      />
+    </label>
+
+    <label class="clientes__field">
+      <span class="clientes__field-label">Vendedor</span>
+      <input
+        id="clientes-vendedor"
+        type="text"
+        [value]="vendedorIdInput()"
+        (input)="onVendedorIdInput($event)"
+        placeholder="ID de vendedor"
+      />
+    </label>
+
+    <div class="clientes__filter-actions">
+      <button
+        pButton
+        id="clientes-apply"
+        type="button"
+        label="Aplicar filtros"
+        (click)="applyFilters()"
+      ></button>
+      <button
+        pButton
+        id="clientes-clear"
+        type="button"
+        label="Limpiar"
+        (click)="clearFilters()"
+        [disabled]="!hasActiveFilters()"
+      ></button>
+    </div>
+  </div>
+
+  @if (hasActiveFilters()) {
+    <div class="clientes__chips" aria-label="Filtros activos">
+      @if (search(); as value) {
+        <span class="clientes__chip">Búsqueda: {{ value }}</span>
+      }
+      @if (vendedorId(); as value) {
+        <span class="clientes__chip">Vendedor: {{ value }}</span>
+      }
+    </div>
+  }
+
+  @if (loading()) {
+    <p class="clientes__state" role="status">Cargando clientes</p>
+  } @else if (failed()) {
+    <div class="clientes__state clientes__state--error" role="alert">
+      <p>No pudimos cargar los clientes. Inténtalo de nuevo en unos segundos.</p>
+      <button pButton type="button" label="Reintentar" (click)="retry()"></button>
+    </div>
+  } @else if (items().length === 0) {
+    <p class="clientes__state">No hay clientes registrados todavía.</p>
+  } @else {
+    <div class="clientes__table-wrap">
+      <table class="clientes__table">
+        <caption class="clientes__caption">Listado de clientes</caption>
+        <thead>
+          <tr>
+            <th scope="col">Cliente</th>
+            <th scope="col">DNI</th>
+            <th scope="col">Teléfono</th>
+            <th scope="col">Vendedor</th>
+            <th scope="col">Correo</th>
+            <th scope="col">Asignación</th>
+            <th scope="col">Registro</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (cliente of items(); track cliente.id) {
+            <tr>
+              <td>{{ nombreCompleto(cliente) }}</td>
+              <td>{{ cliente.dni || '—' }}</td>
+              <td>{{ cliente.telefono || '—' }}</td>
+              <td>{{ vendedorLabel(cliente) }}</td>
+              <!-- clientes.list returns raw CLIENTE rows: `email` lives on AUTH_USER
+                   and `fechaAsignacion` is not populated, so both degrade to "—". -->
+              <td>—</td>
+              <td>—</td>
+              <td>{{ formatFecha(cliente.createdAt) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (pagination(); as page) {
+      <nav class="clientes__pagination" aria-label="Paginación de clientes">
+        <button
+          pButton
+          type="button"
+          label="Anterior"
+          (click)="previousPage()"
+          [disabled]="currentPage() <= 1"
+        ></button>
+        <span class="clientes__page-indicator" role="status">
+          Página {{ currentPage() }} de {{ page.totalPages }}
+        </span>
+        <button
+          pButton
+          type="button"
+          label="Siguiente"
+          (click)="nextPage()"
+          [disabled]="currentPage() >= page.totalPages"
+        ></button>
+      </nav>
+    }
+  }
+</section>
