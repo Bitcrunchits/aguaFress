@@ -1,0 +1,49 @@
+.dashboard__state {
+  margin: 24px 0 0;
+  color: var(--slate-muted);
+}
+
+.dashboard__state--error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  color: var(--route-danger);
+
+  p {
+    margin: 0;
+  }
+}
+
+.dashboard__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dashboard__metric {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  border: 1px solid var(--line-soft);
+  background: var(--ice-surface);
+}
+
+.dashboard__metric-label {
+  color: var(--slate-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dashboard__metric-value {
+  font-family: var(--font-agua-display);
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: var(--agua-primary-dark);
+}

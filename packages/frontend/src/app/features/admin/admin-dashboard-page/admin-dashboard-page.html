@@ -1,0 +1,22 @@
+<section class="role-card dashboard" aria-labelledby="dashboard-title">
+  <p class="role-card__eyebrow">Administración</p>
+  <h1 id="dashboard-title">Panel</h1>
+
+  @if (loading()) {
+    <p class="dashboard__state" role="status">Cargando métricas</p>
+  } @else if (failed()) {
+    <div class="dashboard__state dashboard__state--error" role="alert">
+      <p>No pudimos cargar las métricas. Inténtalo de nuevo en unos segundos.</p>
+      <button pButton type="button" label="Reintentar" (click)="retry()"></button>
+    </div>
+  } @else {
+    <ul class="dashboard__grid">
+      @for (metric of metrics(); track metric.label) {
+        <li class="dashboard__metric">
+          <span class="dashboard__metric-label">{{ metric.label }}</span>
+          <span class="dashboard__metric-value">{{ metric.value }}</span>
+        </li>
+      }
+    </ul>
+  }
+</section>
