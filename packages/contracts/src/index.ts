@@ -13,6 +13,7 @@
 export * from './enums';
 export * from './events';
 export * from './dto/common.dto';
+export * from './dto/audit-log.dto';
 export * from './dto/auth.dto';
 export * from './dto/user.dto';
 export * from './dto/products.dto';

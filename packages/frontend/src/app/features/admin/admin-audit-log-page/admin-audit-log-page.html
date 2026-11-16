@@ -1,0 +1,146 @@
+<section class="role-card audit-log" aria-labelledby="audit-log-title">
+  <p class="role-card__eyebrow">Administración</p>
+  <h1 id="audit-log-title">Auditoría</h1>
+
+  <div class="audit-log__filters" role="search" aria-label="Filtros de auditoría">
+    <label class="audit-log__field">
+      <span class="audit-log__field-label">Usuario</span>
+      <input
+        id="audit-log-actor"
+        type="text"
+        [value]="actorUserIdInput()"
+        (input)="onActorUserIdInput($event)"
+        placeholder="ID de usuario"
+      />
+    </label>
+
+    <label class="audit-log__field">
+      <span class="audit-log__field-label">Acción</span>
+      <select id="audit-log-accion" [value]="accionInput() ?? ''" (change)="onAccionChange($event)">
+        @for (option of accionOptions; track option.value) {
+          <option [value]="option.value ?? ''">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="audit-log__field">
+      <span class="audit-log__field-label">Objetivo</span>
+      <input
+        id="audit-log-target"
+        type="text"
+        [value]="targetIdInput()"
+        (input)="onTargetIdInput($event)"
+        placeholder="ID de objetivo"
+      />
+    </label>
+
+    <label class="audit-log__field">
+      <span class="audit-log__field-label">Desde</span>
+      <input id="audit-log-from" type="date" [value]="fromInput()" (input)="onFromInput($event)" />
+    </label>
+
+    <label class="audit-log__field">
+      <span class="audit-log__field-label">Hasta</span>
+      <input id="audit-log-to" type="date" [value]="toInput()" (input)="onToInput($event)" />
+    </label>
+
+    <div class="audit-log__filter-actions">
+      <button
+        pButton
+        id="audit-log-apply"
+        type="button"
+        label="Aplicar filtros"
+        (click)="applyFilters()"
+      ></button>
+      <button
+        pButton
+        id="audit-log-clear"
+        type="button"
+        label="Limpiar"
+        (click)="clearFilters()"
+        [disabled]="!hasActiveFilters()"
+      ></button>
+    </div>
+  </div>
+
+  @if (hasActiveFilters()) {
+    <div class="audit-log__chips" aria-label="Filtros activos">
+      @if (actorUserId(); as value) {
+        <span class="audit-log__chip">Usuario: {{ value }}</span>
+      }
+      @if (accion(); as value) {
+        <span class="audit-log__chip">Acción: {{ accionLabel(value) }}</span>
+      }
+      @if (targetId(); as value) {
+        <span class="audit-log__chip">Objetivo: {{ value }}</span>
+      }
+      @if (from(); as value) {
+        <span class="audit-log__chip">Desde: {{ value }}</span>
+      }
+      @if (to(); as value) {
+        <span class="audit-log__chip">Hasta: {{ value }}</span>
+      }
+    </div>
+  }
+
+  @if (loading()) {
+    <p class="audit-log__state" role="status">Cargando auditoría</p>
+  } @else if (failed()) {
+    <div class="audit-log__state audit-log__state--error" role="alert">
+      <p>No pudimos cargar la auditoría. Inténtalo de nuevo en unos segundos.</p>
+      <button pButton type="button" label="Reintentar" (click)="retry()"></button>
+    </div>
+  } @else if (items().length === 0) {
+    <p class="audit-log__state">No hay eventos de auditoría registrados todavía.</p>
+  } @else {
+    <div class="audit-log__table-wrap">
+      <table class="audit-log__table">
+        <caption class="audit-log__caption">Listado de eventos de auditoría</caption>
+        <thead>
+          <tr>
+            <th scope="col">Fecha</th>
+            <th scope="col">Acción</th>
+            <th scope="col">Usuario</th>
+            <th scope="col">Rol</th>
+            <th scope="col">Objetivo</th>
+            <th scope="col">IP</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entry of items(); track entry.id) {
+            <tr>
+              <td>{{ formatCreatedAt(entry.createdAt) }}</td>
+              <td>{{ accionLabel(entry.accion) }}</td>
+              <td>{{ entry.email || '—' }}</td>
+              <td>{{ entry.role || '—' }}</td>
+              <td>{{ entry.targetId || '—' }}</td>
+              <td>{{ entry.ip || '—' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (pagination(); as page) {
+      <nav class="audit-log__pagination" aria-label="Paginación de auditoría">
+        <button
+          pButton
+          type="button"
+          label="Anterior"
+          (click)="previousPage()"
+          [disabled]="currentPage() <= 1"
+        ></button>
+        <span class="audit-log__page-indicator" role="status">
+          Página {{ currentPage() }} de {{ page.totalPages }}
+        </span>
+        <button
+          pButton
+          type="button"
+          label="Siguiente"
+          (click)="nextPage()"
+          [disabled]="currentPage() >= page.totalPages"
+        ></button>
+      </nav>
+    }
+  }
+</section>
