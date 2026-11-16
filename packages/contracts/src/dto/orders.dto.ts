@@ -175,6 +175,12 @@ export interface OrderResponse {
   updatedAt: string;
 }
 
+/** OCP: adds server-resolved cliente name fields without modifying `OrderResponse`. */
+export interface OrderResponseV2 extends OrderResponse {
+  clienteNombre?: string;
+  clienteApellido?: string;
+}
+
 export interface OrderListFilters extends PaginationRequest {
   /** Filtra pedidos de un cliente específico (usado por VENDEDOR/ADMIN) */
   clienteId?: string;
@@ -190,6 +196,14 @@ export interface OrderListResponse {
   clienteNombre?: string;
   clienteApellido?: string;
   createdAt: string;
+}
+
+/** OCP: adds vendor identity/display fields without modifying `OrderListResponse`. */
+export interface OrderListResponseV2 extends OrderListResponse {
+  /** Domain VENDEDOR.id (the order's provider), not an auth-user id. */
+  vendedorId: string;
+  vendedorNombre?: string;
+  vendedorEmpresa?: string;
 }
 
 // ════════════════════════════════════════════
