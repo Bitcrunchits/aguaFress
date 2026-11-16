@@ -53,6 +53,13 @@ export const routes: Routes = [
               ),
           },
           {
+            path: 'productos',
+            loadComponent: () =>
+              import('./features/admin/admin-productos-page/admin-productos-page').then(
+                (module) => module.AdminProductosPage,
+              ),
+          },
+          {
             path: 'panel',
             loadComponent: () =>
               import('./features/admin/admin-dashboard-page/admin-dashboard-page').then(
