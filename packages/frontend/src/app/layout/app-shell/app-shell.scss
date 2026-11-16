@@ -123,14 +123,69 @@
 }
 
 .shell__logout:focus-visible,
-.shell__nav a:focus-visible {
+.shell__nav a:focus-visible,
+.shell__sidenav-nav a:focus-visible {
   outline: 2px solid var(--agua-primary);
   outline-offset: 3px;
 }
 
-.shell__content {
+.shell__body {
   max-width: 1120px;
   margin: 0 auto;
+}
+
+.shell__body--sidenav {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.shell__sidenav {
+  flex: 0 0 220px;
+  padding: 16px;
+  border: 1px solid var(--agua-glass-border);
+  border-radius: var(--radius-header);
+  // Keep a solid fallback when backdrop-filter is unavailable.
+  background: var(--agua-surface);
+  box-shadow: var(--shadow-glass);
+
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    background: var(--agua-glass);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+}
+
+.shell__sidenav-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.shell__sidenav-nav a {
+  display: block;
+  border-radius: var(--radius-control);
+  padding: 10px 14px;
+  color: var(--agua-text-secondary);
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.shell__sidenav-nav a:hover {
+  background: var(--agua-action-secondary-bg);
+  color: var(--agua-primary-dark);
+}
+
+.shell__sidenav-nav a.shell__sidenav-link--active {
+  background: var(--agua-action-secondary-bg);
+  color: var(--agua-primary-dark);
+  box-shadow: var(--elevation-2);
+}
+
+.shell__content {
+  flex: 1;
+  min-width: 0;
 }
 
 @media (max-width: 640px) {
@@ -149,5 +204,14 @@
 
   .shell__account {
     flex-wrap: wrap;
+  }
+
+  .shell__body--sidenav {
+    flex-direction: column;
+  }
+
+  .shell__sidenav {
+    flex: none;
+    width: 100%;
   }
 }

@@ -32,10 +32,9 @@ describe('AppShell', () => {
   };
 
   const ROLE_LINKS: Record<UserRole, Array<[string, string]>> = {
-    [UserRole.SUPER_ADMIN]: [
-      ['/admin/vendedores', 'Vendedores'],
-      ['/admin/perfil', 'Perfil'],
-    ],
+    // super_admin keeps only the shared "Inicio" link in the top nav; its
+    // admin sections live in the dedicated sidenav (asserted separately).
+    [UserRole.SUPER_ADMIN]: [],
     [UserRole.VENDEDOR]: [
       ['/vendedor/catalogo/productos', 'Catálogo'],
       ['/vendedor/clientes', 'Clientes'],
@@ -66,7 +65,10 @@ describe('AppShell', () => {
       ready.next(true);
       fixture.detectChanges();
 
-      const links = element.querySelectorAll('a');
+      // Scope to the top nav: super_admin also renders a sidenav, which must
+      // not be counted among the role links asserted here.
+      const nav = element.querySelector<HTMLElement>('.shell__nav')!;
+      const links = nav.querySelectorAll('a');
       const expected = ROLE_LINKS[role];
       expect(links.length).toBe(1 + expected.length);
       expect(links[0].getAttribute('href')).toBe(ROLE_HOME[role].path);
@@ -150,6 +152,9 @@ class AdminView {}
 @Component({ template: '<p id="client-view">Client private view</p>' })
 class ClientView {}
 
+@Component({ template: '<p id="vendor-view">Vendor private view</p>' })
+class VendorView {}
+
 describe('AppShell routed content', () => {
   const ready = new BehaviorSubject(true);
   const auth = {
@@ -215,5 +220,73 @@ describe('AppShell routed content', () => {
     expect(TestBed.inject(Router).url).toBe('/cliente');
     expect(harness.routeNativeElement?.querySelector('#admin-view')).toBeNull();
     expect(harness.routeNativeElement?.querySelector('#client-view')).not.toBeNull();
+  });
+});
+
+describe('AppShell sidenav', () => {
+  const SIDENAV_LINKS: Array<[string, string]> = [
+    ['/admin/panel', 'Panel'],
+    ['/admin/vendedores', 'Vendedores'],
+    ['/admin/productos', 'Productos'],
+    ['/admin/clientes', 'Clientes'],
+    ['/admin/auditoria', 'Auditoría'],
+    ['/admin/perfil', 'Perfil'],
+  ];
+
+  async function configure(role: UserRole): Promise<void> {
+    const ready = new BehaviorSubject(true);
+    const auth = {
+      sessionReady$: ready.asObservable(),
+      currentSession: {
+        token: 'access', refreshToken: 'refresh',
+        user: { id: 'u-1', email: 'u@example.com', role },
+      } as LoginResponse | null,
+      logout: jasmine.createSpy('logout'),
+    };
+
+    await TestBed.configureTestingModule({
+      providers: [
+        { provide: AuthService, useValue: auth },
+        provideRouter([{
+          path: '', component: AppShell, children: [
+            { path: 'admin', component: AdminView },
+            { path: 'vendedor', component: VendorView },
+            { path: 'cliente', component: ClientView },
+          ],
+        }]),
+      ],
+    }).compileComponents();
+  }
+
+  it('renders the admin sidenav with every section for super_admin', async () => {
+    await configure(UserRole.SUPER_ADMIN);
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/admin');
+
+    const sidenav = harness.routeNativeElement?.querySelector('.shell__sidenav');
+    expect(sidenav).not.toBeNull();
+
+    const links = sidenav!.querySelectorAll('a');
+    expect(links.length).toBe(SIDENAV_LINKS.length);
+    SIDENAV_LINKS.forEach(([href, label], index) => {
+      expect(links[index].getAttribute('href')).toBe(href);
+      expect(links[index].textContent?.trim()).toBe(label);
+    });
+  });
+
+  it('does not render the admin sidenav for vendedor', async () => {
+    await configure(UserRole.VENDEDOR);
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/vendedor');
+    expect(harness.routeNativeElement?.querySelector('#vendor-view')).not.toBeNull();
+    expect(harness.routeNativeElement?.querySelector('.shell__sidenav')).toBeNull();
+  });
+
+  it('does not render the admin sidenav for cliente', async () => {
+    await configure(UserRole.CLIENTE);
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/cliente');
+    expect(harness.routeNativeElement?.querySelector('#client-view')).not.toBeNull();
+    expect(harness.routeNativeElement?.querySelector('.shell__sidenav')).toBeNull();
   });
 });

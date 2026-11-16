@@ -23,10 +23,6 @@
             <a routerLink="/vendedor/pedidos" routerLinkActive="shell__link--active">Pedidos</a>
             <a routerLink="/vendedor/perfil" routerLinkActive="shell__link--active">Perfil</a>
           }
-          @if (session.user.role === superAdminRole) {
-            <a routerLink="/admin/vendedores" routerLinkActive="shell__link--active">Vendedores</a>
-            <a routerLink="/admin/perfil" routerLinkActive="shell__link--active">Perfil</a>
-          }
         </nav>
         <div class="shell__account">
           <span class="shell__identity">{{ roleLabels[session.user.role] }} · {{ displayName(session) }}</span>
@@ -40,9 +36,26 @@
   @if (auth.sessionReady$ | async) {
     @if (auth.currentSession; as session) {
       @if (isCurrentRoleRoute(session.user.role)) {
-        <section class="shell__content">
-          <router-outlet />
-        </section>
+        <div
+          class="shell__body"
+          [class.shell__body--sidenav]="session.user.role === superAdminRole"
+        >
+          @if (session.user.role === superAdminRole) {
+            <aside class="shell__sidenav">
+              <nav class="shell__sidenav-nav" aria-label="Navegación de administración">
+                <a routerLink="/admin/panel" routerLinkActive="shell__sidenav-link--active">Panel</a>
+                <a routerLink="/admin/vendedores" routerLinkActive="shell__sidenav-link--active">Vendedores</a>
+                <a routerLink="/admin/productos" routerLinkActive="shell__sidenav-link--active">Productos</a>
+                <a routerLink="/admin/clientes" routerLinkActive="shell__sidenav-link--active">Clientes</a>
+                <a routerLink="/admin/auditoria" routerLinkActive="shell__sidenav-link--active">Auditoría</a>
+                <a routerLink="/admin/perfil" routerLinkActive="shell__sidenav-link--active">Perfil</a>
+              </nav>
+            </aside>
+          }
+          <section class="shell__content">
+            <router-outlet />
+          </section>
+        </div>
       }
     }
   }
