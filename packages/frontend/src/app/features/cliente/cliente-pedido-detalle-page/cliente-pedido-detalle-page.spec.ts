@@ -7,6 +7,7 @@ import type { OrderResponse } from '@agua/contracts';
 import { BehaviorSubject } from 'rxjs';
 import { ClientePedidoDetalleFacade } from '../cliente-pedido-detalle.facade';
 import { ClientePedidoDetalleError } from '../cliente-pedido-detalle-error';
+import { ClientePedidoCancelError } from '../cliente-pedido-cancel-error';
 import { ClientePedidoDetallePage } from './cliente-pedido-detalle-page';
 
 const ORDER: OrderResponse = {
@@ -48,7 +49,11 @@ describe('ClientePedidoDetallePage', () => {
   const loading = signal(false);
   const notFound = signal(false);
   const error = signal<ClientePedidoDetalleError | null>(null);
+  const cancelling = signal(false);
+  const cancelError = signal<ClientePedidoCancelError | null>(null);
   const loadOrder = jasmine.createSpy('loadOrder');
+  const cancelOrder = jasmine.createSpy('cancelOrder');
+  const clearCancelError = jasmine.createSpy('clearCancelError');
   let paramMap: BehaviorSubject<ParamMap>;
 
   beforeEach(async () => {
@@ -56,7 +61,11 @@ describe('ClientePedidoDetallePage', () => {
     loading.set(false);
     notFound.set(false);
     error.set(null);
+    cancelling.set(false);
+    cancelError.set(null);
     loadOrder.calls.reset();
+    cancelOrder.calls.reset();
+    clearCancelError.calls.reset();
     paramMap = new BehaviorSubject(convertToParamMap({ id: 'order-1' }));
 
     await TestBed.configureTestingModule({
@@ -71,7 +80,17 @@ describe('ClientePedidoDetallePage', () => {
           providers: [
             {
               provide: ClientePedidoDetalleFacade,
-              useValue: { order, loading, notFound, error, loadOrder },
+              useValue: {
+                order,
+                loading,
+                notFound,
+                error,
+                cancelling,
+                cancelError,
+                loadOrder,
+                cancelOrder,
+                clearCancelError,
+              },
             },
           ],
         },
@@ -210,5 +229,92 @@ describe('ClientePedidoDetallePage', () => {
     const time = element.querySelector('time');
     expect(time?.textContent?.trim()).toBe('—');
     expect(time?.hasAttribute('datetime')).toBeFalse();
+  });
+
+  function confirmCancelButton(): HTMLButtonElement {
+    return element.querySelector<HTMLButtonElement>('.confirm-dialog__button--confirm')!;
+  }
+
+  it('shows the cancel action only for a PENDIENTE order', () => {
+    order.set(ORDER);
+    fixture.detectChanges();
+
+    expect(findButton('Cancelar pedido')).toBeDefined();
+
+    order.set({ ...ORDER, estado: OrderEstado.ENTREGADO });
+    fixture.detectChanges();
+
+    expect(findButton('Cancelar pedido')).toBeUndefined();
+    expect(element.querySelector('.confirm-dialog')).toBeNull();
+  });
+
+  it('opens the confirmation dialog naming the order', () => {
+    order.set(ORDER);
+    fixture.detectChanges();
+
+    findButton('Cancelar pedido')?.click();
+    fixture.detectChanges();
+
+    const dialog = element.querySelector('.confirm-dialog');
+    expect(dialog).not.toBeNull();
+    expect(dialog?.textContent).toContain('P-0001');
+    expect(clearCancelError).toHaveBeenCalledOnceWith();
+  });
+
+  it('cancels the order when the dialog is confirmed', () => {
+    order.set(ORDER);
+    fixture.detectChanges();
+
+    findButton('Cancelar pedido')?.click();
+    fixture.detectChanges();
+
+    confirmCancelButton().click();
+    fixture.detectChanges();
+
+    expect(cancelOrder).toHaveBeenCalledOnceWith();
+  });
+
+  it('closes the dialog without cancelling', () => {
+    order.set(ORDER);
+    fixture.detectChanges();
+
+    findButton('Cancelar pedido')?.click();
+    fixture.detectChanges();
+
+    element
+      .querySelector<HTMLButtonElement>('.confirm-dialog__button--cancel')!
+      .click();
+    fixture.detectChanges();
+
+    expect(cancelOrder).not.toHaveBeenCalled();
+    expect(element.querySelector('.confirm-dialog')).toBeNull();
+  });
+
+  it('surfaces the cancel error inside the dialog', () => {
+    order.set(ORDER);
+    fixture.detectChanges();
+
+    findButton('Cancelar pedido')?.click();
+    cancelError.set(ClientePedidoCancelError.Network);
+    fixture.detectChanges();
+
+    expect(element.querySelector('.cliente__dialog-error')?.textContent).toContain(
+      'No pudimos conectar con el servidor',
+    );
+  });
+
+  it('closes the dialog when the order leaves PENDIENTE', () => {
+    order.set(ORDER);
+    fixture.detectChanges();
+
+    findButton('Cancelar pedido')?.click();
+    fixture.detectChanges();
+    expect(element.querySelector('.confirm-dialog')).not.toBeNull();
+
+    order.set({ ...ORDER, estado: OrderEstado.CANCELADO });
+    fixture.detectChanges();
+
+    expect(element.querySelector('.confirm-dialog')).toBeNull();
+    expect(findButton('Cancelar pedido')).toBeUndefined();
   });
 });

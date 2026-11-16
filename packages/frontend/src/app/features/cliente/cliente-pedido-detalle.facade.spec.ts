@@ -6,7 +6,8 @@ import { BehaviorSubject, EMPTY, Subject, of, throwError } from 'rxjs';
 import type { Observable } from 'rxjs';
 import { ClientePedidoDetalleFacade } from './cliente-pedido-detalle.facade';
 import { ClientePedidoDetalleError } from './cliente-pedido-detalle-error';
-import { CLIENTE_PEDIDOS_DETAIL_GATEWAY } from './cliente-pedidos.gateway';
+import { ClientePedidoCancelError } from './cliente-pedido-cancel-error';
+import { CLIENTE_PEDIDO_CANCEL_GATEWAY, CLIENTE_PEDIDOS_DETAIL_GATEWAY } from './cliente-pedidos.gateway';
 import { CLIENTE_SESSION_READER } from './cliente-session.contract';
 import { CLIENTE_SESSION_READINESS_READER } from './cliente-session-readiness.contract';
 
@@ -43,6 +44,9 @@ describe('ClientePedidoDetalleFacade', () => {
   const gatewayStub = {
     getOrder: jasmine.createSpy('getOrder'),
   };
+  const cancelGatewayStub = {
+    cancelOrder: jasmine.createSpy('cancelOrder'),
+  };
   const sessionStub: {
     currentSession: { readonly user: { readonly id: string } } | null;
     sessionReplacement$: Observable<void>;
@@ -61,11 +65,13 @@ describe('ClientePedidoDetalleFacade', () => {
 
     gatewayStub.getOrder.calls.reset();
     gatewayStub.getOrder.and.returnValue(of(ORDER_A));
+    cancelGatewayStub.cancelOrder.calls.reset();
 
     TestBed.configureTestingModule({
       providers: [
         ClientePedidoDetalleFacade,
         { provide: CLIENTE_PEDIDOS_DETAIL_GATEWAY, useValue: gatewayStub },
+        { provide: CLIENTE_PEDIDO_CANCEL_GATEWAY, useValue: cancelGatewayStub },
         { provide: CLIENTE_SESSION_READER, useValue: sessionStub },
         { provide: CLIENTE_SESSION_READINESS_READER, useValue: readinessStub },
       ],
@@ -227,6 +233,107 @@ describe('ClientePedidoDetalleFacade', () => {
     TestBed.resetTestingModule();
     response.next(ORDER_A);
     response.complete();
+
+    expect(facade.order()).toBeNull();
+  });
+
+  it('cancels the order and replaces it with the returned CANCELADO response', () => {
+    const facade = create();
+    facade.loadOrder('order-1');
+
+    const cancelResponse = new Subject<OrderResponse>();
+    cancelGatewayStub.cancelOrder.and.returnValue(cancelResponse.asObservable());
+
+    facade.cancelOrder();
+
+    expect(cancelGatewayStub.cancelOrder).toHaveBeenCalledOnceWith({ id: 'order-1' });
+    expect(facade.cancelling()).toBeTrue();
+    expect(facade.cancelError()).toBeNull();
+
+    cancelResponse.next({ ...ORDER_A, estado: OrderEstado.CANCELADO });
+    cancelResponse.complete();
+
+    expect(facade.cancelling()).toBeFalse();
+    expect(facade.cancelError()).toBeNull();
+    expect(facade.order()?.estado).toBe(OrderEstado.CANCELADO);
+    expect(gatewayStub.getOrder).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not cancel an order that is no longer PENDIENTE', () => {
+    gatewayStub.getOrder.and.returnValue(of({ ...ORDER_A, estado: OrderEstado.ENTREGADO }));
+    const facade = create();
+    facade.loadOrder('order-1');
+
+    facade.cancelOrder();
+
+    expect(cancelGatewayStub.cancelOrder).not.toHaveBeenCalled();
+    expect(facade.cancelling()).toBeFalse();
+    expect(facade.order()?.estado).toBe(OrderEstado.ENTREGADO);
+  });
+
+  it('reloads the detail when the cancel is forbidden', () => {
+    const facade = create();
+    facade.loadOrder('order-1');
+    cancelGatewayStub.cancelOrder.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 403 })),
+    );
+    gatewayStub.getOrder.and.returnValue(of({ ...ORDER_A, estado: OrderEstado.CONFIRMADO }));
+
+    facade.cancelOrder();
+
+    expect(facade.cancelling()).toBeFalse();
+    expect(facade.cancelError()).toBeNull();
+    expect(gatewayStub.getOrder).toHaveBeenCalledTimes(2);
+    expect(facade.order()?.estado).toBe(OrderEstado.CONFIRMADO);
+  });
+
+  it('exposes a retryable error and keeps the order when the cancel fails', () => {
+    const facade = create();
+    facade.loadOrder('order-1');
+    cancelGatewayStub.cancelOrder.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 0 })),
+    );
+
+    facade.cancelOrder();
+
+    expect(facade.cancelling()).toBeFalse();
+    expect(facade.cancelError()).toBe(ClientePedidoCancelError.Network);
+    expect(facade.order()?.estado).toBe(OrderEstado.PENDIENTE);
+    expect(gatewayStub.getOrder).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears a previous cancel error', () => {
+    const facade = create();
+    facade.loadOrder('order-1');
+    cancelGatewayStub.cancelOrder.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 500 })),
+    );
+    facade.cancelOrder();
+
+    expect(facade.cancelError()).toBe(ClientePedidoCancelError.Unexpected);
+
+    facade.clearCancelError();
+
+    expect(facade.cancelError()).toBeNull();
+  });
+
+  it('aborts an in-flight cancel on session replacement', () => {
+    const facade = create();
+    facade.loadOrder('order-1');
+    const cancelResponse = new Subject<OrderResponse>();
+    cancelGatewayStub.cancelOrder.and.returnValue(cancelResponse.asObservable());
+    facade.cancelOrder();
+
+    expect(facade.cancelling()).toBeTrue();
+
+    sessionReady.next(false);
+    sessionReplacement.next();
+
+    expect(facade.cancelling()).toBeFalse();
+    expect(facade.cancelError()).toBeNull();
+
+    cancelResponse.next({ ...ORDER_A, estado: OrderEstado.CANCELADO });
+    cancelResponse.complete();
 
     expect(facade.order()).toBeNull();
   });

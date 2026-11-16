@@ -14,6 +14,7 @@ import { ClientePedidosService } from './cliente-pedidos.service';
 const LIST_ORDERS_URL = `${API_CONFIG.baseUrl}/api/v1/orders/list`;
 const GET_ORDER_URL = `${API_CONFIG.baseUrl}/api/v1/orders/get-by-id`;
 const GET_JOB_STATUS_URL = `${API_CONFIG.baseUrl}/api/v1/orders/job-status`;
+const CANCEL_ORDER_URL = `${API_CONFIG.baseUrl}/api/v1/orders/cancel`;
 
 const ORDER_LIST_ITEM: OrderListResponseV2 = {
   id: 'order-1',
@@ -139,5 +140,20 @@ describe('ClientePedidosService', () => {
     request.flush(JOB_STATUS);
     expect(response).toEqual(JOB_STATUS);
     expect(response?.status).toBe(OrderJobStatus.PROCESSING);
+  });
+
+  it('cancels an order with a PATCH carrying only the order id', () => {
+    let response: OrderResponse | undefined;
+
+    service.cancelOrder({ id: 'order-1' }).subscribe((value) => (response = value));
+
+    const request = httpMock.expectOne(CANCEL_ORDER_URL);
+    expect(request.request.method).toBe('PATCH');
+    // Identity comes from the JWT: the body carries only the order id, never
+    // a clienteId/userId.
+    expect(request.request.body).toEqual({ id: 'order-1' });
+
+    request.flush({ ...ORDER, estado: OrderEstado.CANCELADO });
+    expect(response?.estado).toBe(OrderEstado.CANCELADO);
   });
 });

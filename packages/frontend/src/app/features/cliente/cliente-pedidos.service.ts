@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import type { Observable } from 'rxjs';
 import type {
+  CancelOrderRequest,
   OrderJobStatusResponse,
   OrderListResponseV2,
   OrderResponse,
@@ -9,6 +10,7 @@ import type {
 } from '@agua/contracts';
 import { API_CONFIG } from '../../core/config/api.config';
 import type {
+  ClientePedidoCancelGateway,
   ClientePedidosDetailGateway,
   ClientePedidosGateway,
   ClientePedidosListGateway,
@@ -18,6 +20,7 @@ import type {
 const LIST_ORDERS_URL = `${API_CONFIG.baseUrl}/api/v1/orders/list`;
 const GET_ORDER_URL = `${API_CONFIG.baseUrl}/api/v1/orders/get-by-id`;
 const GET_JOB_STATUS_URL = `${API_CONFIG.baseUrl}/api/v1/orders/job-status`;
+const CANCEL_ORDER_URL = `${API_CONFIG.baseUrl}/api/v1/orders/cancel`;
 
 /**
  * Orders read HTTP access for the authenticated cliente. Identity always comes
@@ -30,7 +33,8 @@ export class ClientePedidosService
     ClientePedidosGateway,
     ClientePedidosListGateway,
     ClientePedidosTrackingGateway,
-    ClientePedidosDetailGateway
+    ClientePedidosDetailGateway,
+    ClientePedidoCancelGateway
 {
   private readonly http = inject(HttpClient);
 
@@ -46,5 +50,9 @@ export class ClientePedidosService
     return this.http.get<OrderJobStatusResponse>(
       `${GET_JOB_STATUS_URL}?id=${encodeURIComponent(trackingId)}`,
     );
+  }
+
+  cancelOrder(request: CancelOrderRequest): Observable<OrderResponse> {
+    return this.http.patch<OrderResponse>(CANCEL_ORDER_URL, request);
   }
 }

@@ -1,11 +1,13 @@
-import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MetodoPago, OrderEstado } from '@agua/contracts';
 import type { DireccionEntrega, OrderResponse } from '@agua/contracts';
+import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ClientePedidoDetalleFacade } from '../cliente-pedido-detalle.facade';
 import { ClientePedidoDetalleError } from '../cliente-pedido-detalle-error';
+import { ClientePedidoCancelError } from '../cliente-pedido-cancel-error';
 import {
   METODO_PAGO_LABELS,
   ORDER_ESTADO_LABELS,
@@ -17,7 +19,7 @@ import {
   StatusLabelComponent,
   type StatusLabelTone,
 } from '../../../shared/status-label/status-label';
-import { CLIENTE_PEDIDOS_DETAIL_GATEWAY } from '../cliente-pedidos.gateway';
+import { CLIENTE_PEDIDO_CANCEL_GATEWAY, CLIENTE_PEDIDOS_DETAIL_GATEWAY } from '../cliente-pedidos.gateway';
 import { ClientePedidosService } from '../cliente-pedidos.service';
 import { CLIENTE_SESSION_READER } from '../cliente-session.contract';
 import { CLIENTE_SESSION_READINESS_READER } from '../cliente-session-readiness.contract';
@@ -31,12 +33,13 @@ type OrderItem = OrderResponse['items'][number];
  */
 @Component({
   selector: 'app-cliente-pedido-detalle-page',
-  imports: [RouterLink, StatusLabelComponent],
+  imports: [RouterLink, ConfirmDialogComponent, StatusLabelComponent],
   templateUrl: './cliente-pedido-detalle-page.html',
   styleUrl: './cliente-pedido-detalle-page.scss',
   providers: [
     ClientePedidoDetalleFacade,
     { provide: CLIENTE_PEDIDOS_DETAIL_GATEWAY, useExisting: ClientePedidosService },
+    { provide: CLIENTE_PEDIDO_CANCEL_GATEWAY, useExisting: ClientePedidosService },
     { provide: CLIENTE_SESSION_READER, useExisting: AuthService },
     { provide: CLIENTE_SESSION_READINESS_READER, useExisting: AuthService },
   ],
@@ -46,6 +49,24 @@ export class ClientePedidoDetallePage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private orderId: string | null = null;
+
+  protected readonly OrderEstado = OrderEstado;
+  protected readonly cancelDialogOpen = signal(false);
+
+  constructor() {
+    // Close the confirmation dialog once the order leaves PENDIENTE, whether
+    // the cancel succeeded (CANCELADO) or a 403 reloaded a new server-side
+    // estado. Failures keep the dialog open to show the retryable error.
+    effect(() => {
+      if (!this.cancelDialogOpen()) {
+        return;
+      }
+      const order = this.vm.order();
+      if (order !== null && order.estado !== OrderEstado.PENDIENTE) {
+        this.cancelDialogOpen.set(false);
+      }
+    });
+  }
 
   private readonly priceFormatter = new Intl.NumberFormat('es-AR', {
     style: 'currency',
@@ -68,6 +89,31 @@ export class ClientePedidoDetallePage implements OnInit {
   retry(): void {
     if (this.orderId !== null) {
       this.vm.loadOrder(this.orderId);
+    }
+  }
+
+  openCancelDialog(): void {
+    this.vm.clearCancelError();
+    this.cancelDialogOpen.set(true);
+  }
+
+  cancelCancelDialog(): void {
+    if (this.vm.cancelling()) {
+      return;
+    }
+    this.cancelDialogOpen.set(false);
+  }
+
+  confirmCancel(): void {
+    this.vm.cancelOrder();
+  }
+
+  cancelErrorMessage(error: ClientePedidoCancelError): string {
+    switch (error) {
+      case ClientePedidoCancelError.Network:
+        return 'No pudimos conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.';
+      default:
+        return 'No pudimos cancelar el pedido. Inténtalo de nuevo en unos segundos.';
     }
   }
 

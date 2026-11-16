@@ -187,10 +187,39 @@
     background: var(--agua-action-primary-hover);
   }
 
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
   &:focus-visible {
     outline: 3px solid var(--agua-flow);
     outline-offset: 2px;
   }
+}
+
+.cliente__actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.cliente__button--danger {
+  border-color: var(--route-danger);
+  background: var(--route-danger);
+  color: #fff;
+
+  &:hover:not(:disabled) {
+    border-color: var(--route-danger);
+    background: var(--route-danger);
+    opacity: 0.85;
+  }
+}
+
+.cliente__dialog-error {
+  margin: 12px 0 0;
+  color: var(--route-danger);
+  font-weight: 700;
 }
 
 @media (max-width: 640px) {

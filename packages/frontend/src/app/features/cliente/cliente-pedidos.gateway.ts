@@ -1,6 +1,12 @@
 import { InjectionToken } from '@angular/core';
 import type { Observable } from 'rxjs';
-import type { OrderJobStatusResponse, OrderListResponseV2, OrderResponse, PaginatedResponse } from '@agua/contracts';
+import type {
+  CancelOrderRequest,
+  OrderJobStatusResponse,
+  OrderListResponseV2,
+  OrderResponse,
+  PaginatedResponse,
+} from '@agua/contracts';
 
 /**
  * Orders read contract for the authenticated cliente. The backend scopes every
@@ -37,6 +43,15 @@ export interface ClientePedidosDetailGateway {
   getOrder(orderId: string): Observable<OrderResponse>;
 }
 
+/**
+ * Cancel capability for consumers that transition a `PENDIENTE` order to
+ * `CANCELADO`. Kept apart from the read contracts so the detail view can
+ * cancel without depending on the list or polling ports.
+ */
+export interface ClientePedidoCancelGateway {
+  cancelOrder(request: CancelOrderRequest): Observable<OrderResponse>;
+}
+
 export const CLIENTE_PEDIDOS_LIST_GATEWAY = new InjectionToken<ClientePedidosListGateway>(
   'CLIENTE_PEDIDOS_LIST_GATEWAY',
 );
@@ -46,3 +61,6 @@ export const CLIENTE_PEDIDOS_TRACKING_GATEWAY =
 
 export const CLIENTE_PEDIDOS_DETAIL_GATEWAY =
   new InjectionToken<ClientePedidosDetailGateway>('CLIENTE_PEDIDOS_DETAIL_GATEWAY');
+
+export const CLIENTE_PEDIDO_CANCEL_GATEWAY =
+  new InjectionToken<ClientePedidoCancelGateway>('CLIENTE_PEDIDO_CANCEL_GATEWAY');

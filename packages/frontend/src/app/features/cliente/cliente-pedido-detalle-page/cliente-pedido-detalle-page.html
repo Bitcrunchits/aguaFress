@@ -103,6 +103,40 @@
           <p>{{ order.observaciones }}</p>
         </section>
       }
+
+      @if (order.estado === OrderEstado.PENDIENTE) {
+        <section class="cliente__section cliente__actions" aria-labelledby="cliente-pedido-actions-title">
+          <h3 id="cliente-pedido-actions-title">Acciones</h3>
+          <div class="cliente__actions-row">
+            <button
+              type="button"
+              class="cliente__button cliente__button--danger"
+              (click)="openCancelDialog()"
+            >
+              Cancelar pedido
+            </button>
+          </div>
+        </section>
+      }
     </article>
+  }
+
+  @if (cancelDialogOpen() && vm.order(); as order) {
+    <app-confirm-dialog
+      title="Cancelar pedido"
+      confirmLabel="Cancelar pedido"
+      cancelLabel="Volver"
+      [loading]="vm.cancelling()"
+      (confirm)="confirmCancel()"
+      (cancel)="cancelCancelDialog()"
+    >
+      <p>
+        Vas a cancelar el pedido <strong>{{ order.pedidoNumero }}</strong
+        >. Esta acción no se puede deshacer.
+      </p>
+      @if (vm.cancelError(); as cancelError) {
+        <p class="cliente__dialog-error" role="alert">{{ cancelErrorMessage(cancelError) }}</p>
+      }
+    </app-confirm-dialog>
   }
 </section>
