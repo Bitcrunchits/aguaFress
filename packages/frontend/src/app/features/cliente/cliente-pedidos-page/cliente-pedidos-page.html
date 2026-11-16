@@ -61,7 +61,7 @@
             <time class="cliente__order-date" [attr.datetime]="isoDate(order.createdAt)">
               {{ formatDate(order.createdAt) }}
             </time>
-            <span class="cliente__order-provider">Proveedor: {{ order.vendedorId }}</span>
+            <span class="cliente__order-provider">Proveedor: {{ proveedor(order) }}</span>
           </p>
           <p class="cliente__order-total">Total: {{ formatPrice(order.total) }}</p>
           <a

@@ -2,8 +2,8 @@ import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import type { Route } from '@angular/router';
-import { MetodoPago, OrderEstado, OrderJobStatus } from '@agua/contracts';
-import type { OrderResponse } from '@agua/contracts';
+import { OrderEstado, OrderJobStatus } from '@agua/contracts';
+import type { OrderListResponseV2 } from '@agua/contracts';
 import { Subject } from 'rxjs';
 import { routes } from '../../../app.routes';
 import { ClientePedidosFacade } from '../cliente-pedidos.facade';
@@ -25,27 +25,15 @@ function findClienteOrderDetailRoute(): Route {
   return detailRoute;
 }
 
-const ORDER: OrderResponse = {
+const ORDER: OrderListResponseV2 = {
   id: 'order-1',
   pedidoNumero: 'P-0001',
-  clienteId: 'cliente-profile-1',
-  vendedorId: 'vendedor-1',
-  items: [
-    {
-      productId: 'producto-1',
-      nombre: 'Agua mineral 500 ml',
-      cantidad: 2,
-      precioUnitario: 1000,
-    },
-  ],
-  totalSinIva: 2000,
-  iva: 420,
-  total: 2420,
   estado: OrderEstado.PENDIENTE,
-  metodoPago: MetodoPago.CONTRA_ENTREGA,
-  direccion: { calle: 'Av. Corrientes', numero: '1234' },
+  total: 2420,
   createdAt: '2026-10-24T00:00:00.000Z',
-  updatedAt: '2026-10-24T00:00:00.000Z',
+  vendedorId: 'vendedor-1',
+  vendedorNombre: 'Ana',
+  vendedorEmpresa: 'Aguas del Sur',
 };
 
 const EXPECTED_DATE = ORDER.createdAt.slice(0, 10);
@@ -54,7 +42,7 @@ describe('ClientePedidosPage', () => {
   let fixture: ComponentFixture<ClientePedidosPage>;
   let element: HTMLElement;
 
-  const orders = signal<OrderResponse[]>([]);
+  const orders = signal<OrderListResponseV2[]>([]);
   const loading = signal(false);
   const error = signal<ClientePedidosListError | null>(null);
   const trackings = signal<ClientePedidoTrackingView[]>([]);
@@ -142,6 +130,13 @@ describe('ClientePedidosPage', () => {
     expect(time?.getAttribute('datetime')).toBe(EXPECTED_DATE);
     expect(element.textContent).toContain('Pendiente');
     expect(element.querySelector('.cliente__order-total')?.textContent).toContain('2.420');
+    expect(element.textContent).toContain('Proveedor: Aguas del Sur');
+  });
+
+  it('falls back to the vendedorId when no vendor name is resolved', () => {
+    orders.set([{ ...ORDER, vendedorEmpresa: undefined, vendedorNombre: undefined }]);
+    fixture.detectChanges();
+
     expect(element.textContent).toContain('Proveedor: vendedor-1');
   });
 

@@ -2,13 +2,34 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { MetodoPago, OrderEstado, OrderJobStatus } from '@agua/contracts';
-import type { OrderJobStatusResponse, OrderResponse } from '@agua/contracts';
+import type {
+  OrderJobStatusResponse,
+  OrderListResponseV2,
+  OrderResponse,
+  PaginatedResponse,
+} from '@agua/contracts';
 import { API_CONFIG } from '../../core/config/api.config';
 import { ClientePedidosService } from './cliente-pedidos.service';
 
 const LIST_ORDERS_URL = `${API_CONFIG.baseUrl}/api/v1/orders/list`;
 const GET_ORDER_URL = `${API_CONFIG.baseUrl}/api/v1/orders/get-by-id`;
 const GET_JOB_STATUS_URL = `${API_CONFIG.baseUrl}/api/v1/orders/job-status`;
+
+const ORDER_LIST_ITEM: OrderListResponseV2 = {
+  id: 'order-1',
+  pedidoNumero: 'P-0001',
+  estado: OrderEstado.PENDIENTE,
+  total: 2420,
+  createdAt: '2026-10-24T00:00:00.000Z',
+  vendedorId: 'vendedor-1',
+  vendedorNombre: 'Ana',
+  vendedorEmpresa: 'Aguas del Sur',
+};
+
+const LIST_RESPONSE: PaginatedResponse<OrderListResponseV2> = {
+  data: [ORDER_LIST_ITEM],
+  pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+};
 
 const ORDER: OrderResponse = {
   id: 'order-1',
@@ -69,7 +90,7 @@ describe('ClientePedidosService', () => {
   });
 
   it('lists the authenticated cliente orders without identity params', () => {
-    let response: OrderResponse[] | undefined;
+    let response: PaginatedResponse<OrderListResponseV2> | undefined;
 
     service.listOrders().subscribe((value) => (response = value));
 
@@ -78,8 +99,8 @@ describe('ClientePedidosService', () => {
     expect(request.request.body).toBeNull();
     expect(request.request.params.keys()).toEqual([]);
 
-    request.flush([ORDER]);
-    expect(response).toEqual([ORDER]);
+    request.flush(LIST_RESPONSE);
+    expect(response).toEqual(LIST_RESPONSE);
   });
 
   it('gets an order by id as an encoded query param', () => {

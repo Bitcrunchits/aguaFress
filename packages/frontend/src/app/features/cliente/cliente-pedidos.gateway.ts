@@ -1,13 +1,13 @@
 import { InjectionToken } from '@angular/core';
 import type { Observable } from 'rxjs';
-import type { OrderJobStatusResponse, OrderResponse } from '@agua/contracts';
+import type { OrderJobStatusResponse, OrderListResponseV2, OrderResponse, PaginatedResponse } from '@agua/contracts';
 
 /**
  * Orders read contract for the authenticated cliente. The backend scopes every
  * query by the JWT identity, so the port never receives an order owner.
  */
 export interface ClientePedidosGateway {
-  listOrders(): Observable<OrderResponse[]>;
+  listOrders(): Observable<PaginatedResponse<OrderListResponseV2>>;
   getOrder(orderId: string): Observable<OrderResponse>;
   getJobStatus(trackingId: string): Observable<OrderJobStatusResponse>;
 }
@@ -17,7 +17,7 @@ export interface ClientePedidosGateway {
  * detail and polling are separate contracts.
  */
 export interface ClientePedidosListGateway {
-  listOrders(): Observable<OrderResponse[]>;
+  listOrders(): Observable<PaginatedResponse<OrderListResponseV2>>;
 }
 
 /**

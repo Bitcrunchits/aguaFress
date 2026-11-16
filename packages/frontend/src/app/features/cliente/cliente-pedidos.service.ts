@@ -1,7 +1,12 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import type { Observable } from 'rxjs';
-import type { OrderJobStatusResponse, OrderResponse } from '@agua/contracts';
+import type {
+  OrderJobStatusResponse,
+  OrderListResponseV2,
+  OrderResponse,
+  PaginatedResponse,
+} from '@agua/contracts';
 import { API_CONFIG } from '../../core/config/api.config';
 import type {
   ClientePedidosDetailGateway,
@@ -29,8 +34,8 @@ export class ClientePedidosService
 {
   private readonly http = inject(HttpClient);
 
-  listOrders(): Observable<OrderResponse[]> {
-    return this.http.get<OrderResponse[]>(LIST_ORDERS_URL);
+  listOrders(): Observable<PaginatedResponse<OrderListResponseV2>> {
+    return this.http.get<PaginatedResponse<OrderListResponseV2>>(LIST_ORDERS_URL);
   }
 
   getOrder(orderId: string): Observable<OrderResponse> {

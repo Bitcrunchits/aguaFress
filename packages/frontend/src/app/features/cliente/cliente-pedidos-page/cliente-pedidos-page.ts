@@ -2,6 +2,7 @@ import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { OrderEstado, OrderJobStatus } from '@agua/contracts';
+import type { OrderListResponseV2 } from '@agua/contracts';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ClientePedidosFacade } from '../cliente-pedidos.facade';
 import {
@@ -136,6 +137,10 @@ export class ClientePedidosPage implements OnInit {
 
   formatPrice(value: number): string {
     return this.priceFormatter.format(value);
+  }
+
+  proveedor(order: OrderListResponseV2): string {
+    return order.vendedorEmpresa || order.vendedorNombre || order.vendedorId;
   }
 
   isoDate(value: string): string | null {

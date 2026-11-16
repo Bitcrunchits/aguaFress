@@ -1,6 +1,6 @@
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import type { OrderResponse } from '@agua/contracts';
+import type { OrderListResponseV2 } from '@agua/contracts';
 import { CLIENTE_PEDIDOS_LIST_GATEWAY } from './cliente-pedidos.gateway';
 import {
   ClientePedidosListError,
@@ -24,7 +24,7 @@ export class ClientePedidosFacade {
   private readonly sessionReadiness = inject(CLIENTE_SESSION_READINESS_READER);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly orders = signal<OrderResponse[]>([]);
+  readonly orders = signal<OrderListResponseV2[]>([]);
   readonly loading = signal(false);
   readonly error = signal<ClientePedidosListError | null>(null);
 
@@ -74,11 +74,11 @@ export class ClientePedidosFacade {
       .listOrders()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (orders) => {
+        next: (response) => {
           if (requestId !== this.ordersRequestId) {
             return;
           }
-          this.orders.set([...orders]);
+          this.orders.set([...response.data]);
           this.loading.set(false);
         },
         error: (error: unknown) => {
