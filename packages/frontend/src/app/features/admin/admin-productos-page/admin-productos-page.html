@@ -1,0 +1,95 @@
+<section class="role-card productos" aria-labelledby="productos-title">
+  <p class="role-card__eyebrow">Administración</p>
+  <h1 id="productos-title">Productos</h1>
+
+  <div class="productos__selector" aria-label="Filtro por vendedor">
+    <label class="productos__field">
+      <span class="productos__field-label">Vendedor</span>
+      <select
+        id="productos-vendedor"
+        [value]="selectedVendedorId()"
+        (change)="onVendedorChange($event)"
+      >
+        <option value="">Todos</option>
+        @for (vendedor of vendedores(); track vendedor.id) {
+          <option [value]="vendedor.id">{{ vendedorLabel(vendedor) }}</option>
+        }
+      </select>
+    </label>
+
+    @if (vendedoresLoading()) {
+      <p class="productos__selector-state" role="status">Cargando vendedores</p>
+    } @else if (vendedoresFailed()) {
+      <div class="productos__selector-state productos__selector-state--error" role="alert">
+        <p>No pudimos cargar los vendedores.</p>
+        <button pButton type="button" label="Reintentar" (click)="retryVendedores()"></button>
+      </div>
+    }
+  </div>
+
+  @if (loading()) {
+    <p class="productos__state" role="status">Cargando productos</p>
+  } @else if (failed()) {
+    <div class="productos__state productos__state--error" role="alert">
+      <p>No pudimos cargar los productos. Inténtalo de nuevo en unos segundos.</p>
+      <button pButton type="button" label="Reintentar" (click)="retry()"></button>
+    </div>
+  } @else if (items().length === 0) {
+    <p class="productos__state">No hay productos para mostrar.</p>
+  } @else {
+    <div class="productos__table-wrap">
+      <table class="productos__table">
+        <caption class="productos__caption">Catálogo de productos</caption>
+        <thead>
+          <tr>
+            <th scope="col">Producto</th>
+            <th scope="col">Precio</th>
+            <th scope="col">Stock</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Categoría</th>
+            <th scope="col">Marca</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (product of items(); track product.id) {
+            <tr>
+              <td>{{ product.nombre }}</td>
+              <td>{{ formatPrice(product.precioFinal) }}</td>
+              <td>{{ product.stock }}</td>
+              <td>
+                <app-status-label
+                  [label]="activoLabel(product.activo)"
+                  [tone]="activoTone(product.activo)"
+                />
+              </td>
+              <td>{{ categoriaLabel(product) }}</td>
+              <td>{{ marcaLabel(product) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (pagination(); as page) {
+      <nav class="productos__pagination" aria-label="Paginación de productos">
+        <button
+          pButton
+          type="button"
+          label="Anterior"
+          (click)="previousPage()"
+          [disabled]="currentPage() <= 1"
+        ></button>
+        <span class="productos__page-indicator" role="status">
+          Página {{ currentPage() }} de {{ page.totalPages }}
+        </span>
+        <button
+          pButton
+          type="button"
+          label="Siguiente"
+          (click)="nextPage()"
+          [disabled]="currentPage() >= page.totalPages"
+        ></button>
+      </nav>
+    }
+  }
+</section>
