@@ -9,7 +9,10 @@ import {
   StatusLabelComponent,
   type StatusLabelTone,
 } from '../../../shared/status-label/status-label';
-import { AdminProductosService } from '../admin-productos.service';
+import {
+  AdminProductosService,
+  type AdminProductosListFilters,
+} from '../admin-productos.service';
 import { AdminVendedoresService } from '../admin-vendedores.service';
 
 const PAGE_SIZE = 20;
@@ -85,10 +88,7 @@ export class AdminProductosPage implements OnInit {
     this.loading.set(true);
     this.failed.set(false);
 
-    const filters: { vendedorId?: string; page: number; limit: number } = {
-      page,
-      limit: PAGE_SIZE,
-    };
+    const filters: AdminProductosListFilters = { page, limit: PAGE_SIZE };
     const vendedorId = this.selectedVendedorId();
     if (vendedorId !== '') {
       filters.vendedorId = vendedorId;
