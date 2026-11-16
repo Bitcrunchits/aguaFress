@@ -1,4 +1,13 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  HostListener,
+  OnInit,
+  effect,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import type {
   PaginationResponse,
   ProductResponse,
@@ -9,6 +18,7 @@ import {
   StatusLabelComponent,
   type StatusLabelTone,
 } from '../../../shared/status-label/status-label';
+import { toUploadUrl } from '../../../shared/upload-url';
 import {
   AdminProductosService,
   type AdminProductosListFilters,
@@ -46,11 +56,26 @@ export class AdminProductosPage implements OnInit {
   readonly loading = signal(false);
   readonly failed = signal(false);
 
+  /** Absolute preview URL for the open lightbox, or null when closed. */
+  readonly previewImage = signal<string | null>(null);
+
+  private readonly closeButtonRef =
+    viewChild<ElementRef<HTMLButtonElement>>('closePreviewButton');
+
   private readonly priceFormatter = new Intl.NumberFormat('es-AR', {
     style: 'currency',
     currency: 'ARS',
     maximumFractionDigits: 0,
   });
+
+  constructor() {
+    // Move focus to the close button each time the lightbox opens.
+    effect(() => {
+      if (this.previewImage() !== null) {
+        this.closeButtonRef()?.nativeElement.focus();
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.loadVendedores();
@@ -151,5 +176,25 @@ export class AdminProductosPage implements OnInit {
 
   marcaLabel(product: ProductResponse): string {
     return product.marca ?? '—';
+  }
+
+  productImageUrl(imageId: string): string {
+    return toUploadUrl(imageId);
+  }
+
+  openPreview(product: ProductResponse): void {
+    if (!product.imagen) {
+      return;
+    }
+    this.previewImage.set(this.productImageUrl(product.imagen));
+  }
+
+  closePreview(): void {
+    this.previewImage.set(null);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.closePreview();
   }
 }

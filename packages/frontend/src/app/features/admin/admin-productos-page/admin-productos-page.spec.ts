@@ -205,4 +205,111 @@ describe('AdminProductosPage', () => {
     expect(previous.disabled).toBeFalse();
     expect(next.disabled).toBeTrue();
   });
+
+  it('renders a thumbnail pointing at the upload URL when the product has an image', () => {
+    vendedoresStub.list.and.returnValue(of(vendedorResponse([])));
+    productosStub.list.and.returnValue(
+      of(productResponse([{ ...PRODUCT, imagen: 'products/agua-500.webp' }])),
+    );
+
+    fixture.detectChanges();
+
+    const thumb = element.querySelector<HTMLImageElement>('img.productos__thumb');
+    expect(thumb).not.toBeNull();
+    expect(thumb?.getAttribute('src')).toContain('/uploads/products/agua-500.webp');
+  });
+
+  it('omits the thumbnail button and image when the product has no image', () => {
+    vendedoresStub.list.and.returnValue(of(vendedorResponse([])));
+    productosStub.list.and.returnValue(of(productResponse([PRODUCT])));
+
+    fixture.detectChanges();
+
+    expect(element.querySelector('.productos__thumb-btn')).toBeNull();
+    expect(element.querySelector('img.productos__thumb')).toBeNull();
+  });
+
+  it('opens the lightbox with the product image when the thumbnail is clicked', () => {
+    vendedoresStub.list.and.returnValue(of(vendedorResponse([])));
+    productosStub.list.and.returnValue(
+      of(productResponse([{ ...PRODUCT, imagen: 'products/agua-500.webp' }])),
+    );
+
+    fixture.detectChanges();
+    element.querySelector<HTMLButtonElement>('.productos__thumb-btn')!.click();
+    fixture.detectChanges();
+
+    expect(element.querySelector('.productos__lightbox')).not.toBeNull();
+    expect(
+      element
+        .querySelector<HTMLImageElement>('img.productos__lightbox__image')
+        ?.getAttribute('src'),
+    ).toContain('/uploads/products/agua-500.webp');
+  });
+
+  it('closes the lightbox when the close button is clicked', () => {
+    vendedoresStub.list.and.returnValue(of(vendedorResponse([])));
+    productosStub.list.and.returnValue(
+      of(productResponse([{ ...PRODUCT, imagen: 'products/agua-500.webp' }])),
+    );
+
+    fixture.detectChanges();
+    element.querySelector<HTMLButtonElement>('.productos__thumb-btn')!.click();
+    fixture.detectChanges();
+    expect(element.querySelector('.productos__lightbox')).not.toBeNull();
+
+    element.querySelector<HTMLButtonElement>('.productos__lightbox__close')!.click();
+    fixture.detectChanges();
+
+    expect(element.querySelector('.productos__lightbox')).toBeNull();
+  });
+
+  it('closes the lightbox when Escape is pressed', () => {
+    vendedoresStub.list.and.returnValue(of(vendedorResponse([])));
+    productosStub.list.and.returnValue(
+      of(productResponse([{ ...PRODUCT, imagen: 'products/agua-500.webp' }])),
+    );
+
+    fixture.detectChanges();
+    element.querySelector<HTMLButtonElement>('.productos__thumb-btn')!.click();
+    fixture.detectChanges();
+    expect(element.querySelector('.productos__lightbox')).not.toBeNull();
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+
+    expect(element.querySelector('.productos__lightbox')).toBeNull();
+  });
+
+  it('closes the lightbox when the backdrop is clicked', () => {
+    vendedoresStub.list.and.returnValue(of(vendedorResponse([])));
+    productosStub.list.and.returnValue(
+      of(productResponse([{ ...PRODUCT, imagen: 'products/agua-500.webp' }])),
+    );
+
+    fixture.detectChanges();
+    element.querySelector<HTMLButtonElement>('.productos__thumb-btn')!.click();
+    fixture.detectChanges();
+
+    element.querySelector<HTMLElement>('.productos__lightbox')!.click();
+    fixture.detectChanges();
+
+    expect(element.querySelector('.productos__lightbox')).toBeNull();
+  });
+
+  it('keeps the lightbox open when the image itself is clicked', () => {
+    vendedoresStub.list.and.returnValue(of(vendedorResponse([])));
+    productosStub.list.and.returnValue(
+      of(productResponse([{ ...PRODUCT, imagen: 'products/agua-500.webp' }])),
+    );
+
+    fixture.detectChanges();
+    element.querySelector<HTMLButtonElement>('.productos__thumb-btn')!.click();
+    fixture.detectChanges();
+
+    element.querySelector<HTMLElement>('.productos__lightbox__image')!.click();
+    fixture.detectChanges();
+
+    expect(element.querySelector('.productos__lightbox')).not.toBeNull();
+  });
 });
