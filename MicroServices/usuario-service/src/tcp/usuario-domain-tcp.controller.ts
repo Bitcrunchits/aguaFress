@@ -19,6 +19,7 @@ import { SuperAdminService } from '../super-admin/super-admin.service';
 import { UpdateSuperAdminProfileDto } from '../super-admin/dto/update-super-admin.dto';
 import { ChangeEstadoDto } from '../vendedores/dto/change-estado.dto';
 import { ListVendedoresDto } from '../vendedores/dto/list-vendedores.dto';
+import { ResolveVendedorNamesDto } from '../vendedores/dto/resolve-vendedor-names.dto';
 // import { UpdateVendedorDto } from '../vendedores/dto/update-vendedor.dto'; // deprecated: vendor self-manages via profile/update
 import { UpdateVendedorProfileDto } from '../vendedores/dto/update-vendedor-profile.dto';
 import { VendedoresService } from '../vendedores/vendedores.service';
@@ -79,6 +80,13 @@ export class UsuarioDomainTcpController {
   async getVendedorById(@Payload() payload: TcpPayload) {
     this.payloadAdapter.requireRole(payload, UserRole.SUPER_ADMIN);
     return this.vendedoresService.getById(this.requireParamId(payload));
+  }
+
+  @MessagePattern('vendedores.resolve_profile_names')
+  async resolveVendedorProfileNames(@Payload() payload: TcpPayload): Promise<Record<string, { nombre: string; empresa?: string }>> {
+    this.payloadAdapter.requireRole(payload, UserRole.CLIENTE, UserRole.VENDEDOR, UserRole.SUPER_ADMIN);
+    const dto = await this.payloadAdapter.body(payload, ResolveVendedorNamesDto);
+    return this.vendedoresService.resolveNamesByIds(dto.vendedorIds);
   }
 
   // @MessagePattern('vendedores.update') // deprecated: vendor self-manages via profile/update

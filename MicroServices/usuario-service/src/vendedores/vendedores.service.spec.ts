@@ -477,6 +477,41 @@ describe('VendedoresService', () => {
   });
 
   // ═══════════════════════════════════════════════
+  //  RESOLVE NAMES BY IDS
+  // ═══════════════════════════════════════════════
+
+  describe('resolveNamesByIds', () => {
+    const UUID_A = '550e8400-e29b-41d4-a716-446655440000';
+    const UUID_B = '550e8400-e29b-41d4-a716-446655440001';
+
+    it('resolves nombre/empresa for the requested domain vendedor ids', async () => {
+      prisma.vendedor.findMany.mockResolvedValue([
+        { id: UUID_A, nombre: 'Juan', empresa: 'Acme SA' },
+        { id: UUID_B, nombre: 'María', empresa: null },
+      ]);
+
+      const result = await service.resolveNamesByIds([UUID_A, UUID_B]);
+
+      expect(prisma.vendedor.findMany).toHaveBeenCalledWith({
+        where: { id: { in: [UUID_A, UUID_B] } },
+        select: { id: true, nombre: true, empresa: true },
+      });
+      expect(result).toEqual({
+        [UUID_A]: { nombre: 'Juan', empresa: 'Acme SA' },
+        [UUID_B]: { nombre: 'María', empresa: undefined },
+      });
+    });
+
+    it('returns an empty object when no vendedores match', async () => {
+      prisma.vendedor.findMany.mockResolvedValue([]);
+
+      const result = await service.resolveNamesByIds([UUID_A]);
+
+      expect(result).toEqual({});
+    });
+  });
+
+  // ═══════════════════════════════════════════════
   //  UPDATE
   // ═══════════════════════════════════════════════
 

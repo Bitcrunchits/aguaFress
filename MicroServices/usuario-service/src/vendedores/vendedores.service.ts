@@ -92,6 +92,25 @@ export class VendedoresService {
     };
   }
 
+  /**
+   * Batch-resolve vendor display names keyed by DOMAIN VENDEDOR.id.
+   * Public info (nombre/empresa) already visible to clientes in the
+   * catalog/provider selector, so resolution is not cartera-scoped.
+   */
+  async resolveNamesByIds(
+    vendedorIds: string[],
+  ): Promise<Record<string, { nombre: string; empresa?: string }>> {
+    const vendedores = await this.prisma.vendedor.findMany({
+      where: { id: { in: vendedorIds } },
+      select: { id: true, nombre: true, empresa: true },
+    });
+
+    return vendedores.reduce<Record<string, { nombre: string; empresa?: string }>>((acc, v) => {
+      acc[v.id] = { nombre: v.nombre, empresa: v.empresa ?? undefined };
+      return acc;
+    }, {});
+  }
+
   async getById(id: string) {
     const vendedor = await this.prisma.vendedor.findUnique({
       where: { id },

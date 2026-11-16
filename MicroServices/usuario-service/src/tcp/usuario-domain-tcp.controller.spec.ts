@@ -58,6 +58,7 @@ type VendedoresServiceMock = {
   getById: jest.Mock;
   update: jest.Mock;
   changeEstado: jest.Mock;
+  resolveNamesByIds: jest.Mock;
 };
 
 type VendedorResolverMock = {
@@ -141,6 +142,7 @@ describe('UsuarioDomainTcpController', () => {
       getById: jest.fn(),
       update: jest.fn(),
       changeEstado: jest.fn(),
+      resolveNamesByIds: jest.fn(),
     };
     vendedorResolver = { resolve: jest.fn() };
 
@@ -458,6 +460,49 @@ describe('UsuarioDomainTcpController', () => {
       expect(clientesService.resolveNamesByAuthUserIds).toHaveBeenCalledWith([UUID_A, UUID_B], 'vendedor-abc');
       expect(result).toBe(expected);
     });
+  });
+
+  describe('vendedores.resolve_profile_names', () => {
+    const UUID_A = '550e8400-e29b-41d4-a716-446655440000';
+    const UUID_B = '550e8400-e29b-41d4-a716-446655440001';
+
+    it('rejects anonymous/unknown payloads without a user', async () => {
+      const payload: TcpPayload = { requestId: 'request-1' };
+      await expect(controller.resolveVendedorProfileNames(payload)).rejects.toBeInstanceOf(UnauthorizedException);
+      expect(vendedoresService.resolveNamesByIds).not.toHaveBeenCalled();
+    });
+
+    it('resolves vendor names by domain id in a single batch', async () => {
+      vendedoresService.resolveNamesByIds.mockResolvedValue({
+        [UUID_A]: { nombre: 'Juan', empresa: 'Acme SA' },
+        [UUID_B]: { nombre: 'María' },
+      });
+
+      const payload = clientePayload({ body: { vendedorIds: [UUID_A, UUID_B] } });
+      await expect(controller.resolveVendedorProfileNames(payload)).resolves.toEqual({
+        [UUID_A]: { nombre: 'Juan', empresa: 'Acme SA' },
+        [UUID_B]: { nombre: 'María' },
+      });
+
+      expect(vendedoresService.resolveNamesByIds).toHaveBeenCalledWith([UUID_A, UUID_B]);
+    });
+
+    it.each([UserRole.CLIENTE, UserRole.VENDEDOR, UserRole.SUPER_ADMIN])(
+      'allows %s role (vendor name/empresa is public info)',
+      async (role) => {
+        vendedoresService.resolveNamesByIds.mockResolvedValue({ [UUID_A]: { nombre: 'Juan' } });
+
+        const payload: TcpPayload = {
+          user: { sub: 'any-user-id', email: 'user@test.com', role },
+          body: { vendedorIds: [UUID_A] },
+          requestId: 'request-1',
+        };
+        await expect(controller.resolveVendedorProfileNames(payload)).resolves.toEqual({
+          [UUID_A]: { nombre: 'Juan' },
+        });
+        expect(vendedoresService.resolveNamesByIds).toHaveBeenCalledWith([UUID_A]);
+      },
+    );
   });
 
   // ─── CLIENTES VENDOR-SCOPED ─────────────────────────────────────
