@@ -198,6 +198,14 @@ export interface OrderListResponse {
   createdAt: string;
 }
 
+/** OCP: adds vendor identity/display fields without modifying `OrderListResponse`. */
+export interface OrderListResponseV2 extends OrderListResponse {
+  /** Domain VENDEDOR.id (the order's provider), not an auth-user id. */
+  vendedorId: string;
+  vendedorNombre?: string;
+  vendedorEmpresa?: string;
+}
+
 // ════════════════════════════════════════════
 //  CONFIRMAR VISITA
 // ════════════════════════════════════════════
