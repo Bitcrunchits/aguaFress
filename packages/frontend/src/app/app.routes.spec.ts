@@ -9,6 +9,7 @@ import {
   type AsyncAcceptedResponse,
   type CartResponse,
   type LoginResponse,
+  type OrderListResponseV2,
   type OrderResponse,
   type PaginatedResponse,
   type ProductResponse,
@@ -38,6 +39,11 @@ const EMPTY_LIST: SuperAdminVendedorListResponse = {
 };
 
 const EMPTY_CLIENTES: PaginatedResponse<VendedorClienteItem> = {
+  data: [],
+  pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
+};
+
+const EMPTY_ORDERS: PaginatedResponse<OrderListResponseV2> = {
   data: [],
   pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
 };
@@ -149,9 +155,9 @@ describe('application routes', () => {
         { provide: VendedorProfileService, useValue: { getProfile: () => EMPTY } },
         {
           provide: VendedorClientesService,
-          useValue: { listCartera: () => of(EMPTY_CLIENTES), listCarteraForLookup: () => of([]) },
+          useValue: { listCartera: () => of(EMPTY_CLIENTES) },
         },
-        { provide: VendedorPedidosService, useValue: { list: () => of([]), getById: () => of(ORDER) } },
+        { provide: VendedorPedidosService, useValue: { list: () => of(EMPTY_ORDERS), getById: () => of(ORDER) } },
         { provide: ClienteCatalogoService, useValue: { list: () => of(EMPTY_PRODUCTS) } },
         { provide: ClienteCarritoService, useValue: { addToCart: () => EMPTY } },
         { provide: ClienteCarritoLecturaService, useValue: lecturaStub },
