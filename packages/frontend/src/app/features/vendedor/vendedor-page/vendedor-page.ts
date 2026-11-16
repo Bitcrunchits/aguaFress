@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { OrderEstado, VendedorEstado } from '@agua/contracts';
-import type { OrderResponse, VendedorProfile } from '@agua/contracts';
+import type { OrderListResponseV2, VendedorProfile } from '@agua/contracts';
 import { ORDER_ESTADO_LABELS, ORDER_ESTADO_TONES } from '../../../shared/order-format';
 import {
   StatusLabelComponent,
@@ -49,7 +49,7 @@ export class VendedorPage implements OnInit {
   readonly failed = signal(false);
 
   // Orders summary state, independent of the profile load.
-  readonly orders = signal<OrderResponse[]>([]);
+  readonly orders = signal<OrderListResponseV2[]>([]);
   readonly ordersLoading = signal(false);
   readonly ordersFailed = signal(false);
 
@@ -104,8 +104,8 @@ export class VendedorPage implements OnInit {
     this.ordersFailed.set(false);
 
     this.pedidosService.list().subscribe({
-      next: (orders) => {
-        this.orders.set(orders);
+      next: (response) => {
+        this.orders.set(response.data);
         this.ordersLoading.set(false);
       },
       error: () => {

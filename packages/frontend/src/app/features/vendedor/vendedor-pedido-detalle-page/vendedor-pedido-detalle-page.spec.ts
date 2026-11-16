@@ -1,13 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import type { ParamMap } from '@angular/router';
-import { MetodoPago, OrderEstado, type OrderResponse, type VendedorClienteItemV2 } from '@agua/contracts';
+import { MetodoPago, OrderEstado } from '@agua/contracts';
+import type { OrderResponseV2 } from '@agua/contracts';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
-import { VendedorClientesService } from '../vendedor-clientes.service';
 import { VendedorPedidosService } from '../vendedor-pedidos.service';
 import { VendedorPedidoDetallePage } from './vendedor-pedido-detalle-page';
 
-function makeOrder(estado: OrderEstado): OrderResponse {
+function makeOrder(
+  estado: OrderEstado,
+  clienteNombre?: string,
+  clienteApellido?: string,
+): OrderResponseV2 {
   return {
     id: 'order-1',
     pedidoNumero: 'P-0001',
@@ -37,11 +41,9 @@ function makeOrder(estado: OrderEstado): OrderResponse {
     observaciones: 'Dejar en portería',
     createdAt: '2026-10-24T00:00:00.000Z',
     updatedAt: '2026-10-25T10:00:00.000Z',
+    clienteNombre,
+    clienteApellido,
   };
-}
-
-function carteraItem(clienteUserId: string, nombre: string, apellido?: string): VendedorClienteItemV2 {
-  return { id: `cliente-${clienteUserId}`, nombre, apellido, telefono: '3515550000', clienteUserId };
 }
 
 describe('VendedorPedidoDetallePage', () => {
@@ -53,15 +55,12 @@ describe('VendedorPedidoDetallePage', () => {
     confirm: jasmine.createSpy('confirm'),
     updateStatus: jasmine.createSpy('updateStatus'),
   };
-  const clientesStub = { listCarteraForLookup: jasmine.createSpy('listCarteraForLookup') };
   let paramMap: BehaviorSubject<ParamMap>;
 
   beforeEach(async () => {
     pedidosStub.getById.calls.reset();
     pedidosStub.confirm.calls.reset();
     pedidosStub.updateStatus.calls.reset();
-    clientesStub.listCarteraForLookup.calls.reset();
-    clientesStub.listCarteraForLookup.and.returnValue(of([]));
     paramMap = new BehaviorSubject(convertToParamMap({ id: 'order-1' }));
 
     await TestBed.configureTestingModule({
@@ -70,7 +69,6 @@ describe('VendedorPedidoDetallePage', () => {
         provideRouter([]),
         { provide: ActivatedRoute, useValue: { paramMap: paramMap.asObservable() } },
         { provide: VendedorPedidosService, useValue: pedidosStub },
-        { provide: VendedorClientesService, useValue: clientesStub },
       ],
     }).compileComponents();
 
@@ -84,13 +82,12 @@ describe('VendedorPedidoDetallePage', () => {
     );
   }
 
-  it('requests the order and cartera from the route id on init', () => {
+  it('requests the order from the route id on init', () => {
     pedidosStub.getById.and.returnValue(of(makeOrder(OrderEstado.PENDIENTE)));
 
     fixture.detectChanges();
 
     expect(pedidosStub.getById).toHaveBeenCalledOnceWith('order-1');
-    expect(clientesStub.listCarteraForLookup).toHaveBeenCalledTimes(1);
     expect(element.querySelector('h1')?.textContent?.trim()).toBe('Detalle del pedido');
   });
 
@@ -119,10 +116,7 @@ describe('VendedorPedidoDetallePage', () => {
   });
 
   it('renders items, totals, address, payment, dates and the cliente name', () => {
-    pedidosStub.getById.and.returnValue(of(makeOrder(OrderEstado.PENDIENTE)));
-    clientesStub.listCarteraForLookup.and.returnValue(
-      of([carteraItem('cliente-user-1', 'María', 'López')]),
-    );
+    pedidosStub.getById.and.returnValue(of(makeOrder(OrderEstado.PENDIENTE, 'María', 'López')));
 
     fixture.detectChanges();
 
@@ -144,7 +138,7 @@ describe('VendedorPedidoDetallePage', () => {
     expect(times[1].textContent?.trim()).toBe('2026-10-25');
   });
 
-  it('falls back to "Cliente no disponible" when the cartera has no match', () => {
+  it('falls back to "Cliente no disponible" when the server sends no name', () => {
     pedidosStub.getById.and.returnValue(of(makeOrder(OrderEstado.PENDIENTE)));
 
     fixture.detectChanges();

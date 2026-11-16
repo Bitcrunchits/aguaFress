@@ -2,8 +2,7 @@ import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angula
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MetodoPago, OrderEstado } from '@agua/contracts';
-import type { DireccionEntrega, OrderResponse } from '@agua/contracts';
-import { catchError, forkJoin, of } from 'rxjs';
+import type { DireccionEntrega, OrderResponseV2 } from '@agua/contracts';
 import type { Observable } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import {
@@ -17,15 +16,9 @@ import {
   StatusLabelComponent,
   type StatusLabelTone,
 } from '../../../shared/status-label/status-label';
-import { VendedorClientesService } from '../vendedor-clientes.service';
 import { VendedorPedidosService } from '../vendedor-pedidos.service';
-import {
-  buildClienteLookup,
-  resolveClienteNombre,
-  type ClienteLookupMap,
-} from '../vendedor-pedidos-names';
 
-type OrderItem = OrderResponse['items'][number];
+type OrderItem = OrderResponseV2['items'][number];
 
 /** Ordered lifecycle steps rendered by the static timeline. */
 const TIMELINE_ESTADOS: readonly OrderEstado[] = [
@@ -37,11 +30,11 @@ const TIMELINE_ESTADOS: readonly OrderEstado[] = [
 
 /**
  * Vendedor order detail. Reads the order id from the route, loads
- * `orders.get-by-id` in parallel with the cartera (best-effort name lookup),
- * renders the order facts plus a static status timeline, and offers the state
- * transition actions the current `estado` allows. Follows the simple
- * vendedor signals style (loading/failed + action feedback), not the cliente
- * Facade pattern.
+ * `orders.get-by-id` (now an `OrderResponseV2`, a superset of `OrderResponse`
+ * that also carries the server-resolved client name), renders the order facts
+ * plus a static status timeline, and offers the state transition actions the
+ * current `estado` allows. Follows the simple vendedor signals style
+ * (loading/failed + action feedback), not the cliente Facade pattern.
  */
 @Component({
   selector: 'app-vendedor-pedido-detalle-page',
@@ -51,7 +44,6 @@ const TIMELINE_ESTADOS: readonly OrderEstado[] = [
 })
 export class VendedorPedidoDetallePage implements OnInit {
   private readonly pedidosService = inject(VendedorPedidosService);
-  private readonly clientesService = inject(VendedorClientesService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -61,7 +53,7 @@ export class VendedorPedidoDetallePage implements OnInit {
     maximumFractionDigits: 0,
   });
 
-  readonly order = signal<OrderResponse | null>(null);
+  readonly order = signal<OrderResponseV2 | null>(null);
   readonly loading = signal(false);
   readonly failed = signal(false);
 
@@ -71,7 +63,6 @@ export class VendedorPedidoDetallePage implements OnInit {
 
   readonly timeline = TIMELINE_ESTADOS;
 
-  private clienteLookup: ClienteLookupMap = new Map();
   private orderId: string | null = null;
 
   readonly canConfirm = computed(() => this.order()?.estado === OrderEstado.PENDIENTE);
@@ -108,12 +99,8 @@ export class VendedorPedidoDetallePage implements OnInit {
     this.loading.set(true);
     this.failed.set(false);
 
-    forkJoin({
-      order: this.pedidosService.getById(this.orderId),
-      cartera: this.clientesService.listCarteraForLookup().pipe(catchError(() => of([]))),
-    }).subscribe({
-      next: ({ order, cartera }) => {
-        this.clienteLookup = buildClienteLookup(cartera);
+    this.pedidosService.getById(this.orderId).subscribe({
+      next: (order) => {
         this.order.set(order);
         this.loading.set(false);
       },
@@ -221,8 +208,9 @@ export class VendedorPedidoDetallePage implements OnInit {
     return METODO_PAGO_LABELS[metodoPago];
   }
 
-  clienteNombre(order: OrderResponse): string {
-    return resolveClienteNombre(order, this.clienteLookup);
+  clienteNombre(order: OrderResponseV2): string {
+    const nombre = [order.clienteNombre, order.clienteApellido].filter(Boolean).join(' ').trim();
+    return nombre === '' ? 'Cliente no disponible' : nombre;
   }
 
   subtotal(item: OrderItem): number {

@@ -1,21 +1,14 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { OrderEstado } from '@agua/contracts';
-import type { OrderResponse } from '@agua/contracts';
-import { catchError, forkJoin, of } from 'rxjs';
+import type { OrderListResponseV2 } from '@agua/contracts';
 import { ButtonModule } from 'primeng/button';
 import { ORDER_ESTADO_LABELS, ORDER_ESTADO_TONES, formatIsoDate } from '../../../shared/order-format';
 import {
   StatusLabelComponent,
   type StatusLabelTone,
 } from '../../../shared/status-label/status-label';
-import { VendedorClientesService } from '../vendedor-clientes.service';
 import { VendedorPedidosService } from '../vendedor-pedidos.service';
-import {
-  buildClienteLookup,
-  resolveClienteNombre,
-  type ClienteLookupMap,
-} from '../vendedor-pedidos-names';
 
 const PAGE_SIZE = 10;
 
@@ -35,14 +28,13 @@ const ESTADO_OPTIONS: EstadoOption[] = [
 ];
 
 /**
- * Vendedor orders list. `orders.list` is unpaginated and unfiltered today, so
- * the page fetches once and paginates/filters client-side via an `estado`
- * select. State style mirrors the clientes-page (signals, loading/failed with
- * retry). The cartera is fetched in parallel (best-effort) to resolve each
- * order's `clienteId` — a V1-compat field carrying `AUTH_USER.id` (the JWT
- * `sub`), NOT the domain `CLIENTE.id` — into a display name; a cartera failure
- * or missing match degrades to "Cliente no disponible" instead of blocking the
- * list. Rows navigate to `/vendedor/pedidos/:id`.
+ * Vendedor orders list. `orders.list` returns a `PaginatedResponse`, but no
+ * `page`/`limit`/`estado` params are sent: the page fetches once and
+ * paginates/filters client-side via an `estado` select. State style mirrors the
+ * clientes-page (signals, loading/failed with retry). Client names are
+ * server-resolved on `OrderListResponseV2`, so a missing name degrades to
+ * "Cliente no disponible" without a separate cartera join. Rows navigate to
+ * `/vendedor/pedidos/:id`.
  */
 @Component({
   selector: 'app-vendedor-pedidos-page',
@@ -52,7 +44,6 @@ const ESTADO_OPTIONS: EstadoOption[] = [
 })
 export class VendedorPedidosPage implements OnInit {
   private readonly pedidosService = inject(VendedorPedidosService);
-  private readonly clientesService = inject(VendedorClientesService);
   private readonly router = inject(Router);
 
   private readonly priceFormatter = new Intl.NumberFormat('es-AR', {
@@ -61,7 +52,7 @@ export class VendedorPedidosPage implements OnInit {
     maximumFractionDigits: 0,
   });
 
-  readonly orders = signal<OrderResponse[]>([]);
+  readonly orders = signal<OrderListResponseV2[]>([]);
   readonly loading = signal(false);
   readonly failed = signal(false);
 
@@ -70,8 +61,6 @@ export class VendedorPedidosPage implements OnInit {
   readonly currentPage = signal(1);
 
   readonly estadoOptions = ESTADO_OPTIONS;
-
-  private clienteLookup: ClienteLookupMap = new Map();
 
   readonly filteredOrders = computed(() => {
     const estado = this.estado();
@@ -96,13 +85,9 @@ export class VendedorPedidosPage implements OnInit {
     this.loading.set(true);
     this.failed.set(false);
 
-    forkJoin({
-      orders: this.pedidosService.list(),
-      cartera: this.clientesService.listCarteraForLookup().pipe(catchError(() => of([]))),
-    }).subscribe({
-      next: ({ orders, cartera }) => {
-        this.clienteLookup = buildClienteLookup(cartera);
-        this.orders.set(orders);
+    this.pedidosService.list().subscribe({
+      next: (response) => {
+        this.orders.set(response.data);
         this.loading.set(false);
       },
       error: () => {
@@ -153,8 +138,9 @@ export class VendedorPedidosPage implements OnInit {
     return ORDER_ESTADO_TONES[estado];
   }
 
-  clienteNombre(order: OrderResponse): string {
-    return resolveClienteNombre(order, this.clienteLookup);
+  clienteNombre(order: OrderListResponseV2): string {
+    const nombre = [order.clienteNombre, order.clienteApellido].filter(Boolean).join(' ').trim();
+    return nombre === '' ? 'Cliente no disponible' : nombre;
   }
 
   formatFecha(createdAt: string): string {

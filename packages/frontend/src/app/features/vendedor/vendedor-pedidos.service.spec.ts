@@ -2,12 +2,17 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { MetodoPago, OrderEstado } from '@agua/contracts';
-import type { ConfirmOrderResponse, OrderResponse } from '@agua/contracts';
+import type {
+  ConfirmOrderResponse,
+  OrderListResponseV2,
+  OrderResponseV2,
+  PaginatedResponse,
+} from '@agua/contracts';
 import { VendedorPedidosService } from './vendedor-pedidos.service';
 
 const BASE = 'https://api-aguafress.eadev.cloud';
 
-const ORDER: OrderResponse = {
+const ORDER: OrderResponseV2 = {
   id: 'order-1',
   pedidoNumero: 'P-0001',
   clienteId: 'cliente-user-1',
@@ -28,6 +33,26 @@ const ORDER: OrderResponse = {
   direccion: { calle: 'Av. Corrientes', numero: '1234' },
   createdAt: '2026-10-24T00:00:00.000Z',
   updatedAt: '2026-10-24T00:00:00.000Z',
+  clienteNombre: 'María',
+  clienteApellido: 'López',
+};
+
+const ORDER_LIST_ITEM: OrderListResponseV2 = {
+  id: 'order-1',
+  pedidoNumero: 'P-0001',
+  estado: OrderEstado.PENDIENTE,
+  total: 2420,
+  clienteNombre: 'María',
+  clienteApellido: 'López',
+  createdAt: '2026-10-24T00:00:00.000Z',
+  vendedorId: 'vendedor-1',
+  vendedorNombre: 'Ana',
+  vendedorEmpresa: 'Aguas del Sur',
+};
+
+const LIST_RESPONSE: PaginatedResponse<OrderListResponseV2> = {
+  data: [ORDER_LIST_ITEM],
+  pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
 };
 
 describe('VendedorPedidosService', () => {
@@ -47,7 +72,7 @@ describe('VendedorPedidosService', () => {
   });
 
   it('lists the vendedor orders with no query params and no identity field', () => {
-    let response: OrderResponse[] | undefined;
+    let response: PaginatedResponse<OrderListResponseV2> | undefined;
 
     service.list().subscribe((value) => (response = value));
 
@@ -56,18 +81,20 @@ describe('VendedorPedidosService', () => {
         candidate.url === `${BASE}/api/v1/orders/list` &&
         candidate.params.get('vendedorId') === null &&
         candidate.params.get('clienteId') === null &&
-        candidate.params.get('estado') === null,
+        candidate.params.get('estado') === null &&
+        candidate.params.get('page') === null &&
+        candidate.params.get('limit') === null,
     );
     expect(request.request.method).toBe('GET');
     expect(request.request.body).toBeNull();
 
-    request.flush([ORDER]);
-    expect(response).toEqual([ORDER]);
+    request.flush(LIST_RESPONSE);
+    expect(response).toEqual(LIST_RESPONSE);
   });
 
   it('gets an order by id as an encoded query param with no identity field', () => {
     const orderId = 'order 1&2';
-    let response: OrderResponse | undefined;
+    let response: OrderResponseV2 | undefined;
 
     service.getById(orderId).subscribe((value) => (response = value));
 

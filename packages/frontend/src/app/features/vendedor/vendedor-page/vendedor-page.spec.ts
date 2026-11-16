@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { MetodoPago, OrderEstado, VendedorEstado } from '@agua/contracts';
-import type { OrderResponse, VendedorProfile } from '@agua/contracts';
+import { OrderEstado, VendedorEstado } from '@agua/contracts';
+import type { OrderListResponseV2, PaginatedResponse, VendedorProfile } from '@agua/contracts';
 import { EMPTY, Observable, of, throwError } from 'rxjs';
 import { VendedorPedidosService } from '../vendedor-pedidos.service';
 import { VendedorProfileService } from '../vendedor-profile.service';
@@ -16,28 +16,21 @@ const PROFILE: VendedorProfile = {
   zonaEntrega: 'Norte',
 };
 
-function order(id: string, estado: OrderEstado, createdAt: string): OrderResponse {
+function order(id: string, estado: OrderEstado, createdAt: string): OrderListResponseV2 {
   return {
     id,
     pedidoNumero: `P-${id}`,
-    clienteId: 'cliente-user-1',
-    vendedorId: 'vendedor-1',
-    items: [
-      {
-        productId: 'producto-1',
-        nombre: 'Agua mineral 500 ml',
-        cantidad: 2,
-        precioUnitario: 1000,
-      },
-    ],
-    totalSinIva: 2000,
-    iva: 420,
-    total: 2420,
     estado,
-    metodoPago: MetodoPago.CONTRA_ENTREGA,
-    direccion: { calle: 'Av. Corrientes', numero: '1234' },
+    total: 2420,
     createdAt,
-    updatedAt: createdAt,
+    vendedorId: 'vendedor-1',
+  };
+}
+
+function listResponse(orders: OrderListResponseV2[]): PaginatedResponse<OrderListResponseV2> {
+  return {
+    data: orders,
+    pagination: { page: 1, limit: 20, total: orders.length, totalPages: 1 },
   };
 }
 
@@ -50,7 +43,7 @@ describe('VendedorPage', () => {
   beforeEach(async () => {
     serviceStub.getProfile.calls.reset();
     pedidosStub.list.calls.reset();
-    pedidosStub.list.and.returnValue(of([]));
+    pedidosStub.list.and.returnValue(of(listResponse([])));
     await TestBed.configureTestingModule({
       imports: [VendedorPage],
       providers: [
@@ -171,11 +164,13 @@ describe('VendedorPage', () => {
   it('shows the pendiente count derived from the orders list', () => {
     serviceStub.getProfile.and.returnValue(of(PROFILE));
     pedidosStub.list.and.returnValue(
-      of([
-        order('1', OrderEstado.PENDIENTE, '2026-10-20T00:00:00.000Z'),
-        order('2', OrderEstado.ENTREGADO, '2026-10-24T00:00:00.000Z'),
-        order('3', OrderEstado.PENDIENTE, '2026-10-22T00:00:00.000Z'),
-      ]),
+      of(
+        listResponse([
+          order('1', OrderEstado.PENDIENTE, '2026-10-20T00:00:00.000Z'),
+          order('2', OrderEstado.ENTREGADO, '2026-10-24T00:00:00.000Z'),
+          order('3', OrderEstado.PENDIENTE, '2026-10-22T00:00:00.000Z'),
+        ]),
+      ),
     );
 
     fixture.detectChanges();
@@ -187,12 +182,14 @@ describe('VendedorPage', () => {
   it('shows the top 3 recent orders ordered by createdAt descending', () => {
     serviceStub.getProfile.and.returnValue(of(PROFILE));
     pedidosStub.list.and.returnValue(
-      of([
-        order('1', OrderEstado.PENDIENTE, '2026-10-20T00:00:00.000Z'),
-        order('2', OrderEstado.ENTREGADO, '2026-10-24T00:00:00.000Z'),
-        order('3', OrderEstado.PENDIENTE, '2026-10-22T00:00:00.000Z'),
-        order('4', OrderEstado.CONFIRMADO, '2026-10-23T00:00:00.000Z'),
-      ]),
+      of(
+        listResponse([
+          order('1', OrderEstado.PENDIENTE, '2026-10-20T00:00:00.000Z'),
+          order('2', OrderEstado.ENTREGADO, '2026-10-24T00:00:00.000Z'),
+          order('3', OrderEstado.PENDIENTE, '2026-10-22T00:00:00.000Z'),
+          order('4', OrderEstado.CONFIRMADO, '2026-10-23T00:00:00.000Z'),
+        ]),
+      ),
     );
 
     fixture.detectChanges();
@@ -208,7 +205,7 @@ describe('VendedorPage', () => {
   it('links each recent order to the pedidos page', () => {
     serviceStub.getProfile.and.returnValue(of(PROFILE));
     pedidosStub.list.and.returnValue(
-      of([order('1', OrderEstado.PENDIENTE, '2026-10-20T00:00:00.000Z')]),
+      of(listResponse([order('1', OrderEstado.PENDIENTE, '2026-10-20T00:00:00.000Z')])),
     );
 
     fixture.detectChanges();
@@ -222,7 +219,7 @@ describe('VendedorPage', () => {
     serviceStub.getProfile.and.returnValue(of(PROFILE));
     pedidosStub.list.and.returnValues(
       throwError(() => new Error('boom')),
-      of([order('1', OrderEstado.PENDIENTE, '2026-10-20T00:00:00.000Z')]),
+      of(listResponse([order('1', OrderEstado.PENDIENTE, '2026-10-20T00:00:00.000Z')])),
     );
 
     fixture.detectChanges();

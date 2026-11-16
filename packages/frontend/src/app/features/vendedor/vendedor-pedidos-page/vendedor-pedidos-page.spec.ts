@@ -1,58 +1,43 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { MetodoPago, OrderEstado, type OrderResponse, type VendedorClienteItemV2 } from '@agua/contracts';
+import { OrderEstado } from '@agua/contracts';
+import type { OrderListResponseV2, PaginatedResponse } from '@agua/contracts';
 import { Observable, of, throwError } from 'rxjs';
-import { VendedorClientesService } from '../vendedor-clientes.service';
 import { VendedorPedidosService } from '../vendedor-pedidos.service';
 import { VendedorPedidosPage } from './vendedor-pedidos-page';
 
-function order(id: string, estado: OrderEstado, createdAt: string): OrderResponse {
+function order(id: string, estado: OrderEstado, createdAt: string): OrderListResponseV2 {
   return {
     id,
     pedidoNumero: `P-${id}`,
-    clienteId: 'cliente-user-1',
-    vendedorId: 'vendedor-1',
-    items: [
-      {
-        productId: 'producto-1',
-        nombre: 'Agua mineral 500 ml',
-        cantidad: 2,
-        precioUnitario: 1000,
-      },
-    ],
-    totalSinIva: 2000,
-    iva: 420,
-    total: 2420,
     estado,
-    metodoPago: MetodoPago.CONTRA_ENTREGA,
-    direccion: { calle: 'Av. Corrientes', numero: '1234' },
+    total: 2420,
     createdAt,
-    updatedAt: createdAt,
+    vendedorId: 'vendedor-1',
   };
 }
 
-function carteraItem(clienteUserId: string, nombre: string, apellido?: string): VendedorClienteItemV2 {
-  return { id: `cliente-${clienteUserId}`, nombre, apellido, telefono: '3515550000', clienteUserId };
+function listResponse(orders: OrderListResponseV2[]): PaginatedResponse<OrderListResponseV2> {
+  return {
+    data: orders,
+    pagination: { page: 1, limit: 20, total: orders.length, totalPages: 1 },
+  };
 }
 
 describe('VendedorPedidosPage', () => {
   let fixture: ComponentFixture<VendedorPedidosPage>;
   let element: HTMLElement;
   const pedidosStub = { list: jasmine.createSpy('list') };
-  const clientesStub = { listCarteraForLookup: jasmine.createSpy('listCarteraForLookup') };
   const routerStub = { navigate: jasmine.createSpy('navigate').and.returnValue(Promise.resolve(true)) };
 
   beforeEach(async () => {
     pedidosStub.list.calls.reset();
-    clientesStub.listCarteraForLookup.calls.reset();
-    clientesStub.listCarteraForLookup.and.returnValue(of([]));
     routerStub.navigate.calls.reset();
 
     await TestBed.configureTestingModule({
       imports: [VendedorPedidosPage],
       providers: [
         { provide: VendedorPedidosService, useValue: pedidosStub },
-        { provide: VendedorClientesService, useValue: clientesStub },
         { provide: Router, useValue: routerStub },
       ],
     }).compileComponents();
@@ -61,8 +46,8 @@ describe('VendedorPedidosPage', () => {
     element = fixture.nativeElement as HTMLElement;
   });
 
-  function pendingList(): Observable<OrderResponse[]> {
-    return new Observable<OrderResponse[]>(() => {});
+  function pendingList(): Observable<PaginatedResponse<OrderListResponseV2>> {
+    return new Observable<PaginatedResponse<OrderListResponseV2>>(() => {});
   }
 
   it('shows the loading state while the orders request is in flight', () => {
@@ -76,10 +61,12 @@ describe('VendedorPedidosPage', () => {
 
   it('renders rows with número, fecha, total and Spanish estado label', () => {
     pedidosStub.list.and.returnValue(
-      of([
-        order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z'),
-        order('2', OrderEstado.ENTREGADO, '2026-10-23T00:00:00.000Z'),
-      ]),
+      of(
+        listResponse([
+          order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z'),
+          order('2', OrderEstado.ENTREGADO, '2026-10-23T00:00:00.000Z'),
+        ]),
+      ),
     );
 
     fixture.detectChanges();
@@ -91,52 +78,56 @@ describe('VendedorPedidosPage', () => {
     expect(element.textContent).toContain('Entregado');
   });
 
-  it('resolves the cliente name from the cartera lookup via clienteUserId', () => {
+  it('renders the server-resolved cliente nombre y apellido', () => {
     pedidosStub.list.and.returnValue(
-      of([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')]),
-    );
-    clientesStub.listCarteraForLookup.and.returnValue(
-      of([carteraItem('cliente-user-1', 'María', 'López')]),
+      of(
+        listResponse([
+          {
+            ...order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z'),
+            clienteNombre: 'María',
+            clienteApellido: 'López',
+          },
+        ]),
+      ),
     );
 
     fixture.detectChanges();
 
-    expect(clientesStub.listCarteraForLookup).toHaveBeenCalledTimes(1);
     expect(element.textContent).toContain('María López');
     expect(element.textContent).not.toContain('Cliente no disponible');
   });
 
-  it('falls back to "Cliente no disponible" when the cartera has no matching clienteUserId', () => {
+  it('renders only the cliente nombre when apellido is absent', () => {
     pedidosStub.list.and.returnValue(
-      of([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')]),
-    );
-    clientesStub.listCarteraForLookup.and.returnValue(
-      of([carteraItem('otro-user', 'Juan', 'Pérez')]),
+      of(
+        listResponse([
+          {
+            ...order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z'),
+            clienteNombre: 'Juan',
+          },
+        ]),
+      ),
     );
 
     fixture.detectChanges();
 
-    expect(element.textContent).toContain('Cliente no disponible');
+    expect(element.textContent).toContain('Juan');
+    expect(element.textContent).not.toContain('Cliente no disponible');
   });
 
-  it('still renders the list when the cartera request fails', () => {
+  it('falls back to "Cliente no disponible" when the server sends no name', () => {
     pedidosStub.list.and.returnValue(
-      of([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')]),
-    );
-    clientesStub.listCarteraForLookup.and.returnValue(
-      throwError(() => new Error('cartera boom')),
+      of(listResponse([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')])),
     );
 
     fixture.detectChanges();
 
-    expect(element.textContent).toContain('P-1');
     expect(element.textContent).toContain('Cliente no disponible');
-    expect(element.textContent).not.toContain('No pudimos cargar los pedidos');
   });
 
   it('navigates to the order detail when a row is clicked', () => {
     pedidosStub.list.and.returnValue(
-      of([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')]),
+      of(listResponse([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')])),
     );
 
     fixture.detectChanges();
@@ -149,7 +140,7 @@ describe('VendedorPedidosPage', () => {
 
   it('navigates to the order detail on Enter keydown (keyboard accessibility)', () => {
     pedidosStub.list.and.returnValue(
-      of([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')]),
+      of(listResponse([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')])),
     );
 
     fixture.detectChanges();
@@ -162,7 +153,7 @@ describe('VendedorPedidosPage', () => {
 
   it('does not navigate on unrelated keys', () => {
     pedidosStub.list.and.returnValue(
-      of([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')]),
+      of(listResponse([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')])),
     );
 
     fixture.detectChanges();
@@ -174,7 +165,7 @@ describe('VendedorPedidosPage', () => {
   });
 
   it('shows the empty state when there are no orders', () => {
-    pedidosStub.list.and.returnValue(of([]));
+    pedidosStub.list.and.returnValue(of(listResponse([])));
 
     fixture.detectChanges();
 
@@ -185,7 +176,7 @@ describe('VendedorPedidosPage', () => {
   it('shows the error state and reloads on retry', () => {
     pedidosStub.list.and.returnValues(
       throwError(() => new Error('boom')),
-      of([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')]),
+      of(listResponse([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')])),
     );
 
     fixture.detectChanges();
@@ -202,7 +193,7 @@ describe('VendedorPedidosPage', () => {
     const orders = Array.from({ length: 12 }, (_, i) =>
       order(String(i + 1), OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z'),
     );
-    pedidosStub.list.and.returnValue(of(orders));
+    pedidosStub.list.and.returnValue(of(listResponse(orders)));
 
     fixture.detectChanges();
 
@@ -219,10 +210,12 @@ describe('VendedorPedidosPage', () => {
 
   it('filters by estado client-side and resets to page 1', () => {
     pedidosStub.list.and.returnValue(
-      of([
-        order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z'),
-        order('2', OrderEstado.ENTREGADO, '2026-10-23T00:00:00.000Z'),
-      ]),
+      of(
+        listResponse([
+          order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z'),
+          order('2', OrderEstado.ENTREGADO, '2026-10-23T00:00:00.000Z'),
+        ]),
+      ),
     );
 
     fixture.detectChanges();
@@ -239,7 +232,7 @@ describe('VendedorPedidosPage', () => {
 
   it('shows the empty state when the estado filter matches nothing', () => {
     pedidosStub.list.and.returnValue(
-      of([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')]),
+      of(listResponse([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')])),
     );
 
     fixture.detectChanges();
@@ -254,7 +247,9 @@ describe('VendedorPedidosPage', () => {
   });
 
   it('disables Anterior and Siguiente at the pagination bounds', () => {
-    pedidosStub.list.and.returnValue(of([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')]));
+    pedidosStub.list.and.returnValue(
+      of(listResponse([order('1', OrderEstado.PENDIENTE, '2026-10-24T00:00:00.000Z')])),
+    );
 
     fixture.detectChanges();
 
