@@ -55,19 +55,11 @@
             <tr>
               <td class="productos__producto">
                 @if (product.imagen; as image) {
-                  <button
-                    type="button"
-                    class="productos__thumb-btn"
-                    [attr.aria-label]="'Ver imagen de ' + product.nombre"
-                    (click)="openPreview(product)"
-                  >
-                    <img
-                      class="productos__thumb"
-                      [src]="productImageUrl(image)"
-                      alt=""
-                      loading="lazy"
-                    />
-                  </button>
+                  <app-product-image
+                    [src]="productImageUrl(image)"
+                    [ariaLabel]="'Ver imagen de ' + product.nombre"
+                    size="thumb"
+                  />
                 }
                 <span>{{ product.nombre }}</span>
               </td>
@@ -108,28 +100,5 @@
         ></button>
       </nav>
     }
-  }
-
-  @if (previewImage(); as image) {
-    <div
-      class="productos__lightbox"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Vista previa del producto"
-      (click)="closePreview()"
-    >
-      <div class="productos__lightbox__inner" (click)="$event.stopPropagation()">
-        <img class="productos__lightbox__image" [src]="image" alt="" />
-        <button
-          #closePreviewButton
-          type="button"
-          class="productos__lightbox__close"
-          aria-label="Cerrar vista previa"
-          (click)="closePreview()"
-        >
-          ×
-        </button>
-      </div>
-    </div>
   }
 </section>
