@@ -258,6 +258,21 @@ describe('ClientesService', () => {
 
       expect(result).toEqual({});
     });
+
+    it('aplica filtro de cartera activa cuando se pasa vendedorId', async () => {
+      prisma.cliente.findMany.mockResolvedValue([{ auth_user_id: UUID_A, nombre: 'Juan', apellido: 'Pérez' }]);
+
+      const result = await service.resolveNamesByAuthUserIds([UUID_A], 'vendedor-1');
+
+      expect(prisma.cliente.findMany).toHaveBeenCalledWith({
+        where: {
+          auth_user_id: { in: [UUID_A] },
+          cartera: { some: { vendedor_id: 'vendedor-1', activo: true } },
+        },
+        select: { auth_user_id: true, nombre: true, apellido: true },
+      });
+      expect(result).toEqual({ [UUID_A]: { nombre: 'Juan', apellido: 'Pérez' } });
+    });
   });
 
   // ═══════════════════════════════════════════════

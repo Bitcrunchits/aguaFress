@@ -197,9 +197,16 @@ export class UsuarioDomainTcpController {
 
   @MessagePattern('clientes.resolve_profile_names')
   async resolveClienteProfileNames(@Payload() payload: TcpPayload): Promise<Record<string, { nombre: string; apellido: string }>> {
-    this.payloadAdapter.requireRole(payload, UserRole.VENDEDOR, UserRole.SUPER_ADMIN);
+    const user = this.payloadAdapter.requireRole(payload, UserRole.VENDEDOR, UserRole.SUPER_ADMIN);
     const dto = await this.payloadAdapter.body(payload, ResolveClienteNamesDto);
-    return this.clientesService.resolveNamesByAuthUserIds(dto.authUserIds);
+
+    if (user.role === UserRole.SUPER_ADMIN) {
+      return this.clientesService.resolveNamesByAuthUserIds(dto.authUserIds);
+    }
+
+    // VENDEDOR: scope name resolution to the vendor's own active cartera.
+    const vendedorId = await this.vendedorResolver.resolve(this.payloadAdapter.userId(payload));
+    return this.clientesService.resolveNamesByAuthUserIds(dto.authUserIds, vendedorId);
   }
 
   @MessagePattern('clientes.providers_select')

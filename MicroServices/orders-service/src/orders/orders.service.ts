@@ -5,7 +5,7 @@ import { CLOCK, type Clock } from '../common/clock.provider';
 import { PRODUCT_CATALOG_TIMEOUT_MS, SCOPED_PRODUCT_CATALOG_PORT, type ProductSnapshot, type ScopedProductCatalogPort } from '../products/product-catalog.port';
 import type { TcpAuthenticatedUser } from '../tcp/tcp-payload';
 import { assertOrderTransition } from './order-state';
-import { CLIENTE_PROFILE_RESOLVER_PORT, type ClienteProfileResolverPort } from './cliente-profile-resolver.port';
+import { SCOPED_CLIENTE_PROFILE_RESOLVER_PORT, type ScopedClienteProfileResolverPort } from './cliente-profile-resolver.port';
 import { DEFAULT_LIMIT, MAX_LIMIT, PrismaOrdersRepository, type OrderRecord, type OrdersRepository } from './orders.repository';
 import type { CreateOrderRequest, OrderResponse, OrderResponseV2 } from './orders.dto';
 import { toOrderListResponse, toOrderResponse } from './orders.mapper';
@@ -28,7 +28,7 @@ export class OrdersService {
     @Inject(SCOPED_PRODUCT_CATALOG_PORT) private readonly productCatalog: ScopedProductCatalogPort,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(VENDEDOR_PROFILE_RESOLVER_PORT) private readonly vendedorProfileResolver: VendedorProfileResolverPort,
-    @Inject(CLIENTE_PROFILE_RESOLVER_PORT) private readonly clienteProfileResolver: ClienteProfileResolverPort,
+    @Inject(SCOPED_CLIENTE_PROFILE_RESOLVER_PORT) private readonly clienteProfileResolver: ScopedClienteProfileResolverPort,
   ) {}
 
   async create(user: TcpAuthenticatedUser, request: CreateOrderRequest): Promise<OrderResponse> {
@@ -52,7 +52,7 @@ export class OrdersService {
   async getById(user: TcpAuthenticatedUser, orderId: string): Promise<OrderResponseV2> {
     const order = await this.requireOrder(orderId);
     await this.assertCanRead(user, order);
-    return this.toOrderResponseWithName(order, user.role);
+    return this.toOrderResponseWithName(order, user);
   }
 
   async list(
@@ -88,7 +88,7 @@ export class OrdersService {
       throw new ForbiddenException('Role cannot list orders');
     }
 
-    const names = await this.resolveClienteNames(orders, user.role);
+    const names = await this.resolveClienteNames(orders, user);
 
     return {
       data: orders.map((order) => toOrderListResponse(order, names.get(order.usuarioId)?.nombre, names.get(order.usuarioId)?.apellido)),
@@ -136,12 +136,12 @@ export class OrdersService {
     return order;
   }
 
-  private async toOrderResponseWithName(order: OrderRecord, role: UserRole): Promise<OrderResponseV2> {
-    if (role === UserRole.CLIENTE) {
+  private async toOrderResponseWithName(order: OrderRecord, user: TcpAuthenticatedUser): Promise<OrderResponseV2> {
+    if (user.role === UserRole.CLIENTE) {
       return toOrderResponse(order);
     }
 
-    const names = await this.clienteProfileResolver.resolveNamesByAuthUserIds([order.usuarioId], role);
+    const names = await this.resolveNamesForUser([order.usuarioId], user);
     const name = names.get(order.usuarioId);
     return {
       ...toOrderResponse(order),
@@ -152,14 +152,30 @@ export class OrdersService {
 
   private resolveClienteNames(
     orders: readonly OrderRecord[],
-    role: UserRole,
+    user: TcpAuthenticatedUser,
   ): Promise<ReadonlyMap<string, { nombre: string; apellido?: string }>> {
-    if (orders.length === 0 || role === UserRole.CLIENTE) {
+    if (orders.length === 0 || user.role === UserRole.CLIENTE) {
       return Promise.resolve(new Map());
     }
 
     const distinctUserIds = [...new Set(orders.map((order) => order.usuarioId))];
-    return this.clienteProfileResolver.resolveNamesByAuthUserIds(distinctUserIds, role);
+    return this.resolveNamesForUser(distinctUserIds, user);
+  }
+
+  /**
+   * Routes name resolution by role:
+   * - VENDEDOR → scoped resolver (caller's real AUTH_USER.id, cartera-scoped).
+   * - SUPER_ADMIN → unscoped resolver (usuario-service resolves every id; no vendor is resolved).
+   */
+  private resolveNamesForUser(
+    authUserIds: readonly string[],
+    user: TcpAuthenticatedUser,
+  ): Promise<ReadonlyMap<string, { nombre: string; apellido?: string }>> {
+    if (user.role === UserRole.VENDEDOR) {
+      return this.clienteProfileResolver.resolveScopedNamesByAuthUserIds(authUserIds, user.role, user.userId);
+    }
+
+    return this.clienteProfileResolver.resolveNamesByAuthUserIds(authUserIds, user.role);
   }
 
   private async assertCanRead(user: TcpAuthenticatedUser, order: OrderRecord): Promise<void> {

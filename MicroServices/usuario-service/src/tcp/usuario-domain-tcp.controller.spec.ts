@@ -431,7 +431,7 @@ describe('UsuarioDomainTcpController', () => {
       expect(clientesService.resolveNamesByAuthUserIds).not.toHaveBeenCalled();
     });
 
-    it('allows super_admin role', async () => {
+    it('allows super_admin role without cartera scoping', async () => {
       clientesService.resolveNamesByAuthUserIds.mockResolvedValue({ [UUID_A]: { nombre: 'Juan', apellido: 'Pérez' } });
 
       const payload = superAdminPayload({ body: { authUserIds: [UUID_A] } });
@@ -440,19 +440,22 @@ describe('UsuarioDomainTcpController', () => {
       });
 
       expect(clientesService.resolveNamesByAuthUserIds).toHaveBeenCalledWith([UUID_A]);
+      expect(vendedorResolver.resolve).not.toHaveBeenCalled();
     });
 
-    it('validates body and calls service with the full authUserIds batch', async () => {
+    it('resolves the vendedorId and scopes name resolution to the vendor cartera', async () => {
       const expected = {
         [UUID_A]: { nombre: 'Juan', apellido: 'Pérez' },
         [UUID_B]: { nombre: 'María', apellido: '' },
       };
+      vendedorResolver.resolve.mockResolvedValue('vendedor-abc');
       clientesService.resolveNamesByAuthUserIds.mockResolvedValue(expected);
 
       const payload = vendedorPayload({ body: { authUserIds: [UUID_A, UUID_B] } });
       const result = await controller.resolveClienteProfileNames(payload);
 
-      expect(clientesService.resolveNamesByAuthUserIds).toHaveBeenCalledWith([UUID_A, UUID_B]);
+      expect(vendedorResolver.resolve).toHaveBeenCalledWith('vendor-user-id');
+      expect(clientesService.resolveNamesByAuthUserIds).toHaveBeenCalledWith([UUID_A, UUID_B], 'vendedor-abc');
       expect(result).toBe(expected);
     });
   });

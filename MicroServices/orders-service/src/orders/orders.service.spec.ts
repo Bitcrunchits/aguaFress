@@ -4,7 +4,7 @@ import type { ProductSnapshot, ScopedProductCatalogPort } from '../products/prod
 import type { CartRecord } from '../cart/cart.repository';
 import type { OrderRecord, OrdersRepository } from './orders.repository';
 import { OrdersService } from './orders.service';
-import type { ClienteProfileResolverPort } from './cliente-profile-resolver.port';
+import type { ScopedClienteProfileResolverPort } from './cliente-profile-resolver.port';
 import type { VendedorProfileResolverPort } from './vendedor-profile-resolver.port';
 
 describe('OrdersService', () => {
@@ -25,7 +25,7 @@ describe('OrdersService', () => {
   >>;
   let productCatalog: jest.Mocked<ScopedProductCatalogPort>;
   let vendedorProfileResolver: jest.Mocked<VendedorProfileResolverPort>;
-  let clienteProfileResolver: jest.Mocked<ClienteProfileResolverPort>;
+  let clienteProfileResolver: jest.Mocked<ScopedClienteProfileResolverPort>;
   let service: OrdersService;
 
   beforeEach(() => {
@@ -47,6 +47,7 @@ describe('OrdersService', () => {
     };
     clienteProfileResolver = {
       resolveNamesByAuthUserIds: jest.fn().mockResolvedValue(new Map()),
+      resolveScopedNamesByAuthUserIds: jest.fn().mockResolvedValue(new Map()),
     };
     service = new OrdersService(ordersRepository, productCatalog, () => createdAt, vendedorProfileResolver, clienteProfileResolver);
   });
@@ -202,12 +203,12 @@ describe('OrdersService', () => {
 
   it('enriches vendedor order lists with server-resolved cliente names in one batch', async () => {
     ordersRepository.findManyForVendedor.mockResolvedValue({ orders: [orderRecord({ id: 'order-1', usuarioId: clienteId })], total: 1 });
-    clienteProfileResolver.resolveNamesByAuthUserIds.mockResolvedValue(new Map([[clienteId, { nombre: 'Juan', apellido: 'Pérez' }]]));
+    clienteProfileResolver.resolveScopedNamesByAuthUserIds.mockResolvedValue(new Map([[clienteId, { nombre: 'Juan', apellido: 'Pérez' }]]));
 
     const result = await service.list(vendedorUser());
 
     expect(result.data[0]).toMatchObject({ id: 'order-1', clienteNombre: 'Juan', clienteApellido: 'Pérez' });
-    expect(clienteProfileResolver.resolveNamesByAuthUserIds).toHaveBeenCalledWith([clienteId], UserRole.VENDEDOR);
+    expect(clienteProfileResolver.resolveScopedNamesByAuthUserIds).toHaveBeenCalledWith([clienteId], UserRole.VENDEDOR, vendedorId);
   });
 
   it('deduplicates usuarioIds before resolving names in a single batch', async () => {
@@ -215,11 +216,11 @@ describe('OrdersService', () => {
       orders: [orderRecord({ id: 'order-1', usuarioId: clienteId }), orderRecord({ id: 'order-2', usuarioId: clienteId })],
       total: 2,
     });
-    clienteProfileResolver.resolveNamesByAuthUserIds.mockResolvedValue(new Map([[clienteId, { nombre: 'Juan', apellido: '' }]]));
+    clienteProfileResolver.resolveScopedNamesByAuthUserIds.mockResolvedValue(new Map([[clienteId, { nombre: 'Juan', apellido: '' }]]));
 
     await service.list(vendedorUser());
 
-    expect(clienteProfileResolver.resolveNamesByAuthUserIds).toHaveBeenCalledWith([clienteId], UserRole.VENDEDOR);
+    expect(clienteProfileResolver.resolveScopedNamesByAuthUserIds).toHaveBeenCalledWith([clienteId], UserRole.VENDEDOR, vendedorId);
   });
 
   it('leaves cliente name fields undefined for a cliente listing their own orders without a resolver call', async () => {
@@ -230,7 +231,7 @@ describe('OrdersService', () => {
     expect(result.data[0]).toMatchObject({ id: 'order-1' });
     expect(result.data[0].clienteNombre).toBeUndefined();
     expect(result.data[0].clienteApellido).toBeUndefined();
-    expect(clienteProfileResolver.resolveNamesByAuthUserIds).not.toHaveBeenCalled();
+    expect(clienteProfileResolver.resolveScopedNamesByAuthUserIds).not.toHaveBeenCalled();
   });
 
   it('enriches getById with cliente names for super-admin reads', async () => {
@@ -243,6 +244,7 @@ describe('OrdersService', () => {
       clienteApellido: 'Pérez',
     });
     expect(clienteProfileResolver.resolveNamesByAuthUserIds).toHaveBeenCalledWith([clienteId], UserRole.SUPER_ADMIN);
+    expect(clienteProfileResolver.resolveScopedNamesByAuthUserIds).not.toHaveBeenCalled();
   });
 
   it('leaves cliente name fields undefined for cliente-owned reads', async () => {
@@ -252,7 +254,7 @@ describe('OrdersService', () => {
 
     expect(order.clienteNombre).toBeUndefined();
     expect(order.clienteApellido).toBeUndefined();
-    expect(clienteProfileResolver.resolveNamesByAuthUserIds).not.toHaveBeenCalled();
+    expect(clienteProfileResolver.resolveScopedNamesByAuthUserIds).not.toHaveBeenCalled();
   });
 
   it('allows super-admin to read any order without lifecycle write access', async () => {

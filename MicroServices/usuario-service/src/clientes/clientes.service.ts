@@ -109,10 +109,22 @@ export class ClientesService {
   /**
    * Batch-resolve cliente profile names keyed by AUTH_USER.id (`auth_user_id`).
    * Empty `apellido` is preserved as `''` — the consumer maps it to `undefined`.
+   *
+   * When `vendedorId` is provided, resolution is scoped to that vendor's
+   * ACTIVE cartera: clientes outside the vendor's cartera (or with an inactive
+   * relation) are silently omitted. This prevents a vendor from enumerating
+   * names for arbitrary `auth_user_id`s. Super admins omit `vendedorId` and
+   * resolve every requested id.
    */
-  async resolveNamesByAuthUserIds(authUserIds: string[]): Promise<Record<string, { nombre: string; apellido: string }>> {
+  async resolveNamesByAuthUserIds(
+    authUserIds: string[],
+    vendedorId?: string,
+  ): Promise<Record<string, { nombre: string; apellido: string }>> {
     const clientes = await this.prisma.cliente.findMany({
-      where: { auth_user_id: { in: authUserIds } },
+      where: {
+        auth_user_id: { in: authUserIds },
+        ...(vendedorId ? { cartera: { some: { vendedor_id: vendedorId, activo: true } } } : {}),
+      },
       select: { auth_user_id: true, nombre: true, apellido: true },
     });
 

@@ -2,7 +2,7 @@ import { Injectable, OnModuleDestroy, ServiceUnavailableException } from '@nestj
 import { ClientProxy, ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { firstValueFrom, timeout } from 'rxjs';
 import { UserRole } from '@agua/contracts';
-import type { ClienteProfileResolverPort } from './cliente-profile-resolver.port';
+import type { ScopedClienteProfileResolverPort } from './cliente-profile-resolver.port';
 
 const DEFAULT_USUARIO_SERVICE_HOST = 'usuario-service';
 const DEFAULT_USUARIO_SERVICE_TCP_PORT = 3011;
@@ -13,7 +13,7 @@ interface ClienteProfileNamesResponse {
 }
 
 @Injectable()
-export class UsuarioClienteProfileResolverAdapter implements ClienteProfileResolverPort, OnModuleDestroy {
+export class UsuarioClienteProfileResolverAdapter implements ScopedClienteProfileResolverPort, OnModuleDestroy {
   private readonly client: ClientProxy;
   private readonly tcpTimeoutMs: number;
 
@@ -28,14 +28,35 @@ export class UsuarioClienteProfileResolverAdapter implements ClienteProfileResol
     this.tcpTimeoutMs = readPositiveIntegerEnv('TCP_TIMEOUT_MS', DEFAULT_TCP_TIMEOUT_MS);
   }
 
+  /**
+   * Unscoped resolution, used only for SUPER_ADMIN reads. usuario-service skips
+   * vendor resolution for super_admin, so the synthetic `sub` below never
+   * reaches `vendedorResolver.resolve` and is safe.
+   */
   async resolveNamesByAuthUserIds(
     authUserIds: readonly string[],
     callerRole: UserRole,
   ): Promise<ReadonlyMap<string, { nombre: string; apellido?: string }>> {
+    return this.send(authUserIds, callerRole, 'orders-service');
+  }
+
+  async resolveScopedNamesByAuthUserIds(
+    authUserIds: readonly string[],
+    callerRole: UserRole,
+    callerUserId: string,
+  ): Promise<ReadonlyMap<string, { nombre: string; apellido?: string }>> {
+    return this.send(authUserIds, callerRole, callerUserId);
+  }
+
+  private async send(
+    authUserIds: readonly string[],
+    callerRole: UserRole,
+    sub: string,
+  ): Promise<ReadonlyMap<string, { nombre: string; apellido?: string }>> {
     const response = await firstValueFrom(
       this.client.send<ClienteProfileNamesResponse>('clientes.resolve_profile_names', {
         body: { authUserIds },
-        user: { sub: 'orders-service', email: '', role: callerRole },
+        user: { sub, email: '', role: callerRole },
         requestId: `orders-service:cliente-profile-names:${authUserIds.length}`,
       }).pipe(timeout(this.tcpTimeoutMs)),
     );
@@ -59,8 +80,10 @@ function isClienteProfileNamesResponse(value: unknown): value is ClienteProfileN
 
   const record = value as Record<string, unknown>;
   const keys = Object.keys(record);
+  // An empty object is a valid empty result (e.g. cartera-scoped resolution
+  // with zero matches); it must resolve to an empty map, not a 503.
   if (keys.length === 0) {
-    return false;
+    return true;
   }
 
   return keys.every((key) => {
