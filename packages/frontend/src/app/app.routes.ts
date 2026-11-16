@@ -53,6 +53,27 @@ export const routes: Routes = [
               ),
           },
           {
+            path: 'panel',
+            loadComponent: () =>
+              import('./features/admin/admin-dashboard-page/admin-dashboard-page').then(
+                (module) => module.AdminDashboardPage,
+              ),
+          },
+          {
+            path: 'auditoria',
+            loadComponent: () =>
+              import('./features/admin/admin-audit-log-page/admin-audit-log-page').then(
+                (module) => module.AdminAuditLogPage,
+              ),
+          },
+          {
+            path: 'clientes',
+            loadComponent: () =>
+              import('./features/admin/admin-clientes-page/admin-clientes-page').then(
+                (module) => module.AdminClientesPage,
+              ),
+          },
+          {
             path: 'perfil',
             loadComponent: () =>
               import('./features/admin/admin-profile-page/admin-profile-page').then(
