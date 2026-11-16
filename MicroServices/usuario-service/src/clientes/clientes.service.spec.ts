@@ -226,6 +226,41 @@ describe('ClientesService', () => {
   });
 
   // ═══════════════════════════════════════════════
+  //  RESOLVE NAMES — batch name resolution by auth_user_id
+  // ═══════════════════════════════════════════════
+
+  describe('resolveNamesByAuthUserIds', () => {
+    const UUID_A = '550e8400-e29b-41d4-a716-446655440000';
+    const UUID_B = '550e8400-e29b-41d4-a716-446655440001';
+
+    it('resuelve nombres por auth_user_id y preserva apellido vacío como cadena vacía', async () => {
+      prisma.cliente.findMany.mockResolvedValue([
+        { auth_user_id: UUID_A, nombre: 'Juan', apellido: 'Pérez' },
+        { auth_user_id: UUID_B, nombre: 'María', apellido: '' },
+      ]);
+
+      const result = await service.resolveNamesByAuthUserIds([UUID_A, UUID_B]);
+
+      expect(prisma.cliente.findMany).toHaveBeenCalledWith({
+        where: { auth_user_id: { in: [UUID_A, UUID_B] } },
+        select: { auth_user_id: true, nombre: true, apellido: true },
+      });
+      expect(result).toEqual({
+        [UUID_A]: { nombre: 'Juan', apellido: 'Pérez' },
+        [UUID_B]: { nombre: 'María', apellido: '' },
+      });
+    });
+
+    it('devuelve objeto vacío cuando no hay clientes para los ids', async () => {
+      prisma.cliente.findMany.mockResolvedValue([]);
+
+      const result = await service.resolveNamesByAuthUserIds([UUID_A]);
+
+      expect(result).toEqual({});
+    });
+  });
+
+  // ═══════════════════════════════════════════════
   //  GET BY ID — admin
   // ═══════════════════════════════════════════════
 

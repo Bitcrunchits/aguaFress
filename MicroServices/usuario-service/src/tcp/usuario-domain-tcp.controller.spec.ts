@@ -26,6 +26,7 @@ type ClientesServiceMock = {
   selectProviderForClienteUser: jest.Mock;
   getOwnById: jest.Mock;
   updateOwn: jest.Mock;
+  resolveNamesByAuthUserIds: jest.Mock;
 };
 
 type LinkInvitacionServiceMock = {
@@ -112,6 +113,7 @@ describe('UsuarioDomainTcpController', () => {
       selectProviderForClienteUser: jest.fn(),
       getOwnById: jest.fn(),
       updateOwn: jest.fn(),
+      resolveNamesByAuthUserIds: jest.fn(),
     };
     linkInvitacionService = {
       list: jest.fn(),
@@ -415,6 +417,42 @@ describe('UsuarioDomainTcpController', () => {
       const result = await controller.selectClienteProvider(payload);
 
       expect(clientesService.selectProviderForClienteUser).toHaveBeenCalledWith('cliente-user-id', UUID);
+      expect(result).toBe(expected);
+    });
+  });
+
+  describe('clientes.resolve_profile_names', () => {
+    const UUID_A = '550e8400-e29b-41d4-a716-446655440000';
+    const UUID_B = '550e8400-e29b-41d4-a716-446655440001';
+
+    it('rejects non-vendedor/non-super_admin roles', async () => {
+      const payload = clientePayload({ body: { authUserIds: [UUID_A] } });
+      await expect(controller.resolveClienteProfileNames(payload)).rejects.toBeInstanceOf(ForbiddenException);
+      expect(clientesService.resolveNamesByAuthUserIds).not.toHaveBeenCalled();
+    });
+
+    it('allows super_admin role', async () => {
+      clientesService.resolveNamesByAuthUserIds.mockResolvedValue({ [UUID_A]: { nombre: 'Juan', apellido: 'Pérez' } });
+
+      const payload = superAdminPayload({ body: { authUserIds: [UUID_A] } });
+      await expect(controller.resolveClienteProfileNames(payload)).resolves.toEqual({
+        [UUID_A]: { nombre: 'Juan', apellido: 'Pérez' },
+      });
+
+      expect(clientesService.resolveNamesByAuthUserIds).toHaveBeenCalledWith([UUID_A]);
+    });
+
+    it('validates body and calls service with the full authUserIds batch', async () => {
+      const expected = {
+        [UUID_A]: { nombre: 'Juan', apellido: 'Pérez' },
+        [UUID_B]: { nombre: 'María', apellido: '' },
+      };
+      clientesService.resolveNamesByAuthUserIds.mockResolvedValue(expected);
+
+      const payload = vendedorPayload({ body: { authUserIds: [UUID_A, UUID_B] } });
+      const result = await controller.resolveClienteProfileNames(payload);
+
+      expect(clientesService.resolveNamesByAuthUserIds).toHaveBeenCalledWith([UUID_A, UUID_B]);
       expect(result).toBe(expected);
     });
   });

@@ -6,6 +6,7 @@ import { ListAuditLogsDto } from '../audit-log/dto/list-audit-logs.dto';
 import { Public } from '../auth/decorators/public.decorator';
 import { ClientesService } from '../clientes/clientes.service';
 import { ListClientesDto } from '../clientes/dto/list-clientes.dto';
+import { ResolveClienteNamesDto } from '../clientes/dto/resolve-cliente-names.dto';
 import { ReasignarVendedorDto } from '../clientes/dto/reasignar-vendedor.dto';
 import { UpdateClienteDto } from '../clientes/dto/update-cliente.dto';
 import { UpdateClienteVendedorDto } from '../clientes/dto/update-cliente-vendedor.dto';
@@ -192,6 +193,13 @@ export class UsuarioDomainTcpController {
   listClienteProviders(@Payload() payload: TcpPayload) {
     this.payloadAdapter.requireRole(payload, UserRole.CLIENTE);
     return this.clientesService.listProvidersForClienteUser(this.payloadAdapter.userId(payload));
+  }
+
+  @MessagePattern('clientes.resolve_profile_names')
+  async resolveClienteProfileNames(@Payload() payload: TcpPayload): Promise<Record<string, { nombre: string; apellido: string }>> {
+    this.payloadAdapter.requireRole(payload, UserRole.VENDEDOR, UserRole.SUPER_ADMIN);
+    const dto = await this.payloadAdapter.body(payload, ResolveClienteNamesDto);
+    return this.clientesService.resolveNamesByAuthUserIds(dto.authUserIds);
   }
 
   @MessagePattern('clientes.providers_select')

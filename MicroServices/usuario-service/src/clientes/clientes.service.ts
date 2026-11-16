@@ -106,6 +106,22 @@ export class ClientesService {
     return cliente;
   }
 
+  /**
+   * Batch-resolve cliente profile names keyed by AUTH_USER.id (`auth_user_id`).
+   * Empty `apellido` is preserved as `''` — the consumer maps it to `undefined`.
+   */
+  async resolveNamesByAuthUserIds(authUserIds: string[]): Promise<Record<string, { nombre: string; apellido: string }>> {
+    const clientes = await this.prisma.cliente.findMany({
+      where: { auth_user_id: { in: authUserIds } },
+      select: { auth_user_id: true, nombre: true, apellido: true },
+    });
+
+    return clientes.reduce<Record<string, { nombre: string; apellido: string }>>((acc, cliente) => {
+      acc[cliente.auth_user_id] = { nombre: cliente.nombre, apellido: cliente.apellido };
+      return acc;
+    }, {});
+  }
+
   async update(id: string, dto: UpdateClienteDto) {
     const existing = await this.prisma.cliente.findUnique({
       where: { id },
