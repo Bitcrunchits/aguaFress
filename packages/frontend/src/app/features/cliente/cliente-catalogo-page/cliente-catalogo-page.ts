@@ -2,6 +2,7 @@ import { Component, effect, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import type { ProductResponse } from '@agua/contracts';
 import { AuthService } from '../../../core/auth/auth.service';
+import { ProductImageComponent } from '../../../shared/product-image/product-image';
 import { toUploadUrl } from '../../../shared/upload-url';
 import {
   ClienteCarritoFacade,
@@ -39,6 +40,7 @@ const CARRITO_FEEDBACK_MESSAGES: Record<ClienteCarritoFeedbackKind, string> = {
  */
 @Component({
   selector: 'app-cliente-catalogo-page',
+  imports: [ProductImageComponent],
   templateUrl: './cliente-catalogo-page.html',
   styleUrl: './cliente-catalogo-page.scss',
   providers: [

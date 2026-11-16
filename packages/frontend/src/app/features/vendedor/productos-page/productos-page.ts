@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import type { PaginationResponse, ProductResponse } from '@agua/contracts';
 import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog';
+import { ProductImageComponent } from '../../../shared/product-image/product-image';
 import { toUploadUrl } from '../../../shared/upload-url';
 import {
   StatusLabelComponent,
@@ -22,7 +23,7 @@ const PRODUCTOS_BASE_PATH = '/vendedor/catalogo/productos';
  */
 @Component({
   selector: 'app-productos-page',
-  imports: [ButtonModule, ConfirmDialogComponent, StatusLabelComponent],
+  imports: [ButtonModule, ConfirmDialogComponent, ProductImageComponent, StatusLabelComponent],
   templateUrl: './productos-page.html',
   styleUrl: './productos-page.scss',
 })

@@ -79,14 +79,8 @@
   }
 }
 
-.cliente__image {
-  display: block;
-  width: 100%;
-  height: 160px;
+.cliente__product app-product-image {
   margin-bottom: 12px;
-  object-fit: cover;
-  border: 1px solid var(--line-soft);
-  background: var(--ice-surface);
 }
 
 .cliente__description {

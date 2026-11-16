@@ -59,11 +59,10 @@
           "
         >
           @if (product.imagen; as image) {
-            <img
-              class="cliente__image"
+            <app-product-image
               [src]="productImageUrl(image)"
-              [alt]="'Foto de ' + product.nombre"
-              loading="lazy"
+              [ariaLabel]="'Ver foto de ' + product.nombre"
+              size="card"
             />
           }
 

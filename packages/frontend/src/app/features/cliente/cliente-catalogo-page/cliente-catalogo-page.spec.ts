@@ -176,7 +176,7 @@ describe('ClienteCatalogoPage', () => {
     expect(element.textContent).not.toContain('No disponible');
   });
 
-  it('renders the product image when present and omits it otherwise', () => {
+  it('renders a clickable product image when present and omits it otherwise', () => {
     products.set([
       { ...PRODUCT, imagen: 'products/agua-500.webp' },
       { ...PRODUCT, id: 'producto-sin-imagen', nombre: 'Agua sin imagen' },
@@ -188,11 +188,33 @@ describe('ClienteCatalogoPage', () => {
     );
     expect(items.length).toBe(2);
 
-    const image = items[0].querySelector<HTMLImageElement>('img.cliente__image');
-    expect(image).not.toBeNull();
-    expect(image?.getAttribute('src')).toContain('/uploads/products/');
+    const productImage = items[0].querySelector<HTMLElement>('app-product-image');
+    expect(productImage).not.toBeNull();
+    expect(
+      productImage
+        ?.querySelector<HTMLImageElement>('img.product-image__img')
+        ?.getAttribute('src'),
+    ).toContain('/uploads/products/');
+    expect(
+      productImage?.querySelector<HTMLButtonElement>('.product-image__btn')?.getAttribute(
+        'aria-label',
+      ),
+    ).toBe('Ver foto de Agua mineral 500 ml');
+    expect(
+      productImage?.querySelector<HTMLButtonElement>('.product-image__btn')?.classList,
+    ).toContain('product-image__btn--card');
 
-    expect(items[1].querySelector('img.cliente__image')).toBeNull();
+    expect(items[1].querySelector('app-product-image')).toBeNull();
+  });
+
+  it('opens the preview when the product image is clicked', () => {
+    products.set([{ ...PRODUCT, imagen: 'products/agua-500.webp' }]);
+    fixture.detectChanges();
+
+    element.querySelector<HTMLButtonElement>('.product-image__btn')!.click();
+    fixture.detectChanges();
+
+    expect(element.querySelector('.product-image__lightbox')).not.toBeNull();
   });
 
   it('renders the availability label for an unavailable product', () => {

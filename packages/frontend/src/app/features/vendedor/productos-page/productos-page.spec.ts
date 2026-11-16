@@ -148,7 +148,7 @@ describe('VendedorProductosPage', () => {
     expect(element.textContent).toContain(component.formatPrice(1210));
   });
 
-  it('renders a product thumbnail when the row has an image and omits it otherwise', () => {
+  it('renders a clickable product image when the row has an image and omits it otherwise', () => {
     serviceStub.list.and.returnValue(
       of(
         pageResponse([
@@ -165,11 +165,31 @@ describe('VendedorProductosPage', () => {
     );
     expect(rows.length).toBe(2);
 
-    const thumb = rows[0].querySelector<HTMLImageElement>('img.productos__thumb');
-    expect(thumb).not.toBeNull();
-    expect(thumb?.getAttribute('src')).toContain('/uploads/products/');
+    const productImage = rows[0].querySelector<HTMLElement>('app-product-image');
+    expect(productImage).not.toBeNull();
+    expect(
+      productImage
+        ?.querySelector<HTMLImageElement>('img.product-image__img')
+        ?.getAttribute('src'),
+    ).toContain('/uploads/products/');
+    expect(
+      productImage?.querySelector<HTMLButtonElement>('.product-image__btn')?.classList,
+    ).toContain('product-image__btn--thumb');
 
-    expect(rows[1].querySelector('img.productos__thumb')).toBeNull();
+    expect(rows[1].querySelector('app-product-image')).toBeNull();
+  });
+
+  it('opens the preview when the product image is clicked', () => {
+    serviceStub.list.and.returnValue(
+      of(pageResponse([{ ...PRODUCT, imagen: 'products/agua-500.webp' }])),
+    );
+
+    fixture.detectChanges();
+
+    element.querySelector<HTMLButtonElement>('.product-image__btn')!.click();
+    fixture.detectChanges();
+
+    expect(element.querySelector('.product-image__lightbox')).not.toBeNull();
   });
 
   it('renders an inactive badge for a soft-deleted product', () => {

@@ -114,7 +114,7 @@
             <tr>
               <td class="productos__producto">
                 @if (product.imagen; as image) {
-                  <img class="productos__thumb" [src]="productImageUrl(image)" alt="" loading="lazy" />
+                  <app-product-image [src]="productImageUrl(image)" size="thumb" />
                 }
                 <span>{{ product.nombre }}</span>
               </td>
